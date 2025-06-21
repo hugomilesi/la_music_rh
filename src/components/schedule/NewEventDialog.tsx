@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -48,10 +48,28 @@ const eventSchema = z.object({
 
 type EventFormData = z.infer<typeof eventSchema>;
 
-const NewEventDialog: React.FC = () => {
-  const [open, setOpen] = useState(false);
+interface NewEventDialogProps {
+  preselectedDate?: Date | null;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const NewEventDialog: React.FC<NewEventDialogProps> = ({ 
+  preselectedDate = null,
+  isOpen: externalIsOpen,
+  onClose: externalOnClose
+}) => {
+  const [internalOpen, setInternalOpen] = useState(false);
   const { addEvent, isLoading } = useSchedule();
   const { toast } = useToast();
+
+  // Use external state if provided, otherwise use internal state
+  const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
+  const setOpen = externalOnClose ? (value: boolean) => {
+    if (!value && externalOnClose) {
+      externalOnClose();
+    }
+  } : setInternalOpen;
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
@@ -68,6 +86,13 @@ const NewEventDialog: React.FC = () => {
       whatsappAlert: false,
     },
   });
+
+  // Set preselected date when dialog opens
+  useEffect(() => {
+    if (preselectedDate && open) {
+      form.setValue('date', preselectedDate);
+    }
+  }, [preselectedDate, open, form]);
 
   const onSubmit = (data: EventFormData) => {
     // Transform the form data to match NewScheduleEventData type
@@ -118,22 +143,15 @@ const NewEventDialog: React.FC = () => {
     { value: '4', label: 'João Costa' },
   ];
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Evento
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Adicionar Novo Evento</DialogTitle>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  const DialogComponent = () => (
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Adicionar Novo Evento</DialogTitle>
+      </DialogHeader>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="title"
@@ -385,6 +403,27 @@ const NewEventDialog: React.FC = () => {
           </form>
         </Form>
       </DialogContent>
+  );
+
+  // If using external state, don't wrap in Dialog
+  if (externalIsOpen !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogComponent />
+      </Dialog>
+    );
+  }
+
+  // Default behavior with trigger button
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Evento
+        </Button>
+      </DialogTrigger>
+      <DialogComponent />
     </Dialog>
   );
 };

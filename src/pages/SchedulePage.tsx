@@ -9,6 +9,10 @@ import { ScheduleEvent } from '@/types/schedule';
 import NewEventDialog from '@/components/schedule/NewEventDialog';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import EditEventDialog from '@/components/schedule/EditEventDialog';
+import DayEventsDialog from '@/components/schedule/DayEventsDialog';
+import WeekEvent from '@/components/schedule/WeekEvent';
+import TimeSlot from '@/components/schedule/TimeSlot';
+import { useDateDialog } from '@/hooks/useDateDialog';
 
 const SchedulePage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -19,6 +23,17 @@ const SchedulePage: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { events } = useSchedule();
   const { toast } = useToast();
+
+  const {
+    selectedDate,
+    selectedEvents,
+    showNewEventDialog,
+    showDayEventsDialog,
+    openDialogForDate,
+    closeDayEventsDialog,
+    closeNewEventDialog,
+    openNewEventFromDay
+  } = useDateDialog();
 
   const getEventTypeColor = (type: string) => {
     const colors = {
@@ -133,6 +148,26 @@ const SchedulePage: React.FC = () => {
     const dateStr = date.toISOString().split('T')[0];
     return events.filter(event => event.date === dateStr);
   };
+
+  // New handlers for date clicks
+  const handleDayClick = (date: Date) => {
+    const dayEvents = getEventsForDate(date);
+    openDialogForDate(date, dayEvents);
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    const slotDate = new Date(date);
+    slotDate.setHours(hour, 0, 0, 0);
+    openDialogForDate(slotDate, []);
+  };
+
+  const handleEventClickFromDay = (event: ScheduleEvent) => {
+    closeDayEventsDialog();
+    handleEventClick(event);
+  };
+
+  // Generate time slots for weekly view (8:00 to 21:00)
+  const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
 
   return (
     <div className="space-y-6">
@@ -250,19 +285,19 @@ const SchedulePage: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-8 gap-2">
                   {/* Time column */}
-                  <div className="space-y-12">
-                    <div className="h-8"></div>
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <div key={i} className="text-xs text-gray-500 h-12 flex items-start">
-                        {8 + i}:00
+                  <div className="space-y-0">
+                    <div className="h-16 border-b border-gray-200"></div>
+                    {timeSlots.map(hour => (
+                      <div key={hour} className="h-12 flex items-start text-xs text-gray-500 border-b border-gray-100">
+                        {hour}:00
                       </div>
                     ))}
                   </div>
 
                   {/* Day columns */}
                   {currentWeek.map((date, dayIndex) => (
-                    <div key={dayIndex} className="space-y-2">
-                      <div className="text-center py-2 border-b">
+                    <div key={dayIndex} className="relative">
+                      <div className="text-center py-2 border-b border-gray-200 h-16 flex flex-col justify-center">
                         <div className="text-sm font-medium">{weekDays[dayIndex]}</div>
                         <div className={`text-lg font-bold ${
                           date.toDateString() === new Date().toDateString() 
@@ -273,27 +308,24 @@ const SchedulePage: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="space-y-1 min-h-[600px]">
+                      <div className="relative">
+                        {/* Time slots */}
+                        {timeSlots.map(hour => (
+                          <TimeSlot
+                            key={hour}
+                            hour={hour}
+                            date={date}
+                            onSlotClick={handleTimeSlotClick}
+                          />
+                        ))}
+                        
+                        {/* Events */}
                         {getEventsForDate(date).map(event => (
-                          <div
+                          <WeekEvent
                             key={event.id}
-                            className="bg-blue-50 border border-blue-200 rounded p-2 text-xs cursor-pointer hover:bg-blue-100 transition-colors"
-                            onClick={() => handleEventClick(event)}
-                          >
-                            <div className="font-medium">{event.title}</div>
-                            <div className="text-gray-600">{event.employee}</div>
-                            <div className="text-gray-500">{event.startTime} - {event.endTime}</div>
-                            {(event.emailAlert || event.whatsappAlert) && (
-                              <div className="flex gap-1 mt-1">
-                                {event.emailAlert && (
-                                  <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📧</span>
-                                )}
-                                {event.whatsappAlert && (
-                                  <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📱</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                            event={event}
+                            onClick={handleEventClick}
+                          />
                         ))}
                       </div>
                     </div>
@@ -332,11 +364,12 @@ const SchedulePage: React.FC = () => {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[100px] p-2 border rounded-lg ${
+                        className={`min-h-[100px] p-2 border rounded-lg cursor-pointer ${
                           isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                         } ${
                           isToday ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                        } hover:border-gray-300 transition-colors`}
+                        } hover:border-gray-300 hover:shadow-sm transition-all`}
+                        onClick={() => handleDayClick(date)}
                       >
                         <div className={`text-sm font-medium mb-1 ${
                           isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
@@ -350,8 +383,11 @@ const SchedulePage: React.FC = () => {
                           {dayEvents.slice(0, 2).map(event => (
                             <div
                               key={event.id}
-                              className={`text-xs p-1 rounded cursor-pointer ${getEventTypeColor(event.type)}`}
-                              onClick={() => handleEventClick(event)}
+                              className={`text-xs p-1 rounded ${getEventTypeColor(event.type)}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEventClick(event);
+                              }}
                             >
                               {event.title}
                             </div>
@@ -447,6 +483,21 @@ const SchedulePage: React.FC = () => {
         event={selectedEvent}
         isOpen={showEditDialog}
         onClose={handleCloseEditDialog}
+      />
+
+      <DayEventsDialog
+        date={selectedDate}
+        events={selectedEvents}
+        isOpen={showDayEventsDialog}
+        onClose={closeDayEventsDialog}
+        onEventClick={handleEventClickFromDay}
+        onNewEvent={openNewEventFromDay}
+      />
+
+      <NewEventDialog
+        preselectedDate={selectedDate}
+        isOpen={showNewEventDialog}
+        onClose={closeNewEventDialog}
       />
     </div>
   );
