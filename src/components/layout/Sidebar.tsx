@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Users, 
   Calendar, 
@@ -98,7 +98,12 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+  const navigate = useNavigate();
   const location = useLocation();
+
+  const handleNavigation = (href: string) => {
+    navigate(href);
+  };
 
   return (
     <div className={cn(
@@ -127,10 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             
             return (
               <li key={item.href}>
-                <Link
-                  to={item.href}
+                <button
+                  onClick={() => handleNavigation(item.href)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group",
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group text-left",
                     isActive 
                       ? "bg-white/20 text-white" 
                       : "text-purple-200 hover:bg-white/10 hover:text-white"
@@ -144,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                       <p className="text-xs text-purple-200 truncate">{item.description}</p>
                     </div>
                   )}
-                </Link>
+                </button>
               </li>
             );
           })}
