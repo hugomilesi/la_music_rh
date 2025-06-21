@@ -89,8 +89,11 @@ const mockEvaluations: Evaluation[] = [
 ];
 
 export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('EvaluationProvider: Initializing...');
   const [evaluations, setEvaluations] = useState<Evaluation[]>(mockEvaluations);
   const [isLoading, setIsLoading] = useState(false);
+
+  console.log('EvaluationProvider: Initial evaluations:', evaluations);
 
   const addEvaluation = useCallback((data: NewEvaluationData) => {
     setIsLoading(true);
@@ -134,23 +137,31 @@ export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   }, [evaluations]);
 
+  const contextValue = {
+    evaluations,
+    isLoading,
+    addEvaluation,
+    updateEvaluation,
+    deleteEvaluation,
+    getCoffeeConnectionSchedule
+  };
+
+  console.log('EvaluationProvider: Providing context value:', contextValue);
+
   return (
-    <EvaluationContext.Provider value={{
-      evaluations,
-      isLoading,
-      addEvaluation,
-      updateEvaluation,
-      deleteEvaluation,
-      getCoffeeConnectionSchedule
-    }}>
+    <EvaluationContext.Provider value={contextValue}>
       {children}
     </EvaluationContext.Provider>
   );
 };
 
 export const useEvaluations = () => {
+  console.log('useEvaluations: Hook called');
   const context = useContext(EvaluationContext);
+  console.log('useEvaluations: Context value:', context);
+  
   if (context === undefined) {
+    console.error('useEvaluations: Context is undefined - must be used within an EvaluationProvider');
     throw new Error('useEvaluations must be used within an EvaluationProvider');
   }
   return context;

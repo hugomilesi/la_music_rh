@@ -13,7 +13,11 @@ import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectio
 import { InteractiveStatsCards } from '@/components/evaluations/InteractiveStatsCards';
 
 const EvaluationsPage: React.FC = () => {
+  console.log('EvaluationsPage: Component rendering...');
+  
   const { evaluations } = useEvaluations();
+  console.log('EvaluationsPage: Retrieved evaluations:', evaluations);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -42,6 +46,8 @@ const EvaluationsPage: React.FC = () => {
     if (score >= 3.5) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length);
 
   return (
     <div className="space-y-6">
