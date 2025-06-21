@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Calendar, AlertTriangle, Users, Clock } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
 import { NewVacationDialog } from '@/components/vacation/NewVacationDialog';
 import { VacationRequestsList } from '@/components/vacation/VacationRequestsList';
 import { VacationCalendar } from '@/components/vacation/VacationCalendar';
@@ -15,14 +16,71 @@ import { VacationStats } from '@/components/vacation/VacationStats';
 
 const VacationPage = () => {
   const [showNewVacationDialog, setShowNewVacationDialog] = useState(false);
+  
+  // Add error handling for contexts
+  const vacation = useVacation();
+  const employees = useEmployees();
+
+  useEffect(() => {
+    console.log('VacationPage mounted');
+    console.log('Vacation context:', vacation);
+    console.log('Employees context:', employees);
+  }, [vacation, employees]);
+
+  if (!vacation) {
+    console.error('Vacation context not available');
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Erro: Contexto de férias não está disponível. Verifique se o VacationProvider está configurado.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!employees) {
+    console.error('Employee context not available');
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Erro: Contexto de colaboradores não está disponível. Verifique se o EmployeeProvider está configurado.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   const { 
     getActiveVacations, 
     getPendingRequests, 
     vacationAlerts 
-  } = useVacation();
+  } = vacation;
 
-  const activeVacations = getActiveVacations();
-  const pendingRequests = getPendingRequests();
+  let activeVacations, pendingRequests;
+  
+  try {
+    activeVacations = getActiveVacations();
+    pendingRequests = getPendingRequests();
+    console.log('Active vacations:', activeVacations);
+    console.log('Pending requests:', pendingRequests);
+  } catch (error) {
+    console.error('Error getting vacation data:', error);
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Erro ao carregar dados de férias. Tente recarregar a página.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,7 +101,7 @@ const VacationPage = () => {
       <VacationStats />
 
       {/* Alerts */}
-      {vacationAlerts.length > 0 && (
+      {vacationAlerts && vacationAlerts.length > 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -66,7 +124,7 @@ const VacationPage = () => {
           <TabsTrigger value="alerts" className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             Alertas
-            {vacationAlerts.length > 0 && (
+            {vacationAlerts && vacationAlerts.length > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {vacationAlerts.length}
               </Badge>
@@ -97,7 +155,7 @@ const VacationPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {activeVacations.length === 0 ? (
+            {!activeVacations || activeVacations.length === 0 ? (
               <p className="text-gray-500">Nenhum colaborador em férias no momento</p>
             ) : (
               <div className="space-y-2">
@@ -122,7 +180,7 @@ const VacationPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {pendingRequests.length === 0 ? (
+            {!pendingRequests || pendingRequests.length === 0 ? (
               <p className="text-gray-500">Nenhuma solicitação pendente</p>
             ) : (
               <div className="space-y-2">

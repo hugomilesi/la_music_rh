@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,6 +74,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
+      console.log('Submitting vacation request:', data);
       const vacationData: NewVacationRequest = {
         employeeId: data.employeeId,
         startDate: data.startDate,
@@ -91,6 +91,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
+      console.error('Error creating vacation request:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a solicitação.',
@@ -106,6 +107,11 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
     { value: 'maternity', label: 'Licença Maternidade' },
     { value: 'paternity', label: 'Licença Paternidade' },
   ];
+
+  // Add error boundary for employee data
+  if (!employees || employees.length === 0) {
+    console.log('No employees available for vacation dialog');
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,11 +138,17 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name}
+                      {employees && employees.length > 0 ? (
+                        employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-employees" disabled>
+                          Nenhum colaborador disponível
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
