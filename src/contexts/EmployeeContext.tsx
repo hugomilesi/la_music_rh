@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Employee, NewEmployeeData } from '@/types/employee';
 import { Unit } from '@/types/unit';
@@ -21,40 +20,73 @@ interface EmployeeContextType {
 
 const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined);
 
-// Mock data atualizado com múltiplas unidades
+// Updated mock data with music school context
 const mockEmployees: Employee[] = [
   {
     id: '1',
-    name: 'João Silva',
-    email: 'joao.silva@lamusic.com',
-    phone: '(11) 99999-9999',
-    position: 'Segurança',
-    department: 'Operações',
-    units: [Unit.CAMPO_GRANDE, Unit.RECREIO], // Múltiplas unidades
+    name: 'Ana Carolina Santos',
+    email: 'ana.santos@lamusic.com',
+    phone: '(21) 99999-9999',
+    position: 'Professor de Piano',
+    department: 'Educação Musical',
+    units: [Unit.CAMPO_GRANDE, Unit.RECREIO],
     startDate: '2024-01-15',
     status: 'active'
   },
   {
     id: '2',
-    name: 'Maria Santos',
-    email: 'maria.santos@lamusic.com',
-    phone: '(11) 88888-8888',
-    position: 'Bartender',
-    department: 'Bar',
-    units: [Unit.BARRA], // Apenas uma unidade
+    name: 'Bruno Silva Costa',
+    email: 'bruno.costa@lamusic.com',
+    phone: '(21) 98888-8888',
+    position: 'Técnico de Som',
+    department: 'Produção Musical',
+    units: [Unit.BARRA],
     startDate: '2024-02-01',
     status: 'active'
   },
   {
     id: '3',
-    name: 'Pedro Costa',
-    email: 'pedro.costa@lamusic.com',
-    phone: '(11) 77777-7777',
-    position: 'DJ',
-    department: 'Entretenimento',
-    units: [Unit.CAMPO_GRANDE, Unit.BARRA, Unit.RECREIO], // Todas as unidades
+    name: 'Carla Fernanda Lima',
+    email: 'carla.lima@lamusic.com',
+    phone: '(21) 97777-7777',
+    position: 'Coordenadora Pedagógica',
+    department: 'Coordenação',
+    units: [Unit.CAMPO_GRANDE, Unit.BARRA, Unit.RECREIO],
     startDate: '2024-01-20',
+    status: 'active'
+  },
+  {
+    id: '4',
+    name: 'Diego Oliveira Rocha',
+    email: 'diego.rocha@lamusic.com',
+    phone: '(21) 96666-6666',
+    position: 'Professor de Violão',
+    department: 'Educação Musical',
+    units: [Unit.RECREIO],
+    startDate: '2024-03-10',
+    status: 'active'
+  },
+  {
+    id: '5',
+    name: 'Elena Martins Souza',
+    email: 'elena.souza@lamusic.com',
+    phone: '(21) 95555-5555',
+    position: 'Recepcionista',
+    department: 'Atendimento',
+    units: [Unit.CAMPO_GRANDE],
+    startDate: '2024-02-15',
     status: 'inactive'
+  },
+  {
+    id: '6',
+    name: 'Felipe Santos Barbosa',
+    email: 'felipe.barbosa@lamusic.com',
+    phone: '(21) 94444-4444',
+    position: 'Professor de Bateria',
+    department: 'Educação Musical',
+    units: [Unit.BARRA, Unit.RECREIO],
+    startDate: '2024-01-30',
+    status: 'active'
   }
 ];
 
