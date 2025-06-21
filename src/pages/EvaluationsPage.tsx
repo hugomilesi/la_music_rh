@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Eye, Edit, Calendar, Star, Coffee } from 'lucide-react';
+import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee } from 'lucide-react';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
 import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
 import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
+import { InteractiveStatsCards } from '@/components/evaluations/InteractiveStatsCards';
 
 const EvaluationsPage: React.FC = () => {
   const { evaluations } = useEvaluations();
@@ -42,15 +43,6 @@ const EvaluationsPage: React.FC = () => {
     return 'text-red-600';
   };
 
-  // Calculate stats
-  const totalEvaluations = evaluations.length;
-  const completedEvaluations = evaluations.filter(e => e.status === 'Concluída').length;
-  const pendingEvaluations = evaluations.filter(e => e.status === 'Pendente').length;
-  const coffeeConnections = evaluations.filter(e => e.type === 'Coffee Connection').length;
-  const averageScore = evaluations.length > 0 
-    ? evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length 
-    : 0;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -75,64 +67,8 @@ const EvaluationsPage: React.FC = () => {
       {/* Coffee Connection Card */}
       <CoffeeConnectionCard onScheduleNew={() => setIsCoffeeConnectionDialogOpen(true)} />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total de Avaliações</p>
-                <p className="text-2xl font-bold">{totalEvaluations}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Concluídas</p>
-                <p className="text-2xl font-bold text-green-600">{completedEvaluations}</p>
-              </div>
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Coffee Connection</p>
-                <p className="text-2xl font-bold text-amber-600">{coffeeConnections}</p>
-              </div>
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Coffee className="w-5 h-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Nota Média</p>
-                <p className="text-2xl font-bold text-purple-600">{averageScore.toFixed(1)}</p>
-              </div>
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Interactive Stats Cards */}
+      <InteractiveStatsCards />
 
       {/* Filters */}
       <Card>

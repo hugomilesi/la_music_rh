@@ -8,6 +8,7 @@ interface EvaluationContextType {
   addEvaluation: (data: NewEvaluationData) => void;
   updateEvaluation: (id: string, data: Partial<Evaluation>) => void;
   deleteEvaluation: (id: string) => void;
+  getCoffeeConnectionSchedule: () => Evaluation[];
 }
 
 const EvaluationContext = createContext<EvaluationContextType | undefined>(undefined);
@@ -109,6 +110,11 @@ export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       
       setEvaluations(prev => [...prev, newEvaluation]);
       setIsLoading(false);
+      
+      // If it's a Coffee Connection with scheduled date, it could be auto-added to schedule
+      if (data.type === 'Coffee Connection' && data.meetingDate) {
+        console.log('Coffee Connection scheduled for:', data.meetingDate);
+      }
     }, 1000);
   }, []);
 
@@ -120,13 +126,22 @@ export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
   }, []);
 
+  const getCoffeeConnectionSchedule = useCallback(() => {
+    return evaluations.filter(e => 
+      e.type === 'Coffee Connection' && 
+      e.status === 'Pendente' && 
+      e.meetingDate
+    );
+  }, [evaluations]);
+
   return (
     <EvaluationContext.Provider value={{
       evaluations,
       isLoading,
       addEvaluation,
       updateEvaluation,
-      deleteEvaluation
+      deleteEvaluation,
+      getCoffeeConnectionSchedule
     }}>
       {children}
     </EvaluationContext.Provider>
