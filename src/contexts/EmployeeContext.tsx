@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Employee, NewEmployeeData } from '@/types/employee';
+import { Unit } from '@/types/unit';
 
 interface EmployeeContextType {
   employees: Employee[];
@@ -15,11 +16,12 @@ interface EmployeeContextType {
   setSearchTerm: (term: string) => void;
   setDepartmentFilter: (department: string) => void;
   setStatusFilter: (status: string) => void;
+  getEmployeesForUnits: (units: Unit[]) => Employee[];
 }
 
 const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined);
 
-// Mock data for demonstration
+// Mock data atualizado com múltiplas unidades
 const mockEmployees: Employee[] = [
   {
     id: '1',
@@ -28,6 +30,7 @@ const mockEmployees: Employee[] = [
     phone: '(11) 99999-9999',
     position: 'Segurança',
     department: 'Operações',
+    units: [Unit.CAMPO_GRANDE, Unit.RECREIO], // Múltiplas unidades
     startDate: '2024-01-15',
     status: 'active'
   },
@@ -38,6 +41,7 @@ const mockEmployees: Employee[] = [
     phone: '(11) 88888-8888',
     position: 'Bartender',
     department: 'Bar',
+    units: [Unit.BARRA], // Apenas uma unidade
     startDate: '2024-02-01',
     status: 'active'
   },
@@ -48,6 +52,7 @@ const mockEmployees: Employee[] = [
     phone: '(11) 77777-7777',
     position: 'DJ',
     department: 'Entretenimento',
+    units: [Unit.CAMPO_GRANDE, Unit.BARRA, Unit.RECREIO], // Todas as unidades
     startDate: '2024-01-20',
     status: 'inactive'
   }
@@ -95,6 +100,13 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setEmployees(prev => prev.filter(emp => emp.id !== id));
   }, []);
 
+  const getEmployeesForUnits = useCallback((units: Unit[]) => {
+    if (units.length === 0) return [];
+    return employees.filter(employee => 
+      employee.units.some(unit => units.includes(unit))
+    );
+  }, [employees]);
+
   return (
     <EmployeeContext.Provider value={{
       employees,
@@ -108,7 +120,8 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       deleteEmployee,
       setSearchTerm,
       setDepartmentFilter,
-      setStatusFilter
+      setStatusFilter,
+      getEmployeesForUnits
     }}>
       {children}
     </EmployeeContext.Provider>

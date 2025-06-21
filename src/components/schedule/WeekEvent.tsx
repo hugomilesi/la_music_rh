@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ScheduleEvent } from '@/types/schedule';
+import { getUnitInfo } from '@/types/unit';
 
 interface WeekEventProps {
   event: ScheduleEvent;
@@ -36,13 +37,23 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
   };
 
   const { top, height } = getEventPosition();
+  const unitInfo = getUnitInfo(event.unit);
 
   return (
     <div
       className={`absolute left-1 right-1 rounded p-1 text-xs cursor-pointer border ${getEventTypeColor(event.type)} hover:shadow-md transition-all z-10`}
-      style={{ top: `${top}px`, height: `${height}px` }}
+      style={{ 
+        top: `${top}px`, 
+        height: `${height}px`,
+        borderLeftWidth: '4px',
+        borderLeftColor: unitInfo.color.replace('bg-', '#')
+      }}
       onClick={() => onClick(event)}
     >
+      <div className="flex items-center gap-1 mb-1">
+        <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
+        <span className="text-xs text-gray-500">{unitInfo.name}</span>
+      </div>
       <div className="font-medium truncate">{event.title}</div>
       <div className="text-gray-600 truncate">{event.employee}</div>
       <div className="text-gray-500">{event.startTime}</div>

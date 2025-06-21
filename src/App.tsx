@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { EmployeeProvider } from "@/contexts/EmployeeContext";
 import { EvaluationProvider } from "@/contexts/EvaluationContext";
 import { ScheduleProvider } from "@/contexts/ScheduleContext";
+import { UnitProvider } from "@/contexts/UnitContext";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import EvaluationsPage from "./pages/EvaluationsPage";
@@ -26,34 +28,36 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <EmployeeProvider>
-        <EvaluationProvider>
-          <ScheduleProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <MainLayout>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/employees" element={<EmployeesPage />} />
-                  <Route path="/evaluations" element={<EvaluationsPage />} />
-                  <Route path="/schedule" element={<SchedulePage />} />
-                  <Route path="/documents" element={<DocumentsPage />} />
-                  <Route path="/incidents" element={<IncidentsPage />} />
-                  <Route path="/nps" element={<NPSPage />} />
-                  <Route path="/recognition" element={<RecognitionPage />} />
-                  <Route path="/timesheet" element={<TimesheetPage />} />
-                  <Route path="/notifications" element={<NotificationsPage />} />
-                  <Route path="/whatsapp" element={<WhatsAppPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </MainLayout>
-            </BrowserRouter>
-          </ScheduleProvider>
-        </EvaluationProvider>
-      </EmployeeProvider>
+      <UnitProvider>
+        <EmployeeProvider>
+          <EvaluationProvider>
+            <ScheduleProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <MainLayout>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/employees" element={<EmployeesPage />} />
+                    <Route path="/evaluations" element={<EvaluationsPage />} />
+                    <Route path="/schedule" element={<SchedulePage />} />
+                    <Route path="/documents" element={<DocumentsPage />} />
+                    <Route path="/incidents" element={<IncidentsPage />} />
+                    <Route path="/nps" element={<NPSPage />} />
+                    <Route path="/recognition" element={<RecognitionPage />} />
+                    <Route path="/timesheet" element={<TimesheetPage />} />
+                    <Route path="/notifications" element={<NotificationsPage />} />
+                    <Route path="/whatsapp" element={<WhatsAppPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </MainLayout>
+              </BrowserRouter>
+            </ScheduleProvider>
+          </EvaluationProvider>
+        </EmployeeProvider>
+      </UnitProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

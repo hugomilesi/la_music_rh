@@ -31,11 +31,12 @@ import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewScheduleEventData } from '@/types/schedule';
+import { Unit, UNITS } from '@/types/unit';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.string().min(1, 'Unidade é obrigatória'),
+  unit: z.nativeEnum(Unit, { required_error: 'Unidade é obrigatória' }),
   date: z.date({ required_error: 'Data é obrigatória' }),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de fim é obrigatório'),
@@ -76,7 +77,7 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
     defaultValues: {
       title: '',
       employeeId: '',
-      unit: '',
+      unit: Unit.CAMPO_GRANDE,
       startTime: '',
       endTime: '',
       type: 'outro',
@@ -129,13 +130,6 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
     { value: 'outro', label: 'Outro' },
   ];
 
-  const units = [
-    { value: 'centro', label: 'Centro' },
-    { value: 'zona-sul', label: 'Zona Sul' },
-    { value: 'norte', label: 'Norte' },
-    { value: 'online', label: 'Online' },
-  ];
-
   const employees = [
     { value: '1', label: 'Ana Silva' },
     { value: '2', label: 'Carlos Santos' },
@@ -152,6 +146,7 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <FormField
                 control={form.control}
                 name="title"
@@ -166,6 +161,7 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
                 )}
               />
 
+              
               <FormField
                 control={form.control}
                 name="employeeId"
@@ -197,16 +193,19 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unidade</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a unidade" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {units.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
+                        {UNITS.map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${unit.color}`}></div>
+                              {unit.name}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -216,6 +215,7 @@ const NewEventDialog: React.FC<NewEventDialogProps> = ({
                 )}
               />
 
+              
               <FormField
                 control={form.control}
                 name="type"

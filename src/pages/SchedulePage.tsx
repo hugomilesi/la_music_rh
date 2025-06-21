@@ -4,14 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
+import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleEvent } from '@/types/schedule';
+import { getUnitInfo } from '@/types/unit';
 import NewEventDialog from '@/components/schedule/NewEventDialog';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import EditEventDialog from '@/components/schedule/EditEventDialog';
 import DayEventsDialog from '@/components/schedule/DayEventsDialog';
 import WeekEvent from '@/components/schedule/WeekEvent';
 import TimeSlot from '@/components/schedule/TimeSlot';
+import { UnitSelector } from '@/components/common/UnitSelector';
 import { useDateDialog } from '@/hooks/useDateDialog';
 
 const SchedulePage: React.FC = () => {
@@ -21,7 +24,8 @@ const SchedulePage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const { events } = useSchedule();
+  const { getEventsForUnits } = useSchedule();
+  const { selectedUnits, hasAnyUnitSelected } = useUnit();
   const { toast } = useToast();
 
   const {
@@ -34,6 +38,9 @@ const SchedulePage: React.FC = () => {
     closeNewEventDialog,
     openNewEventFromDay
   } = useDateDialog();
+
+  // Filtrar eventos pelas unidades selecionadas
+  const filteredEvents = getEventsForUnits(selectedUnits);
 
   const getEventTypeColor = (type: string) => {
     const colors = {
@@ -67,7 +74,6 @@ const SchedulePage: React.FC = () => {
     return date;
   });
 
-  // Generate calendar days for month view
   const getMonthDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -126,7 +132,7 @@ const SchedulePage: React.FC = () => {
   };
 
   const handleEditEvent = (eventId: string) => {
-    const eventToEdit = events.find(event => event.id === eventId);
+    const eventToEdit = filteredEvents.find(event => event.id === eventId);
     if (eventToEdit) {
       setSelectedEvent(eventToEdit);
       setShowEventDetails(false);
@@ -146,10 +152,9 @@ const SchedulePage: React.FC = () => {
 
   const getEventsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return events.filter(event => event.date === dateStr);
+    return filteredEvents.filter(event => event.date === dateStr);
   };
 
-  // New handlers for date clicks
   const handleDayClick = (date: Date) => {
     const dayEvents = getEventsForDate(date);
     openDialogForDate(date, dayEvents);
@@ -166,7 +171,6 @@ const SchedulePage: React.FC = () => {
     handleEventClick(event);
   };
 
-  // Generate time slots for weekly view (8:00 to 21:00)
   const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
 
   return (
@@ -175,10 +179,11 @@ const SchedulePage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-          <p className="text-gray-600 mt-1">Gestão de plantões, escalas e eventos</p>
+          <p className="text-gray-600 mt-1">Gestão de plantões, escalas e eventos por unidade</p>
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <UnitSelector />
           <Button variant="outline" size="sm" onClick={handleFilters}>
             <Filter className="w-4 h-4 mr-2" />
             Filtros
@@ -190,6 +195,20 @@ const SchedulePage: React.FC = () => {
           <NewEventDialog />
         </div>
       </div>
+
+      {/* Unit Warning */}
+      {!hasAnyUnitSelected && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-amber-800">
+              <span className="text-lg">⚠️</span>
+              <p className="font-medium">
+                Nenhuma unidade selecionada. Selecione pelo menos uma unidade para visualizar os eventos.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters Panel */}
       {showFilters && (
@@ -274,7 +293,7 @@ const SchedulePage: React.FC = () => {
         {/* Calendar View */}
         <div className="lg:col-span-2">
           {/* Weekly View */}
-          {viewMode === 'week' && (
+          {viewMode === 'week' && hasAnyUnitSelected && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -336,7 +355,7 @@ const SchedulePage: React.FC = () => {
           )}
 
           {/* Monthly View */}
-          {viewMode === 'month' && (
+          {viewMode === 'month' && hasAnyUnitSelected && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -380,18 +399,25 @@ const SchedulePage: React.FC = () => {
                         </div>
                         
                         <div className="space-y-1">
-                          {dayEvents.slice(0, 2).map(event => (
-                            <div
-                              key={event.id}
-                              className={`text-xs p-1 rounded ${getEventTypeColor(event.type)}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEventClick(event);
-                              }}
-                            >
-                              {event.title}
-                            </div>
-                          ))}
+                          {dayEvents.slice(0, 2).map(event => {
+                            const unitInfo = getUnitInfo(event.unit);
+                            return (
+                              <div
+                                key={event.id}
+                                className={`text-xs p-1 rounded ${getEventTypeColor(event.type)} border-l-2`}
+                                style={{ borderLeftColor: unitInfo.color.replace('bg-', '#') }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEventClick(event);
+                                }}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
+                                  <span className="truncate">{event.title}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
                           {dayEvents.length > 2 && (
                             <div className="text-xs text-gray-500">
                               +{dayEvents.length - 2} mais
@@ -415,50 +441,63 @@ const SchedulePage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {events.length === 0 ? (
+                {!hasAnyUnitSelected ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Selecione uma unidade</p>
+                    <p className="text-sm">Escolha uma ou mais unidades para ver os eventos</p>
+                  </div>
+                ) : filteredEvents.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhum evento agendado</p>
                     <p className="text-sm">Clique em "Novo Evento" para adicionar um evento à agenda</p>
                   </div>
                 ) : (
-                  events.slice(0, 5).map(event => (
-                    <div 
-                      key={event.id} 
-                      className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                      onClick={() => handleEventClick(event)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{event.title}</h4>
-                          <p className="text-xs text-gray-600 truncate">{event.employee}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(event.date).toLocaleDateString('pt-BR')}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {event.startTime} - {event.endTime}
-                          </p>
+                  filteredEvents.slice(0, 5).map(event => {
+                    const unitInfo = getUnitInfo(event.unit);
+                    return (
+                      <div 
+                        key={event.id} 
+                        className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+                        onClick={() => handleEventClick(event)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className={`w-3 h-3 rounded-full ${unitInfo.color}`}></div>
+                              <span className="text-xs text-gray-500">{unitInfo.name}</span>
+                            </div>
+                            <h4 className="font-medium text-sm truncate">{event.title}</h4>
+                            <p className="text-xs text-gray-600 truncate">{event.employee}</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(event.date).toLocaleDateString('pt-BR')}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {event.startTime} - {event.endTime}
+                            </p>
+                          </div>
+                          <Badge className={`${getEventTypeColor(event.type)} text-xs`}>
+                            {getEventTypeLabel(event.type)}
+                          </Badge>
                         </div>
-                        <Badge className={`${getEventTypeColor(event.type)} text-xs`}>
-                          {getEventTypeLabel(event.type)}
-                        </Badge>
+                        
+                        {(event.emailAlert || event.whatsappAlert) && (
+                          <div className="flex gap-1 mt-2">
+                            {event.emailAlert && (
+                              <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📧</span>
+                            )}
+                            {event.whatsappAlert && (
+                              <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📱</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      
-                      {(event.emailAlert || event.whatsappAlert) && (
-                        <div className="flex gap-1 mt-2">
-                          {event.emailAlert && (
-                            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📧</span>
-                          )}
-                          {event.whatsappAlert && (
-                            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📱</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 
-                {events.length > 5 && (
+                {filteredEvents.length > 5 && (
                   <div className="text-center">
                     <Button variant="outline" size="sm" className="w-full">
                       Ver todos os eventos

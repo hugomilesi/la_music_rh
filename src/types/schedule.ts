@@ -1,10 +1,12 @@
 
+import { Unit } from './unit';
+
 export interface ScheduleEvent {
   id: string;
   title: string;
   employeeId: string;
   employee: string;
-  unit: string;
+  unit: Unit; // Changed to use Unit enum
   date: string;
   startTime: string;
   endTime: string;
@@ -20,7 +22,7 @@ export interface ScheduleEvent {
 export interface NewScheduleEventData {
   title: string;
   employeeId: string;
-  unit: string;
+  unit: Unit; // Changed to use Unit enum
   date: string;
   startTime: string;
   endTime: string;

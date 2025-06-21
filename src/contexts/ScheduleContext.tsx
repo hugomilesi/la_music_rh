@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ScheduleEvent, NewScheduleEventData } from '@/types/schedule';
+import { Unit } from '@/types/unit';
 
 interface ScheduleContextType {
   events: ScheduleEvent[];
@@ -8,24 +9,25 @@ interface ScheduleContextType {
   addEvent: (data: NewScheduleEventData) => void;
   updateEvent: (id: string, data: Partial<ScheduleEvent>) => void;
   deleteEvent: (id: string) => void;
+  getEventsForUnits: (units: Unit[]) => ScheduleEvent[];
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
-// Mock data inicial
+// Mock data atualizado com as novas unidades
 const mockEvents: ScheduleEvent[] = [
   {
     id: '1',
     title: 'Plantão Manhã',
     employeeId: '1',
     employee: 'Ana Silva',
-    unit: 'Centro',
+    unit: Unit.CAMPO_GRANDE,
     date: '2024-03-21',
     startTime: '08:00',
     endTime: '12:00',
     type: 'plantao',
     description: 'Plantão de atendimento matinal',
-    location: 'Unidade Centro',
+    location: 'Unidade Campo Grande',
     emailAlert: true,
     whatsappAlert: false,
     createdAt: '2024-03-15T10:00:00Z',
@@ -36,13 +38,13 @@ const mockEvents: ScheduleEvent[] = [
     title: 'Avaliação 360°',
     employeeId: '2',
     employee: 'Carlos Santos',
-    unit: 'Zona Sul',
+    unit: Unit.RECREIO,
     date: '2024-03-21',
     startTime: '14:00',
     endTime: '15:00',
     type: 'avaliacao',
     description: 'Sessão de avaliação 360° trimestral',
-    location: 'Sala de reuniões',
+    location: 'Sala de reuniões - Recreio',
     emailAlert: true,
     whatsappAlert: true,
     createdAt: '2024-03-15T11:00:00Z',
@@ -52,14 +54,14 @@ const mockEvents: ScheduleEvent[] = [
     id: '3',
     title: 'Reunião Pedagógica',
     employeeId: '3',
-    employee: 'Equipe Centro',
-    unit: 'Centro',
+    employee: 'Equipe Barra',
+    unit: Unit.BARRA,
     date: '2024-03-22',
     startTime: '16:00',
     endTime: '17:30',
     type: 'reuniao',
     description: 'Reunião mensal da equipe pedagógica',
-    location: 'Auditório',
+    location: 'Auditório - Barra',
     emailAlert: true,
     whatsappAlert: false,
     createdAt: '2024-03-15T12:00:00Z',
@@ -106,13 +108,19 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setEvents(prev => prev.filter(event => event.id !== id));
   }, []);
 
+  const getEventsForUnits = useCallback((units: Unit[]) => {
+    if (units.length === 0) return [];
+    return events.filter(event => units.includes(event.unit));
+  }, [events]);
+
   return (
     <ScheduleContext.Provider value={{
       events,
       isLoading,
       addEvent,
       updateEvent,
-      deleteEvent
+      deleteEvent,
+      getEventsForUnits
     }}>
       {children}
     </ScheduleContext.Provider>
