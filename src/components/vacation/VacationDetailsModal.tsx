@@ -19,8 +19,7 @@ import {
   Check, 
   X, 
   Edit,
-  Save,
-  Cancel
+  Save
 } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
