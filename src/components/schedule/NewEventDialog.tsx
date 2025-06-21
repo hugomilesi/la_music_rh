@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +30,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
+import { NewScheduleEventData } from '@/types/schedule';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -70,9 +70,19 @@ const NewEventDialog: React.FC = () => {
   });
 
   const onSubmit = (data: EventFormData) => {
-    const eventData = {
-      ...data,
+    // Transform the form data to match NewScheduleEventData type
+    const eventData: NewScheduleEventData = {
+      title: data.title,
+      employeeId: data.employeeId,
+      unit: data.unit,
       date: format(data.date, 'yyyy-MM-dd'),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      type: data.type,
+      description: data.description || undefined,
+      location: data.location || undefined,
+      emailAlert: data.emailAlert,
+      whatsappAlert: data.whatsappAlert,
     };
 
     addEvent(eventData);
