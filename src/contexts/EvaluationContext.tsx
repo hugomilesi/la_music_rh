@@ -78,11 +78,11 @@ export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   const updateEvaluation = useCallback((id: string, data: Partial<Evaluation>) => {
-    setEvaluations(prev => prev.map(eval => eval.id === id ? { ...eval, ...data } : eval));
+    setEvaluations(prev => prev.map(evaluation => evaluation.id === id ? { ...evaluation, ...data } : evaluation));
   }, []);
 
   const deleteEvaluation = useCallback((id: string) => {
-    setEvaluations(prev => prev.filter(eval => eval.id !== id));
+    setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
   }, []);
 
   return (
