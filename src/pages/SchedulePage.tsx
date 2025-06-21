@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,12 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
+import { ScheduleEvent } from '@/types/schedule';
 import NewEventDialog from '@/components/schedule/NewEventDialog';
+import EventDetailsModal from '@/components/schedule/EventDetailsModal';
+import EditEventDialog from '@/components/schedule/EditEventDialog';
 
 const SchedulePage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [showEventDetails, setShowEventDetails] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { events } = useSchedule();
   const { toast } = useToast();
 
@@ -100,11 +105,28 @@ const SchedulePage: React.FC = () => {
     });
   };
 
+  const handleEventClick = (event: ScheduleEvent) => {
+    setSelectedEvent(event);
+    setShowEventDetails(true);
+  };
+
   const handleEditEvent = (eventId: string) => {
-    toast({
-      title: 'Editar Evento',
-      description: 'Funcionalidade de edição será implementada em breve.',
-    });
+    const eventToEdit = events.find(event => event.id === eventId);
+    if (eventToEdit) {
+      setSelectedEvent(eventToEdit);
+      setShowEventDetails(false);
+      setShowEditDialog(true);
+    }
+  };
+
+  const handleCloseEventDetails = () => {
+    setShowEventDetails(false);
+    setSelectedEvent(null);
+  };
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+    setSelectedEvent(null);
   };
 
   const getEventsForDate = (date: Date) => {
@@ -256,7 +278,7 @@ const SchedulePage: React.FC = () => {
                           <div
                             key={event.id}
                             className="bg-blue-50 border border-blue-200 rounded p-2 text-xs cursor-pointer hover:bg-blue-100 transition-colors"
-                            onClick={() => handleEditEvent(event.id)}
+                            onClick={() => handleEventClick(event)}
                           >
                             <div className="font-medium">{event.title}</div>
                             <div className="text-gray-600">{event.employee}</div>
@@ -329,7 +351,7 @@ const SchedulePage: React.FC = () => {
                             <div
                               key={event.id}
                               className={`text-xs p-1 rounded cursor-pointer ${getEventTypeColor(event.type)}`}
-                              onClick={() => handleEditEvent(event.id)}
+                              onClick={() => handleEventClick(event)}
                             >
                               {event.title}
                             </div>
@@ -368,7 +390,7 @@ const SchedulePage: React.FC = () => {
                     <div 
                       key={event.id} 
                       className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                      onClick={() => handleEditEvent(event.id)}
+                      onClick={() => handleEventClick(event)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -412,6 +434,20 @@ const SchedulePage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <EventDetailsModal
+        event={selectedEvent}
+        isOpen={showEventDetails}
+        onClose={handleCloseEventDetails}
+        onEdit={handleEditEvent}
+      />
+
+      <EditEventDialog
+        event={selectedEvent}
+        isOpen={showEditDialog}
+        onClose={handleCloseEditDialog}
+      />
     </div>
   );
 };
