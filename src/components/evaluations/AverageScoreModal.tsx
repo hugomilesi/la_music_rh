@@ -125,7 +125,7 @@ export const AverageScoreModal: React.FC<AverageScoreModalProps> = ({
               <Card>
                 <CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-red-600">{scoreDistribution.poor}</p>
-                  <p className="text-sm text-gray-600">Baixo (<3.0)</p>
+                  <p className="text-sm text-gray-600">Baixo (&lt;3.0)</p>
                 </CardContent>
               </Card>
             </div>
