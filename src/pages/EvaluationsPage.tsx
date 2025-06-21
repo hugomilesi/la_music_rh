@@ -1,54 +1,20 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Filter, Search, Eye, Edit, Calendar, Star } from 'lucide-react';
-
-const mockEvaluations = [
-  {
-    id: 1,
-    employee: 'Ana Silva',
-    role: 'Professora de Piano',
-    unit: 'Centro',
-    type: 'Avaliação 360°',
-    period: '2024-T1',
-    score: 4.5,
-    status: 'Concluída',
-    date: '2024-03-15'
-  },
-  {
-    id: 2,
-    employee: 'Carlos Santos',
-    role: 'Coordenador',
-    unit: 'Zona Sul',
-    type: 'Auto Avaliação',
-    period: '2024-T1',
-    score: 4.2,
-    status: 'Pendente',
-    date: '2024-03-10'
-  },
-  {
-    id: 3,
-    employee: 'Maria Oliveira',
-    role: 'Professora de Violão',
-    unit: 'Norte',
-    type: 'Avaliação do Gestor',
-    period: '2024-T1',
-    score: 4.8,
-    status: 'Concluída',
-    date: '2024-03-12'
-  }
-];
+import { useEvaluations } from '@/contexts/EvaluationContext';
+import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
 
 const EvaluationsPage: React.FC = () => {
+  const { evaluations } = useEvaluations();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isNewEvaluationDialogOpen, setIsNewEvaluationDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -65,6 +31,14 @@ const EvaluationsPage: React.FC = () => {
     return 'text-red-600';
   };
 
+  // Calculate stats
+  const totalEvaluations = evaluations.length;
+  const completedEvaluations = evaluations.filter(e => e.status === 'Concluída').length;
+  const pendingEvaluations = evaluations.filter(e => e.status === 'Pendente').length;
+  const averageScore = evaluations.length > 0 
+    ? evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length 
+    : 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,7 +53,7 @@ const EvaluationsPage: React.FC = () => {
             <Calendar className="w-4 h-4 mr-2" />
             Ciclo 2024-T1
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setIsNewEvaluationDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Avaliação
           </Button>
@@ -93,7 +67,7 @@ const EvaluationsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Avaliações</p>
-                <p className="text-2xl font-bold">156</p>
+                <p className="text-2xl font-bold">{totalEvaluations}</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Star className="w-5 h-5 text-blue-600" />
@@ -107,7 +81,7 @@ const EvaluationsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Concluídas</p>
-                <p className="text-2xl font-bold text-green-600">142</p>
+                <p className="text-2xl font-bold text-green-600">{completedEvaluations}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <Star className="w-5 h-5 text-green-600" />
@@ -121,7 +95,7 @@ const EvaluationsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-yellow-600">14</p>
+                <p className="text-2xl font-bold text-yellow-600">{pendingEvaluations}</p>
               </div>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Star className="w-5 h-5 text-yellow-600" />
@@ -135,7 +109,7 @@ const EvaluationsPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Nota Média</p>
-                <p className="text-2xl font-bold text-purple-600">4.3</p>
+                <p className="text-2xl font-bold text-purple-600">{averageScore.toFixed(1)}</p>
               </div>
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Star className="w-5 h-5 text-purple-600" />
@@ -225,7 +199,7 @@ const EvaluationsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockEvaluations.map((evaluation) => (
+              {evaluations.map((evaluation) => (
                 <TableRow key={evaluation.id}>
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
@@ -259,6 +233,12 @@ const EvaluationsPage: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* New Evaluation Dialog */}
+      <NewEvaluationDialog
+        open={isNewEvaluationDialogOpen}
+        onOpenChange={setIsNewEvaluationDialogOpen}
+      />
     </div>
   );
 };
