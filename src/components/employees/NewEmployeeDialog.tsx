@@ -21,9 +21,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewEmployeeData } from '@/types/employee';
+import { Unit, UNITS } from '@/types/unit';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -32,6 +34,7 @@ const formSchema = z.object({
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().min(2, 'Departamento é obrigatório'),
   startDate: z.string().min(1, 'Data de início é obrigatória'),
+  units: z.array(z.nativeEnum(Unit)).min(1, 'Selecione pelo menos uma unidade'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -57,12 +60,12 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
       position: '',
       department: '',
       startDate: '',
+      units: [],
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Explicitly cast the validated form data to NewEmployeeData
       const employeeData: NewEmployeeData = {
         name: data.name,
         email: data.email,
@@ -70,6 +73,7 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
         position: data.position,
         department: data.department,
         startDate: data.startDate,
+        units: data.units,
       };
       
       addEmployee(employeeData);
@@ -185,6 +189,60 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="units"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Unidades</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Selecione as unidades onde o colaborador irá trabalhar
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {UNITS.map((unit) => (
+                      <FormField
+                        key={unit.id}
+                        control={form.control}
+                        name="units"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={unit.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(unit.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, unit.id])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== unit.id
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${unit.color}`}></div>
+                                <FormLabel className="font-normal">
+                                  {unit.name}
+                                </FormLabel>
+                              </div>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button
