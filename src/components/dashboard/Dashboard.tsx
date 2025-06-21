@@ -1,9 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, TrendingUp, Calendar, AlertTriangle, Award, Clock } from 'lucide-react';
 import { StatCard } from './StatCard';
+import { BirthdayCard } from './BirthdayCard';
+import { AlertCard } from './AlertCard';
+import { KPIModal } from './KPIModal';
 
 export const Dashboard: React.FC = () => {
+  const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+
+  const handleStatCardClick = (type: string) => {
+    setSelectedKPI(type);
+  };
+
+  const closeModal = () => {
+    setSelectedKPI(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -29,6 +42,7 @@ export const Dashboard: React.FC = () => {
           icon={Users}
           trend={{ value: 8, isPositive: true }}
           color="blue"
+          onClick={() => handleStatCardClick('employees')}
         />
         
         <StatCard
@@ -38,6 +52,7 @@ export const Dashboard: React.FC = () => {
           icon={TrendingUp}
           trend={{ value: -1.2, isPositive: true }}
           color="green"
+          onClick={() => handleStatCardClick('turnover')}
         />
         
         <StatCard
@@ -47,6 +62,7 @@ export const Dashboard: React.FC = () => {
           icon={Award}
           trend={{ value: 0.8, isPositive: true }}
           color="purple"
+          onClick={() => handleStatCardClick('nps')}
         />
         
         <StatCard
@@ -55,6 +71,7 @@ export const Dashboard: React.FC = () => {
           subtitle="Docs vencidos: 7 | Avaliações: 5"
           icon={AlertTriangle}
           color="orange"
+          onClick={() => handleStatCardClick('alerts')}
         />
         
         <StatCard
@@ -63,6 +80,7 @@ export const Dashboard: React.FC = () => {
           subtitle="Novas contratações"
           icon={Users}
           color="green"
+          onClick={() => handleStatCardClick('admissions')}
         />
         
         <StatCard
@@ -71,6 +89,7 @@ export const Dashboard: React.FC = () => {
           subtitle="Vencimento próximo"
           icon={Calendar}
           color="orange"
+          onClick={() => handleStatCardClick('evaluations')}
         />
         
         <StatCard
@@ -79,6 +98,7 @@ export const Dashboard: React.FC = () => {
           subtitle="Esta semana"
           icon={Clock}
           color="blue"
+          onClick={() => handleStatCardClick('hours')}
         />
         
         <StatCard
@@ -87,67 +107,22 @@ export const Dashboard: React.FC = () => {
           subtitle="Este mês"
           icon={AlertTriangle}
           color="red"
+          onClick={() => handleStatCardClick('incidents')}
         />
       </div>
 
-      {/* Quick Actions */}
+      {/* Interactive Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Aniversários Hoje</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                JL
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">João Lima</p>
-                <p className="text-sm text-gray-600">Professor • Campo Grande</p>
-              </div>
-              <span className="text-2xl">🎉</span>
-            </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
-                AS
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">Ana Silva</p>
-                <p className="text-sm text-gray-600">Coordenação • Recreio</p>
-              </div>
-              <span className="text-2xl">🎂</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Alertas Importantes</h3>
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
-              <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-900">Documentos Vencidos</p>
-                <p className="text-sm text-red-700">7 colaboradores com docs em atraso</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border-l-4 border-orange-500">
-              <Calendar className="w-5 h-5 text-orange-500 mt-0.5" />
-              <div>
-                <p className="font-medium text-orange-900">Avaliações Próximas</p>
-                <p className="text-sm text-orange-700">15 avaliações vencem em 7 dias</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-              <Award className="w-5 h-5 text-blue-500 mt-0.5" />
-              <div>
-                <p className="font-medium text-blue-900">Reconhecimentos</p>
-                <p className="text-sm text-blue-700">3 colaboradores se destacaram</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BirthdayCard />
+        <AlertCard />
       </div>
+
+      {/* KPI Modal */}
+      <KPIModal
+        isOpen={!!selectedKPI}
+        onClose={closeModal}
+        type={selectedKPI as any}
+      />
     </div>
   );
 };
