@@ -49,6 +49,41 @@ const mockEvaluations: Evaluation[] = [
     score: 4.8,
     status: 'Concluída',
     date: '2024-03-12'
+  },
+  {
+    id: '4',
+    employeeId: '4',
+    employee: 'Felipe Carvalho',
+    role: 'Professor de Bateria',
+    unit: 'Campo Grande',
+    type: 'Coffee Connection',
+    period: '2024',
+    score: 0,
+    status: 'Pendente',
+    date: '2024-03-25',
+    meetingDate: '2024-03-25',
+    meetingTime: '14:00',
+    location: 'Café Central - Campo Grande',
+    topics: ['Desenvolvimento de carreira', 'Satisfação no trabalho'],
+    confidential: false
+  },
+  {
+    id: '5',
+    employeeId: '5',
+    employee: 'Luana Vieira',
+    role: 'Professora de Canto',
+    unit: 'Barra',
+    type: 'Coffee Connection',
+    period: '2024',
+    score: 4.6,
+    status: 'Concluída',
+    date: '2024-03-20',
+    meetingDate: '2024-03-20',
+    meetingTime: '10:30',
+    location: 'Sala de Reuniões - Barra',
+    topics: ['Feedback sobre liderança', 'Ideias de melhoria'],
+    followUpActions: 'Implementar sugestões de melhoria no processo pedagógico',
+    confidential: true
   }
 ];
 

@@ -1,12 +1,15 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Eye, Edit, Calendar, Star } from 'lucide-react';
+import { Plus, Filter, Search, Eye, Edit, Calendar, Star, Coffee } from 'lucide-react';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
+import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
+import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
 
 const EvaluationsPage: React.FC = () => {
   const { evaluations } = useEvaluations();
@@ -15,6 +18,7 @@ const EvaluationsPage: React.FC = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isNewEvaluationDialogOpen, setIsNewEvaluationDialogOpen] = useState(false);
+  const [isCoffeeConnectionDialogOpen, setIsCoffeeConnectionDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -23,6 +27,13 @@ const EvaluationsPage: React.FC = () => {
       'Em Andamento': 'bg-blue-100 text-blue-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getTypeBadge = (type: string) => {
+    if (type === 'Coffee Connection') {
+      return 'bg-amber-100 text-amber-800';
+    }
+    return 'bg-blue-100 text-blue-800';
   };
 
   const getScoreColor = (score: number) => {
@@ -35,6 +46,7 @@ const EvaluationsPage: React.FC = () => {
   const totalEvaluations = evaluations.length;
   const completedEvaluations = evaluations.filter(e => e.status === 'Concluída').length;
   const pendingEvaluations = evaluations.filter(e => e.status === 'Pendente').length;
+  const coffeeConnections = evaluations.filter(e => e.type === 'Coffee Connection').length;
   const averageScore = evaluations.length > 0 
     ? evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length 
     : 0;
@@ -59,6 +71,9 @@ const EvaluationsPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Coffee Connection Card */}
+      <CoffeeConnectionCard onScheduleNew={() => setIsCoffeeConnectionDialogOpen(true)} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -94,11 +109,11 @@ const EvaluationsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-yellow-600">{pendingEvaluations}</p>
+                <p className="text-sm text-gray-600">Coffee Connection</p>
+                <p className="text-2xl font-bold text-amber-600">{coffeeConnections}</p>
               </div>
-              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-yellow-600" />
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Coffee className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -156,6 +171,7 @@ const EvaluationsPage: React.FC = () => {
                 <option value="360">Avaliação 360°</option>
                 <option value="auto">Auto Avaliação</option>
                 <option value="gestor">Avaliação do Gestor</option>
+                <option value="coffee">Coffee Connection</option>
               </select>
 
               <select 
@@ -204,12 +220,21 @@ const EvaluationsPage: React.FC = () => {
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
                   <TableCell>{evaluation.unit}</TableCell>
-                  <TableCell>{evaluation.type}</TableCell>
+                  <TableCell>
+                    <Badge className={getTypeBadge(evaluation.type)}>
+                      {evaluation.type === 'Coffee Connection' && <Coffee className="w-3 h-3 mr-1" />}
+                      {evaluation.type}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{evaluation.period}</TableCell>
                   <TableCell>
-                    <span className={`font-bold ${getScoreColor(evaluation.score)}`}>
-                      {evaluation.score.toFixed(1)}
-                    </span>
+                    {evaluation.type === 'Coffee Connection' && evaluation.status === 'Pendente' ? (
+                      <span className="text-gray-500">-</span>
+                    ) : (
+                      <span className={`font-bold ${getScoreColor(evaluation.score)}`}>
+                        {evaluation.score.toFixed(1)}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusBadge(evaluation.status)}>
@@ -234,10 +259,15 @@ const EvaluationsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* New Evaluation Dialog */}
+      {/* Dialogs */}
       <NewEvaluationDialog
         open={isNewEvaluationDialogOpen}
         onOpenChange={setIsNewEvaluationDialogOpen}
+      />
+      
+      <CoffeeConnectionDialog
+        open={isCoffeeConnectionDialogOpen}
+        onOpenChange={setIsCoffeeConnectionDialogOpen}
       />
     </div>
   );
