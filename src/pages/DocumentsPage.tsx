@@ -10,7 +10,7 @@ import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clo
 const mockDocuments = [
   {
     id: 1,
-    employee: 'Ana Silva',
+    employee: 'Aline Cristina Pessanha Faria',
     document: 'Contrato de Trabalho',
     type: 'obrigatorio',
     uploadDate: '2024-01-15',
@@ -19,7 +19,7 @@ const mockDocuments = [
   },
   {
     id: 2,
-    employee: 'Carlos Santos',
+    employee: 'Felipe Elias Carvalho',
     document: 'Atestado Médico',
     type: 'temporario',
     uploadDate: '2024-03-10',
@@ -28,7 +28,7 @@ const mockDocuments = [
   },
   {
     id: 3,
-    employee: 'Maria Oliveira',
+    employee: 'Luciano Nazario de Oliveira',
     document: 'Carteira de Trabalho',
     type: 'obrigatorio',
     uploadDate: '2024-02-05',
@@ -37,7 +37,7 @@ const mockDocuments = [
   },
   {
     id: 4,
-    employee: 'João Pereira',
+    employee: 'Fabio Magarinos da Silva',
     document: 'Certificado de Curso',
     type: 'complementar',
     uploadDate: '2024-03-01',

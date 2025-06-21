@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal } from 'lucide-react';
 
 const mockRanking = [
-  { id: 1, name: 'Ana Silva', unit: 'Centro', fideliza: 45, matriculador: 12, professor: 38, total: 95 },
-  { id: 2, name: 'Carlos Santos', unit: 'Zona Sul', fideliza: 42, matriculador: 15, professor: 35, total: 92 },
-  { id: 3, name: 'Maria Oliveira', unit: 'Norte', fideliza: 38, matriculador: 10, professor: 42, total: 90 }
+  { id: 1, name: 'Aline Cristina Pessanha Faria', unit: 'Campo Grande', fideliza: 45, matriculador: 12, professor: 38, total: 95 },
+  { id: 2, name: 'Felipe Elias Carvalho', unit: 'Campo Grande', fideliza: 42, matriculador: 15, professor: 35, total: 92 },
+  { id: 3, name: 'Igor Esteves Alves Baiao', unit: 'Barra', fideliza: 38, matriculador: 10, professor: 42, total: 90 }
 ];
 
 const RecognitionPage: React.FC = () => {
@@ -171,21 +171,21 @@ const RecognitionPage: React.FC = () => {
           <div className="space-y-4">
             {[
               {
-                employee: 'Ana Silva',
+                employee: 'Aline Cristina Pessanha Faria',
                 achievement: 'Meta de retenção superada',
                 program: 'Fideliza+',
                 points: 10,
                 date: '2024-03-15'
               },
               {
-                employee: 'Carlos Santos',
+                employee: 'Felipe Elias Carvalho',
                 achievement: '5 matrículas em uma semana',
                 program: 'Matriculador+',
                 points: 15,
                 date: '2024-03-14'
               },
               {
-                employee: 'Maria Oliveira',
+                employee: 'Luana de Menezes Vieira',
                 achievement: 'Avaliação excepcional dos alunos',
                 program: 'Professor+',
                 points: 12,

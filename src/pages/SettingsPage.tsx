@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +8,15 @@ import { Plus, Edit, Trash2, Download, Shield, Users, Settings, FileText } from 
 
 const mockUsers = [
   { id: 1, name: 'Admin Geral', email: 'admin@lamusic.com', role: 'admin', lastAccess: '2024-03-21 10:30' },
-  { id: 2, name: 'Ana Coordenadora', email: 'ana@lamusic.com', role: 'coordenador', lastAccess: '2024-03-21 09:15' },
-  { id: 3, name: 'Carlos Gerente', email: 'carlos@lamusic.com', role: 'gerente', lastAccess: '2024-03-20 16:45' }
+  { id: 2, name: 'Aline Cristina Pessanha Faria', email: 'aline.faria@lamusic.com', role: 'coordenador', lastAccess: '2024-03-21 09:15' },
+  { id: 3, name: 'Felipe Elias Carvalho', email: 'felipe.carvalho@lamusic.com', role: 'professor', lastAccess: '2024-03-20 16:45' }
 ];
 
 const mockRoles = [
-  { id: 1, name: 'Professor', department: 'Pedagógico', employees: 45 },
-  { id: 2, name: 'Coordenador', department: 'Gestão', employees: 8 },
+  { id: 1, name: 'Professor', department: 'Educação Musical', employees: 45 },
+  { id: 2, name: 'Coordenador', department: 'Coordenação', employees: 8 },
   { id: 3, name: 'Recepcionista', department: 'Atendimento', employees: 12 },
-  { id: 4, name: 'Gerente', department: 'Gestão', employees: 3 }
+  { id: 4, name: 'Professor de Canto', department: 'Educação Musical', employees: 3 }
 ];
 
 const SettingsPage: React.FC = () => {

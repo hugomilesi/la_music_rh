@@ -10,32 +10,32 @@ import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield } from
 const mockIncidents = [
   {
     id: 1,
-    employee: 'João Silva',
+    employee: 'Fabio Magarinos da Silva',
     type: 'Atraso',
     severity: 'leve',
     description: 'Chegou 30 minutos atrasado sem justificativa',
     date: '2024-03-15',
-    reporter: 'Ana Coordenadora',
+    reporter: 'Aline Cristina Pessanha Faria',
     status: 'ativo'
   },
   {
     id: 2,
-    employee: 'Maria Santos',
+    employee: 'Luciano Nazario de Oliveira',
     type: 'Falta Injustificada',
     severity: 'moderado',
     description: 'Não compareceu ao trabalho sem comunicação prévia',
     date: '2024-03-10',
-    reporter: 'Carlos Gerente',
+    reporter: 'Aline Cristina Pessanha Faria',
     status: 'resolvido'
   },
   {
     id: 3,
-    employee: 'Pedro Oliveira',
+    employee: 'Felipe Elias Carvalho',
     type: 'Comportamento Inadequado',
     severity: 'grave',
     description: 'Atendimento inadequado aos alunos relatado por pais',
     date: '2024-03-08',
-    reporter: 'Ana Coordenadora',
+    reporter: 'Aline Cristina Pessanha Faria',
     status: 'ativo'
   }
 ];

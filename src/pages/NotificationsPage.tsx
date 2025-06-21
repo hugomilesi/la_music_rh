@@ -18,10 +18,10 @@ const mockNotifications = [
   },
   {
     id: 2,
-    title: 'Aniversário - Ana Silva',
-    message: 'Hoje é aniversário da Ana Silva! Parabéns! 🎉',
+    title: 'Aniversário - Aline Cristina Pessanha Faria',
+    message: 'Hoje é aniversário da Aline! Parabéns! 🎉',
     type: 'aniversario',
-    recipients: 'Equipe Centro',
+    recipients: 'Equipe Campo Grande',
     channel: 'whatsapp',
     status: 'programado',
     date: '2024-03-21'
