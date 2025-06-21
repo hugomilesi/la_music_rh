@@ -28,7 +28,7 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
   const { updateEvaluation } = useEvaluations();
   const [formData, setFormData] = useState({
     score: 0,
-    status: 'Pendente' as const,
+    status: 'Pendente' as 'Concluída' | 'Pendente' | 'Em Andamento',
     followUpActions: '',
     topics: [] as string[],
     meetingDate: '',
@@ -112,7 +112,7 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
                 id="status"
                 className="w-full px-3 py-2 border border-gray-200 rounded-md"
                 value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Concluída' | 'Pendente' | 'Em Andamento' }))}
               >
                 <option value="Pendente">Pendente</option>
                 <option value="Em Andamento">Em Andamento</option>

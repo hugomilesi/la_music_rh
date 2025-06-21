@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Coffee, Clock, MapPin } from 'lucide-react';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
+import { Unit } from '@/types/unit';
 
 export const CoffeeConnectionScheduleIntegration: React.FC = () => {
   const { getCoffeeConnectionSchedule } = useEvaluations();
@@ -23,15 +24,17 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
       endDate.setHours(startDate.getHours() + 1); // 1 hour duration
 
       const newEvent = {
-        id: `coffee-${connection.id}`,
         title: `Coffee Connection - ${connection.employee}`,
-        start: startDate.toISOString().slice(0, 16),
-        end: endDate.toISOString().slice(0, 16),
-        type: 'coffee-connection' as const,
+        employeeId: connection.employeeId,
+        unit: Unit.CAMPO_GRANDE, // Default unit, could be mapped from connection data
+        date: connection.meetingDate,
+        startTime: connection.meetingTime,
+        endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
+        type: 'avaliacao' as const, // Coffee Connection maps to evaluation type
         description: `Coffee Connection com ${connection.employee}\nLocal: ${connection.location || 'A definir'}\nTópicos: ${connection.topics?.join(', ') || 'Conversa geral'}`,
-        participants: [connection.employee],
         location: connection.location || '',
-        category: 'evaluation'
+        emailAlert: true,
+        whatsappAlert: false
       };
 
       addEvent(newEvent);
