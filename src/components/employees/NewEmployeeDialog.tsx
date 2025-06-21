@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
+import { NewEmployeeData } from '@/types/employee';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -61,7 +62,17 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      addEmployee(data);
+      // Explicitly cast the validated form data to NewEmployeeData
+      const employeeData: NewEmployeeData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        position: data.position,
+        department: data.department,
+        startDate: data.startDate,
+      };
+      
+      addEmployee(employeeData);
       toast({
         title: 'Colaborador adicionado',
         description: 'O novo colaborador foi cadastrado com sucesso.',
