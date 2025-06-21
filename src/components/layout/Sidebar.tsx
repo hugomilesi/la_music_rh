@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -13,7 +12,8 @@ import {
   UserCheck,
   Clock,
   MessageSquare,
-  Shield
+  Shield,
+  Plane
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +41,12 @@ const menuItems = [
     icon: Calendar,
     href: '/schedule',
     description: 'Plantões e escalas'
+  },
+  {
+    title: 'Férias',
+    icon: Plane,
+    href: '/vacation',
+    description: 'Controle de férias'
   },
   {
     title: 'Documentos',
