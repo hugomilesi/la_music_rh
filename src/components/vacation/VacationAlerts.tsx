@@ -3,11 +3,15 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, Eye } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { VacationAlert } from '@/types/vacation';
 
-export const VacationAlerts: React.FC = () => {
+interface VacationAlertsProps {
+  onViewAlertDetails?: (alertId: string) => void;
+}
+
+export const VacationAlerts: React.FC<VacationAlertsProps> = ({ onViewAlertDetails }) => {
   const { vacationAlerts } = useVacation();
 
   const getAlertIcon = (type: VacationAlert['type']) => {
@@ -72,10 +76,10 @@ export const VacationAlerts: React.FC = () => {
 
       <div className="space-y-3">
         {vacationAlerts.map((alert) => (
-          <Card key={alert.id}>
+          <Card key={alert.id} className="border-l-4 border-l-orange-400">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 flex-1">
                   {getAlertIcon(alert.type)}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -92,7 +96,13 @@ export const VacationAlerts: React.FC = () => {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => onViewAlertDetails && onViewAlertDetails(alert.id)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
                     Ver detalhes
                   </Button>
                 </div>

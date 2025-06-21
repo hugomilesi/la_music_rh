@@ -13,9 +13,24 @@ import { VacationRequestsList } from '@/components/vacation/VacationRequestsList
 import { VacationCalendar } from '@/components/vacation/VacationCalendar';
 import { VacationAlerts } from '@/components/vacation/VacationAlerts';
 import { VacationStats } from '@/components/vacation/VacationStats';
+import { VacationStatsModal } from '@/components/vacation/VacationStatsModal';
+import { VacationDetailsModal } from '@/components/vacation/VacationDetailsModal';
+import { AlertDetailsModal } from '@/components/vacation/AlertDetailsModal';
 
 const VacationPage = () => {
   const [showNewVacationDialog, setShowNewVacationDialog] = useState(false);
+  const [statsModal, setStatsModal] = useState<{
+    isOpen: boolean;
+    type: 'total' | 'active' | 'pending' | 'alerts' | null;
+  }>({ isOpen: false, type: null });
+  const [detailsModal, setDetailsModal] = useState<{
+    isOpen: boolean;
+    requestId: string | null;
+  }>({ isOpen: false, requestId: null });
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    alertId: string | null;
+  }>({ isOpen: false, alertId: null });
   
   // Add error handling for contexts
   const vacation = useVacation();
@@ -82,6 +97,24 @@ const VacationPage = () => {
     );
   }
 
+  const handleStatClick = (type: 'total' | 'active' | 'pending' | 'alerts') => {
+    setStatsModal({ isOpen: true, type });
+  };
+
+  const handleViewDetails = (requestId: string) => {
+    setDetailsModal({ isOpen: true, requestId });
+    setStatsModal({ isOpen: false, type: null });
+  };
+
+  const handleViewAlertDetails = (alertId: string) => {
+    setAlertModal({ isOpen: true, alertId });
+  };
+
+  const handleViewVacationFromAlert = (requestId: string) => {
+    setAlertModal({ isOpen: false, alertId: null });
+    setDetailsModal({ isOpen: true, requestId });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -97,8 +130,8 @@ const VacationPage = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <VacationStats />
+      {/* Interactive Stats Cards */}
+      <VacationStats onStatClick={handleStatClick} />
 
       {/* Alerts */}
       {vacationAlerts && vacationAlerts.length > 0 && (
@@ -133,7 +166,7 @@ const VacationPage = () => {
         </TabsList>
 
         <TabsContent value="requests">
-          <VacationRequestsList />
+          <VacationRequestsList onViewDetails={handleViewDetails} />
         </TabsContent>
 
         <TabsContent value="calendar">
@@ -141,7 +174,7 @@ const VacationPage = () => {
         </TabsContent>
 
         <TabsContent value="alerts">
-          <VacationAlerts />
+          <VacationAlerts onViewAlertDetails={handleViewAlertDetails} />
         </TabsContent>
       </Tabs>
 
@@ -198,9 +231,30 @@ const VacationPage = () => {
         </Card>
       </div>
 
+      {/* Modals */}
       <NewVacationDialog 
         open={showNewVacationDialog}
         onOpenChange={setShowNewVacationDialog}
+      />
+
+      <VacationStatsModal
+        isOpen={statsModal.isOpen}
+        onClose={() => setStatsModal({ isOpen: false, type: null })}
+        type={statsModal.type}
+        onViewDetails={handleViewDetails}
+      />
+
+      <VacationDetailsModal
+        isOpen={detailsModal.isOpen}
+        onClose={() => setDetailsModal({ isOpen: false, requestId: null })}
+        requestId={detailsModal.requestId}
+      />
+
+      <AlertDetailsModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, alertId: null })}
+        alertId={alertModal.alertId}
+        onViewVacationDetails={handleViewVacationFromAlert}
       />
     </div>
   );

@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 
-export const VacationStats: React.FC = () => {
+interface VacationStatsProps {
+  onStatClick?: (type: 'total' | 'active' | 'pending' | 'alerts') => void;
+}
+
+export const VacationStats: React.FC<VacationStatsProps> = ({ onStatClick }) => {
   const { 
     vacationRequests, 
     getActiveVacations, 
@@ -22,28 +26,32 @@ export const VacationStats: React.FC = () => {
       value: totalRequests,
       icon: Calendar,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
+      bgColor: 'bg-blue-100',
+      type: 'total' as const
     },
     {
       title: 'Em Férias Agora',
       value: activeVacations.length,
       icon: Users,
       color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-green-100',
+      type: 'active' as const
     },
     {
       title: 'Pendentes',
       value: pendingRequests.length,
       icon: Clock,
       color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
+      bgColor: 'bg-orange-100',
+      type: 'pending' as const
     },
     {
       title: 'Alertas',
       value: vacationAlerts.length,
       icon: AlertTriangle,
       color: 'text-red-600',
-      bgColor: 'bg-red-100'
+      bgColor: 'bg-red-100',
+      type: 'alerts' as const
     }
   ];
 
@@ -52,7 +60,13 @@ export const VacationStats: React.FC = () => {
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title}>
+          <Card 
+            key={stat.title}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+              onStatClick ? 'hover:bg-gray-50' : ''
+            }`}
+            onClick={() => onStatClick && onStatClick(stat.type)}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>

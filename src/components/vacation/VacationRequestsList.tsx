@@ -23,7 +23,11 @@ import { VacationRequest } from '@/types/vacation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export const VacationRequestsList: React.FC = () => {
+interface VacationRequestsListProps {
+  onViewDetails?: (requestId: string) => void;
+}
+
+export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onViewDetails }) => {
   const { 
     vacationRequests, 
     approveVacationRequest, 
@@ -182,19 +186,16 @@ export const VacationRequestsList: React.FC = () => {
                       </>
                     )}
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver detalhes
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* View Details Button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onViewDetails && onViewDetails(request.id)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Detalhes
+                    </Button>
                   </div>
                 </div>
               </CardContent>
