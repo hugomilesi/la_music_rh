@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Gift, Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Gift, Calendar, Users, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 
 interface Birthday {
   id: string;
@@ -127,6 +127,27 @@ export const BirthdayCard: React.FC = () => {
     ));
   };
 
+  const getCurrentMonthBirthdays = () => {
+    const today = new Date();
+    return monthlyBirthdays.filter(birthday => 
+      birthday.date.getMonth() === today.getMonth() &&
+      birthday.date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const getUpcomingMonthlyBirthdays = () => {
+    const today = new Date();
+    const currentMonthBirthdays = getCurrentMonthBirthdays();
+    
+    // Filter out today's birthdays and get upcoming ones
+    const upcoming = currentMonthBirthdays
+      .filter(birthday => birthday.date.getDate() > today.getDate())
+      .sort((a, b) => a.date.getDate() - b.date.getDate())
+      .slice(0, 4); // Show only next 4 birthdays
+    
+    return upcoming;
+  };
+
   const getFilteredMonthlyBirthdays = () => {
     return monthlyBirthdays.filter(birthday => 
       birthday.date.getMonth() === currentMonth.getMonth() &&
@@ -195,6 +216,9 @@ export const BirthdayCard: React.FC = () => {
 
   const filteredMonthlyBirthdays = getFilteredMonthlyBirthdays();
   const weeklyBirthdays = organizeByWeeks(filteredMonthlyBirthdays);
+  const currentMonthBirthdays = getCurrentMonthBirthdays();
+  const upcomingMonthlyBirthdays = getUpcomingMonthlyBirthdays();
+  const totalMonthlyBirthdays = currentMonthBirthdays.length;
 
   return (
     <>
@@ -202,11 +226,12 @@ export const BirthdayCard: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-purple-600" />
-            Aniversários Hoje
-            <Badge variant="secondary">{birthdays.length}</Badge>
+            Aniversários
+            <Badge variant="secondary">{birthdays.length} hoje</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Today's Birthdays */}
           <div className="space-y-3">
             {birthdays.map((birthday) => (
               <div key={birthday.id} className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
@@ -228,6 +253,43 @@ export const BirthdayCard: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Monthly Birthdays Preview */}
+          {upcomingMonthlyBirthdays.length > 0 && (
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium text-gray-900">Este mês</span>
+                  <Badge variant="outline" className="text-blue-600 border-blue-600">
+                    {totalMonthlyBirthdays} total
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 p-0 h-auto">
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {upcomingMonthlyBirthdays.map((birthday) => (
+                  <div key={birthday.id} className="flex-shrink-0 min-w-[120px] p-2 bg-blue-50 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-6 h-6 bg-gradient-to-r ${birthday.gradient} rounded-full flex items-center justify-center text-white text-xs font-semibold`}>
+                        {birthday.initials}
+                      </div>
+                      <span className="text-xs font-medium text-gray-900 truncate">
+                        {birthday.name.split(' ')[0]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 truncate">{birthday.position}</p>
+                    <p className="text-xs text-blue-600 font-medium">
+                      {birthday.date.getDate()}/{birthday.date.getMonth() + 1}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
