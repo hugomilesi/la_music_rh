@@ -11,6 +11,9 @@ import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialo
 import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
 import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
 import { InteractiveStatsCards } from '@/components/evaluations/InteractiveStatsCards';
+import { CoffeeConnectionScheduleIntegration } from '@/components/evaluations/CoffeeConnectionScheduleIntegration';
+import { EditEvaluationDialog } from '@/components/evaluations/EditEvaluationDialog';
+import { Evaluation } from '@/types/evaluation';
 
 const EvaluationsPage: React.FC = () => {
   console.log('EvaluationsPage: Component rendering...');
@@ -24,6 +27,7 @@ const EvaluationsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isNewEvaluationDialogOpen, setIsNewEvaluationDialogOpen] = useState(false);
   const [isCoffeeConnectionDialogOpen, setIsCoffeeConnectionDialogOpen] = useState(false);
+  const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -75,6 +79,9 @@ const EvaluationsPage: React.FC = () => {
 
       {/* Interactive Stats Cards */}
       <InteractiveStatsCards />
+
+      {/* Coffee Connection Schedule Integration */}
+      <CoffeeConnectionScheduleIntegration />
 
       {/* Filters */}
       <Card>
@@ -189,7 +196,11 @@ const EvaluationsPage: React.FC = () => {
                       <Button variant="ghost" size="sm">
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setEditingEvaluation(evaluation)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                     </div>
@@ -210,6 +221,12 @@ const EvaluationsPage: React.FC = () => {
       <CoffeeConnectionDialog
         open={isCoffeeConnectionDialogOpen}
         onOpenChange={setIsCoffeeConnectionDialogOpen}
+      />
+
+      <EditEvaluationDialog
+        open={!!editingEvaluation}
+        onOpenChange={(open) => !open && setEditingEvaluation(null)}
+        evaluation={editingEvaluation}
       />
     </div>
   );
