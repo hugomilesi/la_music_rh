@@ -77,14 +77,14 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
           <div>
             <Label htmlFor="employee">Colaborador</Label>
             <Select
-              value={tempFilter.employee}
-              onValueChange={(value) => setTempFilter(prev => ({ ...prev, employee: value }))}
+              value={tempFilter.employee || "all"}
+              onValueChange={(value) => setTempFilter(prev => ({ ...prev, employee: value === "all" ? "" : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os colaboradores" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os colaboradores</SelectItem>
+                <SelectItem value="all">Todos os colaboradores</SelectItem>
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
                     {employee.name}
