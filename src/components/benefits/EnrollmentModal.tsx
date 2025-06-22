@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,10 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     if (newDependent.name && newDependent.relationship && newDependent.birthDate) {
       const dependent: Dependent = {
         id: Date.now().toString(),
-        ...newDependent,
+        name: newDependent.name,
+        relationship: newDependent.relationship as 'spouse' | 'child' | 'parent' | 'other',
+        birthDate: newDependent.birthDate,
+        documentNumber: newDependent.documentNumber,
         isActive: true
       };
       setDependents([...dependents, dependent]);
