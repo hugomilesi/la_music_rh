@@ -1,10 +1,12 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal } from 'lucide-react';
+import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye } from 'lucide-react';
+import { CriteriaModal } from '@/components/recognition/CriteriaModal';
+import { recognitionPrograms } from '@/data/recognitionMockData';
+import { RecognitionProgram } from '@/types/recognition';
 
 const mockRanking = [
   { id: 1, name: 'Aline Cristina Pessanha Faria', unit: 'Campo Grande', fideliza: 45, matriculador: 12, professor: 38, total: 95 },
@@ -13,6 +15,17 @@ const mockRanking = [
 ];
 
 const RecognitionPage: React.FC = () => {
+  const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
+  const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
+
+  const handleViewCriteria = (programId: string) => {
+    const program = recognitionPrograms.find(p => p.id === programId);
+    if (program) {
+      setSelectedProgram(program);
+      setCriteriaModalOpen(true);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -55,6 +68,15 @@ const RecognitionPage: React.FC = () => {
                 <span className="font-bold text-blue-600">45 ⭐</span>
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-4"
+              onClick={() => handleViewCriteria('fideliza')}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Ver Critérios
+            </Button>
           </CardContent>
         </Card>
 
@@ -77,6 +99,15 @@ const RecognitionPage: React.FC = () => {
                 <span className="font-bold text-green-600">15 📚</span>
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-4"
+              onClick={() => handleViewCriteria('matriculador')}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Ver Critérios
+            </Button>
           </CardContent>
         </Card>
 
@@ -99,6 +130,15 @@ const RecognitionPage: React.FC = () => {
                 <span className="font-bold text-purple-600">42 ⭐</span>
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-4"
+              onClick={() => handleViewCriteria('professor')}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Ver Critérios
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -214,6 +254,19 @@ const RecognitionPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Criteria Modal */}
+      {selectedProgram && (
+        <CriteriaModal
+          open={criteriaModalOpen}
+          onOpenChange={setCriteriaModalOpen}
+          program={selectedProgram}
+          onSaveEvaluation={(evaluations) => {
+            console.log('Avaliação salva:', evaluations);
+            // Here you would typically save to a backend or state management
+          }}
+        />
+      )}
     </div>
   );
 };
