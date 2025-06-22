@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Calendar } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Calendar, Users, Building } from 'lucide-react';
 import { useNPS } from '@/contexts/NPSContext';
 import { NPSQuestion } from '@/types/nps';
 
@@ -20,13 +22,16 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
   open,
   onOpenChange
 }) => {
-  const { createSurvey } = useNPS();
+  const { createSurvey, departments } = useNPS();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     startDate: '',
     endDate: '',
+    surveyType: 'nps' as 'nps' | 'satisfaction'
   });
+
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
   const [questions, setQuestions] = useState<NPSQuestion[]>([
     {
@@ -37,6 +42,30 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
     }
   ]);
 
+  const handleSurveyTypeChange = (type: 'nps' | 'satisfaction') => {
+    setFormData({ ...formData, surveyType: type });
+    
+    // Atualizar a primeira pergunta baseada no tipo
+    const defaultQuestion = type === 'nps' 
+      ? 'Em uma escala de 0 a 10, o quanto você recomendaria nossa empresa como um lugar para trabalhar?'
+      : 'Em uma escala de 0 a 5, qual seu nível de satisfação com a empresa?';
+    
+    setQuestions([{
+      id: 'q1',
+      type: type,
+      question: defaultQuestion,
+      required: true
+    }]);
+  };
+
+  const handleDepartmentToggle = (departmentId: string) => {
+    setSelectedDepartments(prev => 
+      prev.includes(departmentId)
+        ? prev.filter(id => id !== departmentId)
+        : [...prev, departmentId]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -45,12 +74,18 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
       return;
     }
 
+    if (selectedDepartments.length === 0) {
+      alert('Por favor, selecione pelo menos um departamento');
+      return;
+    }
+
     const newSurvey = {
       ...formData,
       questions,
       status: 'draft' as const,
       responses: [],
-      targetEmployees: ['emp1', 'emp2', 'emp3', 'emp4', 'emp5'] // Mock - viria do contexto de colaboradores
+      targetEmployees: [], // Seria preenchido baseado nos departamentos selecionados
+      targetDepartments: selectedDepartments
     };
 
     createSurvey(newSurvey);
@@ -61,7 +96,9 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
       description: '',
       startDate: '',
       endDate: '',
+      surveyType: 'nps'
     });
+    setSelectedDepartments([]);
     setQuestions([{
       id: 'q1',
       type: 'nps',
@@ -101,7 +138,7 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
-            Nova Pesquisa NPS
+            Nova Pesquisa
           </DialogTitle>
         </DialogHeader>
         
@@ -112,6 +149,19 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
               <CardTitle className="text-lg">Informações da Pesquisa</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="surveyType">Tipo de Pesquisa</Label>
+                <Select value={formData.surveyType} onValueChange={handleSurveyTypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de pesquisa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nps">NPS (Escala 0-10)</SelectItem>
+                    <SelectItem value="satisfaction">Satisfação (Escala 0-5)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <Label htmlFor="title">Título da Pesquisa *</Label>
                 <Input
@@ -160,6 +210,43 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
             </CardContent>
           </Card>
 
+          {/* Seleção de Departamentos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="w-5 h-5" />
+                Departamentos Participantes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {departments.map((department) => (
+                  <div key={department.id} className="flex items-center space-x-2 p-3 border rounded-lg">
+                    <Checkbox
+                      id={department.id}
+                      checked={selectedDepartments.includes(department.id)}
+                      onCheckedChange={() => handleDepartmentToggle(department.id)}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor={department.id} className="cursor-pointer font-medium">
+                        {department.name}
+                      </Label>
+                      <p className="text-sm text-gray-500">{department.employeeCount} colaboradores</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {selectedDepartments.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-sm text-gray-600">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    {selectedDepartments.length} departamento(s) selecionado(s)
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Perguntas */}
           <Card>
             <CardHeader>
@@ -177,8 +264,9 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">Pergunta {index + 1}</span>
-                      <Badge variant={question.type === 'nps' ? 'default' : 'outline'}>
-                        {question.type === 'nps' ? 'NPS' : 'Texto'}
+                      <Badge variant={question.type === 'nps' || question.type === 'satisfaction' ? 'default' : 'outline'}>
+                        {question.type === 'nps' ? 'NPS (0-10)' : 
+                         question.type === 'satisfaction' ? 'Satisfação (0-5)' : 'Texto'}
                       </Badge>
                       {question.required && (
                         <Badge variant="destructive" className="text-xs">Obrigatória</Badge>
@@ -202,7 +290,7 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
                     value={question.question}
                     onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
                     placeholder="Digite a pergunta..."
-                    disabled={question.type === 'nps' && index === 0}
+                    disabled={(question.type === 'nps' || question.type === 'satisfaction') && index === 0}
                   />
                 </div>
               ))}

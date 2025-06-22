@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Filter, TrendingUp, TrendingDown, Users, MessageSquare, Settings, Send } from 'lucide-react';
+import { Plus, Filter, TrendingUp, TrendingDown, Users, MessageSquare, Settings, Send, Smile } from 'lucide-react';
 import { useNPS } from '@/contexts/NPSContext';
 import { NPSDetailsModal } from '@/components/nps/NPSDetailsModal';
 import { SurveyManagementModal } from '@/components/nps/SurveyManagementModal';
@@ -12,6 +12,7 @@ import { CommentsModal } from '@/components/nps/CommentsModal';
 import { PromotersModal } from '@/components/nps/PromotersModal';
 import { NeutralsModal } from '@/components/nps/NeutralsModal';
 import { DetractorsModal } from '@/components/nps/DetractorsModal';
+import { SatisfactionModal } from '@/components/nps/SatisfactionModal';
 import { NewSurveyModal } from '@/components/nps/NewSurveyModal';
 import { PeriodFilterModal } from '@/components/nps/PeriodFilterModal';
 import { AutoSendModal } from '@/components/nps/AutoSendModal';
@@ -24,6 +25,7 @@ const NPSPage: React.FC = () => {
   const [promotersModalOpen, setPromotersModalOpen] = useState(false);
   const [neutralsModalOpen, setNeutralsModalOpen] = useState(false);
   const [detractorsModalOpen, setDetractorsModalOpen] = useState(false);
+  const [satisfactionModalOpen, setSatisfactionModalOpen] = useState(false);
   const [newSurveyModalOpen, setNewSurveyModalOpen] = useState(false);
   const [periodFilterModalOpen, setPeriodFilterModalOpen] = useState(false);
   const [autoSendModalOpen, setAutoSendModalOpen] = useState(false);
@@ -40,7 +42,7 @@ const NPSPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">NPS Interno</h1>
+          <h1 className="text-2xl font-bold text-gray-900">NPS & Satisfação</h1>
           <p className="text-gray-600 mt-1">Análise do clima organizacional e satisfação dos colaboradores</p>
         </div>
         
@@ -72,7 +74,7 @@ const NPSPage: React.FC = () => {
       </div>
 
       {/* NPS Score Cards - Agora com modais específicos */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => setDetailsModalOpen(true)}
@@ -139,6 +141,23 @@ const NPSPage: React.FC = () => {
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <TrendingDown className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setSatisfactionModalOpen(true)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Satisfeitos</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.satisfied || 0}%</p>
+              </div>
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Smile className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -231,6 +250,7 @@ const NPSPage: React.FC = () => {
                         className={
                           feedback.category === 'promotor' ? 'bg-green-100 text-green-800' :
                           feedback.category === 'neutro' ? 'bg-yellow-100 text-yellow-800' :
+                          feedback.category === 'satisfeito' ? 'bg-blue-100 text-blue-800' :
                           'bg-red-100 text-red-800'
                         }
                       >
@@ -238,6 +258,9 @@ const NPSPage: React.FC = () => {
                       </Badge>
                       <span className="text-xs text-gray-500">{feedback.date}</span>
                       <span className="text-xs text-gray-500">• {feedback.employeeName}</span>
+                      {feedback.department && (
+                        <span className="text-xs text-gray-500">• {feedback.department}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -276,6 +299,11 @@ const NPSPage: React.FC = () => {
       <DetractorsModal
         open={detractorsModalOpen}
         onOpenChange={setDetractorsModalOpen}
+      />
+
+      <SatisfactionModal
+        open={satisfactionModalOpen}
+        onOpenChange={setSatisfactionModalOpen}
       />
 
       <NewSurveyModal

@@ -87,6 +87,9 @@ export const PromotersModal: React.FC<PromotersModalProps> = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium">{promoter.employeeName}</h4>
+                        {promoter.department && (
+                          <p className="text-xs text-gray-500">{promoter.department}</p>
+                        )}
                         <p className="text-sm text-gray-600 mt-1">{promoter.comment}</p>
                         <p className="text-xs text-gray-500 mt-2">
                           {new Date(promoter.date).toLocaleDateString('pt-BR')}

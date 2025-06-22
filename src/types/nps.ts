@@ -7,7 +7,8 @@ export interface NPSResponse {
   comment: string;
   date: string;
   surveyId: string;
-  category: 'promotor' | 'neutro' | 'detrator';
+  category: 'promotor' | 'neutro' | 'detrator' | 'satisfeito' | 'neutro_satisfacao' | 'insatisfeito';
+  department?: string;
 }
 
 export interface NPSSurvey {
@@ -20,11 +21,13 @@ export interface NPSSurvey {
   endDate: string;
   responses: NPSResponse[];
   targetEmployees: string[];
+  targetDepartments: string[];
+  surveyType: 'nps' | 'satisfaction';
 }
 
 export interface NPSQuestion {
   id: string;
-  type: 'nps' | 'text' | 'multiple_choice';
+  type: 'nps' | 'satisfaction' | 'text' | 'multiple_choice';
   question: string;
   required: boolean;
   options?: string[];
@@ -38,10 +41,20 @@ export interface NPSStats {
   detractors: number;
   totalResponses: number;
   responseRate: number;
+  // Novas estatísticas para pesquisas de satisfação
+  satisfied?: number;
+  neutralSatisfaction?: number;
+  dissatisfied?: number;
 }
 
 export interface NPSEvolution {
   date: string;
   score: number;
   responses: number;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  employeeCount: number;
 }

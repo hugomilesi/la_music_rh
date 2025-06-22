@@ -1,17 +1,19 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { NPSResponse, NPSSurvey, NPSStats, NPSEvolution } from '@/types/nps';
+import { NPSResponse, NPSSurvey, NPSStats, NPSEvolution, Department } from '@/types/nps';
 
 interface NPSContextType {
   responses: NPSResponse[];
   surveys: NPSSurvey[];
   stats: NPSStats;
   evolution: NPSEvolution[];
+  departments: Department[];
   addResponse: (response: NPSResponse) => void;
   createSurvey: (survey: Omit<NPSSurvey, 'id'>) => void;
   updateSurvey: (id: string, survey: Partial<NPSSurvey>) => void;
   deleteSurvey: (id: string) => void;
   sendSurveyToWhatsApp: (surveyId: string, phones: string[]) => Promise<void>;
+  categorizeResponse: (score: number, surveyType: 'nps' | 'satisfaction') => string;
 }
 
 const NPSContext = createContext<NPSContextType | undefined>(undefined);
@@ -29,7 +31,17 @@ interface NPSProviderProps {
 }
 
 export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
-  // Mock data inicial
+  // Mock departments data
+  const [departments] = useState<Department[]>([
+    { id: 'rh', name: 'Recursos Humanos', employeeCount: 8 },
+    { id: 'vendas', name: 'Vendas', employeeCount: 15 },
+    { id: 'marketing', name: 'Marketing', employeeCount: 6 },
+    { id: 'ti', name: 'Tecnologia da Informação', employeeCount: 12 },
+    { id: 'financeiro', name: 'Financeiro', employeeCount: 5 },
+    { id: 'producao', name: 'Produção', employeeCount: 25 }
+  ]);
+
+  // Mock data inicial expandido
   const [responses] = useState<NPSResponse[]>([
     {
       id: '1',
@@ -39,7 +51,8 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       comment: 'Ambiente muito positivo, me sinto valorizada na equipe.',
       date: '2024-03-15',
       surveyId: 'survey1',
-      category: 'promotor'
+      category: 'promotor',
+      department: 'rh'
     },
     {
       id: '2',
@@ -49,7 +62,8 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       comment: 'Gostaria de mais oportunidades de crescimento profissional.',
       date: '2024-03-14',
       surveyId: 'survey1',
-      category: 'neutro'
+      category: 'neutro',
+      department: 'vendas'
     },
     {
       id: '3',
@@ -59,7 +73,30 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       comment: 'Excelente liderança e comunicação clara dos objetivos.',
       date: '2024-03-13',
       surveyId: 'survey1',
-      category: 'promotor'
+      category: 'promotor',
+      department: 'marketing'
+    },
+    {
+      id: '4',
+      employeeId: 'emp4',
+      employeeName: 'Carlos Oliveira',
+      score: 4,
+      comment: 'Muito satisfeito com o ambiente de trabalho e benefícios.',
+      date: '2024-03-12',
+      surveyId: 'survey2',
+      category: 'satisfeito',
+      department: 'ti'
+    },
+    {
+      id: '5',
+      employeeId: 'emp5',
+      employeeName: 'Fernanda Lima',
+      score: 2,
+      comment: 'Precisa melhorar a comunicação entre as equipes.',
+      date: '2024-03-11',
+      surveyId: 'survey2',
+      category: 'insatisfeito',
+      department: 'financeiro'
     }
   ]);
 
@@ -86,7 +123,29 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       startDate: '2024-03-01',
       endDate: '2024-03-31',
       responses: [],
-      targetEmployees: ['emp1', 'emp2', 'emp3', 'emp4', 'emp5']
+      targetEmployees: ['emp1', 'emp2', 'emp3'],
+      targetDepartments: ['rh', 'vendas', 'marketing'],
+      surveyType: 'nps'
+    },
+    {
+      id: 'survey2',
+      title: 'Pesquisa de Satisfação - Março 2024',
+      description: 'Avaliação de satisfação geral dos colaboradores',
+      questions: [
+        {
+          id: 'q1',
+          type: 'satisfaction',
+          question: 'Em uma escala de 0 a 5, qual seu nível de satisfação com a empresa?',
+          required: true
+        }
+      ],
+      status: 'active',
+      startDate: '2024-03-01',
+      endDate: '2024-03-31',
+      responses: [],
+      targetEmployees: ['emp4', 'emp5'],
+      targetDepartments: ['ti', 'financeiro'],
+      surveyType: 'satisfaction'
     }
   ]);
 
@@ -97,7 +156,11 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     neutrals: 13,
     detractors: 9,
     totalResponses: 23,
-    responseRate: 85
+    responseRate: 85,
+    // Estatísticas para pesquisas de satisfação
+    satisfied: 80,
+    neutralSatisfaction: 15,
+    dissatisfied: 5
   };
 
   const evolution: NPSEvolution[] = [
@@ -106,8 +169,21 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     { date: '2024-03', score: 65, responses: 23 }
   ];
 
+  const categorizeResponse = (score: number, surveyType: 'nps' | 'satisfaction'): string => {
+    if (surveyType === 'nps') {
+      if (score >= 9) return 'promotor';
+      if (score >= 7) return 'neutro';
+      return 'detrator';
+    } else {
+      // Satisfação (0-5)
+      if (score >= 4) return 'satisfeito';
+      if (score >= 3) return 'neutro_satisfacao';
+      return 'insatisfeito';
+    }
+  };
+
   const addResponse = (response: NPSResponse) => {
-    console.log('Nova resposta NPS adicionada:', response);
+    console.log('Nova resposta adicionada:', response);
   };
 
   const createSurvey = (survey: Omit<NPSSurvey, 'id'>) => {
@@ -133,7 +209,6 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
 
   const sendSurveyToWhatsApp = async (surveyId: string, phones: string[]) => {
     console.log('Enviando pesquisa via WhatsApp:', { surveyId, phones });
-    // Aqui seria implementada a integração real com WhatsApp
     return Promise.resolve();
   };
 
@@ -143,11 +218,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       surveys,
       stats,
       evolution,
+      departments,
       addResponse,
       createSurvey,
       updateSurvey,
       deleteSurvey,
-      sendSurveyToWhatsApp
+      sendSurveyToWhatsApp,
+      categorizeResponse
     }}>
       {children}
     </NPSContext.Provider>
