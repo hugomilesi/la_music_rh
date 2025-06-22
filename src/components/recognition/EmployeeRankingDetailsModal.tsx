@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { DetailedRankingEmployee } from '@/types/recognition';
+import { DetailedRankingEmployee, isEligibleForProgram } from '@/types/recognition';
 import { recognitionPrograms } from '@/data/recognitionMockData';
 import { Trophy, Calendar, Star, Award, DollarSign, Gift, Crown, Medal, TrendingUp, User } from 'lucide-react';
 
@@ -64,6 +64,17 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
     }
   };
 
+  // Calcular total baseado apenas nos programas elegíveis
+  const calculateEligibleTotal = () => {
+    let total = 0;
+    if (isEligibleForProgram(employee.role, 'fideliza')) total += employee.stars.fideliza;
+    if (isEligibleForProgram(employee.role, 'matriculador')) total += employee.stars.matriculador;
+    if (isEligibleForProgram(employee.role, 'professor')) total += employee.stars.professor;
+    return total;
+  };
+
+  const eligibleTotal = calculateEligibleTotal();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
@@ -85,63 +96,75 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
 
         <ScrollArea className="h-[70vh] pr-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-auto">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="fideliza">Fideliza+</TabsTrigger>
-              <TabsTrigger value="matriculador">Matriculador+</TabsTrigger>
-              <TabsTrigger value="professor">Professor+</TabsTrigger>
+              {isEligibleForProgram(employee.role, 'fideliza') && (
+                <TabsTrigger value="fideliza">Fideliza+</TabsTrigger>
+              )}
+              {isEligibleForProgram(employee.role, 'matriculador') && (
+                <TabsTrigger value="matriculador">Matriculador+</TabsTrigger>
+              )}
+              {isEligibleForProgram(employee.role, 'professor') && (
+                <TabsTrigger value="professor">Professor+</TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <Trophy className="w-5 h-5 text-yellow-600" />
                       <div>
-                        <p className="text-sm text-gray-600">Total de Estrelas</p>
-                        <p className="text-2xl font-bold">{employee.total}</p>
+                        <p className="text-sm text-gray-600">Total Elegível</p>
+                        <p className="text-2xl font-bold">{eligibleTotal}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="text-sm text-gray-600">Fideliza+</p>
-                        <p className="text-2xl font-bold text-blue-600">{employee.stars.fideliza}</p>
+                {isEligibleForProgram(employee.role, 'fideliza') && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Fideliza+</p>
+                          <p className="text-2xl font-bold text-blue-600">{employee.stars.fideliza}</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="text-sm text-gray-600">Matriculador+</p>
-                        <p className="text-2xl font-bold text-green-600">{employee.stars.matriculador}</p>
+                {isEligibleForProgram(employee.role, 'matriculador') && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Matriculador+</p>
+                          <p className="text-2xl font-bold text-green-600">{employee.stars.matriculador}</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-purple-600" />
-                      <div>
-                        <p className="text-sm text-gray-600">Professor+</p>
-                        <p className="text-2xl font-bold text-purple-600">{employee.stars.professor}</p>
+                {isEligibleForProgram(employee.role, 'professor') && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <p className="text-sm text-gray-600">Professor+</p>
+                          <p className="text-2xl font-bold text-purple-600">{employee.stars.professor}</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               {/* Employee Info */}
@@ -165,6 +188,32 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
                     <p className="text-sm text-gray-600">Data de Admissão</p>
                     <p className="font-medium">{new Date(employee.joinDate).toLocaleDateString('pt-BR')}</p>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Eligible Programs */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5" />
+                    Programas Elegíveis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {employee.eligiblePrograms.map(programId => {
+                      const program = recognitionPrograms.find(p => p.id === programId);
+                      return program ? (
+                        <Badge key={programId} className={getProgramColor(programId)}>
+                          {getProgramIcon(programId)}
+                          <span className="ml-1">{program.name}</span>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                  {employee.eligiblePrograms.length === 0 && (
+                    <p className="text-gray-500">Nenhum programa elegível para este cargo.</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -220,22 +269,36 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
                 <CardContent>
                   <div className="space-y-3">
                     {employee.monthlyProgress.map((progress, index) => (
-                      <div key={index} className="grid grid-cols-5 gap-4 p-3 border border-gray-200 rounded-lg">
+                      <div key={index} className="grid gap-4 p-3 border border-gray-200 rounded-lg" style={{
+                        gridTemplateColumns: `1fr ${employee.eligiblePrograms.length}fr 1fr`
+                      }}>
                         <div>
                           <p className="text-sm font-medium">{progress.month}</p>
                         </div>
-                        <div className="text-center">
-                          <p className="text-xs text-gray-600">Fideliza+</p>
-                          <p className="font-bold text-blue-600">{progress.fideliza}</p>
+                        
+                        <div className="grid gap-4" style={{
+                          gridTemplateColumns: `repeat(${employee.eligiblePrograms.length}, 1fr)`
+                        }}>
+                          {isEligibleForProgram(employee.role, 'fideliza') && (
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600">Fideliza+</p>
+                              <p className="font-bold text-blue-600">{progress.fideliza}</p>
+                            </div>
+                          )}
+                          {isEligibleForProgram(employee.role, 'matriculador') && (
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600">Matriculador+</p>
+                              <p className="font-bold text-green-600">{progress.matriculador}</p>
+                            </div>
+                          )}
+                          {isEligibleForProgram(employee.role, 'professor') && (
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600">Professor+</p>
+                              <p className="font-bold text-purple-600">{progress.professor}</p>
+                            </div>
+                          )}
                         </div>
-                        <div className="text-center">
-                          <p className="text-xs text-gray-600">Matriculador+</p>
-                          <p className="font-bold text-green-600">{progress.matriculador}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs text-gray-600">Professor+</p>
-                          <p className="font-bold text-purple-600">{progress.professor}</p>
-                        </div>
+                        
                         <div className="text-center">
                           <p className="text-xs text-gray-600">Total</p>
                           <p className="font-bold text-lg">{progress.total}</p>
@@ -247,7 +310,9 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
               </Card>
             </TabsContent>
 
-            {['fideliza', 'matriculador', 'professor'].map((programId) => (
+            {['fideliza', 'matriculador', 'professor'].filter(programId => 
+              isEligibleForProgram(employee.role, programId)
+            ).map((programId) => (
               <TabsContent key={programId} value={programId} className="space-y-6">
                 <Card className={`border-l-4 ${getProgramColor(programId)}`}>
                   <CardHeader>

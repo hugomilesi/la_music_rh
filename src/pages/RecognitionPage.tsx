@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye, Filter } from 'lucide-react';
 import { CriteriaModal } from '@/components/recognition/CriteriaModal';
 import { NewBonusDialog } from '@/components/recognition/NewBonusDialog';
 import { DeliverPrizeDialog } from '@/components/recognition/DeliverPrizeDialog';
 import { EmployeeRankingDetailsModal } from '@/components/recognition/EmployeeRankingDetailsModal';
 import { recognitionPrograms } from '@/data/recognitionMockData';
 import { detailedRankingEmployees } from '@/data/detailedRankingData';
-import { RecognitionProgram, DetailedRankingEmployee } from '@/types/recognition';
+import { RecognitionProgram, DetailedRankingEmployee, isEligibleForProgram } from '@/types/recognition';
 
 const RecognitionPage: React.FC = () => {
   const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
@@ -20,6 +21,7 @@ const RecognitionPage: React.FC = () => {
   const [newBonusDialogOpen, setNewBonusDialogOpen] = useState(false);
   const [deliverPrizeDialogOpen, setDeliverPrizeDialogOpen] = useState(false);
   const [employeeDetailsModalOpen, setEmployeeDetailsModalOpen] = useState(false);
+  const [selectedProgramFilter, setSelectedProgramFilter] = useState<string>('all');
 
   const handleViewCriteria = (programId: string) => {
     const program = recognitionPrograms.find(p => p.id === programId);
@@ -44,6 +46,11 @@ const RecognitionPage: React.FC = () => {
     // Here you would typically save to a backend or state management
   };
 
+  const handleSaveProgram = (updatedProgram: RecognitionProgram) => {
+    console.log('Programa atualizado:', updatedProgram);
+    // Here you would save the updated program to backend
+  };
+
   const handleDeliverPrizeFromModal = () => {
     setEmployeeDetailsModalOpen(false);
     setDeliverPrizeDialogOpen(true);
@@ -53,6 +60,33 @@ const RecognitionPage: React.FC = () => {
     setEmployeeDetailsModalOpen(false);
     setNewBonusDialogOpen(true);
   };
+
+  // Filtrar funcionários por programa
+  const getFilteredEmployees = () => {
+    if (selectedProgramFilter === 'all') {
+      return detailedRankingEmployees;
+    }
+    
+    return detailedRankingEmployees
+      .filter(employee => isEligibleForProgram(employee.role, selectedProgramFilter))
+      .map((employee, index) => ({ ...employee, position: index + 1 }));
+  };
+
+  const getLeaderForProgram = (programId: string) => {
+    const eligibleEmployees = detailedRankingEmployees.filter(employee => 
+      isEligibleForProgram(employee.role, programId)
+    );
+    
+    if (eligibleEmployees.length === 0) return null;
+    
+    return eligibleEmployees.reduce((leader, current) => {
+      const leaderStars = leader.stars[programId as keyof typeof leader.stars];
+      const currentStars = current.stars[programId as keyof typeof current.stars];
+      return currentStars > leaderStars ? current : leader;
+    });
+  };
+
+  const filteredEmployees = getFilteredEmployees();
 
   return (
     <div className="space-y-6">
@@ -94,14 +128,26 @@ const RecognitionPage: React.FC = () => {
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">Estrelas por retenção de alunos e encantamento</p>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Aline Cristina</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Estrelas:</span>
-                <span className="font-bold text-blue-600">45 ⭐</span>
-              </div>
+              {(() => {
+                const leader = getLeaderForProgram('fideliza');
+                return leader ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Líder do mês:</span>
+                      <span className="font-semibold">{leader.name.split(' ')[0]} {leader.name.split(' ')[1]}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Estrelas:</span>
+                      <span className="font-bold text-blue-600">{leader.stars.fideliza} ⭐</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum participante elegível</p>
+                );
+              })()}
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              <p>Cargos elegíveis: Coord. Pedagógica, Recepção</p>
             </div>
             <Button 
               variant="outline" 
@@ -125,14 +171,26 @@ const RecognitionPage: React.FC = () => {
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">Comissões por matrículas realizadas</p>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Felipe Elias</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Matrículas:</span>
-                <span className="font-bold text-green-600">15 📚</span>
-              </div>
+              {(() => {
+                const leader = getLeaderForProgram('matriculador');
+                return leader ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Líder do mês:</span>
+                      <span className="font-semibold">{leader.name.split(' ')[0]} {leader.name.split(' ')[1]}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Matrículas:</span>
+                      <span className="font-bold text-green-600">{leader.stars.matriculador} 📚</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum participante elegível</p>
+                );
+              })()}
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              <p>Cargos elegíveis: Consultores, Coord. Vendas</p>
             </div>
             <Button 
               variant="outline" 
@@ -156,14 +214,26 @@ const RecognitionPage: React.FC = () => {
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">Estrelas por engajamento pedagógico</p>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Igor Esteves</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Estrelas:</span>
-                <span className="font-bold text-purple-600">42 ⭐</span>
-              </div>
+              {(() => {
+                const leader = getLeaderForProgram('professor');
+                return leader ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Líder do mês:</span>
+                      <span className="font-semibold">{leader.name.split(' ')[0]} {leader.name.split(' ')[1]}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Estrelas:</span>
+                      <span className="font-bold text-purple-600">{leader.stars.professor} ⭐</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum participante elegível</p>
+                );
+              })()}
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              <p>Cargos elegíveis: Professores</p>
             </div>
             <Button 
               variant="outline" 
@@ -181,10 +251,26 @@ const RecognitionPage: React.FC = () => {
       {/* Enhanced Ranking Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-600" />
-            Ranking Geral - Março 2024
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-600" />
+              Ranking - Março 2024
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <Select value={selectedProgramFilter} onValueChange={setSelectedProgramFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Ranking Geral</SelectItem>
+                  <SelectItem value="fideliza">Fideliza+ apenas</SelectItem>
+                  <SelectItem value="matriculador">Matriculador+ apenas</SelectItem>
+                  <SelectItem value="professor">Professor+ apenas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -194,14 +280,20 @@ const RecognitionPage: React.FC = () => {
                 <TableHead>Colaborador</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Unidade</TableHead>
-                <TableHead>Fideliza+</TableHead>
-                <TableHead>Matriculador+</TableHead>
-                <TableHead>Professor+</TableHead>
+                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'fideliza') && (
+                  <TableHead>Fideliza+</TableHead>
+                )}
+                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'matriculador') && (
+                  <TableHead>Matriculador+</TableHead>
+                )}
+                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'professor') && (
+                  <TableHead>Professor+</TableHead>
+                )}
                 <TableHead>Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {detailedRankingEmployees.map((person, index) => (
+              {filteredEmployees.map((person, index) => (
                 <TableRow 
                   key={person.id} 
                   className="cursor-pointer hover:bg-gray-50 transition-colors"
@@ -212,7 +304,7 @@ const RecognitionPage: React.FC = () => {
                       {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
                       {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
                       {index === 2 && <Medal className="w-4 h-4 text-yellow-600" />}
-                      <span className="font-bold">{index + 1}º</span>
+                      <span className="font-bold">{person.position}º</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -222,21 +314,39 @@ const RecognitionPage: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-sm text-gray-600">{person.role}</TableCell>
                   <TableCell>{person.unit}</TableCell>
-                  <TableCell>
-                    <Badge className="bg-blue-100 text-blue-800">
-                      {person.stars.fideliza} ⭐
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-green-100 text-green-800">
-                      {person.stars.matriculador} 📚
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-purple-100 text-purple-800">
-                      {person.stars.professor} ⭐
-                    </Badge>
-                  </TableCell>
+                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'fideliza') && (
+                    <TableCell>
+                      {isEligibleForProgram(person.role, 'fideliza') ? (
+                        <Badge className="bg-blue-100 text-blue-800">
+                          {person.stars.fideliza} ⭐
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400 text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'matriculador') && (
+                    <TableCell>
+                      {isEligibleForProgram(person.role, 'matriculador') ? (
+                        <Badge className="bg-green-100 text-green-800">
+                          {person.stars.matriculador} 📚
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400 text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'professor') && (
+                    <TableCell>
+                      {isEligibleForProgram(person.role, 'professor') ? (
+                        <Badge className="bg-purple-100 text-purple-800">
+                          {person.stars.professor} ⭐
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400 text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <span className="font-bold text-lg">{person.total}</span>
                   </TableCell>
@@ -310,6 +420,7 @@ const RecognitionPage: React.FC = () => {
             console.log('Avaliação salva:', evaluations);
             // Here you would typically save to a backend or state management
           }}
+          onSaveProgram={handleSaveProgram}
         />
       )}
 

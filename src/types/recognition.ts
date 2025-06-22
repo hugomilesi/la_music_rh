@@ -17,6 +17,7 @@ export interface RecognitionProgram {
   icon: string;
   criteria: RecognitionCriterion[];
   totalPossibleStars: number;
+  targetRoles: string[]; // Cargos elegíveis para este programa
 }
 
 export interface CriterionEvaluation {
@@ -80,4 +81,40 @@ export interface DetailedRankingEmployee {
   };
   joinDate: string;
   evaluationPeriod: string;
+  eligiblePrograms: string[]; // Programas elegíveis baseados no cargo
+}
+
+// Mapeamento de cargos para programas
+export const ROLE_PROGRAM_MAPPING: { [key: string]: string[] } = {
+  // Administrativo/Recepção - Fideliza+
+  'Coordenadora Pedagógica': ['fideliza'],
+  'Recepcionista': ['fideliza'],
+  'Assistente Administrativo': ['fideliza'],
+  'Coordenador Administrativo': ['fideliza'],
+  
+  // Vendas - Matriculador+ LA
+  'Consultor de Vendas': ['matriculador'],
+  'Consultora de Vendas': ['matriculador'],
+  'Coordenadora de Vendas': ['matriculador'],
+  'Coordenador de Vendas': ['matriculador'],
+  'Gerente de Vendas': ['matriculador'],
+  
+  // Professores - Professor+ LA
+  'Professor': ['professor'],
+  'Professor Senior': ['professor'],
+  'Professora': ['professor'],
+  'Coordenador Pedagógico': ['professor'],
+  
+  // Cargos híbridos (podem participar de múltiplos programas)
+  'Gerente Geral': ['fideliza', 'matriculador', 'professor'],
+  'Diretor': ['fideliza', 'matriculador', 'professor'],
+};
+
+export function getEligiblePrograms(role: string): string[] {
+  return ROLE_PROGRAM_MAPPING[role] || [];
+}
+
+export function isEligibleForProgram(role: string, programId: string): boolean {
+  const eligiblePrograms = getEligiblePrograms(role);
+  return eligiblePrograms.includes(programId);
 }

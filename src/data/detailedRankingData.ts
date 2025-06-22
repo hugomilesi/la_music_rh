@@ -1,5 +1,5 @@
 
-import { DetailedRankingEmployee, EmployeeAchievement, MonthlyProgress } from '@/types/recognition';
+import { DetailedRankingEmployee, EmployeeAchievement, MonthlyProgress, getEligiblePrograms } from '@/types/recognition';
 
 const achievements: EmployeeAchievement[] = [
   {
@@ -46,19 +46,34 @@ const achievements: EmployeeAchievement[] = [
 
 const monthlyProgressData: { [employeeId: string]: MonthlyProgress[] } = {
   '1': [
-    { month: 'Jan 2024', fideliza: 38, matriculador: 8, professor: 25, total: 71 },
-    { month: 'Fev 2024', fideliza: 42, matriculador: 10, professor: 32, total: 84 },
-    { month: 'Mar 2024', fideliza: 45, matriculador: 12, professor: 38, total: 95 }
+    { month: 'Jan 2024', fideliza: 38, matriculador: 0, professor: 0, total: 38 },
+    { month: 'Fev 2024', fideliza: 42, matriculador: 0, professor: 0, total: 42 },
+    { month: 'Mar 2024', fideliza: 45, matriculador: 0, professor: 0, total: 45 }
   ],
   '2': [
-    { month: 'Jan 2024', fideliza: 35, matriculador: 12, professor: 28, total: 75 },
-    { month: 'Fev 2024', fideliza: 40, matriculador: 14, professor: 30, total: 84 },
-    { month: 'Mar 2024', fideliza: 42, matriculador: 15, professor: 35, total: 92 }
+    { month: 'Jan 2024', fideliza: 0, matriculador: 12, professor: 0, total: 12 },
+    { month: 'Fev 2024', fideliza: 0, matriculador: 14, professor: 0, total: 14 },
+    { month: 'Mar 2024', fideliza: 0, matriculador: 15, professor: 0, total: 15 }
   ],
   '3': [
-    { month: 'Jan 2024', fideliza: 32, matriculador: 8, professor: 35, total: 75 },
-    { month: 'Fev 2024', fideliza: 35, matriculador: 9, professor: 40, total: 84 },
-    { month: 'Mar 2024', fideliza: 38, matriculador: 10, professor: 42, total: 90 }
+    { month: 'Jan 2024', fideliza: 0, matriculador: 0, professor: 35, total: 35 },
+    { month: 'Fev 2024', fideliza: 0, matriculador: 0, professor: 40, total: 40 },
+    { month: 'Mar 2024', fideliza: 0, matriculador: 0, professor: 42, total: 42 }
+  ],
+  '4': [
+    { month: 'Jan 2024', fideliza: 0, matriculador: 10, professor: 0, total: 10 },
+    { month: 'Fev 2024', fideliza: 0, matriculador: 12, professor: 0, total: 12 },
+    { month: 'Mar 2024', fideliza: 0, matriculador: 14, professor: 0, total: 14 }
+  ],
+  '5': [
+    { month: 'Jan 2024', fideliza: 0, matriculador: 0, professor: 32, total: 32 },
+    { month: 'Fev 2024', fideliza: 0, matriculador: 0, professor: 36, total: 36 },
+    { month: 'Mar 2024', fideliza: 0, matriculador: 0, professor: 40, total: 40 }
+  ],
+  '6': [
+    { month: 'Jan 2024', fideliza: 0, matriculador: 8, professor: 0, total: 8 },
+    { month: 'Fev 2024', fideliza: 0, matriculador: 10, professor: 0, total: 10 },
+    { month: 'Mar 2024', fideliza: 0, matriculador: 13, professor: 0, total: 13 }
   ]
 };
 
@@ -68,120 +83,102 @@ export const detailedRankingEmployees: DetailedRankingEmployee[] = [
     name: 'Aline Cristina Pessanha Faria',
     unit: 'Campo Grande',
     role: 'Coordenadora Pedagógica',
-    stars: { fideliza: 45, matriculador: 12, professor: 38 },
-    total: 95,
+    stars: { fideliza: 45, matriculador: 0, professor: 0 },
+    total: 45,
     position: 1,
     achievements: achievements.filter(a => a.employeeId === '1'),
     monthlyProgress: monthlyProgressData['1'],
     metCriteria: {
-      fideliza: ['retention-rate', 'student-satisfaction', 'proactive-contact'],
-      matriculador: ['monthly-target'],
-      professor: ['class-preparation', 'student-engagement']
+      fideliza: ['retention-rate', 'student-satisfaction', 'proactive-contact']
     },
     joinDate: '2022-08-15',
-    evaluationPeriod: 'Março 2024'
-  },
-  {
-    id: '2',
-    name: 'Felipe Elias Carvalho',
-    unit: 'Campo Grande',
-    role: 'Consultor de Vendas',
-    stars: { fideliza: 42, matriculador: 15, professor: 35 },
-    total: 92,
-    position: 2,
-    achievements: achievements.filter(a => a.employeeId === '2'),
-    monthlyProgress: monthlyProgressData['2'],
-    metCriteria: {
-      fideliza: ['retention-rate', 'proactive-contact'],
-      matriculador: ['monthly-target', 'conversion-rate', 'follow-up-quality'],
-      professor: ['class-preparation']
-    },
-    joinDate: '2023-01-10',
-    evaluationPeriod: 'Março 2024'
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Coordenadora Pedagógica')
   },
   {
     id: '3',
     name: 'Igor Esteves Alves Baiao',
     unit: 'Barra',
     role: 'Professor Senior',
-    stars: { fideliza: 38, matriculador: 10, professor: 42 },
-    total: 90,
-    position: 3,
+    stars: { fideliza: 0, matriculador: 0, professor: 42 },
+    total: 42,
+    position: 2,
     achievements: achievements.filter(a => a.employeeId === '3'),
     monthlyProgress: monthlyProgressData['3'],
     metCriteria: {
-      fideliza: ['student-satisfaction'],
-      matriculador: ['conversion-rate'],
       professor: ['class-preparation', 'student-engagement', 'innovative-methods']
     },
     joinDate: '2021-05-20',
-    evaluationPeriod: 'Março 2024'
-  },
-  {
-    id: '4',
-    name: 'Maria Silva Santos',
-    unit: 'Tijuca',
-    role: 'Coordenadora de Vendas',
-    stars: { fideliza: 40, matriculador: 14, professor: 32 },
-    total: 86,
-    position: 4,
-    achievements: [],
-    monthlyProgress: [
-      { month: 'Jan 2024', fideliza: 32, matriculador: 10, professor: 25, total: 67 },
-      { month: 'Fev 2024', fideliza: 36, matriculador: 12, professor: 28, total: 76 },
-      { month: 'Mar 2024', fideliza: 40, matriculador: 14, professor: 32, total: 86 }
-    ],
-    metCriteria: {
-      fideliza: ['retention-rate', 'proactive-contact'],
-      matriculador: ['monthly-target', 'conversion-rate'],
-      professor: ['class-preparation']
-    },
-    joinDate: '2022-11-08',
-    evaluationPeriod: 'Março 2024'
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Professor Senior')
   },
   {
     id: '5',
     name: 'João Pedro Oliveira',
     unit: 'Copacabana',
     role: 'Professor',
-    stars: { fideliza: 36, matriculador: 8, professor: 40 },
-    total: 84,
-    position: 5,
+    stars: { fideliza: 0, matriculador: 0, professor: 40 },
+    total: 40,
+    position: 3,
     achievements: [],
-    monthlyProgress: [
-      { month: 'Jan 2024', fideliza: 30, matriculador: 6, professor: 32, total: 68 },
-      { month: 'Fev 2024', fideliza: 33, matriculador: 7, professor: 36, total: 76 },
-      { month: 'Mar 2024', fideliza: 36, matriculador: 8, professor: 40, total: 84 }
-    ],
+    monthlyProgress: monthlyProgressData['5'],
     metCriteria: {
-      fideliza: ['student-satisfaction'],
-      matriculador: [],
       professor: ['class-preparation', 'student-engagement', 'innovative-methods', 'student-progress']
     },
     joinDate: '2023-03-12',
-    evaluationPeriod: 'Março 2024'
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Professor')
+  },
+  {
+    id: '2',
+    name: 'Felipe Elias Carvalho',
+    unit: 'Campo Grande',
+    role: 'Consultor de Vendas',
+    stars: { fideliza: 0, matriculador: 15, professor: 0 },
+    total: 15,
+    position: 4,
+    achievements: achievements.filter(a => a.employeeId === '2'),
+    monthlyProgress: monthlyProgressData['2'],
+    metCriteria: {
+      matriculador: ['monthly-target', 'conversion-rate', 'follow-up-quality']
+    },
+    joinDate: '2023-01-10',
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Consultor de Vendas')
+  },
+  {
+    id: '4',
+    name: 'Maria Silva Santos',
+    unit: 'Tijuca',
+    role: 'Coordenadora de Vendas',
+    stars: { fideliza: 0, matriculador: 14, professor: 0 },
+    total: 14,
+    position: 5,
+    achievements: [],
+    monthlyProgress: monthlyProgressData['4'],
+    metCriteria: {
+      matriculador: ['monthly-target', 'conversion-rate']
+    },
+    joinDate: '2022-11-08',
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Coordenadora de Vendas')
   },
   {
     id: '6',
     name: 'Ana Carolina Lima',
     unit: 'Barra',
     role: 'Consultora de Vendas',
-    stars: { fideliza: 35, matriculador: 13, professor: 30 },
-    total: 78,
+    stars: { fideliza: 0, matriculador: 13, professor: 0 },
+    total: 13,
     position: 6,
     achievements: [],
-    monthlyProgress: [
-      { month: 'Jan 2024', fideliza: 28, matriculador: 8, professor: 22, total: 58 },
-      { month: 'Fev 2024', fideliza: 32, matriculador: 10, professor: 26, total: 68 },
-      { month: 'Mar 2024', fideliza: 35, matriculador: 13, professor: 30, total: 78 }
-    ],
+    monthlyProgress: monthlyProgressData['6'],
     metCriteria: {
-      fideliza: ['retention-rate'],
-      matriculador: ['monthly-target', 'conversion-rate'],
-      professor: ['class-preparation']
+      matriculador: ['monthly-target', 'conversion-rate']
     },
     joinDate: '2023-06-05',
-    evaluationPeriod: 'Março 2024'
+    evaluationPeriod: 'Março 2024',
+    eligiblePrograms: getEligiblePrograms('Consultora de Vendas')
   }
 ];
 

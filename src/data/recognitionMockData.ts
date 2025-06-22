@@ -9,6 +9,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
     color: 'blue',
     icon: 'Star',
     totalPossibleStars: 50,
+    targetRoles: ['Coordenadora Pedagógica', 'Recepcionista', 'Assistente Administrativo', 'Coordenador Administrativo'],
     criteria: [
       {
         id: 'retention-rate',
@@ -59,6 +60,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
     color: 'green',
     icon: 'DollarSign',
     totalPossibleStars: 40,
+    targetRoles: ['Consultor de Vendas', 'Consultora de Vendas', 'Coordenadora de Vendas', 'Coordenador de Vendas', 'Gerente de Vendas'],
     criteria: [
       {
         id: 'monthly-target',
@@ -101,6 +103,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
     color: 'purple',
     icon: 'Award',
     totalPossibleStars: 45,
+    targetRoles: ['Professor', 'Professor Senior', 'Professora', 'Coordenador Pedagógico'],
     criteria: [
       {
         id: 'class-preparation',
