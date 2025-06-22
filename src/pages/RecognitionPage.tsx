@@ -8,20 +8,18 @@ import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye } from 'lucide
 import { CriteriaModal } from '@/components/recognition/CriteriaModal';
 import { NewBonusDialog } from '@/components/recognition/NewBonusDialog';
 import { DeliverPrizeDialog } from '@/components/recognition/DeliverPrizeDialog';
+import { EmployeeRankingDetailsModal } from '@/components/recognition/EmployeeRankingDetailsModal';
 import { recognitionPrograms } from '@/data/recognitionMockData';
-import { RecognitionProgram } from '@/types/recognition';
-
-const mockRanking = [
-  { id: 1, name: 'Aline Cristina Pessanha Faria', unit: 'Campo Grande', fideliza: 45, matriculador: 12, professor: 38, total: 95 },
-  { id: 2, name: 'Felipe Elias Carvalho', unit: 'Campo Grande', fideliza: 42, matriculador: 15, professor: 35, total: 92 },
-  { id: 3, name: 'Igor Esteves Alves Baiao', unit: 'Barra', fideliza: 38, matriculador: 10, professor: 42, total: 90 }
-];
+import { detailedRankingEmployees } from '@/data/detailedRankingData';
+import { RecognitionProgram, DetailedRankingEmployee } from '@/types/recognition';
 
 const RecognitionPage: React.FC = () => {
   const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<DetailedRankingEmployee | null>(null);
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
   const [newBonusDialogOpen, setNewBonusDialogOpen] = useState(false);
   const [deliverPrizeDialogOpen, setDeliverPrizeDialogOpen] = useState(false);
+  const [employeeDetailsModalOpen, setEmployeeDetailsModalOpen] = useState(false);
 
   const handleViewCriteria = (programId: string) => {
     const program = recognitionPrograms.find(p => p.id === programId);
@@ -29,6 +27,11 @@ const RecognitionPage: React.FC = () => {
       setSelectedProgram(program);
       setCriteriaModalOpen(true);
     }
+  };
+
+  const handleEmployeeClick = (employee: DetailedRankingEmployee) => {
+    setSelectedEmployee(employee);
+    setEmployeeDetailsModalOpen(true);
   };
 
   const handleCreateBonus = (bonus: any) => {
@@ -39,6 +42,16 @@ const RecognitionPage: React.FC = () => {
   const handleDeliverPrize = (prize: any) => {
     console.log('Prêmio entregue:', prize);
     // Here you would typically save to a backend or state management
+  };
+
+  const handleDeliverPrizeFromModal = () => {
+    setEmployeeDetailsModalOpen(false);
+    setDeliverPrizeDialogOpen(true);
+  };
+
+  const handleCreateBonusFromModal = () => {
+    setEmployeeDetailsModalOpen(false);
+    setNewBonusDialogOpen(true);
   };
 
   return (
@@ -83,7 +96,7 @@ const RecognitionPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Ana Silva</span>
+                <span className="font-semibold">Aline Cristina</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Estrelas:</span>
@@ -114,7 +127,7 @@ const RecognitionPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Carlos Santos</span>
+                <span className="font-semibold">Felipe Elias</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Matrículas:</span>
@@ -145,7 +158,7 @@ const RecognitionPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">Líder do mês:</span>
-                <span className="font-semibold">Maria Oliveira</span>
+                <span className="font-semibold">Igor Esteves</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm">Estrelas:</span>
@@ -165,7 +178,7 @@ const RecognitionPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Ranking Table */}
+      {/* Enhanced Ranking Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -179,6 +192,7 @@ const RecognitionPage: React.FC = () => {
               <TableRow>
                 <TableHead>Posição</TableHead>
                 <TableHead>Colaborador</TableHead>
+                <TableHead>Cargo</TableHead>
                 <TableHead>Unidade</TableHead>
                 <TableHead>Fideliza+</TableHead>
                 <TableHead>Matriculador+</TableHead>
@@ -187,8 +201,12 @@ const RecognitionPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockRanking.map((person, index) => (
-                <TableRow key={person.id}>
+              {detailedRankingEmployees.map((person, index) => (
+                <TableRow 
+                  key={person.id} 
+                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => handleEmployeeClick(person)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
@@ -197,21 +215,26 @@ const RecognitionPage: React.FC = () => {
                       <span className="font-bold">{index + 1}º</span>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{person.name}</TableCell>
+                  <TableCell>
+                    <div className="font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                      {person.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">{person.role}</TableCell>
                   <TableCell>{person.unit}</TableCell>
                   <TableCell>
                     <Badge className="bg-blue-100 text-blue-800">
-                      {person.fideliza} ⭐
+                      {person.stars.fideliza} ⭐
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className="bg-green-100 text-green-800">
-                      {person.matriculador} 📚
+                      {person.stars.matriculador} 📚
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className="bg-purple-100 text-purple-800">
-                      {person.professor} ⭐
+                      {person.stars.professor} ⭐
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -241,13 +264,13 @@ const RecognitionPage: React.FC = () => {
               },
               {
                 employee: 'Felipe Elias Carvalho',
-                achievement: '5 matrículas em uma semana',
+                achievement: '15 matrículas em uma semana',
                 program: 'Matriculador+',
                 points: 15,
                 date: '2024-03-14'
               },
               {
-                employee: 'Luana de Menezes Vieira',
+                employee: 'Igor Esteves Alves Baiao',
                 achievement: 'Avaliação excepcional dos alunos',
                 program: 'Professor+',
                 points: 12,
@@ -289,6 +312,15 @@ const RecognitionPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Employee Details Modal */}
+      <EmployeeRankingDetailsModal
+        open={employeeDetailsModalOpen}
+        onOpenChange={setEmployeeDetailsModalOpen}
+        employee={selectedEmployee}
+        onDeliverPrize={handleDeliverPrizeFromModal}
+        onCreateBonus={handleCreateBonusFromModal}
+      />
 
       {/* New Bonus Dialog */}
       <NewBonusDialog
