@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
 import { EmployeeProvider, useEmployees } from '@/contexts/EmployeeContext';
@@ -9,6 +11,19 @@ import { EmployeeCard } from '@/components/employees/EmployeeCard';
 const EmployeesContent: React.FC = () => {
   const [isNewEmployeeDialogOpen, setIsNewEmployeeDialogOpen] = useState(false);
   const { filteredEmployees, employees } = useEmployees();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+
+  // Check for employee ID in URL parameters
+  useEffect(() => {
+    const employeeId = searchParams.get('employeeId');
+    if (employeeId) {
+      setSelectedEmployeeId(employeeId);
+      // Remove the parameter from URL after processing
+      searchParams.delete('employeeId');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleExport = () => {
     // Simple CSV export for demonstration
@@ -85,7 +100,12 @@ const EmployeesContent: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEmployees.map((employee) => (
-              <EmployeeCard key={employee.id} employee={employee} />
+              <EmployeeCard 
+                key={employee.id} 
+                employee={employee} 
+                autoOpenSheet={selectedEmployeeId === employee.id}
+                onSheetClose={() => setSelectedEmployeeId(null)}
+              />
             ))}
           </div>
         )}

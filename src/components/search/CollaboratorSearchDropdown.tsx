@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   className = "w-80"
 }) => {
   const { employees } = useEmployees();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -69,6 +70,8 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
     console.log('Employee selected:', employee);
     setIsOpen(false);
     setSearchTerm('');
+    // Navigate to employees page with the selected employee ID
+    navigate(`/colaboradores?employeeId=${employee.id}`);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

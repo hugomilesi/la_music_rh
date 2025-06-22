@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, Mail, Phone, Calendar } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,11 +28,32 @@ import { useToast } from '@/hooks/use-toast';
 
 interface EmployeeCardProps {
   employee: Employee;
+  autoOpenSheet?: boolean;
+  onSheetClose?: () => void;
 }
 
-export const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
+export const EmployeeCard: React.FC<EmployeeCardProps> = ({ 
+  employee, 
+  autoOpenSheet = false,
+  onSheetClose 
+}) => {
   const { updateEmployee, deleteEmployee } = useEmployees();
   const { toast } = useToast();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // Auto-open sheet when autoOpenSheet prop is true
+  useEffect(() => {
+    if (autoOpenSheet) {
+      setIsSheetOpen(true);
+    }
+  }, [autoOpenSheet]);
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open);
+    if (!open && onSheetClose) {
+      onSheetClose();
+    }
+  };
 
   const getInitials = (name: string) => {
     return name
@@ -96,7 +117,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
           </div>
         </div>
 
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="sm">
               <MoreHorizontal className="w-4 h-4" />
