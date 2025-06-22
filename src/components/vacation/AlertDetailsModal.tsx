@@ -171,7 +171,7 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Data de Admissão:</span>
-                    <p>{format(new Date(employee.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                    <p>{format(new Date(employee.start_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
                   </div>
                 </div>
               </CardContent>
