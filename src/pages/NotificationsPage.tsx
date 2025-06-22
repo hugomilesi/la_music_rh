@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Filter, Send, Calendar, Mail, MessageSquare } from 'lucide-react';
 import { NewNotificationDialog } from '@/components/notifications/NewNotificationDialog';
 import { ScheduleSendModal } from '@/components/notifications/ScheduleSendModal';
 import { EditNotificationDialog } from '@/components/notifications/EditNotificationDialog';
-import { StatsModal } from '@/components/notifications/StatsModals';
+import { EnhancedStatsModal } from '@/components/notifications/EnhancedStatsModal';
+import { PerformanceAnalytics } from '@/components/notifications/PerformanceAnalytics';
 import { QuickActions } from '@/components/notifications/QuickActions';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Notification } from '@/types/notification';
@@ -84,123 +86,143 @@ const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatsModal type="sent">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Enviadas Hoje</p>
-                  <p className="text-2xl font-bold">{stats.sentToday}</p>
-                </div>
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Send className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </StatsModal>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
+        </TabsList>
 
-        <StatsModal type="scheduled">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Programadas</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.scheduled}</p>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </StatsModal>
-
-        <StatsModal type="drafts">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Rascunhos</p>
-                  <p className="text-2xl font-bold text-gray-600">{stats.drafts}</p>
-                </div>
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Filter className="w-5 h-5 text-gray-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </StatsModal>
-
-        <StatsModal type="openRate">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Taxa de Abertura</p>
-                  <p className="text-2xl font-bold text-purple-600">{stats.openRate}%</p>
-                </div>
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </StatsModal>
-      </div>
-
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Notifications List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Notificações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div key={notification.id} className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-medium">{notification.title}</h3>
-                    <Badge className={getTypeBadge(notification.type)}>
-                      {notification.type}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>Para: {notification.recipientNames.join(', ')}</span>
-                    <div className="flex items-center gap-1">
-                      {getChannelIcon(notification.channel)}
-                      <span>{notification.channel}</span>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Enhanced Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <EnhancedStatsModal type="sent">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Enviadas Hoje</p>
+                      <p className="text-2xl font-bold">{stats.sentToday}</p>
+                      <p className="text-xs text-green-600 mt-1">+12% vs ontem</p>
                     </div>
-                    <span>{new Date(notification.createdAt).toLocaleDateString('pt-BR')}</span>
-                    {notification.scheduledFor && (
-                      <span>Programado: {new Date(notification.scheduledFor).toLocaleDateString('pt-BR')}</span>
-                    )}
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Send className="w-5 h-5 text-green-600" />
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <Badge className={getStatusBadge(notification.status)}>
-                    {notification.status}
-                  </Badge>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleEditNotification(notification)}
-                  >
-                    Editar
-                  </Button>
-                </div>
-              </div>
-            ))}
+                </CardContent>
+              </Card>
+            </EnhancedStatsModal>
+
+            <EnhancedStatsModal type="scheduled">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Programadas</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats.scheduled}</p>
+                      <p className="text-xs text-blue-600 mt-1">+5% vs semana passada</p>
+                    </div>
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </EnhancedStatsModal>
+
+            <EnhancedStatsModal type="drafts">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Rascunhos</p>
+                      <p className="text-2xl font-bold text-gray-600">{stats.drafts}</p>
+                      <p className="text-xs text-red-600 mt-1">-8% vs mês passado</p>
+                    </div>
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Filter className="w-5 h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </EnhancedStatsModal>
+
+            <EnhancedStatsModal type="openRate">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Taxa de Abertura</p>
+                      <p className="text-2xl font-bold text-purple-600">{stats.openRate}%</p>
+                      <p className="text-xs text-green-600 mt-1">+3% vs média</p>
+                    </div>
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Mail className="w-5 h-5 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </EnhancedStatsModal>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Quick Actions */}
+          <QuickActions />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <PerformanceAnalytics />
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          {/* Notifications List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Notificações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {notifications.map((notification) => (
+                  <div key={notification.id} className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-medium">{notification.title}</h3>
+                        <Badge className={getTypeBadge(notification.type)}>
+                          {notification.type}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>Para: {notification.recipientNames.join(', ')}</span>
+                        <div className="flex items-center gap-1">
+                          {getChannelIcon(notification.channel)}
+                          <span>{notification.channel}</span>
+                        </div>
+                        <span>{new Date(notification.createdAt).toLocaleDateString('pt-BR')}</span>
+                        {notification.scheduledFor && (
+                          <span>Programado: {new Date(notification.scheduledFor).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Badge className={getStatusBadge(notification.status)}>
+                        {notification.status}
+                      </Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditNotification(notification)}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Notification Dialog */}
       <EditNotificationDialog
