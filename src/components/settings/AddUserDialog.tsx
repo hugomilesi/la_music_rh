@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -16,24 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CreateUserForm } from './CreateUserForm';
 import { CreateSystemUserData } from '@/types/systemUser';
-
-const createUserSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
-  department: z.string().optional(),
-  phone: z.string().optional(),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string(),
-  permissions: z.array(z.string()),
-  status: z.enum(['active', 'inactive'])
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
-// Use the inferred type from Zod schema
-type CreateUserFormData = z.infer<typeof createUserSchema>;
+import { createUserSchema, CreateUserFormData } from '@/types/userFormSchemas';
 
 interface AddUserDialogProps {
   children: React.ReactNode;

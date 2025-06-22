@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -15,19 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { EditUserForm } from './EditUserForm';
 import { SystemUser, UpdateSystemUserData } from '@/types/systemUser';
-
-const updateUserSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
-  department: z.string().optional(),
-  phone: z.string().optional(),
-  permissions: z.array(z.string()),
-  status: z.enum(['active', 'inactive'])
-});
-
-// Use the inferred type from Zod schema
-type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+import { updateUserSchema, UpdateUserFormData } from '@/types/userFormSchemas';
 
 interface EditUserDialogProps {
   user: SystemUser | null;
