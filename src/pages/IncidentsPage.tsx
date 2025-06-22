@@ -1,49 +1,60 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield } from 'lucide-react';
-
-const mockIncidents = [
-  {
-    id: 1,
-    employee: 'Fabio Magarinos da Silva',
-    type: 'Atraso',
-    severity: 'leve',
-    description: 'Chegou 30 minutos atrasado sem justificativa',
-    date: '2024-03-15',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  },
-  {
-    id: 2,
-    employee: 'Luciano Nazario de Oliveira',
-    type: 'Falta Injustificada',
-    severity: 'moderado',
-    description: 'Não compareceu ao trabalho sem comunicação prévia',
-    date: '2024-03-10',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'resolvido'
-  },
-  {
-    id: 3,
-    employee: 'Felipe Elias Carvalho',
-    type: 'Comportamento Inadequado',
-    severity: 'grave',
-    description: 'Atendimento inadequado aos alunos relatado por pais',
-    date: '2024-03-08',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  }
-];
+import { useIncident } from '@/contexts/IncidentContext';
+import { NewIncidentDialog } from '@/components/incidents/NewIncidentDialog';
+import { IncidentDetailsModal } from '@/components/incidents/IncidentDetailsModal';
+import { StatsModal } from '@/components/incidents/StatsModal';
+import { ReportDialog } from '@/components/incidents/ReportDialog';
+import { Incident } from '@/types/incident';
 
 const IncidentsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSeverity, setSelectedSeverity] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const { incidents, stats, filters, setFilters } = useIncident();
+  const [newIncidentOpen, setNewIncidentOpen] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [statsModalTitle, setStatsModalTitle] = useState('');
+  const [statsModalIncidents, setStatsModalIncidents] = useState<Incident[]>([]);
+  const [statsFilterType, setStatsFilterType] = useState<'total' | 'active' | 'resolved' | 'thisMonth'>('total');
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+
+  // Filter incidents based on current filters
+  const filteredIncidents = useMemo(() => {
+    return incidents.filter(incident => {
+      // Search filter
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase();
+        if (!incident.employee.toLowerCase().includes(searchLower) &&
+            !incident.type.toLowerCase().includes(searchLower) &&
+            !incident.description.toLowerCase().includes(searchLower)) {
+          return false;
+        }
+      }
+
+      // Severity filter
+      if (filters.severity !== 'all' && incident.severity !== filters.severity) {
+        return false;
+      }
+
+      // Status filter
+      if (filters.status !== 'all' && incident.status !== filters.status) {
+        return false;
+      }
+
+      // Type filter
+      if (filters.type !== 'all' && incident.type !== filters.type) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [incidents, filters]);
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
@@ -63,6 +74,46 @@ const IncidentsPage: React.FC = () => {
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleStatsCardClick = (type: 'total' | 'active' | 'resolved' | 'thisMonth') => {
+    let filteredForStats: Incident[] = [];
+    let title = '';
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    switch (type) {
+      case 'total':
+        filteredForStats = incidents;
+        title = 'Todas as Ocorrências';
+        break;
+      case 'active':
+        filteredForStats = incidents.filter(i => i.status === 'ativo');
+        title = 'Ocorrências Ativas';
+        break;
+      case 'resolved':
+        filteredForStats = incidents.filter(i => i.status === 'resolvido');
+        title = 'Ocorrências Resolvidas';
+        break;
+      case 'thisMonth':
+        filteredForStats = incidents.filter(i => {
+          const incidentDate = new Date(i.date);
+          return incidentDate.getMonth() === currentMonth && incidentDate.getFullYear() === currentYear;
+        });
+        title = 'Ocorrências deste Mês';
+        break;
+    }
+
+    setStatsModalIncidents(filteredForStats);
+    setStatsModalTitle(title);
+    setStatsFilterType(type);
+    setStatsModalOpen(true);
+  };
+
+  const handleViewIncident = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,25 +124,25 @@ const IncidentsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}>
             <FileText className="w-4 h-4 mr-2" />
             Relatório
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setNewIncidentOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Ocorrência
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Now Clickable */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsCardClick('total')}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Ocorrências</p>
-                <p className="text-2xl font-bold">47</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -100,12 +151,12 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsCardClick('active')}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Ativas</p>
-                <p className="text-2xl font-bold text-red-600">12</p>
+                <p className="text-2xl font-bold text-red-600">{stats.active}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-red-600" />
@@ -114,12 +165,12 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsCardClick('resolved')}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Resolvidas</p>
-                <p className="text-2xl font-bold text-green-600">35</p>
+                <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-green-600" />
@@ -128,12 +179,12 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatsCardClick('thisMonth')}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Este Mês</p>
-                <p className="text-2xl font-bold text-orange-600">8</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.thisMonth}</p>
               </div>
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
@@ -151,9 +202,9 @@ const IncidentsPage: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Buscar por colaborador ou tipo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por colaborador, tipo ou descrição..."
+                  value={filters.searchTerm}
+                  onChange={(e) => setFilters({ searchTerm: e.target.value })}
                   className="pl-10"
                 />
               </div>
@@ -162,8 +213,8 @@ const IncidentsPage: React.FC = () => {
             <div className="flex gap-2">
               <select 
                 className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedSeverity}
-                onChange={(e) => setSelectedSeverity(e.target.value)}
+                value={filters.severity}
+                onChange={(e) => setFilters({ severity: e.target.value as any })}
               >
                 <option value="all">Todas as Gravidades</option>
                 <option value="leve">Leve</option>
@@ -173,13 +224,25 @@ const IncidentsPage: React.FC = () => {
 
               <select 
                 className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                value={filters.status}
+                onChange={(e) => setFilters({ status: e.target.value as any })}
               >
                 <option value="all">Todos os Status</option>
                 <option value="ativo">Ativas</option>
                 <option value="resolvido">Resolvidas</option>
                 <option value="arquivado">Arquivadas</option>
+              </select>
+
+              <select 
+                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
+                value={filters.type}
+                onChange={(e) => setFilters({ type: e.target.value as any })}
+              >
+                <option value="all">Todos os Tipos</option>
+                <option value="Atraso">Atraso</option>
+                <option value="Falta Injustificada">Falta Injustificada</option>
+                <option value="Comportamento Inadequado">Comportamento Inadequado</option>
+                <option value="Outros">Outros</option>
               </select>
 
               <Button variant="outline" size="sm">
@@ -194,7 +257,7 @@ const IncidentsPage: React.FC = () => {
       {/* Incidents Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Ocorrências</CardTitle>
+          <CardTitle>Lista de Ocorrências ({filteredIncidents.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -211,7 +274,7 @@ const IncidentsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockIncidents.map((incident) => (
+              {filteredIncidents.map((incident) => (
                 <TableRow key={incident.id}>
                   <TableCell className="font-medium">{incident.employee}</TableCell>
                   <TableCell>{incident.type}</TableCell>
@@ -230,20 +293,52 @@ const IncidentsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewIncident(incident)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewIncident(incident)}>
                         <Edit className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredIncidents.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    Nenhuma ocorrência encontrada com os filtros aplicados.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <NewIncidentDialog 
+        open={newIncidentOpen} 
+        onOpenChange={setNewIncidentOpen} 
+      />
+
+      <IncidentDetailsModal
+        incident={selectedIncident}
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+      />
+
+      <StatsModal
+        open={statsModalOpen}
+        onOpenChange={setStatsModalOpen}
+        title={statsModalTitle}
+        incidents={statsModalIncidents}
+        filterType={statsFilterType}
+      />
+
+      <ReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+      />
     </div>
   );
 };

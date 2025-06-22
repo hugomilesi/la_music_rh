@@ -7,6 +7,7 @@ import { DocumentProvider } from './contexts/DocumentContext';
 import { EvaluationProvider } from './contexts/EvaluationContext';
 import { VacationProvider } from './contexts/VacationContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
+import { IncidentProvider } from './contexts/IncidentContext';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/toaster';
 import DashboardPage from './pages/DashboardPage';
@@ -34,26 +35,28 @@ function App() {
             <EvaluationProvider>
               <VacationProvider>
                 <ScheduleProvider>
-                  <MainLayout>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/colaboradores" element={<EmployeesPage />} />
-                      <Route path="/documentos" element={<DocumentsPage />} />
-                      <Route path="/avaliacoes" element={<EvaluationsPage />} />
-                      <Route path="/ferias" element={<VacationPage />} />
-                      <Route path="/agenda" element={<SchedulePage />} />
-                      <Route path="/notificacoes" element={<NotificationsPage />} />
-                      <Route path="/reconhecimento" element={<RecognitionPage />} />
-                      <Route path="/whatsapp" element={<WhatsAppPage />} />
-                      <Route path="/nps" element={<NPSPage />} />
-                      <Route path="/timesheet" element={<TimesheetPage />} />
-                      <Route path="/incidentes" element={<IncidentsPage />} />
-                      <Route path="/configuracoes" element={<SettingsPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </MainLayout>
-                  <Toaster />
+                  <IncidentProvider>
+                    <MainLayout>
+                      <Routes>
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/colaboradores" element={<EmployeesPage />} />
+                        <Route path="/documentos" element={<DocumentsPage />} />
+                        <Route path="/avaliacoes" element={<EvaluationsPage />} />
+                        <Route path="/ferias" element={<VacationPage />} />
+                        <Route path="/agenda" element={<SchedulePage />} />
+                        <Route path="/notificacoes" element={<NotificationsPage />} />
+                        <Route path="/reconhecimento" element={<RecognitionPage />} />
+                        <Route path="/whatsapp" element={<WhatsAppPage />} />
+                        <Route path="/nps" element={<NPSPage />} />
+                        <Route path="/timesheet" element={<TimesheetPage />} />
+                        <Route path="/incidentes" element={<IncidentsPage />} />
+                        <Route path="/configuracoes" element={<SettingsPage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </MainLayout>
+                    <Toaster />
+                  </IncidentProvider>
                 </ScheduleProvider>
               </VacationProvider>
             </EvaluationProvider>
