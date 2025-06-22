@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
@@ -41,7 +40,7 @@ const EmployeesContent: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>
           <p className="text-gray-600 mt-1">
-            Gestão completa da equipe LA Music ({employees.length} colaboradores)
+            Gestão completa da equipe LA Music RH ({employees.length} colaboradores)
           </p>
         </div>
         

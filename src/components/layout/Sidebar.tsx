@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold">LA Music</h1>
+              <h1 className="text-lg font-bold">LA Music RH</h1>
               <p className="text-xs text-purple-200">Gestão de Pessoas</p>
             </div>
           )}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Users, TrendingUp, Calendar, AlertTriangle, Award, Clock } from 'lucide-react';
 import { StatCard } from './StatCard';
@@ -22,7 +21,7 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Visão geral da gestão de pessoas - LA Music</p>
+          <p className="text-gray-600 mt-1">Visão geral da gestão de pessoas - LA Music RH</p>
         </div>
         
         <div className="flex items-center gap-2 mt-4 md:mt-0">
