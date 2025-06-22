@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +23,6 @@ const IncidentsPage: React.FC = () => {
   const [statsFilterType, setStatsFilterType] = useState<'total' | 'active' | 'resolved' | 'thisMonth'>('total');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
-  // Filter incidents based on current filters
   const filteredIncidents = useMemo(() => {
     return incidents.filter(incident => {
       // Search filter
