@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Document, DocumentFilter, DocumentUpload, DocumentStats, DocumentType, DocumentStatus } from '@/types/document';
 import { useEmployees } from './EmployeeContext';
-import { useToast } from '@/hooks/use-toast';
 
 interface DocumentContextType {
   documents: Document[];
@@ -135,7 +134,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [isLoading, setIsLoading] = useState(false);
   const { employees } = useEmployees();
-  const { toast } = useToast();
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.employee.toLowerCase().includes(filter.searchTerm.toLowerCase()) ||
@@ -206,12 +204,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       Status: doc.status
     }));
     console.log('Export data:', data);
-    
-    toast({
-      title: "Exportação iniciada!",
-      description: `Exportando ${filteredDocuments.length} documento(s) em formato ${format.toUpperCase()}`,
-    });
-  }, [filteredDocuments, toast]);
+  }, [filteredDocuments]);
 
   const exportDocumentsByEmployee = useCallback((employeeId: string, format: 'pdf' | 'excel') => {
     const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
@@ -229,12 +222,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
     
     console.log('Employee export data:', data);
-    
-    toast({
-      title: "Exportação iniciada!",
-      description: `Exportando ${employeeDocuments.length} documento(s) de ${employee?.name} em formato ${format.toUpperCase()}`,
-    });
-  }, [documents, employees, toast]);
+    alert(`Exportação de documentos de ${employee?.name} em formato ${format.toUpperCase()} iniciada!`);
+  }, [documents, employees]);
 
   const getDocumentsByEmployee = useCallback((employeeId: string) => {
     return documents.filter(doc => doc.employeeId === employeeId);

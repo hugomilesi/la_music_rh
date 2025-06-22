@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,6 @@ import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 import { Mail, Send, FileText, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 interface SendToAccountantDialogProps {
   open: boolean;
@@ -26,7 +25,6 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
 }) => {
   const { filteredDocuments } = useDocuments();
   const { employees } = useEmployees();
-  const { toast } = useToast();
   const [email, setEmail] = useState('gprado0167@gmail.com');
   const [subject, setSubject] = useState('Documentos para Análise');
   const [message, setMessage] = useState('Segue em anexo os documentos solicitados para análise.');
@@ -36,19 +34,17 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  // Memoize available documents to prevent infinite re-renders
-  const availableDocuments = useMemo(() => {
-    return selectedEmployee === 'all' 
-      ? filteredDocuments 
-      : filteredDocuments.filter(doc => doc.employeeId === selectedEmployee);
-  }, [selectedEmployee, filteredDocuments]);
+  // Filter documents based on selected employee
+  const availableDocuments = selectedEmployee === 'all' 
+    ? filteredDocuments 
+    : filteredDocuments.filter(doc => doc.employeeId === selectedEmployee);
 
-  // Update documents when employee selection changes - with proper dependencies
-  useEffect(() => {
+  // Update documents when employee selection changes
+  React.useEffect(() => {
     if (selectedEmployee !== 'all') {
       setDocumentsToSend(availableDocuments.map(doc => doc.id));
     }
-  }, [selectedEmployee, availableDocuments.length]); // Use length instead of the array itself
+  }, [selectedEmployee, availableDocuments]);
 
   const handleDocumentToggle = (documentId: string) => {
     setDocumentsToSend(prev => 
@@ -61,36 +57,22 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
   const handleSend = async () => {
     setIsLoading(true);
     
-    try {
-      // Simulate sending email
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('Enviando documentos para:', email);
-      console.log('Assunto:', subject);
-      console.log('Mensagem:', message);
-      console.log('Documentos:', documentsToSend);
-      
-      toast({
-        title: "Documentos enviados com sucesso!",
-        description: `${documentsToSend.length} documento(s) enviado(s) para ${email}`,
-      });
-      
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Erro ao enviar documentos",
-        description: "Tente novamente em alguns instantes.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Simulate sending email
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    console.log('Enviando documentos para:', email);
+    console.log('Assunto:', subject);
+    console.log('Mensagem:', message);
+    console.log('Documentos:', documentsToSend);
+    
+    setIsLoading(false);
+    onOpenChange(false);
+    
+    // Here you would integrate with an email service
+    alert('Documentos enviados com sucesso!');
   };
 
-  const selectedDocs = useMemo(() => 
-    availableDocuments.filter(doc => documentsToSend.includes(doc.id)), 
-    [availableDocuments, documentsToSend]
-  );
+  const selectedDocs = availableDocuments.filter(doc => documentsToSend.includes(doc.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
