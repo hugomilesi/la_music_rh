@@ -26,7 +26,16 @@ const updateUserSchema = z.object({
   status: z.enum(['active', 'inactive'])
 });
 
-type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+// Define the form data interface to match what EditUserForm expects
+interface UpdateUserFormData {
+  name: string;
+  email: string;
+  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  department?: string;
+  phone?: string;
+  permissions: string[];
+  status: 'active' | 'inactive';
+}
 
 interface EditUserDialogProps {
   user: SystemUser | null;
