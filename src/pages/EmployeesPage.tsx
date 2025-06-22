@@ -22,7 +22,7 @@ const EmployeesContent: React.FC = () => {
         emp.position,
         emp.department,
         emp.status === 'active' ? 'Ativo' : 'Inativo',
-        new Date(emp.startDate).toLocaleDateString('pt-BR')
+        new Date(emp.start_date || emp.startDate || '').toLocaleDateString('pt-BR')
       ])
     ].map(row => row.join(',')).join('\n');
 
