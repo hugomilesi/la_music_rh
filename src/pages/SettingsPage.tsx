@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +8,8 @@ import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
 import { DataExportDialog } from '@/components/settings/DataExportDialog';
+import { AddUserDialog } from '@/components/settings/AddUserDialog';
+import { SystemUser, CreateSystemUserData } from '@/types/systemUser';
 
 const mockUsers = [
   { id: 1, name: 'Admin Geral', email: 'admin@lamusic.com', role: 'admin', lastAccess: '2024-03-21 10:30' },
@@ -24,6 +25,62 @@ const mockRoles = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([
+    {
+      id: 1,
+      name: 'Admin Geral',
+      email: 'admin@lamusic.com',
+      role: 'admin',
+      department: 'Administração',
+      phone: '(11) 99999-9999',
+      status: 'active',
+      lastAccess: '2024-03-21 10:30',
+      createdAt: '2024-01-15',
+      permissions: ['employees', 'documents', 'schedule', 'evaluations', 'settings', 'reports']
+    },
+    {
+      id: 2,
+      name: 'Aline Cristina Pessanha Faria',
+      email: 'aline.faria@lamusic.com',
+      role: 'coordenador',
+      department: 'Coordenação',
+      phone: '(11) 98888-8888',
+      status: 'active',
+      lastAccess: '2024-03-21 09:15',
+      createdAt: '2024-01-20',
+      permissions: ['employees', 'documents', 'schedule', 'evaluations']
+    },
+    {
+      id: 3,
+      name: 'Felipe Elias Carvalho',
+      email: 'felipe.carvalho@lamusic.com',
+      role: 'professor',
+      department: 'Educação Musical',
+      phone: '(11) 97777-7777',
+      status: 'active',
+      lastAccess: '2024-03-20 16:45',
+      createdAt: '2024-02-01',
+      permissions: ['documents', 'schedule']
+    }
+  ]);
+
+  const handleAddUser = (userData: CreateSystemUserData) => {
+    const newUser: SystemUser = {
+      id: Date.now(),
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      department: userData.department,
+      phone: userData.phone,
+      status: userData.status,
+      lastAccess: 'Nunca acessou',
+      createdAt: new Date().toISOString().split('T')[0],
+      permissions: userData.permissions
+    };
+
+    setSystemUsers([...systemUsers, newUser]);
+  };
+
   const getRoleBadge = (role: string) => {
     const variants = {
       'admin': 'bg-red-100 text-red-800',
@@ -111,10 +168,12 @@ const SettingsPage: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Usuários do Sistema</CardTitle>
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Usuário
-            </Button>
+            <AddUserDialog onUserAdd={handleAddUser}>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Usuário
+              </Button>
+            </AddUserDialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -129,7 +188,7 @@ const SettingsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((user) => (
+              {systemUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>

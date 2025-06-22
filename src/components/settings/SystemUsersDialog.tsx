@@ -4,31 +4,57 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { SystemUser, CreateSystemUserData, UpdateSystemUserData, SystemUserFilters } from '@/types/systemUser';
+import { AddUserDialog } from './AddUserDialog';
+import { EditUserDialog } from './EditUserDialog';
+import { DeleteUserDialog } from './DeleteUserDialog';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  lastAccess: string;
-}
-
-const mockUsers: User[] = [
-  { id: 1, name: 'Admin Geral', email: 'admin@lamusic.com', role: 'admin', lastAccess: '2024-03-21 10:30' },
-  { id: 2, name: 'Aline Cristina Pessanha Faria', email: 'aline.faria@lamusic.com', role: 'coordenador', lastAccess: '2024-03-21 09:15' },
-  { id: 3, name: 'Felipe Elias Carvalho', email: 'felipe.carvalho@lamusic.com', role: 'professor', lastAccess: '2024-03-20 16:45' }
+const mockUsers: SystemUser[] = [
+  {
+    id: 1,
+    name: 'Admin Geral',
+    email: 'admin@lamusic.com',
+    role: 'admin',
+    department: 'Administração',
+    phone: '(11) 99999-9999',
+    status: 'active',
+    lastAccess: '2024-03-21 10:30',
+    createdAt: '2024-01-15',
+    permissions: ['employees', 'documents', 'schedule', 'evaluations', 'settings', 'reports']
+  },
+  {
+    id: 2,
+    name: 'Aline Cristina Pessanha Faria',
+    email: 'aline.faria@lamusic.com',
+    role: 'coordenador',
+    department: 'Coordenação',
+    phone: '(11) 98888-8888',
+    status: 'active',
+    lastAccess: '2024-03-21 09:15',
+    createdAt: '2024-01-20',
+    permissions: ['employees', 'documents', 'schedule', 'evaluations']
+  },
+  {
+    id: 3,
+    name: 'Felipe Elias Carvalho',
+    email: 'felipe.carvalho@lamusic.com',
+    role: 'professor',
+    department: 'Educação Musical',
+    phone: '(11) 97777-7777',
+    status: 'active',
+    lastAccess: '2024-03-20 16:45',
+    createdAt: '2024-02-01',
+    permissions: ['documents', 'schedule']
+  }
 ];
 
 interface SystemUsersDialogProps {
@@ -36,56 +62,67 @@ interface SystemUsersDialogProps {
 }
 
 export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isAddingUser, setIsAddingUser] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    role: 'usuario',
-    password: ''
+  const [users, setUsers] = useState<SystemUser[]>(mockUsers);
+  const [filters, setFilters] = useState<SystemUserFilters>({
+    searchQuery: '',
+    role: '',
+    department: '',
+    status: ''
   });
-  const { toast } = useToast();
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<SystemUser | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+                         user.email.toLowerCase().includes(filters.searchQuery.toLowerCase());
+    const matchesRole = !filters.role || user.role === filters.role;
+    const matchesDepartment = !filters.department || user.department === filters.department;
+    const matchesStatus = !filters.status || user.status === filters.status;
 
-  const handleAddUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.password) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
+    return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
+  });
 
-    const user: User = {
+  const handleAddUser = (userData: CreateSystemUserData) => {
+    const newUser: SystemUser = {
       id: Date.now(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      lastAccess: 'Nunca acessou'
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      department: userData.department,
+      phone: userData.phone,
+      status: userData.status,
+      lastAccess: 'Nunca acessou',
+      createdAt: new Date().toISOString().split('T')[0],
+      permissions: userData.permissions
     };
 
-    setUsers([...users, user]);
-    setNewUser({ name: '', email: '', role: 'usuario', password: '' });
-    setIsAddingUser(false);
-    toast({
-      title: "Sucesso",
-      description: "Usuário adicionado com sucesso"
-    });
+    setUsers([...users, newUser]);
+  };
+
+  const handleUpdateUser = (id: number, userData: UpdateSystemUserData) => {
+    setUsers(users.map(user => 
+      user.id === id 
+        ? { ...user, ...userData }
+        : user
+    ));
+    setEditingUser(null);
   };
 
   const handleDeleteUser = (id: number) => {
     setUsers(users.filter(user => user.id !== id));
-    toast({
-      title: "Sucesso",
-      description: "Usuário removido com sucesso"
-    });
+    setDeletingUser(null);
+  };
+
+  const handleEditClick = (user: SystemUser) => {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (user: SystemUser) => {
+    setDeletingUser(user);
+    setDeleteDialogOpen(true);
   };
 
   const getRoleBadge = (role: string) => {
@@ -98,143 +135,175 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
     return variants[role as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
+  const getStatusBadge = (status: string) => {
+    return status === 'active' 
+      ? 'bg-green-100 text-green-800'
+      : 'bg-gray-100 text-gray-800';
+  };
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Gerenciar Usuários do Sistema</DialogTitle>
-          <DialogDescription>
-            Adicione, edite ou remova usuários do sistema
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Usuários do Sistema</DialogTitle>
+            <DialogDescription>
+              Adicione, edite ou remova usuários do sistema
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Search and Add User */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar usuários..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button onClick={() => setIsAddingUser(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Usuário
-            </Button>
-          </div>
+          <div className="space-y-6">
+            {/* Filtros e Ações */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar usuários..."
+                    value={filters.searchQuery}
+                    onChange={(e) => setFilters({...filters, searchQuery: e.target.value})}
+                    className="pl-10"
+                  />
+                </div>
 
-          {/* Add User Form */}
-          {isAddingUser && (
-            <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-              <h3 className="font-medium">Adicionar Novo Usuário</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input
-                    id="name"
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                    placeholder="Nome do usuário"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Perfil</Label>
-                  <select
-                    id="role"
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                  >
-                    <option value="usuario">Usuário</option>
-                    <option value="professor">Professor</option>
-                    <option value="coordenador">Coordenador</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="password">Senha Inicial</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                    placeholder="Senha inicial"
-                  />
-                </div>
+                <select
+                  value={filters.role}
+                  onChange={(e) => setFilters({...filters, role: e.target.value})}
+                  className="h-10 px-3 rounded-md border border-input bg-background"
+                >
+                  <option value="">Todos os perfis</option>
+                  <option value="admin">Administrador</option>
+                  <option value="coordenador">Coordenador</option>
+                  <option value="professor">Professor</option>
+                  <option value="usuario">Usuário</option>
+                </select>
+
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters({...filters, status: e.target.value})}
+                  className="h-10 px-3 rounded-md border border-input bg-background"
+                >
+                  <option value="">Todos os status</option>
+                  <option value="active">Ativo</option>
+                  <option value="inactive">Inativo</option>
+                </select>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleAddUser}>Adicionar</Button>
-                <Button variant="outline" onClick={() => setIsAddingUser(false)}>
-                  Cancelar
+
+              <AddUserDialog onUserAdd={handleAddUser}>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Usuário
                 </Button>
+              </AddUserDialog>
+            </div>
+
+            {/* Tabela de Usuários */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead>Setor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Último Acesso</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge className={getRoleBadge(user.role)}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user.department || '-'}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadge(user.status)}>
+                          {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user.lastAccess}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditClick(user)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteClick(user)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {filteredUsers.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum usuário encontrado com os filtros aplicados
+                </div>
+              )}
+            </div>
+
+            {/* Estatísticas */}
+            <div className="grid grid-cols-4 gap-4 pt-4 border-t">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{users.length}</div>
+                <div className="text-sm text-gray-600">Total de Usuários</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {users.filter(u => u.status === 'active').length}
+                </div>
+                <div className="text-sm text-gray-600">Usuários Ativos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {users.filter(u => u.role === 'admin').length}
+                </div>
+                <div className="text-sm text-gray-600">Administradores</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {users.filter(u => u.role === 'professor').length}
+                </div>
+                <div className="text-sm text-gray-600">Professores</div>
               </div>
             </div>
-          )}
-
-          {/* Users Table */}
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead>Último Acesso</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge className={getRoleBadge(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{user.lastAccess}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           </div>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        <DialogFooter>
-          <Button variant="outline">Fechar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* Dialogs */}
+      <EditUserDialog
+        user={editingUser}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUserUpdate={handleUpdateUser}
+      />
+
+      <DeleteUserDialog
+        user={deletingUser}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onUserDelete={handleDeleteUser}
+      />
+    </>
   );
 };
