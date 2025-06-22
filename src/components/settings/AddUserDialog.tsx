@@ -32,18 +32,8 @@ const createUserSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Define the form data interface to match what CreateUserForm expects
-interface CreateUserFormData {
-  name: string;
-  email: string;
-  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
-  department?: string;
-  phone?: string;
-  password: string;
-  confirmPassword: string;
-  permissions: string[];
-  status: 'active' | 'inactive';
-}
+// Use the inferred type from Zod schema
+type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 interface AddUserDialogProps {
   children: React.ReactNode;
