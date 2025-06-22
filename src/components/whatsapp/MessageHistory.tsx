@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,12 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Filter, Calendar as CalendarIcon, Download, MessageSquare, Eye } from 'lucide-react';
+import { Search, Filter, Calendar as CalendarIcon, Download, MessageSquare, Eye, RefreshCw } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { getContactByPhone } from '@/services/contactsService';
 import { format } from 'date-fns';
 
 export const MessageHistory: React.FC = () => {
-  const { messages, getMessageHistory } = useWhatsApp();
+  const { messages, getMessageHistory, refreshStats } = useWhatsApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -21,8 +21,21 @@ export const MessageHistory: React.FC = () => {
   const [dateTo, setDateTo] = useState<Date>();
   const [recipientFilter, setRecipientFilter] = useState('');
 
+  // Enhanced messages with contact information
+  const enhancedMessages = useMemo(() => {
+    return messages.map(message => {
+      const contact = getContactByPhone(message.recipient);
+      return {
+        ...message,
+        recipientName: contact?.name || message.recipientName,
+        recipientRole: contact?.role,
+        recipientUnit: contact?.unit
+      };
+    });
+  }, [messages]);
+
   const filteredMessages = useMemo(() => {
-    return messages.filter(message => {
+    return enhancedMessages.filter(message => {
       const matchesSearch = message.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            message.recipientName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || message.status === statusFilter;
@@ -35,7 +48,7 @@ export const MessageHistory: React.FC = () => {
       
       return matchesSearch && matchesStatus && matchesType && matchesRecipient && matchesDateFrom && matchesDateTo;
     });
-  }, [messages, searchTerm, statusFilter, typeFilter, recipientFilter, dateFrom, dateTo]);
+  }, [enhancedMessages, searchTerm, statusFilter, typeFilter, recipientFilter, dateFrom, dateTo]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -46,6 +59,17 @@ export const MessageHistory: React.FC = () => {
       'pending': 'bg-yellow-100 text-yellow-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'sent': 'Enviado',
+      'delivered': 'Entregue',
+      'read': 'Lido',
+      'failed': 'Falhou',
+      'pending': 'Pendente'
+    };
+    return labels[status] || status;
   };
 
   const exportData = () => {
@@ -79,10 +103,16 @@ export const MessageHistory: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filtros
+            </CardTitle>
+            <Button onClick={refreshStats} variant="outline" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Atualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -185,80 +215,100 @@ export const MessageHistory: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {filteredMessages.map((message) => (
-              <div key={message.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium">{message.recipientName}</span>
-                      <span className="text-sm text-gray-500">{message.recipient}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {message.type}
-                      </Badge>
-                      <Badge className={getStatusColor(message.status)}>
-                        {message.status}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-gray-700 mb-2">{message.message}</p>
-                    
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>Criado: {format(new Date(message.createdAt), 'dd/MM/yyyy HH:mm')}</span>
-                      {message.sentAt && (
-                        <span>Enviado: {format(new Date(message.sentAt), 'dd/MM/yyyy HH:mm')}</span>
-                      )}
-                      {message.deliveredAt && (
-                        <span>Entregue: {format(new Date(message.deliveredAt), 'dd/MM/yyyy HH:mm')}</span>
-                      )}
-                      {message.readAt && (
-                        <span>Lido: {format(new Date(message.readAt), 'dd/MM/yyyy HH:mm')}</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Detalhes da Mensagem</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Destinatário</label>
-                          <p>{message.recipientName} ({message.recipient})</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Mensagem</label>
-                          <p className="bg-gray-50 p-3 rounded">{message.message}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Tipo</label>
-                            <p>{message.type}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Status</label>
-                            <Badge className={getStatusColor(message.status)}>
-                              {message.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        {message.templateId && (
-                          <div>
-                            <label className="text-sm font-medium">Template ID</label>
-                            <p>{message.templateId}</p>
-                          </div>
+            {filteredMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">Nenhuma mensagem encontrada</p>
+              </div>
+            ) : (
+              filteredMessages.map((message) => (
+                <div key={message.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium">{message.recipientName}</span>
+                        <span className="text-sm text-gray-500">{message.recipient}</span>
+                        {message.recipientRole && (
+                          <Badge variant="outline" className="text-xs">
+                            {message.recipientRole}
+                          </Badge>
+                        )}
+                        {message.recipientUnit && (
+                          <Badge variant="outline" className="text-xs">
+                            {message.recipientUnit}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {message.type}
+                        </Badge>
+                        <Badge className={getStatusColor(message.status)}>
+                          {getStatusLabel(message.status)}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-gray-700 mb-2">{message.message}</p>
+                      
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>Criado: {format(new Date(message.createdAt), 'dd/MM/yyyy HH:mm')}</span>
+                        {message.sentAt && (
+                          <span>Enviado: {format(new Date(message.sentAt), 'dd/MM/yyyy HH:mm')}</span>
+                        )}
+                        {message.deliveredAt && (
+                          <span>Entregue: {format(new Date(message.deliveredAt), 'dd/MM/yyyy HH:mm')}</span>
+                        )}
+                        {message.readAt && (
+                          <span>Lido: {format(new Date(message.readAt), 'dd/MM/yyyy HH:mm')}</span>
                         )}
                       </div>
-                    </DialogContent>
-                  </Dialog>
+                    </div>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Detalhes da Mensagem</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">Destinatário</label>
+                            <p>{message.recipientName} ({message.recipient})</p>
+                            {message.recipientRole && (
+                              <p className="text-sm text-gray-500">{message.recipientRole} - {message.recipientUnit}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Mensagem</label>
+                            <p className="bg-gray-50 p-3 rounded">{message.message}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium">Tipo</label>
+                              <p>{message.type}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Status</label>
+                              <Badge className={getStatusColor(message.status)}>
+                                {getStatusLabel(message.status)}
+                              </Badge>
+                            </div>
+                          </div>
+                          {message.templateId && (
+                            <div>
+                              <label className="text-sm font-medium">Template ID</label>
+                              <p>{message.templateId}</p>
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface WhatsAppConfig {
@@ -66,15 +65,16 @@ interface WhatsAppContextType {
 
 const WhatsAppContext = createContext<WhatsAppContextType | undefined>(undefined);
 
-// Mock data
+// Updated mock config - now configured for demo purposes
 const mockConfig: WhatsAppConfig = {
-  apiUrl: '',
-  apiKey: '',
-  phoneNumber: '',
-  webhookUrl: '',
-  isConfigured: false
+  apiUrl: 'https://api.whatsapp.business.com/v1',
+  apiKey: 'demo_api_key_configured',
+  phoneNumber: '+5511999999999',
+  webhookUrl: 'https://example.com/webhook',
+  isConfigured: true // Changed to true for demo
 };
 
+// Mock data
 const mockMessages: WhatsAppMessage[] = [
   {
     id: '1',
@@ -185,6 +185,15 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
             : msg
         ));
       }, 2000);
+
+      // Simulate read update
+      setTimeout(() => {
+        setMessages(prev => prev.map(msg => 
+          msg.id === newMessage.id 
+            ? { ...msg, status: 'read', readAt: new Date().toISOString() }
+            : msg
+        ));
+      }, 5000);
     } finally {
       setLoading(false);
     }
