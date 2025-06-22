@@ -15,9 +15,57 @@ interface DocumentContextType {
   setFilter: (filter: Partial<DocumentFilter>) => void;
   exportDocuments: (format: 'pdf' | 'excel') => void;
   getDocumentsByEmployee: (employeeId: string) => Document[];
+  downloadDocument: (document: Document) => void;
+  sampleDocuments: Document[];
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
+
+// Sample documents for viewing and download
+const sampleDocuments: Document[] = [
+  {
+    id: 'sample-1',
+    employeeId: 'sample',
+    employee: 'Exemplo - João Silva',
+    document: 'Contrato de Trabalho - Exemplo',
+    type: 'obrigatorio',
+    uploadDate: '2024-01-15',
+    expiryDate: '2025-01-15',
+    status: 'válido',
+    fileName: 'contrato_exemplo.pdf',
+    fileSize: 2048576,
+    uploadedBy: 'Sistema',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
+  },
+  {
+    id: 'sample-2',
+    employeeId: 'sample',
+    employee: 'Exemplo - Maria Santos',
+    document: 'Atestado Médico - Exemplo',
+    type: 'temporario',
+    uploadDate: '2024-03-10',
+    expiryDate: '2024-12-31',
+    status: 'vencendo',
+    fileName: 'atestado_exemplo.pdf',
+    fileSize: 1024000,
+    uploadedBy: 'Sistema',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
+  },
+  {
+    id: 'sample-3',
+    employeeId: 'sample',
+    employee: 'Exemplo - Pedro Costa',
+    document: 'Carteira de Trabalho - Exemplo',
+    type: 'obrigatorio',
+    uploadDate: '2024-02-05',
+    expiryDate: null,
+    status: 'válido',
+    fileName: 'carteira_exemplo.pdf',
+    fileSize: 1536000,
+    uploadedBy: 'Sistema',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
+  }
+];
 
 // Enhanced mock data with real employee names
 const mockDocuments: Document[] = [
@@ -32,7 +80,8 @@ const mockDocuments: Document[] = [
     status: 'válido',
     fileName: 'contrato_aline.pdf',
     fileSize: 2048576,
-    uploadedBy: 'Admin'
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   },
   {
     id: '2',
@@ -45,7 +94,8 @@ const mockDocuments: Document[] = [
     status: 'vencido',
     fileName: 'atestado_felipe.pdf',
     fileSize: 1024000,
-    uploadedBy: 'Admin'
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   },
   {
     id: '3',
@@ -58,7 +108,8 @@ const mockDocuments: Document[] = [
     status: 'válido',
     fileName: 'carteira_luciano.pdf',
     fileSize: 1536000,
-    uploadedBy: 'Admin'
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   },
   {
     id: '4',
@@ -71,7 +122,8 @@ const mockDocuments: Document[] = [
     status: 'vencendo',
     fileName: 'certificado_fabio.pdf',
     fileSize: 2560000,
-    uploadedBy: 'Admin'
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   },
   {
     id: '5',
@@ -84,7 +136,8 @@ const mockDocuments: Document[] = [
     status: 'válido',
     fileName: 'rg_fabiana.pdf',
     fileSize: 1024000,
-    uploadedBy: 'Admin'
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   }
 ];
 
@@ -136,7 +189,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       fileName: upload.file.name,
       fileSize: upload.file.size,
       uploadedBy: 'Admin',
-      notes: upload.notes
+      notes: upload.notes,
+      fileUrl: URL.createObjectURL(upload.file)
     };
     
     setDocuments(prev => [...prev, newDocument]);
@@ -173,6 +227,26 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return documents.filter(doc => doc.employeeId === employeeId);
   }, [documents]);
 
+  const downloadDocument = useCallback((document: Document) => {
+    console.log('Downloading document:', document.fileName);
+    
+    if (document.fileUrl) {
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = document.fileUrl;
+      link.download = document.fileName || 'document.pdf';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Fallback for documents without URL
+      alert(`Download de ${document.fileName} iniciado!`);
+    }
+  }, []);
+
   return (
     <DocumentContext.Provider value={{
       documents,
@@ -185,7 +259,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       deleteDocument,
       setFilter,
       exportDocuments,
-      getDocumentsByEmployee
+      getDocumentsByEmployee,
+      downloadDocument,
+      sampleDocuments
     }}>
       {children}
     </DocumentContext.Provider>

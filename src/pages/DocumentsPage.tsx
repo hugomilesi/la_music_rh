@@ -5,22 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, MoreVertical } from 'lucide-react';
+import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, MoreVertical, Mail, Edit3, Eye } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploadDialog } from '@/components/documents/DocumentUploadDialog';
 import { AdvancedFiltersDialog } from '@/components/documents/AdvancedFiltersDialog';
 import { DocumentManagementDialog } from '@/components/documents/DocumentManagementDialog';
+import { SendToAccountantDialog } from '@/components/documents/SendToAccountantDialog';
+import { EditChecklistDialog } from '@/components/documents/EditChecklistDialog';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
-  const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
+  const { filteredDocuments, filter, setFilter, stats, exportDocuments, downloadDocument, sampleDocuments } = useDocuments();
   const { employees } = useEmployees();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
+  const [sendToAccountantDialogOpen, setSendToAccountantDialogOpen] = useState(false);
+  const [editChecklistDialogOpen, setEditChecklistDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   const getStatusBadge = (status: string) => {
@@ -64,6 +68,16 @@ const DocumentsPage: React.FC = () => {
     exportDocuments(format);
   };
 
+  const handleDownload = (e: React.MouseEvent, document: Document) => {
+    e.stopPropagation();
+    downloadDocument(document);
+  };
+
+  const handleViewSampleDocument = (document: Document) => {
+    setSelectedDocument(document);
+    setManagementDialogOpen(true);
+  };
+
   // Calculate dynamic stats
   const dynamicStats = {
     total: filteredDocuments.length,
@@ -82,6 +96,11 @@ const DocumentsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <Button variant="outline" size="sm" onClick={() => setSendToAccountantDialogOpen(true)}>
+            <Mail className="w-4 h-4 mr-2" />
+            Enviar ao Contador
+          </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -105,6 +124,39 @@ const DocumentsPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Sample Documents Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentos de Exemplo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {sampleDocuments.map((doc) => (
+              <div key={doc.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                   onClick={() => handleViewSampleDocument(doc)}>
+                <div className="flex items-center justify-between mb-2">
+                  <Badge className={getTypeColor(doc.type)}>
+                    {doc.type === 'obrigatorio' ? 'Obrigatório' : 
+                     doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={(e) => handleDownload(e, doc)}>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </div>
+                <h4 className="font-medium text-sm">{doc.document}</h4>
+                <p className="text-xs text-gray-500 mt-1">{doc.employee}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  {getStatusIcon(doc.status)}
+                  <Badge className={getStatusBadge(doc.status)} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                    {doc.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Interactive Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -265,7 +317,7 @@ const DocumentsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); console.log(`Download ${doc.fileName}`); }}>
+                      <Button variant="ghost" size="sm" onClick={(e) => handleDownload(e, doc)}>
                         <Download className="w-4 h-4" />
                       </Button>
                       <DropdownMenu>
@@ -276,11 +328,20 @@ const DocumentsPage: React.FC = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem onClick={() => handleDocumentClick(doc)}>
+                            <Eye className="w-4 h-4 mr-2" />
                             Visualizar/Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log(`Download ${doc.fileName}`)}>
+                          <DropdownMenuItem onClick={() => downloadDocument(doc)}>
+                            <Download className="w-4 h-4 mr-2" />
                             Download
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {sampleDocuments.map((sample) => (
+                            <DropdownMenuItem key={sample.id} onClick={() => handleViewSampleDocument(sample)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver {sample.document}
+                            </DropdownMenuItem>
+                          ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -300,8 +361,12 @@ const DocumentsPage: React.FC = () => {
 
       {/* Document Checklist */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Checklist de Documentos Obrigatórios</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setEditChecklistDialogOpen(true)}>
+            <Edit3 className="w-4 h-4 mr-2" />
+            Editar Checklist
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,6 +404,16 @@ const DocumentsPage: React.FC = () => {
         document={selectedDocument}
         open={managementDialogOpen} 
         onOpenChange={setManagementDialogOpen}
+      />
+
+      <SendToAccountantDialog 
+        open={sendToAccountantDialogOpen} 
+        onOpenChange={setSendToAccountantDialogOpen}
+      />
+
+      <EditChecklistDialog 
+        open={editChecklistDialogOpen} 
+        onOpenChange={setEditChecklistDialogOpen}
       />
     </div>
   );
