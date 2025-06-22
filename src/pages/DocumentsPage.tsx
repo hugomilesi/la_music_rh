@@ -3,9 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, MoreVertical, Mail, Edit3, Eye } from 'lucide-react';
+import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploadDialog } from '@/components/documents/DocumentUploadDialog';
@@ -13,72 +11,48 @@ import { AdvancedFiltersDialog } from '@/components/documents/AdvancedFiltersDia
 import { DocumentManagementDialog } from '@/components/documents/DocumentManagementDialog';
 import { SendToAccountantDialog } from '@/components/documents/SendToAccountantDialog';
 import { EditChecklistDialog } from '@/components/documents/EditChecklistDialog';
+import { EmployeeDocumentsModal } from '@/components/documents/EmployeeDocumentsModal';
+import { GroupedDocumentsTable } from '@/components/documents/GroupedDocumentsTable';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
-  const { filteredDocuments, filter, setFilter, stats, exportDocuments, downloadDocument, sampleDocuments } = useDocuments();
+  const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
   const { employees } = useEmployees();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [sendToAccountantDialogOpen, setSendToAccountantDialogOpen] = useState(false);
   const [editChecklistDialogOpen, setEditChecklistDialogOpen] = useState(false);
+  const [employeeDocumentsModalOpen, setEmployeeDocumentsModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'válido': 'bg-green-100 text-green-800',
-      'vencido': 'bg-red-100 text-red-800',
-      'vencendo': 'bg-yellow-100 text-yellow-800',
-      'pendente': 'bg-gray-100 text-gray-800'
-    };
-    return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'válido':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'vencido':
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case 'vencendo':
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    const colors = {
-      'obrigatorio': 'bg-red-50 text-red-700 border-red-200',
-      'temporario': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'complementar': 'bg-blue-50 text-blue-700 border-blue-200'
-    };
-    return colors[type as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const handleDocumentClick = (document: Document) => {
-    setSelectedDocument(document);
-    setManagementDialogOpen(true);
-  };
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
+  const [selectedDocumentsForAccountant, setSelectedDocumentsForAccountant] = useState<Document[]>([]);
 
   const handleExport = (format: 'pdf' | 'excel') => {
     exportDocuments(format);
   };
 
-  const handleDownload = (e: React.MouseEvent, document: Document) => {
-    e.stopPropagation();
-    downloadDocument(document);
+  const handleEmployeeClick = (employeeId: string, employeeName: string) => {
+    setSelectedEmployeeId(employeeId);
+    setSelectedEmployeeName(employeeName);
+    setEmployeeDocumentsModalOpen(true);
   };
 
-  const handleViewSampleDocument = (document: Document) => {
-    setSelectedDocument(document);
-    setManagementDialogOpen(true);
+  const handleSendToAccountant = (documents: Document[]) => {
+    setSelectedDocumentsForAccountant(documents);
+    setSendToAccountantDialogOpen(true);
   };
 
-  // Calculate dynamic stats
+  const handleSendToAccountantFromModal = (documents: Document[]) => {
+    setEmployeeDocumentsModalOpen(false);
+    setSelectedDocumentsForAccountant(documents);
+    setSendToAccountantDialogOpen(true);
+  };
+
+  // Calculate dynamic stats based on filtered documents
   const dynamicStats = {
     total: filteredDocuments.length,
     valid: filteredDocuments.filter(doc => doc.status === 'válido').length,
@@ -124,39 +98,6 @@ const DocumentsPage: React.FC = () => {
           </Button>
         </div>
       </div>
-
-      {/* Sample Documents Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Documentos de Exemplo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {sampleDocuments.map((doc) => (
-              <div key={doc.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-                   onClick={() => handleViewSampleDocument(doc)}>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getTypeColor(doc.type)}>
-                    {doc.type === 'obrigatorio' ? 'Obrigatório' : 
-                     doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={(e) => handleDownload(e, doc)}>
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </div>
-                <h4 className="font-medium text-sm">{doc.document}</h4>
-                <p className="text-xs text-gray-500 mt-1">{doc.employee}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  {getStatusIcon(doc.status)}
-                  <Badge className={getStatusBadge(doc.status)} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                    {doc.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Interactive Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -274,90 +215,22 @@ const DocumentsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Interactive Documents Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Documentos ({filteredDocuments.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Data de Upload</TableHead>
-                <TableHead>Validade</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDocuments.map((doc) => (
-                <TableRow key={doc.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleDocumentClick(doc)}>
-                  <TableCell className="font-medium">{doc.employee}</TableCell>
-                  <TableCell>{doc.document}</TableCell>
-                  <TableCell>
-                    <Badge className={getTypeColor(doc.type)}>
-                      {doc.type === 'obrigatorio' ? 'Obrigatório' : 
-                       doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(doc.uploadDate).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>
-                    {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(doc.status)}
-                      <Badge className={getStatusBadge(doc.status)}>
-                        {doc.status}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={(e) => handleDownload(e, doc)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleDocumentClick(doc)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Visualizar/Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => downloadDocument(doc)}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {sampleDocuments.map((sample) => (
-                            <DropdownMenuItem key={sample.id} onClick={() => handleViewSampleDocument(sample)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver {sample.document}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {filteredDocuments.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Nenhum documento encontrado com os filtros atuais.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Grouped Documents Table */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Documentos por Colaborador ({filteredDocuments.length} documentos)
+          </h2>
+          <p className="text-sm text-gray-600">
+            Clique em um colaborador para expandir ou no nome para ver detalhes
+          </p>
+        </div>
+        
+        <GroupedDocumentsTable 
+          onEmployeeClick={handleEmployeeClick}
+          onSendToAccountant={handleSendToAccountant}
+        />
+      </div>
 
       {/* Document Checklist */}
       <Card>
@@ -409,11 +282,20 @@ const DocumentsPage: React.FC = () => {
       <SendToAccountantDialog 
         open={sendToAccountantDialogOpen} 
         onOpenChange={setSendToAccountantDialogOpen}
+        selectedDocuments={selectedDocumentsForAccountant}
       />
 
       <EditChecklistDialog 
         open={editChecklistDialogOpen} 
         onOpenChange={setEditChecklistDialogOpen}
+      />
+
+      <EmployeeDocumentsModal
+        employeeId={selectedEmployeeId}
+        employeeName={selectedEmployeeName}
+        open={employeeDocumentsModalOpen}
+        onOpenChange={setEmployeeDocumentsModalOpen}
+        onSendToAccountant={handleSendToAccountantFromModal}
       />
     </div>
   );

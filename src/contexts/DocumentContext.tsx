@@ -13,58 +13,13 @@ interface DocumentContextType {
   deleteDocument: (id: string) => void;
   setFilter: (filter: Partial<DocumentFilter>) => void;
   exportDocuments: (format: 'pdf' | 'excel') => void;
+  exportDocumentsByEmployee: (employeeId: string, format: 'pdf' | 'excel') => void;
   getDocumentsByEmployee: (employeeId: string) => Document[];
   downloadDocument: (document: Document) => void;
-  sampleDocuments: Document[];
+  getEmployeeDocumentStats: (employeeId: string) => { total: number; valid: number; expiring: number; expired: number };
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
-
-// Sample documents for viewing and download
-const sampleDocuments: Document[] = [
-  {
-    id: 'sample-1',
-    employeeId: 'sample',
-    employee: 'Exemplo - João Silva',
-    document: 'Contrato de Trabalho - Exemplo',
-    type: 'obrigatorio',
-    uploadDate: '2024-01-15',
-    expiryDate: '2025-01-15',
-    status: 'válido',
-    fileName: 'contrato_exemplo.pdf',
-    fileSize: 2048576,
-    uploadedBy: 'Sistema',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: 'sample-2',
-    employeeId: 'sample',
-    employee: 'Exemplo - Maria Santos',
-    document: 'Atestado Médico - Exemplo',
-    type: 'temporario',
-    uploadDate: '2024-03-10',
-    expiryDate: '2024-12-31',
-    status: 'vencendo',
-    fileName: 'atestado_exemplo.pdf',
-    fileSize: 1024000,
-    uploadedBy: 'Sistema',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: 'sample-3',
-    employeeId: 'sample',
-    employee: 'Exemplo - Pedro Costa',
-    document: 'Carteira de Trabalho - Exemplo',
-    type: 'obrigatorio',
-    uploadDate: '2024-02-05',
-    expiryDate: null,
-    status: 'válido',
-    fileName: 'carteira_exemplo.pdf',
-    fileSize: 1536000,
-    uploadedBy: 'Sistema',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  }
-];
 
 // Enhanced mock data with real employee names
 const mockDocuments: Document[] = [
@@ -135,6 +90,35 @@ const mockDocuments: Document[] = [
     status: 'válido',
     fileName: 'rg_fabiana.pdf',
     fileSize: 1024000,
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
+  },
+  // Additional documents for better grouping demonstration
+  {
+    id: '6',
+    employeeId: '1',
+    employee: 'Aline Cristina Pessanha Faria',
+    document: 'CPF',
+    type: 'obrigatorio',
+    uploadDate: '2024-01-20',
+    expiryDate: null,
+    status: 'válido',
+    fileName: 'cpf_aline.pdf',
+    fileSize: 512000,
+    uploadedBy: 'Admin',
+    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
+  },
+  {
+    id: '7',
+    employeeId: '2',
+    employee: 'Felipe Elias Carvalho',
+    document: 'Contrato de Trabalho',
+    type: 'obrigatorio',
+    uploadDate: '2024-02-01',
+    expiryDate: '2025-02-01',
+    status: 'válido',
+    fileName: 'contrato_felipe.pdf',
+    fileSize: 2048576,
     uploadedBy: 'Admin',
     fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
   }
@@ -222,8 +206,37 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     console.log('Export data:', data);
   }, [filteredDocuments]);
 
+  const exportDocumentsByEmployee = useCallback((employeeId: string, format: 'pdf' | 'excel') => {
+    const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
+    const employee = employees.find(emp => emp.id === employeeId);
+    
+    console.log(`Exporting ${employeeDocuments.length} documents for ${employee?.name} in ${format} format...`);
+    
+    const data = employeeDocuments.map(doc => ({
+      Documento: doc.document,
+      Tipo: doc.type,
+      'Data Upload': doc.uploadDate,
+      Validade: doc.expiryDate || 'Sem validade',
+      Status: doc.status,
+      'Nome do Arquivo': doc.fileName
+    }));
+    
+    console.log('Employee export data:', data);
+    alert(`Exportação de documentos de ${employee?.name} em formato ${format.toUpperCase()} iniciada!`);
+  }, [documents, employees]);
+
   const getDocumentsByEmployee = useCallback((employeeId: string) => {
     return documents.filter(doc => doc.employeeId === employeeId);
+  }, [documents]);
+
+  const getEmployeeDocumentStats = useCallback((employeeId: string) => {
+    const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
+    return {
+      total: employeeDocuments.length,
+      valid: employeeDocuments.filter(doc => doc.status === 'válido').length,
+      expiring: employeeDocuments.filter(doc => doc.status === 'vencendo').length,
+      expired: employeeDocuments.filter(doc => doc.status === 'vencido').length
+    };
   }, [documents]);
 
   const downloadDocument = useCallback((doc: Document) => {
@@ -258,9 +271,10 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       deleteDocument,
       setFilter,
       exportDocuments,
+      exportDocumentsByEmployee,
       getDocumentsByEmployee,
       downloadDocument,
-      sampleDocuments
+      getEmployeeDocumentStats
     }}>
       {children}
     </DocumentContext.Provider>
