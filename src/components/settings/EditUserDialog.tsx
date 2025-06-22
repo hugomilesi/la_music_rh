@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { UserForm } from './UserForm';
+import { EditUserForm } from './EditUserForm';
 import { SystemUser, UpdateSystemUserData } from '@/types/systemUser';
 
 const updateUserSchema = z.object({
@@ -107,7 +106,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <UserForm form={form} isEdit={true} />
+          <EditUserForm form={form} />
           
           <DialogFooter>
             <Button
