@@ -14,7 +14,8 @@ import {
   Clock,
   MessageSquare,
   Shield,
-  Plane
+  Plane,
+  Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +49,12 @@ const menuItems = [
     icon: Plane,
     href: '/ferias',
     description: 'Controle de férias'
+  },
+  {
+    title: 'Benefícios',
+    icon: Heart,
+    href: '/beneficios',
+    description: 'Planos e benefícios'
   },
   {
     title: 'Documentos',
