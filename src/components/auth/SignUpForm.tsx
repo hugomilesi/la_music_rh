@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, User, Eye, EyeOff, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +21,9 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
+  const { signUp, signInWithGoogle, resendConfirmation } = useAuth();
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -47,7 +50,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password, fullName);
+      const { error, needsConfirmation } = await signUp(email, password, fullName);
       
       if (error) {
         let errorMessage = 'Erro ao criar conta. Tente novamente.';
@@ -68,12 +71,19 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
         return;
       }
 
-      toast({
-        title: 'Conta criada com sucesso!',
-        description: 'Verifique seu email para confirmar a conta.',
-      });
+      if (needsConfirmation) {
+        setNeedsConfirmation(true);
+        toast({
+          title: 'Cadastro realizado!',
+          description: 'Verifique seu email para confirmar a conta antes de fazer login.',
+        });
+      } else {
+        toast({
+          title: 'Conta criada com sucesso!',
+          description: 'Você foi automaticamente conectado.',
+        });
+      }
       
-      onSwitchToLogin();
     } catch (error) {
       toast({
         title: 'Erro no Cadastro',
@@ -82,6 +92,35 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    setResendingConfirmation(true);
+    
+    try {
+      const { error } = await resendConfirmation(email);
+      
+      if (error) {
+        toast({
+          title: 'Erro ao reenviar confirmação',
+          description: 'Não foi possível reenviar o email. Tente novamente.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Email reenviado!',
+          description: 'Verifique sua caixa de entrada.',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro inesperado.',
+        variant: 'destructive'
+      });
+    } finally {
+      setResendingConfirmation(false);
     }
   };
 
@@ -108,6 +147,54 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
       setLoading(false);
     }
   };
+
+  if (needsConfirmation) {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-3">
+              <p><strong>Conta criada com sucesso!</strong></p>
+              <p>Enviamos um email de confirmação para <strong>{email}</strong>.</p>
+              <p>Clique no link do email para ativar sua conta e poder fazer login.</p>
+            </div>
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex flex-col gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResendConfirmation}
+            disabled={resendingConfirmation}
+            className="w-full"
+          >
+            {resendingConfirmation ? (
+              <>
+                <Clock className="mr-2 h-4 w-4 animate-spin" />
+                Reenviando...
+              </>
+            ) : (
+              <>
+                <Mail className="mr-2 h-4 w-4" />
+                Reenviar Email de Confirmação
+              </>
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onSwitchToLogin}
+            className="w-full"
+          >
+            Voltar para Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

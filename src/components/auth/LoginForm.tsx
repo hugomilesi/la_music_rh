@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,26 +18,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const [showConfirmationHelp, setShowConfirmationHelp] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
+  const { signIn, signInWithGoogle, resendConfirmation } = useAuth();
   const { toast } = useToast();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setShowConfirmationHelp(false);
 
     try {
       const { error } = await signIn(email, password);
       
       if (error) {
         let errorMessage = 'Erro ao fazer login. Tente novamente.';
+        let showHelp = false;
         
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = 'Email ou senha incorretos.';
         } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Por favor, confirme seu email antes de fazer login.';
+          errorMessage = 'Email não confirmado. Verifique sua caixa de entrada.';
+          showHelp = true;
+        } else if (error.message.includes('email_not_confirmed')) {
+          errorMessage = 'Email não confirmado. Verifique sua caixa de entrada.';
+          showHelp = true;
         } else if (error.message.includes('Too many requests')) {
           errorMessage = 'Muitas tentativas de login. Tente novamente em alguns minutos.';
         }
+        
+        setShowConfirmationHelp(showHelp);
         
         toast({
           title: 'Erro no Login',
@@ -58,6 +69,44 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: 'Email necessário',
+        description: 'Digite seu email para reenviar a confirmação.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setResendingConfirmation(true);
+    
+    try {
+      const { error } = await resendConfirmation(email);
+      
+      if (error) {
+        toast({
+          title: 'Erro ao reenviar confirmação',
+          description: 'Não foi possível reenviar o email. Tente novamente.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Email reenviado!',
+          description: 'Verifique sua caixa de entrada.',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro inesperado.',
+        variant: 'destructive'
+      });
+    } finally {
+      setResendingConfirmation(false);
     }
   };
 
@@ -87,6 +136,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
 
   return (
     <div className="space-y-4">
+      {showConfirmationHelp && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p>Parece que você ainda não confirmou seu email.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResendConfirmation}
+                disabled={resendingConfirmation}
+                className="w-full"
+              >
+                {resendingConfirmation ? (
+                  <>
+                    <Clock className="mr-2 h-4 w-4 animate-spin" />
+                    Reenviando...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Reenviar Email de Confirmação
+                  </>
+                )}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="login-email">Email</Label>
