@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -84,9 +83,9 @@ export const ScheduleSendModal: React.FC<ScheduleSendModalProps> = ({ children }
               </SelectTrigger>
               <SelectContent>
                 {draftNotifications.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-1.5 text-sm text-gray-500">
                     Nenhum rascunho disponível
-                  </SelectItem>
+                  </div>
                 ) : (
                   draftNotifications.map(notification => (
                     <SelectItem key={notification.id} value={notification.id}>
