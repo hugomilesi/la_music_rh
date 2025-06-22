@@ -9,13 +9,9 @@ import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
 import { DataExportDialog } from '@/components/settings/DataExportDialog';
 import { AddUserDialog } from '@/components/settings/AddUserDialog';
-import { SystemUser, CreateSystemUserData } from '@/types/systemUser';
-
-const mockUsers = [
-  { id: 1, name: 'Admin Geral', email: 'admin@lamusic.com', role: 'admin', lastAccess: '2024-03-21 10:30' },
-  { id: 2, name: 'Aline Cristina Pessanha Faria', email: 'aline.faria@lamusic.com', role: 'coordenador', lastAccess: '2024-03-21 09:15' },
-  { id: 3, name: 'Felipe Elias Carvalho', email: 'felipe.carvalho@lamusic.com', role: 'professor', lastAccess: '2024-03-20 16:45' }
-];
+import { EditUserDialog } from '@/components/settings/EditUserDialog';
+import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
+import { SystemUser, CreateSystemUserData, UpdateSystemUserData } from '@/types/systemUser';
 
 const mockRoles = [
   { id: 1, name: 'Professor', department: 'Educação Musical', employees: 45 },
@@ -64,6 +60,11 @@ const SettingsPage: React.FC = () => {
     }
   ]);
 
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<SystemUser | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const handleAddUser = (userData: CreateSystemUserData) => {
     const newUser: SystemUser = {
       id: Date.now(),
@@ -79,6 +80,30 @@ const SettingsPage: React.FC = () => {
     };
 
     setSystemUsers([...systemUsers, newUser]);
+  };
+
+  const handleEditUser = (user: SystemUser) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = (id: number, userData: UpdateSystemUserData) => {
+    setSystemUsers(users => 
+      users.map(user => 
+        user.id === id 
+          ? { ...user, ...userData }
+          : user
+      )
+    );
+  };
+
+  const handleDeleteUser = (user: SystemUser) => {
+    setDeletingUser(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteUser = (id: number) => {
+    setSystemUsers(users => users.filter(user => user.id !== id));
   };
 
   const getRoleBadge = (role: string) => {
@@ -200,10 +225,18 @@ const SettingsPage: React.FC = () => {
                   <TableCell>{user.lastAccess}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteUser(user)}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -220,10 +253,12 @@ const SettingsPage: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Cargos Cadastrados</CardTitle>
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Cargo
-            </Button>
+            <RolesDialog>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Cargo
+              </Button>
+            </RolesDialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -248,9 +283,11 @@ const SettingsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      <RolesDialog>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </RolesDialog>
                       <Button variant="ghost" size="sm">
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -302,6 +339,22 @@ const SettingsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        user={editingUser}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onUserUpdate={handleUpdateUser}
+      />
+
+      {/* Delete User Dialog */}
+      <DeleteUserDialog
+        user={deletingUser}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onUserDelete={handleConfirmDeleteUser}
+      />
     </div>
   );
 };
