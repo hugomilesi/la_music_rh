@@ -1,12 +1,17 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, MessageSquare, BarChart, Clock } from 'lucide-react';
+import { Settings, MessageSquare, BarChart, Clock, History, FileText, Calendar, TrendingUp } from 'lucide-react';
 import { WhatsAppDashboard } from '@/components/whatsapp/WhatsAppDashboard';
 import { WhatsAppConfigDialog } from '@/components/whatsapp/WhatsAppConfigDialog';
 import { SendMessageDialog } from '@/components/whatsapp/SendMessageDialog';
 import { AutomationManager } from '@/components/whatsapp/AutomationManager';
 import { WhatsAppIntegration } from '@/components/whatsapp/WhatsAppIntegration';
+import { MessageHistory } from '@/components/whatsapp/MessageHistory';
+import { MessageScheduler } from '@/components/whatsapp/MessageScheduler';
+import { WhatsAppReports } from '@/components/whatsapp/WhatsAppReports';
+import { TemplateManager } from '@/components/whatsapp/TemplateManager';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 
 const WhatsAppPage: React.FC = () => {
@@ -41,7 +46,7 @@ const WhatsAppPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-8 w-full max-w-6xl">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart className="w-4 h-4" />
             Dashboard
@@ -50,9 +55,25 @@ const WhatsAppPage: React.FC = () => {
             <MessageSquare className="w-4 h-4" />
             Mensagens
           </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="w-4 h-4" />
+            Histórico
+          </TabsTrigger>
+          <TabsTrigger value="scheduler" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Agendamento
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Templates
+          </TabsTrigger>
           <TabsTrigger value="automation" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             Automações
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Relatórios
           </TabsTrigger>
           <TabsTrigger value="integration" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -68,8 +89,24 @@ const WhatsAppPage: React.FC = () => {
           <WhatsAppIntegration />
         </TabsContent>
 
+        <TabsContent value="history" className="space-y-6">
+          <MessageHistory />
+        </TabsContent>
+
+        <TabsContent value="scheduler" className="space-y-6">
+          <MessageScheduler />
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <TemplateManager />
+        </TabsContent>
+
         <TabsContent value="automation" className="space-y-6">
           <AutomationManager />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <WhatsAppReports />
         </TabsContent>
 
         <TabsContent value="integration" className="space-y-6">
