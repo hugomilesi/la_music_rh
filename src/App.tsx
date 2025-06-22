@@ -35,27 +35,23 @@ function App() {
               <VacationProvider>
                 <ScheduleProvider>
                   <MainLayout>
-                    <main>
-                      <div>
-                        <Routes>
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/dashboard" element={<DashboardPage />} />
-                          <Route path="/colaboradores" element={<EmployeesPage />} />
-                          <Route path="/documentos" element={<DocumentsPage />} />
-                          <Route path="/avaliacoes" element={<EvaluationsPage />} />
-                          <Route path="/ferias" element={<VacationPage />} />
-                          <Route path="/agenda" element={<SchedulePage />} />
-                          <Route path="/notificacoes" element={<NotificationsPage />} />
-                          <Route path="/reconhecimento" element={<RecognitionPage />} />
-                          <Route path="/whatsapp" element={<WhatsAppPage />} />
-                          <Route path="/nps" element={<NPSPage />} />
-                          <Route path="/timesheet" element={<TimesheetPage />} />
-                          <Route path="/incidentes" element={<IncidentsPage />} />
-                          <Route path="/configuracoes" element={<SettingsPage />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </div>
-                    </main>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/colaboradores" element={<EmployeesPage />} />
+                      <Route path="/documentos" element={<DocumentsPage />} />
+                      <Route path="/avaliacoes" element={<EvaluationsPage />} />
+                      <Route path="/ferias" element={<VacationPage />} />
+                      <Route path="/agenda" element={<SchedulePage />} />
+                      <Route path="/notificacoes" element={<NotificationsPage />} />
+                      <Route path="/reconhecimento" element={<RecognitionPage />} />
+                      <Route path="/whatsapp" element={<WhatsAppPage />} />
+                      <Route path="/nps" element={<NPSPage />} />
+                      <Route path="/timesheet" element={<TimesheetPage />} />
+                      <Route path="/incidentes" element={<IncidentsPage />} />
+                      <Route path="/configuracoes" element={<SettingsPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </MainLayout>
                   <Toaster />
                 </ScheduleProvider>
