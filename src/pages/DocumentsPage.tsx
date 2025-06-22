@@ -5,51 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-
-const mockDocuments = [
-  {
-    id: 1,
-    employee: 'Aline Cristina Pessanha Faria',
-    document: 'Contrato de Trabalho',
-    type: 'obrigatorio',
-    uploadDate: '2024-01-15',
-    expiryDate: '2025-01-15',
-    status: 'válido'
-  },
-  {
-    id: 2,
-    employee: 'Felipe Elias Carvalho',
-    document: 'Atestado Médico',
-    type: 'temporario',
-    uploadDate: '2024-03-10',
-    expiryDate: '2024-03-20',
-    status: 'vencido'
-  },
-  {
-    id: 3,
-    employee: 'Luciano Nazario de Oliveira',
-    document: 'Carteira de Trabalho',
-    type: 'obrigatorio',
-    uploadDate: '2024-02-05',
-    expiryDate: null,
-    status: 'válido'
-  },
-  {
-    id: 4,
-    employee: 'Fabio Magarinos da Silva',
-    document: 'Certificado de Curso',
-    type: 'complementar',
-    uploadDate: '2024-03-01',
-    expiryDate: '2025-03-01',
-    status: 'vencendo'
-  }
-];
+import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, MoreVertical } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DocumentUploadDialog } from '@/components/documents/DocumentUploadDialog';
+import { AdvancedFiltersDialog } from '@/components/documents/AdvancedFiltersDialog';
+import { DocumentManagementDialog } from '@/components/documents/DocumentManagementDialog';
+import { useDocuments } from '@/contexts/DocumentContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
+import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
+  const { employees } = useEmployees();
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
+  const [managementDialogOpen, setManagementDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -83,6 +55,23 @@ const DocumentsPage: React.FC = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
 
+  const handleDocumentClick = (document: Document) => {
+    setSelectedDocument(document);
+    setManagementDialogOpen(true);
+  };
+
+  const handleExport = (format: 'pdf' | 'excel') => {
+    exportDocuments(format);
+  };
+
+  // Calculate dynamic stats
+  const dynamicStats = {
+    total: filteredDocuments.length,
+    valid: filteredDocuments.filter(doc => doc.status === 'válido').length,
+    expiring: filteredDocuments.filter(doc => doc.status === 'vencendo').length,
+    expired: filteredDocuments.filter(doc => doc.status === 'vencido').length
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,25 +82,38 @@ const DocumentsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Button size="sm">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleExport('excel')}>
+                Exportar para Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                Exportar para PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button size="sm" onClick={() => setUploadDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Enviar Documento
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Interactive Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter({ status: 'all' })}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Documentos</p>
-                <p className="text-2xl font-bold">284</p>
+                <p className="text-2xl font-bold">{dynamicStats.total}</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-blue-600" />
@@ -120,12 +122,12 @@ const DocumentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter({ status: 'válido' })}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Válidos</p>
-                <p className="text-2xl font-bold text-green-600">245</p>
+                <p className="text-2xl font-bold text-green-600">{dynamicStats.valid}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -134,12 +136,12 @@ const DocumentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter({ status: 'vencendo' })}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Vencendo (30 dias)</p>
-                <p className="text-2xl font-bold text-yellow-600">15</p>
+                <p className="text-2xl font-bold text-yellow-600">{dynamicStats.expiring}</p>
               </div>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-5 h-5 text-yellow-600" />
@@ -148,12 +150,12 @@ const DocumentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter({ status: 'vencido' })}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Vencidos</p>
-                <p className="text-2xl font-bold text-red-600">24</p>
+                <p className="text-2xl font-bold text-red-600">{dynamicStats.expired}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -163,7 +165,7 @@ const DocumentsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Enhanced Filters */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -172,37 +174,46 @@ const DocumentsPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Buscar por colaborador ou documento..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filter.searchTerm}
+                  onChange={(e) => setFilter({ searchTerm: e.target.value })}
                   className="pl-10"
                 />
               </div>
             </div>
             
             <div className="flex gap-2">
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
+              <Select 
+                value={filter.type}
+                onValueChange={(value) => setFilter({ type: value as any })}
               >
-                <option value="all">Todos os Tipos</option>
-                <option value="obrigatorio">Obrigatórios</option>
-                <option value="temporario">Temporários</option>
-                <option value="complementar">Complementares</option>
-              </select>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="obrigatorio">Obrigatórios</SelectItem>
+                  <SelectItem value="temporario">Temporários</SelectItem>
+                  <SelectItem value="complementar">Complementares</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+              <Select 
+                value={filter.status}
+                onValueChange={(value) => setFilter({ status: value as any })}
               >
-                <option value="all">Todos os Status</option>
-                <option value="valido">Válidos</option>
-                <option value="vencendo">Vencendo</option>
-                <option value="vencido">Vencidos</option>
-              </select>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="válido">Válidos</SelectItem>
+                  <SelectItem value="vencendo">Vencendo</SelectItem>
+                  <SelectItem value="vencido">Vencidos</SelectItem>
+                  <SelectItem value="pendente">Pendentes</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setFiltersDialogOpen(true)}>
                 <Filter className="w-4 h-4 mr-2" />
                 Mais Filtros
               </Button>
@@ -211,10 +222,10 @@ const DocumentsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Documents Table */}
+      {/* Interactive Documents Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Documentos</CardTitle>
+          <CardTitle>Lista de Documentos ({filteredDocuments.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -230,8 +241,8 @@ const DocumentsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockDocuments.map((doc) => (
-                <TableRow key={doc.id}>
+              {filteredDocuments.map((doc) => (
+                <TableRow key={doc.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleDocumentClick(doc)}>
                   <TableCell className="font-medium">{doc.employee}</TableCell>
                   <TableCell>{doc.document}</TableCell>
                   <TableCell>
@@ -254,18 +265,36 @@ const DocumentsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); console.log(`Download ${doc.fileName}`); }}>
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
-                        <Upload className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => handleDocumentClick(doc)}>
+                            Visualizar/Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => console.log(`Download ${doc.fileName}`)}>
+                            Download
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          
+          {filteredDocuments.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              Nenhum documento encontrado com os filtros atuais.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -294,6 +323,23 @@ const DocumentsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <DocumentUploadDialog 
+        open={uploadDialogOpen} 
+        onOpenChange={setUploadDialogOpen}
+      />
+      
+      <AdvancedFiltersDialog 
+        open={filtersDialogOpen} 
+        onOpenChange={setFiltersDialogOpen}
+      />
+      
+      <DocumentManagementDialog 
+        document={selectedDocument}
+        open={managementDialogOpen} 
+        onOpenChange={setManagementDialogOpen}
+      />
     </div>
   );
 };

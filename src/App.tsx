@@ -1,70 +1,67 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { EmployeeProvider } from "@/contexts/EmployeeContext";
-import { EvaluationProvider } from "@/contexts/EvaluationContext";
-import { ScheduleProvider } from "@/contexts/ScheduleContext";
-import { UnitProvider } from "@/contexts/UnitContext";
-import { VacationProvider } from "@/contexts/VacationContext";
-import DashboardPage from "./pages/DashboardPage";
-import EmployeesPage from "./pages/EmployeesPage";
-import EvaluationsPage from "./pages/EvaluationsPage";
-import SchedulePage from "./pages/SchedulePage";
-import DocumentsPage from "./pages/DocumentsPage";
-import IncidentsPage from "./pages/IncidentsPage";
-import NPSPage from "./pages/NPSPage";
-import RecognitionPage from "./pages/RecognitionPage";
-import TimesheetPage from "./pages/TimesheetPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import WhatsAppPage from "./pages/WhatsAppPage";
-import SettingsPage from "./pages/SettingsPage";
-import VacationPage from "./pages/VacationPage";
-import NotFound from "./pages/NotFound";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { MainLayout } from './components/layout/MainLayout';
+import { EmployeeProvider } from './contexts/EmployeeContext';
+import { DocumentProvider } from './contexts/DocumentContext';
+import { EvaluationProvider } from './contexts/EvaluationContext';
+import { VacationProvider } from './contexts/VacationContext';
+import { ScheduleProvider } from './contexts/ScheduleContext';
+import { UnitProvider } from './contexts/UnitContext';
 
-const queryClient = new QueryClient();
+// Pages
+import Index from './pages/Index';
+import DashboardPage from './pages/DashboardPage';
+import EmployeesPage from './pages/EmployeesPage';
+import DocumentsPage from './pages/DocumentsPage';
+import EvaluationsPage from './pages/EvaluationsPage';
+import VacationPage from './pages/VacationPage';
+import SchedulePage from './pages/SchedulePage';
+import TimesheetPage from './pages/TimesheetPage';
+import NPSPage from './pages/NPSPage';
+import RecognitionPage from './pages/RecognitionPage';
+import IncidentsPage from './pages/IncidentsPage';
+import WhatsAppPage from './pages/WhatsAppPage';
+import NotificationsPage from './pages/NotificationsPage';
+import SettingsPage from './pages/SettingsPage';
+import NotFound from './pages/NotFound';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <Router>
       <UnitProvider>
         <EmployeeProvider>
-          <EvaluationProvider>
-            <ScheduleProvider>
+          <DocumentProvider>
+            <EvaluationProvider>
               <VacationProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
+                <ScheduleProvider>
                   <MainLayout>
                     <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/employees" element={<EmployeesPage />} />
-                      <Route path="/evaluations" element={<EvaluationsPage />} />
-                      <Route path="/schedule" element={<SchedulePage />} />
-                      <Route path="/documents" element={<DocumentsPage />} />
-                      <Route path="/incidents" element={<IncidentsPage />} />
+                      <Route path="/" element={<Index />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/colaboradores" element={<EmployeesPage />} />
+                      <Route path="/documentos" element={<DocumentsPage />} />
+                      <Route path="/avaliacoes" element={<EvaluationsPage />} />
+                      <Route path="/ferias" element={<VacationPage />} />
+                      <Route path="/agenda" element={<SchedulePage />} />
+                      <Route path="/ponto" element={<TimesheetPage />} />
                       <Route path="/nps" element={<NPSPage />} />
-                      <Route path="/recognition" element={<RecognitionPage />} />
-                      <Route path="/timesheet" element={<TimesheetPage />} />
-                      <Route path="/vacation" element={<VacationPage />} />
-                      <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/reconhecimento" element={<RecognitionPage />} />
+                      <Route path="/ocorrencias" element={<IncidentsPage />} />
                       <Route path="/whatsapp" element={<WhatsAppPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="/notificacoes" element={<NotificationsPage />} />
+                      <Route path="/configuracoes" element={<SettingsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </MainLayout>
-                </BrowserRouter>
+                </ScheduleProvider>
               </VacationProvider>
-            </ScheduleProvider>
-          </EvaluationProvider>
+            </EvaluationProvider>
+          </DocumentProvider>
         </EmployeeProvider>
       </UnitProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </Router>
+  );
+}
 
 export default App;
