@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Benefit, EmployeeBenefit, BenefitStats, BenefitType, BenefitUsage, PerformanceGoal, RenewalSettings, PerformanceData } from '@/types/benefits';
 
@@ -358,6 +357,58 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
+  // Renewal management functions
+  const approveRenewal = (enrollmentId: string, comments?: string) => {
+    const enrollment = employeeBenefits.find(eb => eb.id === enrollmentId);
+    if (!enrollment) return;
+
+    const benefit = benefits.find(b => b.id === enrollment.benefitId);
+    if (!benefit?.renewalSettings) return;
+
+    // Calculate next renewal date
+    const renewalDate = new Date();
+    switch (benefit.renewalSettings.renewalPeriod) {
+      case 'monthly':
+        renewalDate.setMonth(renewalDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        renewalDate.setMonth(renewalDate.getMonth() + 3);
+        break;
+      case 'biannual':
+        renewalDate.setMonth(renewalDate.getMonth() + 6);
+        break;
+      case 'annual':
+        renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+        break;
+    }
+
+    updateEnrollment(enrollmentId, {
+      renewalStatus: 'automatic',
+      nextRenewalDate: renewalDate.toISOString(),
+      status: 'active'
+    });
+
+    console.log(`Renewal approved for enrollment ${enrollmentId}`, comments);
+  };
+
+  const denyRenewal = (enrollmentId: string, comments: string) => {
+    updateEnrollment(enrollmentId, {
+      renewalStatus: 'expired',
+      status: 'cancelled'
+    });
+
+    console.log(`Renewal denied for enrollment ${enrollmentId}: ${comments}`);
+  };
+
+  const extendRenewal = (enrollmentId: string, newDate: string) => {
+    updateEnrollment(enrollmentId, {
+      nextRenewalDate: newDate,
+      renewalStatus: 'requires_review'
+    });
+
+    console.log(`Renewal extended for enrollment ${enrollmentId} to ${newDate}`);
+  };
+
   return (
     <BenefitsContext.Provider value={{
       benefits,
@@ -375,7 +426,10 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updatePerformanceGoals,
       updateRenewalSettings,
       updatePerformanceData,
-      checkRenewals
+      checkRenewals,
+      approveRenewal,
+      denyRenewal,
+      extendRenewal
     }}>
       {children}
     </BenefitsContext.Provider>
