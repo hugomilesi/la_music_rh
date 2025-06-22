@@ -1,17 +1,26 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Filter, Send, Calendar, Mail, MessageSquare } from 'lucide-react';
 import { NewNotificationDialog } from '@/components/notifications/NewNotificationDialog';
 import { ScheduleSendModal } from '@/components/notifications/ScheduleSendModal';
+import { EditNotificationDialog } from '@/components/notifications/EditNotificationDialog';
 import { StatsModal } from '@/components/notifications/StatsModals';
 import { QuickActions } from '@/components/notifications/QuickActions';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { Notification } from '@/types/notification';
 
 const NotificationsPage: React.FC = () => {
   const { notifications, stats } = useNotifications();
+  const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const handleEditNotification = (notification: Notification) => {
+    setEditingNotification(notification);
+    setEditDialogOpen(true);
+  };
 
   const getTypeBadge = (type: string) => {
     const variants = {
@@ -179,7 +188,11 @@ const NotificationsPage: React.FC = () => {
                   <Badge className={getStatusBadge(notification.status)}>
                     {notification.status}
                   </Badge>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleEditNotification(notification)}
+                  >
                     Editar
                   </Button>
                 </div>
@@ -188,6 +201,13 @@ const NotificationsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Notification Dialog */}
+      <EditNotificationDialog
+        notification={editingNotification}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </div>
   );
 };
