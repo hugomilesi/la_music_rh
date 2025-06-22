@@ -7,9 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, MessageSquare, Mail, Users } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { NotificationType, NotificationChannel } from '@/types/notification';
 import { useToast } from '@/hooks/use-toast';
 
 interface NewNotificationDialogProps {
@@ -20,18 +19,17 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [type, setType] = useState<NotificationType>('personalizada');
-  const [channel, setChannel] = useState<NotificationChannel>('whatsapp');
+  const [type, setType] = useState('');
+  const [channel, setChannel] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
-  const [templateId, setTemplateId] = useState<string>('');
-  
-  const { createNotification, templates, recipients } = useNotifications();
+
+  const { recipients, createNotification } = useNotifications();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !message || selectedRecipients.length === 0) {
+    if (!title || !message || !type || !channel || selectedRecipients.length === 0) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -41,34 +39,32 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
     }
 
     try {
-      const recipientNames = recipients
+      const selectedRecipientNames = recipients
         .filter(r => selectedRecipients.includes(r.id))
         .map(r => r.name);
 
       await createNotification({
         title,
         message,
-        type,
+        type: type as any,
         recipients: selectedRecipients,
-        recipientNames,
-        channel,
+        recipientNames: selectedRecipientNames,
+        channel: channel as any,
         status: 'rascunho',
-        createdBy: 'Admin',
-        templateId: templateId || undefined
+        createdBy: 'Admin'
       });
 
       toast({
         title: "Sucesso",
-        description: "Notificação criada com sucesso!"
+        description: "Notificação criada como rascunho!"
       });
 
       // Reset form
       setTitle('');
       setMessage('');
-      setType('personalizada');
-      setChannel('whatsapp');
+      setType('');
+      setChannel('');
       setSelectedRecipients([]);
-      setTemplateId('');
       setOpen(false);
     } catch (error) {
       toast({
@@ -76,16 +72,6 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
         description: "Erro ao criar notificação",
         variant: "destructive"
       });
-    }
-  };
-
-  const handleTemplateChange = (value: string) => {
-    setTemplateId(value);
-    const template = templates.find(t => t.id === value);
-    if (template) {
-      setTitle(template.subject);
-      setMessage(template.message);
-      setType(template.type);
     }
   };
 
@@ -101,7 +87,7 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
     setSelectedRecipients(recipients.map(r => r.id));
   };
 
-  const clearRecipients = () => {
+  const clearAllRecipients = () => {
     setSelectedRecipients([]);
   };
 
@@ -110,7 +96,7 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
@@ -119,174 +105,123 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Template Selection */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Template (Opcional)</label>
-            <Select value={templateId} onValueChange={handleTemplateChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha um template..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Criar do zero</SelectItem>
-                {templates.map(template => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Título *</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Título da notificação"
+                placeholder="Digite o título da notificação"
                 required
               />
             </div>
+            
             <div>
-              <label className="text-sm font-medium mb-2 block">Tipo</label>
-              <Select value={type} onValueChange={(value) => setType(value as NotificationType)}>
+              <label className="text-sm font-medium mb-2 block">Tipo *</label>
+              <Select value={type} onValueChange={setType}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o tipo..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="personalizada">Personalizada</SelectItem>
                   <SelectItem value="lembrete">Lembrete</SelectItem>
                   <SelectItem value="aniversario">Aniversário</SelectItem>
                   <SelectItem value="aviso">Aviso</SelectItem>
                   <SelectItem value="comunicado">Comunicado</SelectItem>
+                  <SelectItem value="personalizada">Personalizada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Message */}
           <div>
             <label className="text-sm font-medium mb-2 block">Mensagem *</label>
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Digite sua mensagem..."
-              className="min-h-[100px]"
+              placeholder="Digite a mensagem da notificação"
+              rows={4}
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Use variáveis como {"{name}"}, {"{date}"}, {"{time}"} que serão substituídas automaticamente
-            </p>
           </div>
 
-          {/* Channel */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Canal de Envio</label>
-            <Select value={channel} onValueChange={(value) => setChannel(value as NotificationChannel)}>
+            <label className="text-sm font-medium mb-2 block">Canal de Envio *</label>
+            <Select value={channel} onValueChange={setChannel}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione o canal..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="whatsapp">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    WhatsApp
-                  </div>
-                </SelectItem>
-                <SelectItem value="email">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    E-mail
-                  </div>
-                </SelectItem>
-                <SelectItem value="ambos">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    WhatsApp + E-mail
-                  </div>
-                </SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="email">E-mail</SelectItem>
+                <SelectItem value="ambos">Ambos</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Recipients */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">Destinatários *</label>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium">Destinatários * ({selectedRecipients.length} selecionados)</label>
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={selectAllRecipients}
                 >
-                  Selecionar Todos
+                  Todos
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={clearRecipients}
+                  onClick={clearAllRecipients}
                 >
                   Limpar
                 </Button>
               </div>
             </div>
             
-            {selectedRecipients.length > 0 && (
-              <div className="mb-3">
-                <p className="text-sm text-gray-600 mb-2">
-                  Selecionados ({selectedRecipients.length}):
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedRecipients.map(id => {
-                    const recipient = recipients.find(r => r.id === id);
-                    return (
-                      <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                        {recipient?.name}
-                        <X
-                          className="w-3 h-3 cursor-pointer"
-                          onClick={() => toggleRecipient(id)}
-                        />
-                      </Badge>
-                    );
-                  })}
+            <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
+              {recipients.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-4">
+                  Nenhum destinatário disponível
                 </div>
-              </div>
-            )}
-
-            <div className="max-h-48 overflow-y-auto border rounded-md p-3 space-y-2">
-              {recipients.map(recipient => (
-                <div key={recipient.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={recipient.id}
-                    checked={selectedRecipients.includes(recipient.id)}
-                    onCheckedChange={() => toggleRecipient(recipient.id)}
-                  />
-                  <label htmlFor={recipient.id} className="flex-1 cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{recipient.name}</span>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{recipient.role}</span>
-                        <span>•</span>
-                        <span>{recipient.unit}</span>
+              ) : (
+                <div className="space-y-3">
+                  {recipients.map(recipient => (
+                    <div key={recipient.id} className="flex items-center space-x-3">
+                      <Checkbox
+                        id={recipient.id}
+                        checked={selectedRecipients.includes(recipient.id)}
+                        onCheckedChange={() => toggleRecipient(recipient.id)}
+                      />
+                      <div className="flex-1">
+                        <label 
+                          htmlFor={recipient.id}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          {recipient.name}
+                        </label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {recipient.unit}
+                          </Badge>
+                          <span className="text-xs text-gray-500">{recipient.role}</span>
+                        </div>
                       </div>
                     </div>
-                  </label>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
             <Button type="submit">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Notificação
+              Criar Rascunho
             </Button>
           </div>
         </form>
