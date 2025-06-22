@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Send, Phone, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { WhatsAppIntegration } from '@/components/whatsapp/WhatsAppIntegration';
 
 const mockMessages = [
   {
@@ -150,6 +151,9 @@ const WhatsAppPage: React.FC = () => {
         </Card>
       </div>
 
+      {/* WhatsApp Integration from Notifications */}
+      <WhatsAppIntegration />
+
       {/* Send Message Form */}
       <Card>
         <CardHeader>
@@ -242,10 +246,10 @@ const WhatsAppPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Message History */}
+      {/* Message History - Legacy Messages */}
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Mensagens</CardTitle>
+          <CardTitle>Histórico de Mensagens Manuais</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
