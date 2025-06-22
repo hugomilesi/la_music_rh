@@ -1,10 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Download, Shield, Users, Settings, FileText } from 'lucide-react';
+import { Download, Shield, Users, Settings, FileText } from 'lucide-react';
+import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
+import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
+import { RolesDialog } from '@/components/settings/RolesDialog';
+import { DataExportDialog } from '@/components/settings/DataExportDialog';
 
 const mockUsers = [
   { id: 1, name: 'Admin Geral', email: 'admin@lamusic.com', role: 'admin', lastAccess: '2024-03-21 10:30' },
@@ -51,47 +54,55 @@ const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Now Interactive */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-            <h3 className="font-medium">Usuários do Sistema</h3>
-            <p className="text-sm text-gray-600">Gerenciar acessos</p>
-          </CardContent>
-        </Card>
+        <SystemUsersDialog>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium">Usuários do Sistema</h3>
+              <p className="text-sm text-gray-600">Gerenciar acessos</p>
+            </CardContent>
+          </Card>
+        </SystemUsersDialog>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Shield className="w-6 h-6 text-green-600" />
-            </div>
-            <h3 className="font-medium">Permissões</h3>
-            <p className="text-sm text-gray-600">Controlar acessos</p>
-          </CardContent>
-        </Card>
+        <PermissionsDialog>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Shield className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-medium">Permissões</h3>
+              <p className="text-sm text-gray-600">Controlar acessos</p>
+            </CardContent>
+          </Card>
+        </PermissionsDialog>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Settings className="w-6 h-6 text-purple-600" />
-            </div>
-            <h3 className="font-medium">Cargos e Setores</h3>
-            <p className="text-sm text-gray-600">Estrutura organizacional</p>
-          </CardContent>
-        </Card>
+        <RolesDialog>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Settings className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="font-medium">Cargos e Setores</h3>
+              <p className="text-sm text-gray-600">Estrutura organizacional</p>
+            </CardContent>
+          </Card>
+        </RolesDialog>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Download className="w-6 h-6 text-yellow-600" />
-            </div>
-            <h3 className="font-medium">Exportar Dados</h3>
-            <p className="text-sm text-gray-600">Relatórios e backups</p>
-          </CardContent>
-        </Card>
+        <DataExportDialog>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Download className="w-6 h-6 text-yellow-600" />
+              </div>
+              <h3 className="font-medium">Exportar Dados</h3>
+              <p className="text-sm text-gray-600">Relatórios e backups</p>
+            </CardContent>
+          </Card>
+        </DataExportDialog>
       </div>
 
       {/* System Users */}
