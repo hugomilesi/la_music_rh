@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield } from 'lucide-react';
-import { useIncidents } from '@/contexts/IncidentsContext';
+import { useIncidents, Incident } from '@/contexts/IncidentsContext';
 import { IncidentListModal } from '@/components/incidents/IncidentListModal';
 import { NewIncidentDialog } from '@/components/incidents/NewIncidentDialog';
 import { ReportsModal } from '@/components/incidents/ReportsModal';
+import { IncidentDetailsModal } from '@/components/incidents/IncidentDetailsModal';
+import { EditIncidentDialog } from '@/components/incidents/EditIncidentDialog';
+import { AdvancedFiltersDialog } from '@/components/incidents/AdvancedFiltersDialog';
 
 const IncidentsPage: React.FC = () => {
   const { incidents, getFilteredIncidents } = useIncidents();
@@ -22,6 +25,10 @@ const IncidentsPage: React.FC = () => {
   const [listModalData, setListModalData] = useState<{ incidents: any[], title: string }>({ incidents: [], title: '' });
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
@@ -45,6 +52,29 @@ const IncidentsPage: React.FC = () => {
     const filteredIncidents = getFilteredIncidents(filter);
     setListModalData({ incidents: filteredIncidents, title });
     setListModalOpen(true);
+  };
+
+  const handleViewIncident = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setDetailsModalOpen(true);
+    setListModalOpen(false);
+  };
+
+  const handleEditIncident = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setEditModalOpen(true);
+    setListModalOpen(false);
+  };
+
+  const handleEditFromDetails = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setDetailsModalOpen(false);
+    setEditModalOpen(true);
+  };
+
+  const handleApplyAdvancedFilters = (filters: any) => {
+    console.log('Applying advanced filters:', filters);
+    // Here you would implement the actual filtering logic
   };
 
   // Filter incidents based on search and filters
@@ -188,7 +218,11 @@ const IncidentsPage: React.FC = () => {
                 <option value="arquivado">Arquivadas</option>
               </select>
 
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setAdvancedFiltersOpen(true)}
+              >
                 <Filter className="w-4 h-4 mr-2" />
                 Filtros
               </Button>
@@ -236,10 +270,18 @@ const IncidentsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewIncident(incident)}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditIncident(incident)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                     </div>
@@ -257,6 +299,8 @@ const IncidentsPage: React.FC = () => {
         onOpenChange={setListModalOpen}
         incidents={listModalData.incidents}
         title={listModalData.title}
+        onViewIncident={handleViewIncident}
+        onEditIncident={handleEditIncident}
       />
 
       <NewIncidentDialog
@@ -267,6 +311,25 @@ const IncidentsPage: React.FC = () => {
       <ReportsModal
         open={reportsOpen}
         onOpenChange={setReportsOpen}
+      />
+
+      <IncidentDetailsModal
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        incident={selectedIncident}
+        onEdit={handleEditFromDetails}
+      />
+
+      <EditIncidentDialog
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        incident={selectedIncident}
+      />
+
+      <AdvancedFiltersDialog
+        open={advancedFiltersOpen}
+        onOpenChange={setAdvancedFiltersOpen}
+        onApplyFilters={handleApplyAdvancedFilters}
       />
     </div>
   );

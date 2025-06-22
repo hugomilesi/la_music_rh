@@ -12,13 +12,17 @@ interface IncidentListModalProps {
   onOpenChange: (open: boolean) => void;
   incidents: Incident[];
   title: string;
+  onViewIncident: (incident: Incident) => void;
+  onEditIncident: (incident: Incident) => void;
 }
 
 export const IncidentListModal: React.FC<IncidentListModalProps> = ({
   open,
   onOpenChange,
   incidents,
-  title
+  title,
+  onViewIncident,
+  onEditIncident
 }) => {
   const getSeverityBadge = (severity: string) => {
     const variants = {
@@ -77,10 +81,18 @@ export const IncidentListModal: React.FC<IncidentListModalProps> = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onViewIncident(incident)}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onEditIncident(incident)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                     </div>
