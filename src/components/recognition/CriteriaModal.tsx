@@ -35,13 +35,13 @@ export const CriteriaModal: React.FC<CriteriaModalProps> = ({
   const [totalCalculatedStars, setTotalCalculatedStars] = useState(0);
 
   const updateEvaluation = (criterionId: string, updates: Partial<CriterionEvaluation>) => {
-    const newEvaluations = evaluations.map(eval => 
-      eval.criterionId === criterionId ? { ...eval, ...updates } : eval
+    const newEvaluations = evaluations.map(evaluation => 
+      evaluation.criterionId === criterionId ? { ...evaluation, ...updates } : evaluation
     );
     setEvaluations(newEvaluations);
     
     // Calculate total stars
-    const total = newEvaluations.reduce((sum, eval) => sum + eval.starsAwarded, 0);
+    const total = newEvaluations.reduce((sum, evaluation) => sum + evaluation.starsAwarded, 0);
     setTotalCalculatedStars(total);
   };
 
