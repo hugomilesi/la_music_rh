@@ -20,6 +20,10 @@ interface BenefitsContextType {
   updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => void;
   updatePerformanceData: (enrollmentId: string, data: PerformanceData) => void;
   checkRenewals: () => EmployeeBenefit[];
+  // Renewal management functions
+  approveRenewal: (enrollmentId: string, comments?: string) => void;
+  denyRenewal: (enrollmentId: string, comments: string) => void;
+  extendRenewal: (enrollmentId: string, newDate: string) => void;
 }
 
 const BenefitsContext = createContext<BenefitsContextType | undefined>(undefined);

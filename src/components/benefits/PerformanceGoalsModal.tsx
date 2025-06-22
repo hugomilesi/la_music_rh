@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Target, Calendar, Trash2, Edit } from 'lucide-react';
+import { Plus, Target, Calendar, Trash2, Edit, Save, X } from 'lucide-react';
 import { PerformanceGoal } from '@/types/benefits';
 
 interface PerformanceGoalsModalProps {
@@ -36,6 +37,7 @@ export const PerformanceGoalsModal: React.FC<PerformanceGoalsModalProps> = ({
     deadline: ''
   });
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<PerformanceGoal>>({});
 
   const addGoal = () => {
     if (!newGoal.title || !newGoal.targetValue || !newGoal.deadline) return;
@@ -64,8 +66,48 @@ export const PerformanceGoalsModal: React.FC<PerformanceGoalsModalProps> = ({
     });
   };
 
+  const startEdit = (goal: PerformanceGoal) => {
+    setEditingGoal(goal.id);
+    setEditForm({
+      title: goal.title,
+      description: goal.description,
+      targetValue: goal.targetValue,
+      unit: goal.unit,
+      weight: goal.weight,
+      deadline: goal.deadline,
+      status: goal.status
+    });
+  };
+
+  const saveEdit = () => {
+    if (!editingGoal || !editForm.title || !editForm.targetValue) return;
+
+    setCurrentGoals(currentGoals.map(goal => 
+      goal.id === editingGoal 
+        ? { ...goal, ...editForm }
+        : goal
+    ));
+    setEditingGoal(null);
+    setEditForm({});
+  };
+
+  const cancelEdit = () => {
+    setEditingGoal(null);
+    setEditForm({});
+  };
+
   const removeGoal = (goalId: string) => {
-    setCurrentGoals(currentGoals.filter(g => g.id !== goalId));
+    if (confirm('Tem certeza que deseja remover esta meta?')) {
+      setCurrentGoals(currentGoals.filter(g => g.id !== goalId));
+    }
+  };
+
+  const updateProgress = (goalId: string, currentValue: number) => {
+    setCurrentGoals(currentGoals.map(goal => 
+      goal.id === goalId 
+        ? { ...goal, currentValue }
+        : goal
+    ));
   };
 
   const handleSave = () => {
@@ -84,7 +126,7 @@ export const PerformanceGoalsModal: React.FC<PerformanceGoalsModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="w-5 h-5" />
@@ -106,62 +148,163 @@ export const PerformanceGoalsModal: React.FC<PerformanceGoalsModalProps> = ({
                 {currentGoals.map((goal) => (
                   <Card key={goal.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{goal.title}</h4>
-                            <Badge className={getStatusColor(goal.status)}>
-                              {goal.status === 'pending' && 'Pendente'}
-                              {goal.status === 'in_progress' && 'Em Andamento'}
-                              {goal.status === 'completed' && 'Concluída'}
-                              {goal.status === 'failed' && 'Falhada'}
-                            </Badge>
+                      {editingGoal === goal.id ? (
+                        // Edit Form
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Título da Meta</Label>
+                              <Input
+                                value={editForm.title || ''}
+                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Status</Label>
+                              <Select
+                                value={editForm.status}
+                                onValueChange={(value) => setEditForm({ ...editForm, status: value as any })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pendente</SelectItem>
+                                  <SelectItem value="in_progress">Em Andamento</SelectItem>
+                                  <SelectItem value="completed">Concluída</SelectItem>
+                                  <SelectItem value="failed">Falhada</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
                           
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-500">Meta:</span>
-                              <p className="font-medium">{goal.targetValue} {goal.unit}</p>
+                          <div className="space-y-2">
+                            <Label>Descrição</Label>
+                            <Textarea
+                              value={editForm.description || ''}
+                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                              rows={2}
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <Label>Valor Meta</Label>
+                              <Input
+                                type="number"
+                                value={editForm.targetValue || ''}
+                                onChange={(e) => setEditForm({ ...editForm, targetValue: parseFloat(e.target.value) })}
+                              />
                             </div>
-                            <div>
-                              <span className="text-gray-500">Peso:</span>
-                              <p className="font-medium">{goal.weight}%</p>
+                            <div className="space-y-2">
+                              <Label>Unidade</Label>
+                              <Input
+                                value={editForm.unit || ''}
+                                onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                              />
                             </div>
-                            <div>
-                              <span className="text-gray-500">Prazo:</span>
-                              <p className="font-medium">{new Date(goal.deadline).toLocaleDateString('pt-BR')}</p>
+                            <div className="space-y-2">
+                              <Label>Peso (%)</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={editForm.weight || ''}
+                                onChange={(e) => setEditForm({ ...editForm, weight: parseFloat(e.target.value) })}
+                              />
                             </div>
-                            <div>
-                              <span className="text-gray-500">Progresso:</span>
-                              <div className="mt-1">
-                                <Progress value={(goal.currentValue || 0) / goal.targetValue * 100} className="h-2" />
-                                <p className="text-xs mt-1">
-                                  {goal.currentValue || 0} / {goal.targetValue}
-                                </p>
+                            <div className="space-y-2">
+                              <Label>Prazo</Label>
+                              <Input
+                                type="date"
+                                value={editForm.deadline || ''}
+                                onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button size="sm" onClick={saveEdit}>
+                              <Save className="w-4 h-4 mr-1" />
+                              Salvar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit}>
+                              <X className="w-4 h-4 mr-1" />
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        // Display Mode
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold">{goal.title}</h4>
+                              <Badge className={getStatusColor(goal.status)}>
+                                {goal.status === 'pending' && 'Pendente'}
+                                {goal.status === 'in_progress' && 'Em Andamento'}
+                                {goal.status === 'completed' && 'Concluída'}
+                                {goal.status === 'failed' && 'Falhada'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-500">Meta:</span>
+                                <p className="font-medium">{goal.targetValue} {goal.unit}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Peso:</span>
+                                <p className="font-medium">{goal.weight}%</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Prazo:</span>
+                                <p className="font-medium">{new Date(goal.deadline).toLocaleDateString('pt-BR')}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Progresso Atual:</span>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    className="h-6 text-xs w-20"
+                                    value={goal.currentValue || 0}
+                                    onChange={(e) => updateProgress(goal.id, parseFloat(e.target.value) || 0)}
+                                  />
+                                  <span className="text-xs">/ {goal.targetValue}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Conclusão:</span>
+                                <div className="mt-1">
+                                  <Progress value={(goal.currentValue || 0) / goal.targetValue * 100} className="h-2" />
+                                  <p className="text-xs mt-1">
+                                    {Math.round((goal.currentValue || 0) / goal.targetValue * 100)}%
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
+                          
+                          <div className="flex gap-2 ml-4">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEdit(goal)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => removeGoal(goal.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingGoal(goal.id)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeGoal(goal.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +26,20 @@ import { BenefitStatsModal } from '@/components/benefits/BenefitStatsModal';
 import { PerformanceGoalsModal } from '@/components/benefits/PerformanceGoalsModal';
 import { RenewalSettingsModal } from '@/components/benefits/RenewalSettingsModal';
 import { Benefit } from '@/types/benefits';
+import { RenewalManagementModal } from '@/components/benefits/RenewalManagementModal';
 
 const BenefitsPage: React.FC = () => {
-  const { benefits, stats, deleteBenefit, updatePerformanceGoals, updateRenewalSettings, checkRenewals } = useBenefits();
+  const { 
+    benefits, 
+    stats, 
+    deleteBenefit, 
+    updatePerformanceGoals, 
+    updateRenewalSettings, 
+    checkRenewals,
+    approveRenewal,
+    denyRenewal,
+    extendRenewal
+  } = useBenefits();
   const [showNewBenefitDialog, setShowNewBenefitDialog] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -38,6 +48,7 @@ const BenefitsPage: React.FC = () => {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showPerformanceGoalsModal, setShowPerformanceGoalsModal] = useState(false);
   const [showRenewalSettingsModal, setShowRenewalSettingsModal] = useState(false);
+  const [showRenewalManagementModal, setShowRenewalManagementModal] = useState(false);
 
   const pendingRenewals = checkRenewals();
 
@@ -106,14 +117,20 @@ const BenefitsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-orange-600" />
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold text-orange-800">Renovações Pendentes</h3>
                 <p className="text-orange-700">
                   {pendingRenewals.length} benefício(s) baseado(s) em performance precisam de revisão
                 </p>
               </div>
-              <Button variant="outline" size="sm" className="ml-auto">
-                Revisar
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowRenewalManagementModal(true)}
+                className="border-orange-300 text-orange-700 hover:bg-orange-100"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Gerenciar Renovações
               </Button>
             </div>
           </CardContent>
@@ -361,6 +378,15 @@ const BenefitsPage: React.FC = () => {
       <BenefitStatsModal
         open={showStatsModal}
         onOpenChange={setShowStatsModal}
+      />
+
+      <RenewalManagementModal
+        open={showRenewalManagementModal}
+        onOpenChange={setShowRenewalManagementModal}
+        renewals={pendingRenewals}
+        onApproveRenewal={approveRenewal}
+        onDenyRenewal={denyRenewal}
+        onExtendRenewal={extendRenewal}
       />
     </div>
   );
