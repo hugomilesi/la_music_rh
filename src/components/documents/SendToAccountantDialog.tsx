@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDocuments } from '@/contexts/DocumentContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
-import { Mail, Send, FileText } from 'lucide-react';
+import { Mail, Send, FileText, User } from 'lucide-react';
 
 interface SendToAccountantDialogProps {
   open: boolean;
@@ -22,13 +24,27 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
   selectedDocuments = []
 }) => {
   const { filteredDocuments } = useDocuments();
+  const { employees } = useEmployees();
   const [email, setEmail] = useState('gprado0167@gmail.com');
   const [subject, setSubject] = useState('Documentos para Análise');
   const [message, setMessage] = useState('Segue em anexo os documentos solicitados para análise.');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [documentsToSend, setDocumentsToSend] = useState<string[]>(
     selectedDocuments.map(doc => doc.id)
   );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Filter documents based on selected employee
+  const availableDocuments = selectedEmployee === 'all' 
+    ? filteredDocuments 
+    : filteredDocuments.filter(doc => doc.employeeId === selectedEmployee);
+
+  // Update documents when employee selection changes
+  React.useEffect(() => {
+    if (selectedEmployee !== 'all') {
+      setDocumentsToSend(availableDocuments.map(doc => doc.id));
+    }
+  }, [selectedEmployee, availableDocuments]);
 
   const handleDocumentToggle = (documentId: string) => {
     setDocumentsToSend(prev => 
@@ -56,7 +72,7 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
     alert('Documentos enviados com sucesso!');
   };
 
-  const selectedDocs = filteredDocuments.filter(doc => documentsToSend.includes(doc.id));
+  const selectedDocs = availableDocuments.filter(doc => documentsToSend.includes(doc.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,11 +120,36 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
             </div>
           </div>
 
+          {/* Employee Selector */}
+          <div>
+            <Label htmlFor="employee-select">Filtrar por Colaborador</Label>
+            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecionar colaborador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Colaboradores</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Document Selection */}
           <div>
-            <Label className="text-base font-semibold">Documentos para Enviar ({selectedDocs.length})</Label>
+            <Label className="text-base font-semibold">
+              Documentos para Enviar ({selectedDocs.length})
+              {selectedEmployee !== 'all' && (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  - {employees.find(emp => emp.id === selectedEmployee)?.name}
+                </span>
+              )}
+            </Label>
             <div className="mt-2 max-h-60 overflow-y-auto border rounded-lg p-4 space-y-2">
-              {filteredDocuments.map((doc) => (
+              {availableDocuments.map((doc) => (
                 <div key={doc.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
                   <Checkbox
                     checked={documentsToSend.includes(doc.id)}
@@ -121,6 +162,13 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
                   </div>
                 </div>
               ))}
+              
+              {availableDocuments.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  <User className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p>Nenhum documento encontrado para o colaborador selecionado.</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -129,9 +177,12 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">Resumo do Envio:</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                {selectedDocs.map(doc => (
+                {selectedDocs.slice(0, 5).map(doc => (
                   <li key={doc.id}>• {doc.document} - {doc.employee}</li>
                 ))}
+                {selectedDocs.length > 5 && (
+                  <li className="text-blue-600">... e mais {selectedDocs.length - 5} documento(s)</li>
+                )}
               </ul>
             </div>
           )}

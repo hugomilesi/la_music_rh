@@ -219,7 +219,7 @@ const DocumentsPage: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Documentos por Colaborador ({filteredDocuments.length} documentos)
+            Documentos por Colaborador
           </h2>
           <p className="text-sm text-gray-600">
             Clique em um colaborador para expandir ou no nome para ver detalhes
