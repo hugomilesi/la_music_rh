@@ -53,7 +53,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Transform database data to match our interface
       const transformedEmployees: Employee[] = data.map(emp => ({
         ...emp,
-        startDate: emp.start_date, // Add legacy field for backward compatibility
+        status: emp.status as 'active' | 'inactive', // Ensure proper type casting
         units: emp.units as Unit[]
       }));
 
@@ -147,10 +147,6 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       // Transform data to match database schema
       const updateData: any = { ...data };
-      if (data.startDate) {
-        updateData.start_date = data.startDate;
-        delete updateData.startDate;
-      }
       // Remove fields that shouldn't be updated
       delete updateData.id;
       delete updateData.created_at;

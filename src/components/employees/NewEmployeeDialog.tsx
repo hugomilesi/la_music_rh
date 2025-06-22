@@ -33,7 +33,7 @@ const formSchema = z.object({
   phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().min(2, 'Departamento é obrigatório'),
-  startDate: z.string().min(1, 'Data de início é obrigatória'),
+  start_date: z.string().min(1, 'Data de início é obrigatória'),
   units: z.array(z.nativeEnum(Unit)).min(1, 'Selecione pelo menos uma unidade'),
 });
 
@@ -59,7 +59,7 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
       phone: '',
       position: '',
       department: '',
-      startDate: '',
+      start_date: '',
       units: [],
     },
   });
@@ -72,7 +72,7 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
         phone: data.phone,
         position: data.position,
         department: data.department,
-        startDate: data.startDate,
+        start_date: data.start_date,
         units: data.units,
       };
       
@@ -177,7 +177,7 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
 
               <FormField
                 control={form.control}
-                name="startDate"
+                name="start_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data de início</FormLabel>

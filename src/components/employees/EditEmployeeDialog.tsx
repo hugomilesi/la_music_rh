@@ -75,7 +75,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
         phone: employee.phone,
         position: employee.position,
         department: employee.department,
-        start_date: employee.start_date || employee.startDate, // Handle both field names
+        start_date: employee.start_date,
         units: employee.units,
       });
     }

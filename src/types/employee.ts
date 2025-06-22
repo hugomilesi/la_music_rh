@@ -9,7 +9,7 @@ export interface Employee {
   position: string;
   department: string;
   units: Unit[];
-  start_date: string; // Changed from startDate to match database column
+  start_date: string;
   status: 'active' | 'inactive';
   avatar?: string;
   created_at?: string;
@@ -23,5 +23,5 @@ export interface NewEmployeeData {
   position: string;
   department: string;
   units: Unit[];
-  start_date: string; // Changed from startDate to match database column
+  start_date: string;
 }
