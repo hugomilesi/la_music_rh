@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,7 +112,7 @@ const BenefitsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Performance Alert */}
+      {/* Renewal Alert */}
       {pendingRenewals.length > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="p-4">
@@ -120,7 +121,7 @@ const BenefitsPage: React.FC = () => {
               <div className="flex-1">
                 <h3 className="font-semibold text-orange-800">Renovações Pendentes</h3>
                 <p className="text-orange-700">
-                  {pendingRenewals.length} benefício(s) baseado(s) em performance precisam de revisão
+                  {pendingRenewals.length} benefício(s) precisam de revisão para renovação
                 </p>
               </div>
               <Button 
@@ -179,8 +180,8 @@ const BenefitsPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Performance</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.performanceBasedBenefits}</p>
+                <p className="text-sm text-gray-600">Com Metas</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.benefitsWithGoals}</p>
               </div>
               <Target className="w-8 h-8 text-orange-600" />
             </div>
@@ -208,23 +209,14 @@ const BenefitsPage: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {benefits.map((benefit) => (
-              <Card key={benefit.id} className={`border-l-4 ${
-                benefit.isPerformanceBased ? 'border-l-orange-500' : 'border-l-purple-500'
-              }`}>
+              <Card key={benefit.id} className="border-l-4 border-l-purple-500">
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-lg">{benefit.name}</h3>
-                      <div className="flex gap-1">
-                        <Badge className={getCategoryColor(benefit.type.category)}>
-                          {benefit.type.name}
-                        </Badge>
-                        {benefit.isPerformanceBased && (
-                          <Badge className="bg-orange-100 text-orange-800">
-                            Performance
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge className={getCategoryColor(benefit.type.category)}>
+                        {benefit.type.name}
+                      </Badge>
                     </div>
                     
                     <p className="text-sm text-gray-600 line-clamp-2">{benefit.description}</p>
@@ -240,16 +232,32 @@ const BenefitsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {benefit.isPerformanceBased && (
-                      <div className="bg-orange-50 p-2 rounded text-xs">
-                        <div className="flex items-center gap-1">
-                          <Target className="w-3 h-3 text-orange-600" />
-                          <span className="text-orange-800">
-                            {benefit.performanceGoals?.length || 0} meta(s) configurada(s)
-                          </span>
+                    {/* Feature indicators for all benefits */}
+                    <div className="space-y-1">
+                      {benefit.performanceGoals && benefit.performanceGoals.length > 0 && (
+                        <div className="bg-orange-50 p-2 rounded text-xs">
+                          <div className="flex items-center gap-1">
+                            <Target className="w-3 h-3 text-orange-600" />
+                            <span className="text-orange-800">
+                              {benefit.performanceGoals.length} meta(s) configurada(s)
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      
+                      {benefit.renewalSettings && (
+                        <div className="bg-blue-50 p-2 rounded text-xs">
+                          <div className="flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3 text-blue-600" />
+                            <span className="text-blue-800">
+                              Renovação {benefit.renewalSettings.renewalPeriod === 'monthly' ? 'mensal' :
+                                        benefit.renewalSettings.renewalPeriod === 'quarterly' ? 'trimestral' :
+                                        benefit.renewalSettings.renewalPeriod === 'biannual' ? 'semestral' : 'anual'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     
                     <div className="flex items-center gap-2">
                       <Badge variant={benefit.isActive ? "default" : "secondary"}>
@@ -273,26 +281,23 @@ const BenefitsPage: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      {benefit.isPerformanceBased && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleManageGoals(benefit)}
-                            title="Gerenciar Metas"
-                          >
-                            <Target className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRenewalSettings(benefit)}
-                            title="Configurar Renovação"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
+                      {/* Universal features - now available for all benefits */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleManageGoals(benefit)}
+                        title="Gerenciar Metas"
+                      >
+                        <Target className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRenewalSettings(benefit)}
+                        title="Configurar Renovação"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -357,6 +362,7 @@ const BenefitsPage: React.FC = () => {
             benefit={selectedBenefit}
           />
 
+          {/* Universal modals - now available for all benefits */}
           <PerformanceGoalsModal
             open={showPerformanceGoalsModal}
             onOpenChange={setShowPerformanceGoalsModal}

@@ -15,8 +15,7 @@ export interface Benefit {
   maxBeneficiaries: number;
   createdAt: string;
   updatedAt: string;
-  // Performance-based features
-  isPerformanceBased?: boolean;
+  // Universal features - now available for all benefits
   performanceGoals?: PerformanceGoal[];
   renewalSettings?: RenewalSettings;
 }
@@ -47,7 +46,7 @@ export interface EmployeeBenefit {
   dependents: Dependent[];
   documents: BenefitDocument[];
   lastUpdate: string;
-  // Performance tracking
+  // Universal tracking - now available for all benefits
   performanceData?: PerformanceData;
   nextRenewalDate?: string;
   renewalStatus?: 'automatic' | 'requires_review' | 'expired';
@@ -79,7 +78,7 @@ export interface BenefitStats {
   totalCost: number;
   mostPopularBenefit: string;
   utilizationRate: number;
-  performanceBasedBenefits: number;
+  benefitsWithGoals: number;
   pendingRenewals: number;
 }
 
@@ -92,7 +91,7 @@ export interface BenefitUsage {
   avgCostPerEmployee: number;
 }
 
-// New performance-based interfaces
+// Universal performance and renewal interfaces
 export interface PerformanceGoal {
   id: string;
   title: string;

@@ -14,7 +14,7 @@ interface BenefitsContextType {
   updateEnrollment: (id: string, data: Partial<EmployeeBenefit>) => void;
   cancelEnrollment: (id: string) => void;
   refreshStats: () => void;
-  // Performance-based functions
+  // Universal functions - now available for all benefits
   updatePerformanceGoals: (benefitId: string, goals: PerformanceGoal[]) => void;
   updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => void;
   updatePerformanceData: (enrollmentId: string, data: PerformanceData) => void;
@@ -52,6 +52,15 @@ const mockBenefits: Benefit[] = [
     startDate: '2024-01-01',
     documents: ['contrato_unimed.pdf'],
     maxBeneficiaries: 4,
+    renewalSettings: {
+      id: '1',
+      renewalPeriod: 'annual',
+      requiresPerformanceReview: false,
+      minimumPerformanceScore: 0,
+      autoRenewal: true,
+      reminderDays: 30,
+      gracePeriodDays: 7
+    },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
@@ -68,6 +77,30 @@ const mockBenefits: Benefit[] = [
     startDate: '2024-01-01',
     documents: ['contrato_alelo.pdf'],
     maxBeneficiaries: 1,
+    performanceGoals: [
+      {
+        id: '1',
+        title: 'Uso Responsável',
+        description: 'Utilizar o benefício de forma consciente e responsável',
+        targetValue: 90,
+        currentValue: 0,
+        unit: '%',
+        weight: 100,
+        deadline: '2024-12-31',
+        status: 'pending',
+        createdBy: 'hr_admin',
+        createdAt: '2024-01-01T00:00:00Z'
+      }
+    ],
+    renewalSettings: {
+      id: '2',
+      renewalPeriod: 'monthly',
+      requiresPerformanceReview: true,
+      minimumPerformanceScore: 80,
+      autoRenewal: false,
+      reminderDays: 7,
+      gracePeriodDays: 3
+    },
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
@@ -84,7 +117,6 @@ const mockBenefits: Benefit[] = [
     startDate: '2024-01-01',
     documents: [],
     maxBeneficiaries: 1,
-    isPerformanceBased: true,
     performanceGoals: [
       {
         id: '1',
@@ -114,7 +146,7 @@ const mockBenefits: Benefit[] = [
       }
     ],
     renewalSettings: {
-      id: '1',
+      id: '3',
       renewalPeriod: 'annual',
       requiresPerformanceReview: true,
       minimumPerformanceScore: 80,
@@ -207,14 +239,14 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     totalCost: 0,
     mostPopularBenefit: '',
     utilizationRate: 0,
-    performanceBasedBenefits: 0,
+    benefitsWithGoals: 0,
     pendingRenewals: 0
   });
   const [usage, setUsage] = useState<BenefitUsage[]>([]);
 
   const refreshStats = () => {
     const activeBenefits = benefits.filter(b => b.isActive).length;
-    const performanceBasedBenefits = benefits.filter(b => b.isPerformanceBased).length;
+    const benefitsWithGoals = benefits.filter(b => b.performanceGoals && b.performanceGoals.length > 0).length;
     const totalEnrollments = employeeBenefits.filter(eb => eb.status === 'active').length;
     const pendingApprovals = employeeBenefits.filter(eb => eb.status === 'pending').length;
     const pendingRenewals = employeeBenefits.filter(eb => eb.renewalStatus === 'requires_review').length;
@@ -233,7 +265,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       totalCost,
       mostPopularBenefit: 'Plano de Saúde Premium',
       utilizationRate: benefits.length > 0 ? (totalEnrollments / benefits.length) * 100 : 0,
-      performanceBasedBenefits,
+      benefitsWithGoals,
       pendingRenewals
     });
 
@@ -296,8 +328,8 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       lastUpdate: new Date().toISOString()
     };
 
-    // If it's performance-based, set renewal info
-    if (benefit.isPerformanceBased && benefit.renewalSettings) {
+    // If it has renewal settings, set renewal info
+    if (benefit.renewalSettings) {
       const renewalDate = new Date();
       switch (benefit.renewalSettings.renewalPeriod) {
         case 'monthly':
@@ -332,7 +364,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateEnrollment(id, { status: 'cancelled' });
   };
 
-  // Performance-based functions
+  // Universal functions - now available for all benefits
   const updatePerformanceGoals = (benefitId: string, goals: PerformanceGoal[]) => {
     updateBenefit(benefitId, { performanceGoals: goals });
   };
