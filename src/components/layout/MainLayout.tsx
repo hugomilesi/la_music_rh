@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { Toaster } from '@/components/ui/toaster';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
+      
+      <Toaster />
     </div>
   );
 };

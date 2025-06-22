@@ -8,6 +8,7 @@ import { EvaluationProvider } from './contexts/EvaluationContext';
 import { VacationProvider } from './contexts/VacationContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
 import { UnitProvider } from './contexts/UnitContext';
+import { IncidentsProvider } from './contexts/IncidentsContext';
 
 // Pages
 import Index from './pages/Index';
@@ -35,25 +36,27 @@ function App() {
             <EvaluationProvider>
               <VacationProvider>
                 <ScheduleProvider>
-                  <MainLayout>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/colaboradores" element={<EmployeesPage />} />
-                      <Route path="/documentos" element={<DocumentsPage />} />
-                      <Route path="/avaliacoes" element={<EvaluationsPage />} />
-                      <Route path="/ferias" element={<VacationPage />} />
-                      <Route path="/agenda" element={<SchedulePage />} />
-                      <Route path="/ponto" element={<TimesheetPage />} />
-                      <Route path="/nps" element={<NPSPage />} />
-                      <Route path="/reconhecimento" element={<RecognitionPage />} />
-                      <Route path="/ocorrencias" element={<IncidentsPage />} />
-                      <Route path="/whatsapp" element={<WhatsAppPage />} />
-                      <Route path="/notificacoes" element={<NotificationsPage />} />
-                      <Route path="/configuracoes" element={<SettingsPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </MainLayout>
+                  <IncidentsProvider>
+                    <MainLayout>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/colaboradores" element={<EmployeesPage />} />
+                        <Route path="/documentos" element={<DocumentsPage />} />
+                        <Route path="/avaliacoes" element={<EvaluationsPage />} />
+                        <Route path="/ferias" element={<VacationPage />} />
+                        <Route path="/agenda" element={<SchedulePage />} />
+                        <Route path="/ponto" element={<TimesheetPage />} />
+                        <Route path="/nps" element={<NPSPage />} />
+                        <Route path="/reconhecimento" element={<RecognitionPage />} />
+                        <Route path="/ocorrencias" element={<IncidentsPage />} />
+                        <Route path="/whatsapp" element={<WhatsAppPage />} />
+                        <Route path="/notificacoes" element={<NotificationsPage />} />
+                        <Route path="/configuracoes" element={<SettingsPage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </MainLayout>
+                  </IncidentsProvider>
                 </ScheduleProvider>
               </VacationProvider>
             </EvaluationProvider>

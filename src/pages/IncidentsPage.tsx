@@ -6,44 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield } from 'lucide-react';
-
-const mockIncidents = [
-  {
-    id: 1,
-    employee: 'Fabio Magarinos da Silva',
-    type: 'Atraso',
-    severity: 'leve',
-    description: 'Chegou 30 minutos atrasado sem justificativa',
-    date: '2024-03-15',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  },
-  {
-    id: 2,
-    employee: 'Luciano Nazario de Oliveira',
-    type: 'Falta Injustificada',
-    severity: 'moderado',
-    description: 'Não compareceu ao trabalho sem comunicação prévia',
-    date: '2024-03-10',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'resolvido'
-  },
-  {
-    id: 3,
-    employee: 'Felipe Elias Carvalho',
-    type: 'Comportamento Inadequado',
-    severity: 'grave',
-    description: 'Atendimento inadequado aos alunos relatado por pais',
-    date: '2024-03-08',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  }
-];
+import { useIncidents } from '@/contexts/IncidentsContext';
+import { IncidentListModal } from '@/components/incidents/IncidentListModal';
+import { NewIncidentDialog } from '@/components/incidents/NewIncidentDialog';
+import { ReportsModal } from '@/components/incidents/ReportsModal';
 
 const IncidentsPage: React.FC = () => {
+  const { incidents, getFilteredIncidents } = useIncidents();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  
+  // Modal states
+  const [listModalOpen, setListModalOpen] = useState(false);
+  const [listModalData, setListModalData] = useState<{ incidents: any[], title: string }>({ incidents: [], title: '' });
+  const [newIncidentOpen, setNewIncidentOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
@@ -63,6 +41,22 @@ const IncidentsPage: React.FC = () => {
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleCardClick = (filter: 'all' | 'active' | 'resolved' | 'thisMonth', title: string) => {
+    const filteredIncidents = getFilteredIncidents(filter);
+    setListModalData({ incidents: filteredIncidents, title });
+    setListModalOpen(true);
+  };
+
+  // Filter incidents based on search and filters
+  const filteredIncidents = incidents.filter(incident => {
+    const matchesSearch = incident.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         incident.type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSeverity = selectedSeverity === 'all' || incident.severity === selectedSeverity;
+    const matchesStatus = selectedStatus === 'all' || incident.status === selectedStatus;
+    
+    return matchesSearch && matchesSeverity && matchesStatus;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,11 +67,11 @@ const IncidentsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setReportsOpen(true)}>
             <FileText className="w-4 h-4 mr-2" />
             Relatório
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setNewIncidentOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Ocorrência
           </Button>
@@ -86,12 +80,15 @@ const IncidentsPage: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('all', 'Todas as Ocorrências')}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Ocorrências</p>
-                <p className="text-2xl font-bold">47</p>
+                <p className="text-2xl font-bold">{incidents.length}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -100,12 +97,15 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('active', 'Ocorrências Ativas')}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Ativas</p>
-                <p className="text-2xl font-bold text-red-600">12</p>
+                <p className="text-2xl font-bold text-red-600">{getFilteredIncidents('active').length}</p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-red-600" />
@@ -114,12 +114,15 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('resolved', 'Ocorrências Resolvidas')}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Resolvidas</p>
-                <p className="text-2xl font-bold text-green-600">35</p>
+                <p className="text-2xl font-bold text-green-600">{getFilteredIncidents('resolved').length}</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-green-600" />
@@ -128,12 +131,15 @@ const IncidentsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleCardClick('thisMonth', 'Ocorrências deste Mês')}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Este Mês</p>
-                <p className="text-2xl font-bold text-orange-600">8</p>
+                <p className="text-2xl font-bold text-orange-600">{getFilteredIncidents('thisMonth').length}</p>
               </div>
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
@@ -211,7 +217,7 @@ const IncidentsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockIncidents.map((incident) => (
+              {filteredIncidents.map((incident) => (
                 <TableRow key={incident.id}>
                   <TableCell className="font-medium">{incident.employee}</TableCell>
                   <TableCell>{incident.type}</TableCell>
@@ -244,6 +250,24 @@ const IncidentsPage: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <IncidentListModal
+        open={listModalOpen}
+        onOpenChange={setListModalOpen}
+        incidents={listModalData.incidents}
+        title={listModalData.title}
+      />
+
+      <NewIncidentDialog
+        open={newIncidentOpen}
+        onOpenChange={setNewIncidentOpen}
+      />
+
+      <ReportsModal
+        open={reportsOpen}
+        onOpenChange={setReportsOpen}
+      />
     </div>
   );
 };
