@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Document, DocumentFilter, DocumentUpload, DocumentStats, DocumentType, DocumentStatus } from '@/types/document';
 import { useEmployees } from './EmployeeContext';
@@ -227,14 +226,14 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return documents.filter(doc => doc.employeeId === employeeId);
   }, [documents]);
 
-  const downloadDocument = useCallback((document: Document) => {
-    console.log('Downloading document:', document.fileName);
+  const downloadDocument = useCallback((doc: Document) => {
+    console.log('Downloading document:', doc.fileName);
     
-    if (document.fileUrl) {
+    if (doc.fileUrl) {
       // Create a temporary link element
       const link = document.createElement('a');
-      link.href = document.fileUrl;
-      link.download = document.fileName || 'document.pdf';
+      link.href = doc.fileUrl;
+      link.download = doc.fileName || 'document.pdf';
       link.target = '_blank';
       
       // Append to body, click, and remove
@@ -243,7 +242,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       document.body.removeChild(link);
     } else {
       // Fallback for documents without URL
-      alert(`Download de ${document.fileName} iniciado!`);
+      alert(`Download de ${doc.fileName} iniciado!`);
     }
   }, []);
 
