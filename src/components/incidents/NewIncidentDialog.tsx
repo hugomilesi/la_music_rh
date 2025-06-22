@@ -8,17 +8,28 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIncident } from '@/contexts/IncidentContext';
 import { useToast } from '@/hooks/use-toast';
+import { Incident } from '@/types/incident';
 
 interface NewIncidentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+type IncidentFormData = {
+  employee: string;
+  employeeId: string;
+  type: Incident['type'] | '';
+  severity: Incident['severity'] | '';
+  description: string;
+  date: string;
+  reporter: string;
+};
+
 export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({ open, onOpenChange }) => {
   const { addIncident } = useIncident();
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<IncidentFormData>({
     employee: '',
     employeeId: '',
     type: '',
@@ -41,7 +52,13 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({ open, onOp
     }
 
     addIncident({
-      ...formData,
+      employee: formData.employee,
+      employeeId: formData.employeeId,
+      type: formData.type as Incident['type'],
+      severity: formData.severity as Incident['severity'],
+      description: formData.description,
+      date: formData.date,
+      reporter: formData.reporter,
       status: 'ativo'
     });
 
@@ -99,7 +116,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({ open, onOp
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="type">Tipo de Ocorrência *</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+              <Select value={formData.type} onValueChange={(value: Incident['type']) => setFormData(prev => ({ ...prev, type: value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
@@ -114,7 +131,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({ open, onOp
             
             <div>
               <Label htmlFor="severity">Gravidade *</Label>
-              <Select value={formData.severity} onValueChange={(value) => setFormData(prev => ({ ...prev, severity: value }))}>
+              <Select value={formData.severity} onValueChange={(value: Incident['severity']) => setFormData(prev => ({ ...prev, severity: value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a gravidade" />
                 </SelectTrigger>
