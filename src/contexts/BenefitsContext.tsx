@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Benefit, EmployeeBenefit, BenefitStats, BenefitType, BenefitUsage } from '@/types/benefits';
+import { Benefit, EmployeeBenefit, BenefitStats, BenefitType, BenefitUsage, PerformanceGoal, RenewalSettings, PerformanceData } from '@/types/benefits';
 
 interface BenefitsContextType {
   benefits: Benefit[];
@@ -15,6 +15,11 @@ interface BenefitsContextType {
   updateEnrollment: (id: string, data: Partial<EmployeeBenefit>) => void;
   cancelEnrollment: (id: string) => void;
   refreshStats: () => void;
+  // Performance-based functions
+  updatePerformanceGoals: (benefitId: string, goals: PerformanceGoal[]) => void;
+  updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => void;
+  updatePerformanceData: (enrollmentId: string, data: PerformanceData) => void;
+  checkRenewals: () => EmployeeBenefit[];
 }
 
 const BenefitsContext = createContext<BenefitsContextType | undefined>(undefined);
@@ -26,7 +31,8 @@ const mockBenefitTypes: BenefitType[] = [
   { id: '3', name: 'Vale Refeição', category: 'food', icon: 'Utensils', color: 'bg-green-500' },
   { id: '4', name: 'Vale Transporte', category: 'transport', icon: 'Car', color: 'bg-yellow-500' },
   { id: '5', name: 'Auxílio Educação', category: 'education', icon: 'GraduationCap', color: 'bg-purple-500' },
-  { id: '6', name: 'Seguro de Vida', category: 'life', icon: 'Shield', color: 'bg-gray-500' }
+  { id: '6', name: 'Seguro de Vida', category: 'life', icon: 'Shield', color: 'bg-gray-500' },
+  { id: '7', name: 'Bônus Performance', category: 'performance', icon: 'Target', color: 'bg-orange-500' }
 ];
 
 const mockBenefits: Benefit[] = [
@@ -61,6 +67,60 @@ const mockBenefits: Benefit[] = [
     maxBeneficiaries: 1,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '3',
+    name: 'Bônus por Performance Anual',
+    type: mockBenefitTypes[6],
+    description: 'Bônus baseado no atingimento de metas de performance',
+    value: 2000.00,
+    coverage: ['Bônus em dinheiro', 'Reconhecimento'],
+    eligibilityRules: [{ id: '2', rule: 'tempo_empresa', value: 365, operator: 'greater_than' }],
+    provider: 'LA Music RH',
+    isActive: true,
+    startDate: '2024-01-01',
+    documents: [],
+    maxBeneficiaries: 1,
+    isPerformanceBased: true,
+    performanceGoals: [
+      {
+        id: '1',
+        title: 'Meta de Vendas',
+        description: 'Atingir 120% da meta de vendas individual',
+        targetValue: 120,
+        currentValue: 0,
+        unit: '%',
+        weight: 40,
+        deadline: '2024-12-31',
+        status: 'pending',
+        createdBy: 'hr_admin',
+        createdAt: '2024-01-01T00:00:00Z'
+      },
+      {
+        id: '2',
+        title: 'Satisfação do Cliente',
+        description: 'Manter NPS acima de 80',
+        targetValue: 80,
+        currentValue: 0,
+        unit: 'pontos',
+        weight: 30,
+        deadline: '2024-12-31',
+        status: 'pending',
+        createdBy: 'hr_admin',
+        createdAt: '2024-01-01T00:00:00Z'
+      }
+    ],
+    renewalSettings: {
+      id: '1',
+      renewalPeriod: 'annual',
+      requiresPerformanceReview: true,
+      minimumPerformanceScore: 80,
+      autoRenewal: false,
+      reminderDays: 60,
+      gracePeriodDays: 15
+    },
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   }
 ];
 
@@ -85,6 +145,50 @@ const mockEmployeeBenefits: EmployeeBenefit[] = [
     ],
     documents: [],
     lastUpdate: '2024-02-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    employeeId: '1',
+    employeeName: 'João Silva',
+    benefitId: '3',
+    benefitName: 'Bônus por Performance Anual',
+    enrollmentDate: '2024-03-01',
+    status: 'active',
+    dependents: [],
+    documents: [],
+    lastUpdate: '2024-03-01T00:00:00Z',
+    nextRenewalDate: '2025-03-01',
+    renewalStatus: 'requires_review',
+    performanceData: {
+      id: '1',
+      employeeId: '1',
+      benefitId: '3',
+      overallScore: 75,
+      goalProgress: [
+        {
+          goalId: '1',
+          goalTitle: 'Meta de Vendas',
+          currentValue: 95,
+          targetValue: 120,
+          completionPercentage: 79,
+          status: 'in_progress',
+          lastUpdated: '2024-11-01T00:00:00Z'
+        },
+        {
+          goalId: '2',
+          goalTitle: 'Satisfação do Cliente',
+          currentValue: 85,
+          targetValue: 80,
+          completionPercentage: 100,
+          status: 'completed',
+          lastUpdated: '2024-10-15T00:00:00Z'
+        }
+      ],
+      lastEvaluationDate: '2024-11-01T00:00:00Z',
+      nextEvaluationDate: '2024-12-01T00:00:00Z',
+      evaluatorId: 'manager_1',
+      comments: 'Bom progresso, precisa melhorar vendas'
+    }
   }
 ];
 
@@ -99,14 +203,18 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     pendingApprovals: 0,
     totalCost: 0,
     mostPopularBenefit: '',
-    utilizationRate: 0
+    utilizationRate: 0,
+    performanceBasedBenefits: 0,
+    pendingRenewals: 0
   });
   const [usage, setUsage] = useState<BenefitUsage[]>([]);
 
   const refreshStats = () => {
     const activeBenefits = benefits.filter(b => b.isActive).length;
+    const performanceBasedBenefits = benefits.filter(b => b.isPerformanceBased).length;
     const totalEnrollments = employeeBenefits.filter(eb => eb.status === 'active').length;
     const pendingApprovals = employeeBenefits.filter(eb => eb.status === 'pending').length;
+    const pendingRenewals = employeeBenefits.filter(eb => eb.renewalStatus === 'requires_review').length;
     const totalCost = employeeBenefits
       .filter(eb => eb.status === 'active')
       .reduce((sum, eb) => {
@@ -121,7 +229,9 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       pendingApprovals,
       totalCost,
       mostPopularBenefit: 'Plano de Saúde Premium',
-      utilizationRate: benefits.length > 0 ? (totalEnrollments / benefits.length) * 100 : 0
+      utilizationRate: benefits.length > 0 ? (totalEnrollments / benefits.length) * 100 : 0,
+      performanceBasedBenefits,
+      pendingRenewals
     });
 
     // Calculate usage statistics
@@ -182,6 +292,28 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       documents: [],
       lastUpdate: new Date().toISOString()
     };
+
+    // If it's performance-based, set renewal info
+    if (benefit.isPerformanceBased && benefit.renewalSettings) {
+      const renewalDate = new Date();
+      switch (benefit.renewalSettings.renewalPeriod) {
+        case 'monthly':
+          renewalDate.setMonth(renewalDate.getMonth() + 1);
+          break;
+        case 'quarterly':
+          renewalDate.setMonth(renewalDate.getMonth() + 3);
+          break;
+        case 'biannual':
+          renewalDate.setMonth(renewalDate.getMonth() + 6);
+          break;
+        case 'annual':
+          renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+          break;
+      }
+      newEnrollment.nextRenewalDate = renewalDate.toISOString();
+      newEnrollment.renewalStatus = benefit.renewalSettings.autoRenewal ? 'automatic' : 'requires_review';
+    }
+
     setEmployeeBenefits(prev => [...prev, newEnrollment]);
   };
 
@@ -197,6 +329,31 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateEnrollment(id, { status: 'cancelled' });
   };
 
+  // Performance-based functions
+  const updatePerformanceGoals = (benefitId: string, goals: PerformanceGoal[]) => {
+    updateBenefit(benefitId, { performanceGoals: goals });
+  };
+
+  const updateRenewalSettings = (benefitId: string, settings: RenewalSettings) => {
+    updateBenefit(benefitId, { renewalSettings: settings });
+  };
+
+  const updatePerformanceData = (enrollmentId: string, data: PerformanceData) => {
+    updateEnrollment(enrollmentId, { performanceData: data });
+  };
+
+  const checkRenewals = () => {
+    return employeeBenefits.filter(eb => {
+      if (!eb.nextRenewalDate) return false;
+      const renewalDate = new Date(eb.nextRenewalDate);
+      const today = new Date();
+      const daysUntilRenewal = Math.ceil((renewalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Check if renewal is due within 30 days or overdue
+      return daysUntilRenewal <= 30;
+    });
+  };
+
   return (
     <BenefitsContext.Provider value={{
       benefits,
@@ -210,7 +367,11 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       enrollEmployee,
       updateEnrollment,
       cancelEnrollment,
-      refreshStats
+      refreshStats,
+      updatePerformanceGoals,
+      updateRenewalSettings,
+      updatePerformanceData,
+      checkRenewals
     }}>
       {children}
     </BenefitsContext.Provider>

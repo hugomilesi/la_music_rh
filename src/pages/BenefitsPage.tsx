@@ -13,7 +13,10 @@ import {
   Eye,
   Edit,
   Trash2,
-  UserPlus
+  UserPlus,
+  Target,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { NewBenefitDialog } from '@/components/benefits/NewBenefitDialog';
@@ -21,16 +24,22 @@ import { BenefitDetailsModal } from '@/components/benefits/BenefitDetailsModal';
 import { EditBenefitDialog } from '@/components/benefits/EditBenefitDialog';
 import { EnrollmentModal } from '@/components/benefits/EnrollmentModal';
 import { BenefitStatsModal } from '@/components/benefits/BenefitStatsModal';
+import { PerformanceGoalsModal } from '@/components/benefits/PerformanceGoalsModal';
+import { RenewalSettingsModal } from '@/components/benefits/RenewalSettingsModal';
 import { Benefit } from '@/types/benefits';
 
 const BenefitsPage: React.FC = () => {
-  const { benefits, stats, deleteBenefit } = useBenefits();
+  const { benefits, stats, deleteBenefit, updatePerformanceGoals, updateRenewalSettings, checkRenewals } = useBenefits();
   const [showNewBenefitDialog, setShowNewBenefitDialog] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showPerformanceGoalsModal, setShowPerformanceGoalsModal] = useState(false);
+  const [showRenewalSettingsModal, setShowRenewalSettingsModal] = useState(false);
+
+  const pendingRenewals = checkRenewals();
 
   const handleViewDetails = (benefit: Benefit) => {
     setSelectedBenefit(benefit);
@@ -47,6 +56,16 @@ const BenefitsPage: React.FC = () => {
     setShowEnrollmentModal(true);
   };
 
+  const handleManageGoals = (benefit: Benefit) => {
+    setSelectedBenefit(benefit);
+    setShowPerformanceGoalsModal(true);
+  };
+
+  const handleRenewalSettings = (benefit: Benefit) => {
+    setSelectedBenefit(benefit);
+    setShowRenewalSettingsModal(true);
+  };
+
   const handleDeleteBenefit = (benefitId: string) => {
     if (confirm('Tem certeza que deseja excluir este benefício?')) {
       deleteBenefit(benefitId);
@@ -61,7 +80,8 @@ const BenefitsPage: React.FC = () => {
       transport: 'bg-yellow-100 text-yellow-800',
       education: 'bg-purple-100 text-purple-800',
       life: 'bg-gray-100 text-gray-800',
-      other: 'bg-orange-100 text-orange-800'
+      performance: 'bg-orange-100 text-orange-800',
+      other: 'bg-slate-100 text-slate-800'
     };
     return colors[category as keyof typeof colors] || colors.other;
   };
@@ -80,8 +100,28 @@ const BenefitsPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Performance Alert */}
+      {pendingRenewals.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-orange-600" />
+              <div>
+                <h3 className="font-semibold text-orange-800">Renovações Pendentes</h3>
+                <p className="text-orange-700">
+                  {pendingRenewals.length} benefício(s) baseado(s) em performance precisam de revisão
+                </p>
+              </div>
+              <Button variant="outline" size="sm" className="ml-auto">
+                Revisar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowStatsModal(true)}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -122,10 +162,22 @@ const BenefitsPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</p>
+                <p className="text-sm text-gray-600">Performance</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.performanceBasedBenefits}</p>
               </div>
-              <AlertCircle className="w-8 h-8 text-orange-600" />
+              <Target className="w-8 h-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowStatsModal(true)}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Pendentes</p>
+                <p className="text-2xl font-bold text-red-600">{stats.pendingRenewals}</p>
+              </div>
+              <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
@@ -139,14 +191,23 @@ const BenefitsPage: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {benefits.map((benefit) => (
-              <Card key={benefit.id} className="border-l-4 border-l-purple-500">
+              <Card key={benefit.id} className={`border-l-4 ${
+                benefit.isPerformanceBased ? 'border-l-orange-500' : 'border-l-purple-500'
+              }`}>
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-lg">{benefit.name}</h3>
-                      <Badge className={getCategoryColor(benefit.type.category)}>
-                        {benefit.type.name}
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Badge className={getCategoryColor(benefit.type.category)}>
+                          {benefit.type.name}
+                        </Badge>
+                        {benefit.isPerformanceBased && (
+                          <Badge className="bg-orange-100 text-orange-800">
+                            Performance
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-600 line-clamp-2">{benefit.description}</p>
@@ -161,6 +222,17 @@ const BenefitsPage: React.FC = () => {
                         <span>Max: {benefit.maxBeneficiaries}</span>
                       </div>
                     </div>
+
+                    {benefit.isPerformanceBased && (
+                      <div className="bg-orange-50 p-2 rounded text-xs">
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3 text-orange-600" />
+                          <span className="text-orange-800">
+                            {benefit.performanceGoals?.length || 0} meta(s) configurada(s)
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="flex items-center gap-2">
                       <Badge variant={benefit.isActive ? "default" : "secondary"}>
@@ -169,7 +241,7 @@ const BenefitsPage: React.FC = () => {
                       <span className="text-xs text-gray-500">{benefit.provider}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 pt-2 border-t">
+                    <div className="flex items-center gap-1 pt-2 border-t">
                       <Button
                         size="sm"
                         variant="outline"
@@ -184,6 +256,26 @@ const BenefitsPage: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {benefit.isPerformanceBased && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleManageGoals(benefit)}
+                            title="Gerenciar Metas"
+                          >
+                            <Target className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRenewalSettings(benefit)}
+                            title="Configurar Renovação"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -246,6 +338,22 @@ const BenefitsPage: React.FC = () => {
             open={showEnrollmentModal}
             onOpenChange={setShowEnrollmentModal}
             benefit={selectedBenefit}
+          />
+
+          <PerformanceGoalsModal
+            open={showPerformanceGoalsModal}
+            onOpenChange={setShowPerformanceGoalsModal}
+            benefitId={selectedBenefit.id}
+            goals={selectedBenefit.performanceGoals || []}
+            onSaveGoals={(goals) => updatePerformanceGoals(selectedBenefit.id, goals)}
+          />
+
+          <RenewalSettingsModal
+            open={showRenewalSettingsModal}
+            onOpenChange={setShowRenewalSettingsModal}
+            benefitId={selectedBenefit.id}
+            settings={selectedBenefit.renewalSettings}
+            onSaveSettings={(settings) => updateRenewalSettings(selectedBenefit.id, settings)}
           />
         </>
       )}

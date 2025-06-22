@@ -15,12 +15,16 @@ export interface Benefit {
   maxBeneficiaries: number;
   createdAt: string;
   updatedAt: string;
+  // Performance-based features
+  isPerformanceBased?: boolean;
+  performanceGoals?: PerformanceGoal[];
+  renewalSettings?: RenewalSettings;
 }
 
 export interface BenefitType {
   id: string;
   name: string;
-  category: 'health' | 'dental' | 'food' | 'transport' | 'education' | 'life' | 'other';
+  category: 'health' | 'dental' | 'food' | 'transport' | 'education' | 'life' | 'performance' | 'other';
   icon: string;
   color: string;
 }
@@ -43,6 +47,10 @@ export interface EmployeeBenefit {
   dependents: Dependent[];
   documents: BenefitDocument[];
   lastUpdate: string;
+  // Performance tracking
+  performanceData?: PerformanceData;
+  nextRenewalDate?: string;
+  renewalStatus?: 'automatic' | 'requires_review' | 'expired';
 }
 
 export interface Dependent {
@@ -71,6 +79,8 @@ export interface BenefitStats {
   totalCost: number;
   mostPopularBenefit: string;
   utilizationRate: number;
+  performanceBasedBenefits: number;
+  pendingRenewals: number;
 }
 
 export interface BenefitUsage {
@@ -80,4 +90,51 @@ export interface BenefitUsage {
   utilizationRate: number;
   totalCost: number;
   avgCostPerEmployee: number;
+}
+
+// New performance-based interfaces
+export interface PerformanceGoal {
+  id: string;
+  title: string;
+  description: string;
+  targetValue: number;
+  currentValue?: number;
+  unit: string;
+  weight: number; // Percentage weight in overall performance
+  deadline: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface RenewalSettings {
+  id: string;
+  renewalPeriod: 'monthly' | 'quarterly' | 'biannual' | 'annual';
+  requiresPerformanceReview: boolean;
+  minimumPerformanceScore: number;
+  autoRenewal: boolean;
+  reminderDays: number;
+  gracePeriodDays: number;
+}
+
+export interface PerformanceData {
+  id: string;
+  employeeId: string;
+  benefitId: string;
+  overallScore: number;
+  goalProgress: GoalProgress[];
+  lastEvaluationDate: string;
+  nextEvaluationDate: string;
+  evaluatorId: string;
+  comments: string;
+}
+
+export interface GoalProgress {
+  goalId: string;
+  goalTitle: string;
+  currentValue: number;
+  targetValue: number;
+  completionPercentage: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  lastUpdated: string;
 }
