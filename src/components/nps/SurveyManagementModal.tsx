@@ -4,7 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Send, Edit, Trash2, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Send, Edit, Trash2, Users, Save, X } from 'lucide-react';
 import { useNPS } from '@/contexts/NPSContext';
 
 interface SurveyManagementModalProps {
@@ -16,8 +19,14 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
   open,
   onOpenChange
 }) => {
-  const { surveys, deleteSurvey, sendSurveyToWhatsApp } = useNPS();
-  const [newSurveyOpen, setNewSurveyOpen] = useState(false);
+  const { surveys, deleteSurvey, updateSurvey, sendSurveyToWhatsApp } = useNPS();
+  const [editingSurvey, setEditingSurvey] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    startDate: '',
+    endDate: ''
+  });
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -37,6 +46,27 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
     return texts[status as keyof typeof texts] || status;
   };
 
+  const handleEdit = (survey: any) => {
+    setEditingSurvey(survey.id);
+    setEditForm({
+      title: survey.title,
+      description: survey.description,
+      startDate: survey.startDate,
+      endDate: survey.endDate
+    });
+  };
+
+  const handleSaveEdit = (surveyId: string) => {
+    updateSurvey(surveyId, editForm);
+    setEditingSurvey(null);
+    setEditForm({ title: '', description: '', startDate: '', endDate: '' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSurvey(null);
+    setEditForm({ title: '', description: '', startDate: '', endDate: '' });
+  };
+
   const handleSendToWhatsApp = async (surveyId: string) => {
     // Mock phones - em produção viria do contexto de colaboradores
     const phones = ['+5511999999999', '+5511888888888'];
@@ -48,38 +78,80 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
     }
   };
 
+  const handleDelete = (surveyId: string) => {
+    if (confirm('Tem certeza que deseja excluir esta pesquisa? Esta ação não pode ser desfeita.')) {
+      deleteSurvey(surveyId);
+    }
+  };
+
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              Gerenciar Pesquisas NPS
-              <Button 
-                size="sm"
-                onClick={() => setNewSurveyOpen(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Pesquisa
-              </Button>
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            {surveys.map((survey) => (
-              <Card key={survey.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{survey.title}</CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">{survey.description}</p>
-                    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            Gerenciar Pesquisas NPS
+            <Badge variant="outline">{surveys.length} pesquisas</Badge>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 mt-4">
+          {surveys.map((survey) => (
+            <Card key={survey.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {editingSurvey === survey.id ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label>Título</Label>
+                          <Input
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                          />
+                        </div>
+                        <div>
+                          <Label>Descrição</Label>
+                          <Textarea
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Data Início</Label>
+                            <Input
+                              type="date"
+                              value={editForm.startDate}
+                              onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <Label>Data Fim</Label>
+                            <Input
+                              type="date"
+                              value={editForm.endDate}
+                              onChange={(e) => setEditForm({...editForm, endDate: e.target.value})}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <CardTitle className="text-lg">{survey.title}</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">{survey.description}</p>
+                      </>
+                    )}
+                  </div>
+                  {editingSurvey !== survey.id && (
                     <Badge className={getStatusBadge(survey.status)}>
                       {getStatusText(survey.status)}
                     </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {editingSurvey !== survey.id && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <p className="text-sm text-gray-600">Período</p>
@@ -100,68 +172,79 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
                       <p className="font-medium">{survey.responses.length}</p>
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </Button>
-                    
-                    {survey.status === 'active' && (
+                <div className="flex items-center gap-2">
+                  {editingSurvey === survey.id ? (
+                    <>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleSaveEdit(survey.id)}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleSendToWhatsApp(survey.id)}
+                        onClick={handleCancelEdit}
                       >
-                        <Send className="w-4 h-4 mr-2" />
-                        Enviar WhatsApp
+                        <X className="w-4 h-4 mr-2" />
+                        Cancelar
                       </Button>
-                    )}
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => deleteSurvey(survey.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(survey)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                      
+                      {survey.status === 'active' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSendToWhatsApp(survey.id)}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Enviar WhatsApp
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDelete(survey.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
-            {surveys.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <p>Nenhuma pesquisa criada ainda</p>
-                <Button 
-                  className="mt-4"
-                  onClick={() => setNewSurveyOpen(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeira Pesquisa
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal para nova pesquisa seria implementado aqui */}
-      {newSurveyOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Nova Pesquisa</h3>
-            <p className="text-gray-600 mb-4">
-              Funcionalidade em desenvolvimento. Por enquanto, use as pesquisas existentes.
-            </p>
-            <Button onClick={() => setNewSurveyOpen(false)}>
-              Fechar
-            </Button>
-          </div>
+          {surveys.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma pesquisa criada ainda</p>
+              <Button 
+                className="mt-4"
+                onClick={() => onOpenChange(false)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Pesquisa
+              </Button>
+            </div>
+          )}
         </div>
-      )}
-    </>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -9,15 +9,31 @@ import { NPSDetailsModal } from '@/components/nps/NPSDetailsModal';
 import { SurveyManagementModal } from '@/components/nps/SurveyManagementModal';
 import { NPSEvolutionChart } from '@/components/nps/NPSEvolutionChart';
 import { CommentsModal } from '@/components/nps/CommentsModal';
+import { PromotersModal } from '@/components/nps/PromotersModal';
+import { NeutralsModal } from '@/components/nps/NeutralsModal';
+import { DetractorsModal } from '@/components/nps/DetractorsModal';
+import { NewSurveyModal } from '@/components/nps/NewSurveyModal';
+import { PeriodFilterModal } from '@/components/nps/PeriodFilterModal';
+import { AutoSendModal } from '@/components/nps/AutoSendModal';
 
 const NPSPage: React.FC = () => {
   const { stats, responses } = useNPS();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [surveyModalOpen, setSurveyModalOpen] = useState(false);
   const [commentsModalOpen, setCommentsModalOpen] = useState(false);
-  const [filterPeriod, setFilterPeriod] = useState('current');
+  const [promotersModalOpen, setPromotersModalOpen] = useState(false);
+  const [neutralsModalOpen, setNeutralsModalOpen] = useState(false);
+  const [detractorsModalOpen, setDetractorsModalOpen] = useState(false);
+  const [newSurveyModalOpen, setNewSurveyModalOpen] = useState(false);
+  const [periodFilterModalOpen, setPeriodFilterModalOpen] = useState(false);
+  const [autoSendModalOpen, setAutoSendModalOpen] = useState(false);
 
   const recentComments = responses.slice(0, 3);
+
+  const handlePeriodFilter = (filter: { startDate: string; endDate: string; period: string }) => {
+    console.log('Aplicando filtro de período:', filter);
+    // Aqui seria implementada a lógica de filtro real
+  };
 
   return (
     <div className="space-y-6">
@@ -29,7 +45,11 @@ const NPSPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setPeriodFilterModalOpen(true)}
+          >
             <Filter className="w-4 h-4 mr-2" />
             Filtrar Período
           </Button>
@@ -41,14 +61,17 @@ const NPSPage: React.FC = () => {
             <Settings className="w-4 h-4 mr-2" />
             Gerenciar
           </Button>
-          <Button size="sm">
+          <Button 
+            size="sm"
+            onClick={() => setNewSurveyModalOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nova Pesquisa
           </Button>
         </div>
       </div>
 
-      {/* NPS Score Cards - Agora interativos */}
+      {/* NPS Score Cards - Agora com modais específicos */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -72,7 +95,7 @@ const NPSPage: React.FC = () => {
 
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setDetailsModalOpen(true)}
+          onClick={() => setPromotersModalOpen(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -89,7 +112,7 @@ const NPSPage: React.FC = () => {
 
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setDetailsModalOpen(true)}
+          onClick={() => setNeutralsModalOpen(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -106,7 +129,7 @@ const NPSPage: React.FC = () => {
 
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setDetailsModalOpen(true)}
+          onClick={() => setDetractorsModalOpen(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -122,12 +145,15 @@ const NPSPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Evolution Chart - Agora um componente interativo */}
+      {/* Evolution Chart */}
       <NPSEvolutionChart />
 
-      {/* Actions Cards */}
+      {/* Actions Cards - Agora funcionais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setAutoSendModalOpen(true)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -176,7 +202,7 @@ const NPSPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Comments Section - Agora interativo */}
+      {/* Comments Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -235,6 +261,37 @@ const NPSPage: React.FC = () => {
       <CommentsModal
         open={commentsModalOpen}
         onOpenChange={setCommentsModalOpen}
+      />
+
+      <PromotersModal
+        open={promotersModalOpen}
+        onOpenChange={setPromotersModalOpen}
+      />
+
+      <NeutralsModal
+        open={neutralsModalOpen}
+        onOpenChange={setNeutralsModalOpen}
+      />
+
+      <DetractorsModal
+        open={detractorsModalOpen}
+        onOpenChange={setDetractorsModalOpen}
+      />
+
+      <NewSurveyModal
+        open={newSurveyModalOpen}
+        onOpenChange={setNewSurveyModalOpen}
+      />
+
+      <PeriodFilterModal
+        open={periodFilterModalOpen}
+        onOpenChange={setPeriodFilterModalOpen}
+        onApplyFilter={handlePeriodFilter}
+      />
+
+      <AutoSendModal
+        open={autoSendModalOpen}
+        onOpenChange={setAutoSendModalOpen}
       />
     </div>
   );
