@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye } from 'lucide-react';
 import { CriteriaModal } from '@/components/recognition/CriteriaModal';
+import { NewBonusDialog } from '@/components/recognition/NewBonusDialog';
+import { DeliverPrizeDialog } from '@/components/recognition/DeliverPrizeDialog';
 import { recognitionPrograms } from '@/data/recognitionMockData';
 import { RecognitionProgram } from '@/types/recognition';
 
@@ -17,6 +20,8 @@ const mockRanking = [
 const RecognitionPage: React.FC = () => {
   const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
+  const [newBonusDialogOpen, setNewBonusDialogOpen] = useState(false);
+  const [deliverPrizeDialogOpen, setDeliverPrizeDialogOpen] = useState(false);
 
   const handleViewCriteria = (programId: string) => {
     const program = recognitionPrograms.find(p => p.id === programId);
@@ -24,6 +29,16 @@ const RecognitionPage: React.FC = () => {
       setSelectedProgram(program);
       setCriteriaModalOpen(true);
     }
+  };
+
+  const handleCreateBonus = (bonus: any) => {
+    console.log('Nova bonificação criada:', bonus);
+    // Here you would typically save to a backend or state management
+  };
+
+  const handleDeliverPrize = (prize: any) => {
+    console.log('Prêmio entregue:', prize);
+    // Here you would typically save to a backend or state management
   };
 
   return (
@@ -36,11 +51,18 @@ const RecognitionPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setDeliverPrizeDialogOpen(true)}
+          >
             <Trophy className="w-4 h-4 mr-2" />
             Entregar Prêmio
           </Button>
-          <Button size="sm">
+          <Button 
+            size="sm"
+            onClick={() => setNewBonusDialogOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nova Bonificação
           </Button>
@@ -267,6 +289,20 @@ const RecognitionPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* New Bonus Dialog */}
+      <NewBonusDialog
+        open={newBonusDialogOpen}
+        onOpenChange={setNewBonusDialogOpen}
+        onCreateBonus={handleCreateBonus}
+      />
+
+      {/* Deliver Prize Dialog */}
+      <DeliverPrizeDialog
+        open={deliverPrizeDialogOpen}
+        onOpenChange={setDeliverPrizeDialogOpen}
+        onDeliverPrize={handleDeliverPrize}
+      />
     </div>
   );
 };
