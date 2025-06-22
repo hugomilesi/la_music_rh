@@ -4,10 +4,19 @@ import { UseFormReturn } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { UpdateSystemUserData } from '@/types/systemUser';
+
+interface UpdateUserFormData {
+  name: string;
+  email: string;
+  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  department?: string;
+  phone?: string;
+  permissions: string[];
+  status: 'active' | 'inactive';
+}
 
 interface EditUserFormProps {
-  form: UseFormReturn<UpdateSystemUserData>;
+  form: UseFormReturn<UpdateUserFormData>;
 }
 
 const departments = [

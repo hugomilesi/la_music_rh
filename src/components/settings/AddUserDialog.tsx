@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,12 +25,14 @@ const createUserSchema = z.object({
   phone: z.string().optional(),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
-  permissions: z.array(z.string()).default([]),
-  status: z.enum(['active', 'inactive']).default('active')
+  permissions: z.array(z.string()),
+  status: z.enum(['active', 'inactive'])
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não coincidem",
   path: ["confirmPassword"],
 });
+
+type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 interface AddUserDialogProps {
   children: React.ReactNode;
@@ -41,7 +44,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAd
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<CreateSystemUserData>({
+  const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
@@ -56,13 +59,26 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAd
     }
   });
 
-  const onSubmit = async (data: CreateSystemUserData) => {
+  const onSubmit = async (data: CreateUserFormData) => {
     setIsLoading(true);
     try {
       // Simular API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      onUserAdd(data);
+      // Convert form data to CreateSystemUserData
+      const userData: CreateSystemUserData = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        department: data.department,
+        phone: data.phone,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        permissions: data.permissions,
+        status: data.status
+      };
+      
+      onUserAdd(userData);
       
       toast({
         title: "Usuário criado com sucesso",

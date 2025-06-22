@@ -4,10 +4,21 @@ import { UseFormReturn } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { CreateSystemUserData } from '@/types/systemUser';
+
+interface CreateUserFormData {
+  name: string;
+  email: string;
+  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  department?: string;
+  phone?: string;
+  password: string;
+  confirmPassword: string;
+  permissions: string[];
+  status: 'active' | 'inactive';
+}
 
 interface CreateUserFormProps {
-  form: UseFormReturn<CreateSystemUserData>;
+  form: UseFormReturn<CreateUserFormData>;
 }
 
 const departments = [

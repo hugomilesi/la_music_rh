@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,9 +22,11 @@ const updateUserSchema = z.object({
   role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
   department: z.string().optional(),
   phone: z.string().optional(),
-  permissions: z.array(z.string()).default([]),
+  permissions: z.array(z.string()),
   status: z.enum(['active', 'inactive'])
 });
+
+type UpdateUserFormData = z.infer<typeof updateUserSchema>;
 
 interface EditUserDialogProps {
   user: SystemUser | null;
@@ -41,7 +44,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<UpdateSystemUserData>({
+  const form = useForm<UpdateUserFormData>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
       name: '',
@@ -68,7 +71,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
     }
   }, [user, form]);
 
-  const onSubmit = async (data: UpdateSystemUserData) => {
+  const onSubmit = async (data: UpdateUserFormData) => {
     if (!user) return;
 
     setIsLoading(true);
@@ -76,7 +79,18 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
       // Simular API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      onUserUpdate(user.id, data);
+      // Convert form data to UpdateSystemUserData
+      const userData: UpdateSystemUserData = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        department: data.department,
+        phone: data.phone,
+        permissions: data.permissions,
+        status: data.status
+      };
+      
+      onUserUpdate(user.id, userData);
       
       toast({
         title: "Usuário atualizado com sucesso",
