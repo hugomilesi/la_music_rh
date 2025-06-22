@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Shield, Users, Settings, FileText } from 'lucide-react';
+import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2 } from 'lucide-react';
 import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
