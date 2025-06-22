@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -21,43 +22,43 @@ const menuItems = [
   {
     title: 'Dashboard',
     icon: BarChart3,
-    href: '/',
+    href: '/dashboard',
     description: 'Visão geral do sistema'
   },
   {
     title: 'Colaboradores',
     icon: Users,
-    href: '/employees',
+    href: '/colaboradores',
     description: 'Gestão de funcionários'
   },
   {
     title: 'Avaliações',
     icon: UserCheck,
-    href: '/evaluations',
+    href: '/avaliacoes',
     description: 'Feedbacks e avaliações'
   },
   {
     title: 'Agenda',
     icon: Calendar,
-    href: '/schedule',
+    href: '/agenda',
     description: 'Plantões e escalas'
   },
   {
     title: 'Férias',
     icon: Plane,
-    href: '/vacation',
+    href: '/ferias',
     description: 'Controle de férias'
   },
   {
     title: 'Documentos',
     icon: FileText,
-    href: '/documents',
+    href: '/documentos',
     description: 'Contratos e arquivos'
   },
   {
     title: 'Ocorrências',
     icon: Shield,
-    href: '/incidents',
+    href: '/ocorrencias',
     description: 'Registros disciplinares'
   },
   {
@@ -69,19 +70,19 @@ const menuItems = [
   {
     title: 'Reconhecimento',
     icon: Award,
-    href: '/recognition',
+    href: '/reconhecimento',
     description: 'Incentivos e gamificação'
   },
   {
     title: 'Ponto',
     icon: Clock,
-    href: '/timesheet',
+    href: '/ponto',
     description: 'Controle de ponto'
   },
   {
     title: 'Notificações',
     icon: Bell,
-    href: '/notifications',
+    href: '/notificacoes',
     description: 'Alertas e comunicados'
   },
   {
@@ -93,7 +94,7 @@ const menuItems = [
   {
     title: 'Configurações',
     icon: Settings,
-    href: '/settings',
+    href: '/configuracoes',
     description: 'Painel administrativo'
   }
 ];
