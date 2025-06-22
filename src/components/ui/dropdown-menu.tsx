@@ -180,6 +180,17 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+// Custom component for header
+const DropdownMenuHeader = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+    {...props}
+  />
+)
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -196,4 +207,5 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
+  DropdownMenuHeader,
 }
