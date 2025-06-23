@@ -1,236 +1,121 @@
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Employee, NewEmployeeData } from '@/types/employee';
-import { Unit } from '@/types/unit';
-import { supabase } from '@/integrations/supabase/client';
+import { employeeService } from '@/services/employeeService';
 import { useToast } from '@/hooks/use-toast';
-import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription';
 
 interface EmployeeContextType {
   employees: Employee[];
-  filteredEmployees: Employee[];
-  searchTerm: string;
-  departmentFilter: string;
-  statusFilter: string;
   isLoading: boolean;
-  addEmployee: (data: NewEmployeeData) => Promise<void>;
-  updateEmployee: (id: string, data: Partial<Employee>) => Promise<void>;
+  addEmployee: (employee: NewEmployeeData) => Promise<void>;
+  updateEmployee: (id: string, updates: Partial<Employee>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
-  setSearchTerm: (term: string) => void;
-  setDepartmentFilter: (department: string) => void;
-  setStatusFilter: (status: string) => void;
-  getEmployeesForUnits: (units: Unit[]) => Employee[];
+  getEmployeesByUnit: (unit: string) => Employee[];
+  refreshEmployees: () => Promise<void>;
 }
 
 const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined);
 
-export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Stable fetch function without dependencies to avoid re-subscriptions
-  const fetchEmployees = useCallback(async () => {
+  const loadEmployees = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching employees from Supabase...');
-      
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching employees:', error);
-        toast({
-          title: 'Erro',
-          description: 'Erro ao carregar colaboradores.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Transform database data to match our interface
-      const transformedEmployees: Employee[] = data.map(emp => ({
-        ...emp,
-        status: emp.status as 'active' | 'inactive',
-        units: emp.units as Unit[]
-      }));
-
-      console.log('Employees fetched successfully:', transformedEmployees.length);
-      setEmployees(transformedEmployees);
+      const data = await employeeService.getEmployees();
+      setEmployees(data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      console.error('Error loading employees:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao carregar colaboradores.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao carregar funcionários",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, []); // No dependencies to keep it stable
+  };
 
-  // Setup real-time subscription using the optimized hook
-  useSupabaseSubscription({
-    channelName: 'employees-changes',
-    table: 'employees',
-    onDataChange: fetchEmployees,
-    enabled: true
-  });
-
-  // Initial fetch only once
   useEffect(() => {
-    fetchEmployees();
-  }, []); // Empty dependency array - fetch only once
+    loadEmployees();
+  }, []);
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.position.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = departmentFilter === '' || employee.department === departmentFilter;
-    const matchesStatus = statusFilter === '' || employee.status === statusFilter;
-    
-    return matchesSearch && matchesDepartment && matchesStatus;
-  });
-
-  const addEmployee = useCallback(async (data: NewEmployeeData) => {
+  const addEmployee = async (employeeData: NewEmployeeData) => {
     try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from('employees')
-        .insert([{
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          position: data.position,
-          department: data.department,
-          units: data.units,
-          start_date: data.start_date,
-          status: 'active'
-        }]);
-
-      if (error) {
-        console.error('Error adding employee:', error);
-        toast({
-          title: 'Erro',
-          description: 'Erro ao adicionar colaborador.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      const newEmployee = await employeeService.createEmployee(employeeData);
+      setEmployees(prev => [...prev, newEmployee]);
       toast({
-        title: 'Sucesso',
-        description: 'Colaborador adicionado com sucesso.',
+        title: "Sucesso",
+        description: "Funcionário adicionado com sucesso",
       });
     } catch (error) {
       console.error('Error adding employee:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao adicionar colaborador.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao adicionar funcionário",
+        variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
-  }, [toast]);
+  };
 
-  const updateEmployee = useCallback(async (id: string, data: Partial<Employee>) => {
+  const updateEmployee = async (id: string, updates: Partial<Employee>) => {
     try {
-      // Transform data to match database schema
-      const updateData: any = { ...data };
-      // Remove fields that shouldn't be updated
-      delete updateData.id;
-      delete updateData.created_at;
-      delete updateData.updated_at;
-
-      const { error } = await supabase
-        .from('employees')
-        .update(updateData)
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error updating employee:', error);
-        toast({
-          title: 'Erro',
-          description: 'Erro ao atualizar colaborador.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      const updatedEmployee = await employeeService.updateEmployee(id, updates);
+      setEmployees(prev => prev.map(emp => emp.id === id ? updatedEmployee : emp));
       toast({
-        title: 'Sucesso',
-        description: 'Colaborador atualizado com sucesso.',
+        title: "Sucesso",
+        description: "Funcionário atualizado com sucesso",
       });
     } catch (error) {
       console.error('Error updating employee:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar colaborador.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao atualizar funcionário",
+        variant: "destructive",
       });
+      throw error;
     }
-  }, [toast]);
+  };
 
-  const deleteEmployee = useCallback(async (id: string) => {
+  const deleteEmployee = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('employees')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting employee:', error);
-        toast({
-          title: 'Erro',
-          description: 'Erro ao remover colaborador.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      await employeeService.deleteEmployee(id);
+      setEmployees(prev => prev.filter(emp => emp.id !== id));
       toast({
-        title: 'Sucesso',
-        description: 'Colaborador removido com sucesso.',
+        title: "Sucesso",
+        description: "Funcionário removido com sucesso",
       });
     } catch (error) {
       console.error('Error deleting employee:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao remover colaborador.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Erro ao remover funcionário",
+        variant: "destructive",
       });
+      throw error;
     }
-  }, [toast]);
+  };
 
-  const getEmployeesForUnits = useCallback((units: Unit[]) => {
-    if (units.length === 0) return [];
-    return employees.filter(employee => 
-      employee.units.some(unit => units.includes(unit))
-    );
-  }, [employees]);
+  const getEmployeesByUnit = (unit: string) => {
+    return employees.filter(employee => employee.units.includes(unit as any));
+  };
+
+  const refreshEmployees = async () => {
+    await loadEmployees();
+  };
 
   return (
     <EmployeeContext.Provider value={{
       employees,
-      filteredEmployees,
-      searchTerm,
-      departmentFilter,
-      statusFilter,
       isLoading,
       addEmployee,
       updateEmployee,
       deleteEmployee,
-      setSearchTerm,
-      setDepartmentFilter,
-      setStatusFilter,
-      getEmployeesForUnits
+      getEmployeesByUnit,
+      refreshEmployees
     }}>
       {children}
     </EmployeeContext.Provider>
