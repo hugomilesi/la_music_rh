@@ -35,6 +35,37 @@ import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
 
+// Wrapper component for protected pages with all providers
+const ProtectedPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute>
+    <UnitProvider>
+      <EmployeeProvider>
+        <DocumentProvider>
+          <EvaluationProvider>
+            <VacationProvider>
+              <ScheduleProvider>
+                <IncidentsProvider>
+                  <NPSProvider>
+                    <BenefitsProvider>
+                      <NotificationProvider>
+                        <WhatsAppProvider>
+                          <MainLayout>
+                            {children}
+                          </MainLayout>
+                        </WhatsAppProvider>
+                      </NotificationProvider>
+                    </BenefitsProvider>
+                  </NPSProvider>
+                </IncidentsProvider>
+              </ScheduleProvider>
+            </VacationProvider>
+          </EvaluationProvider>
+        </DocumentProvider>
+      </EmployeeProvider>
+    </UnitProvider>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <Router>
@@ -42,51 +73,93 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/*" element={
-            <ProtectedRoute>
-              <UnitProvider>
-                <EmployeeProvider>
-                  <DocumentProvider>
-                    <EvaluationProvider>
-                      <VacationProvider>
-                        <ScheduleProvider>
-                          <IncidentsProvider>
-                            <NPSProvider>
-                              <BenefitsProvider>
-                                <NotificationProvider>
-                                  <WhatsAppProvider>
-                                    <MainLayout>
-                                      <Routes>
-                                        <Route path="/dashboard" element={<DashboardPage />} />
-                                        <Route path="/colaboradores" element={<EmployeesPage />} />
-                                        <Route path="/documentos" element={<DocumentsPage />} />
-                                        <Route path="/avaliacoes" element={<EvaluationsPage />} />
-                                        <Route path="/ferias" element={<VacationPage />} />
-                                        <Route path="/agenda" element={<SchedulePage />} />
-                                        <Route path="/ponto" element={<TimesheetPage />} />
-                                        <Route path="/nps" element={<NPSPage />} />
-                                        <Route path="/reconhecimento" element={<RecognitionPage />} />
-                                        <Route path="/ocorrencias" element={<IncidentsPage />} />
-                                        <Route path="/beneficios" element={<BenefitsPage />} />
-                                        <Route path="/whatsapp" element={<WhatsAppPage />} />
-                                        <Route path="/notificacoes" element={<NotificationsPage />} />
-                                        <Route path="/configuracoes" element={<SettingsPage />} />
-                                        <Route path="*" element={<NotFound />} />
-                                      </Routes>
-                                    </MainLayout>
-                                  </WhatsAppProvider>
-                                </NotificationProvider>
-                              </BenefitsProvider>
-                            </NPSProvider>
-                          </IncidentsProvider>
-                        </ScheduleProvider>
-                      </VacationProvider>
-                    </EvaluationProvider>
-                  </DocumentProvider>
-                </EmployeeProvider>
-              </UnitProvider>
-            </ProtectedRoute>
+          
+          {/* Protected routes */}
+          <Route path="/dashboard" element={
+            <ProtectedPageWrapper>
+              <DashboardPage />
+            </ProtectedPageWrapper>
           } />
+          
+          <Route path="/colaboradores" element={
+            <ProtectedPageWrapper>
+              <EmployeesPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/documentos" element={
+            <ProtectedPageWrapper>
+              <DocumentsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/avaliacoes" element={
+            <ProtectedPageWrapper>
+              <EvaluationsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/ferias" element={
+            <ProtectedPageWrapper>
+              <VacationPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/agenda" element={
+            <ProtectedPageWrapper>
+              <SchedulePage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/ponto" element={
+            <ProtectedPageWrapper>
+              <TimesheetPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/nps" element={
+            <ProtectedPageWrapper>
+              <NPSPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/reconhecimento" element={
+            <ProtectedPageWrapper>
+              <RecognitionPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/ocorrencias" element={
+            <ProtectedPageWrapper>
+              <IncidentsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/beneficios" element={
+            <ProtectedPageWrapper>
+              <BenefitsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/whatsapp" element={
+            <ProtectedPageWrapper>
+              <WhatsAppPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/notificacoes" element={
+            <ProtectedPageWrapper>
+              <NotificationsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/configuracoes" element={
+            <ProtectedPageWrapper>
+              <SettingsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </Router>
