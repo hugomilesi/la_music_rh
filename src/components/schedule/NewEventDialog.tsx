@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,8 +29,8 @@ const formSchema = z.object({
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
   type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'] as const),
-  description: z.string().optional(),
-  location: z.string().optional(),
+  description: z.string().default(''),
+  location: z.string().default(''),
   emailAlert: z.boolean().default(false),
   whatsappAlert: z.boolean().default(false),
 });
