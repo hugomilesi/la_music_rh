@@ -15,11 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
-import { NewScheduleEventData } from '@/types/schedule';
-import { Unit } from '@/types/unit';
+import { NewScheduleEventData, MedicalUnit } from '@/types/schedule';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
 
@@ -53,7 +51,6 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { addEvent, isLoading } = useSchedule();
   const { employees } = useEmployees();
-  const { selectedUnits } = useUnit();
   const { toast } = useToast();
   const { checkEventConflicts } = useScheduleCalendar();
   const [conflicts, setConflicts] = useState<any[]>([]);
@@ -63,7 +60,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     defaultValues: {
       title: '',
       employeeId: '',
-      unit: selectedUnits[0] || 'uti_neonatal',
+      unit: 'uti_neonatal',
       date: preselectedDate ? preselectedDate.toISOString().split('T')[0] : '',
       startTime: '',
       endTime: '',
@@ -114,7 +111,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       const eventData: NewScheduleEventData = {
         title: data.title,
         employeeId: data.employeeId,
-        unit: data.unit,
+        unit: data.unit as MedicalUnit,
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,

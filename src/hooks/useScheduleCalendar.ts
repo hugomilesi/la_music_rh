@@ -1,45 +1,20 @@
-
 import { useState, useMemo } from 'react';
-import { ScheduleEvent } from '@/types/schedule';
+import { ScheduleEvent, MedicalUnit } from '@/types/schedule';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const useScheduleCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const { getEventsForUnits } = useSchedule();
-  const { selectedUnits } = useUnit();
   const { toast } = useToast();
 
+  // Para compatibilidade temporária, usando todas as unidades médicas
+  const allMedicalUnits: MedicalUnit[] = ['uti_neonatal', 'uti_pediatrica', 'emergencia_pediatrica', 'internacao', 'ambulatorio'];
+
   const filteredEvents = useMemo(() => {
-    return getEventsForUnits(selectedUnits);
-  }, [getEventsForUnits, selectedUnits]);
-
-  const currentWeek = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(currentDate);
-      date.setDate(date.getDate() - date.getDay() + i);
-      return date;
-    });
-  }, [currentDate]);
-
-  const getMonthDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
-    const days = [];
-    for (let i = 0; i < 42; i++) {
-      const day = new Date(startDate);
-      day.setDate(startDate.getDate() + i);
-      days.push(day);
-    }
-    return days;
-  }, [currentDate]);
+    return getEventsForUnits(allMedicalUnits);
+  }, [getEventsForUnits]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -86,6 +61,31 @@ export const useScheduleCalendar = () => {
 
     return conflicts;
   };
+
+  const currentWeek = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() - date.getDay() + i);
+      return date;
+    });
+  }, [currentDate]);
+
+  const getMonthDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      days.push(day);
+    }
+    return days;
+  }, [currentDate]);
 
   return {
     currentDate,

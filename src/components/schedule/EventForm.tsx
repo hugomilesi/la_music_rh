@@ -14,17 +14,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Employee } from '@/types/employee';
-import { getUnitInfo } from '@/types/unit';
-import { useUnit } from '@/contexts/UnitContext';
+import { MedicalUnit } from '@/types/schedule';
+import { getMedicalUnitInfo, MEDICAL_UNITS } from '@/utils/medicalUnits';
 
 interface EventFormData {
   title: string;
   employeeId: string;
-  unit: string;
+  unit: MedicalUnit;
   date: string;
   startTime: string;
   endTime: string;
-  type: string;
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
   description?: string;
   location?: string;
   emailAlert: boolean;
@@ -48,8 +48,6 @@ export const EventForm: React.FC<EventFormProps> = ({
   isLoading,
   submitLabel
 }) => {
-  const { selectedUnits } = useUnit();
-
   const eventTypes = [
     { value: 'plantao', label: 'Plantão' },
     { value: 'avaliacao', label: 'Avaliação' },
@@ -57,8 +55,6 @@ export const EventForm: React.FC<EventFormProps> = ({
     { value: 'folga', label: 'Folga' },
     { value: 'outro', label: 'Outro' }
   ];
-
-  const availableUnits = selectedUnits.length > 0 ? selectedUnits : ['uti_neonatal'];
 
   return (
     <Form {...form}>
@@ -113,14 +109,11 @@ export const EventForm: React.FC<EventFormProps> = ({
                     {...field}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {availableUnits.map((unit) => {
-                      const unitInfo = getUnitInfo(unit);
-                      return (
-                        <option key={unit} value={unit}>
-                          {unitInfo.name}
-                        </option>
-                      );
-                    })}
+                    {MEDICAL_UNITS.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.name}
+                      </option>
+                    ))}
                   </select>
                 </FormControl>
                 <FormMessage />
