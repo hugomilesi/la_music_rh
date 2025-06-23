@@ -1,45 +1,53 @@
-
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
-import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
 import { NewScheduleEventData } from '@/types/schedule';
-import { Unit } from '@/types/unit';
-import { EventFormData } from '@/types/scheduleForm';
-import { ConflictAlert } from './ConflictAlert';
-import { EventForm } from './EventForm';
+import { Unit, UNITS } from '@/types/unit';
 
-const formSchema = z.object({
+const eventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.nativeEnum(Unit),
-  date: z.string().min(1, 'Data é obrigatória'),
+  unit: z.nativeEnum(Unit, { required_error: 'Unidade é obrigatória' }),
+  date: z.date({ required_error: 'Data é obrigatória' }),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
-  endTime: z.string().min(1, 'Horário de término é obrigatório'),
-  type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'] as const),
-  description: z.string().default(''),
-  location: z.string().default(''),
+  endTime: z.string().min(1, 'Horário de fim é obrigatório'),
+  type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro']),
+  description: z.string().optional(),
+  location: z.string().optional(),
   emailAlert: z.boolean().default(false),
   whatsappAlert: z.boolean().default(false),
-}).transform((data) => ({
-  ...data,
-  description: data.description || '',
-  location: data.location || '',
-})) satisfies z.ZodType<EventFormData>;
+});
+
+type EventFormData = z.infer<typeof eventSchema>;
 
 interface NewEventDialogProps {
   preselectedDate?: Date | null;
@@ -47,28 +55,32 @@ interface NewEventDialogProps {
   onClose?: () => void;
 }
 
-export const NewEventDialog: React.FC<NewEventDialogProps> = ({ 
-  preselectedDate, 
-  isOpen: controlledIsOpen, 
-  onClose 
+const NewEventDialog: React.FC<NewEventDialogProps> = ({ 
+  preselectedDate = null,
+  isOpen: externalIsOpen,
+  onClose: externalOnClose
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const { addEvent, isLoading } = useSchedule();
-  const { employees } = useEmployees();
   const { toast } = useToast();
-  const { checkEventConflicts } = useScheduleCalendar();
-  const [conflicts, setConflicts] = useState<any[]>([]);
+
+  // Use external state if provided, otherwise use internal state
+  const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
+  const setOpen = externalOnClose ? (value: boolean) => {
+    if (!value && externalOnClose) {
+      externalOnClose();
+    }
+  } : setInternalOpen;
 
   const form = useForm<EventFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(eventSchema),
     defaultValues: {
       title: '',
       employeeId: '',
       unit: Unit.CAMPO_GRANDE,
-      date: preselectedDate ? preselectedDate.toISOString().split('T')[0] : '',
       startTime: '',
       endTime: '',
-      type: 'plantao',
+      type: 'outro',
       description: '',
       location: '',
       emailAlert: false,
@@ -76,120 +88,344 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     },
   });
 
-  const watchedValues = form.watch(['employeeId', 'date', 'startTime', 'endTime']);
+  // Set preselected date when dialog opens
+  useEffect(() => {
+    if (preselectedDate && open) {
+      form.setValue('date', preselectedDate);
+    }
+  }, [preselectedDate, open, form]);
 
-  React.useEffect(() => {
-    const [employeeId, date, startTime, endTime] = watchedValues;
+  const onSubmit = (data: EventFormData) => {
+    // Transform the form data to match NewScheduleEventData type
+    const eventData: NewScheduleEventData = {
+      title: data.title,
+      employeeId: data.employeeId,
+      unit: data.unit,
+      date: format(data.date, 'yyyy-MM-dd'),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      type: data.type,
+      description: data.description || undefined,
+      location: data.location || undefined,
+      emailAlert: data.emailAlert,
+      whatsappAlert: data.whatsappAlert,
+    };
+
+    addEvent(eventData);
     
-    if (employeeId && date && startTime && endTime) {
-      const conflicts = checkEventConflicts({
-        employeeId,
-        date,
-        startTime,
-        endTime
-      });
-      setConflicts(conflicts);
-    } else {
-      setConflicts([]);
-    }
-  }, [watchedValues, checkEventConflicts]);
+    toast({
+      title: 'Evento criado',
+      description: 'O evento foi adicionado à agenda com sucesso.',
+    });
 
-  React.useEffect(() => {
-    if (preselectedDate) {
-      form.setValue('date', preselectedDate.toISOString().split('T')[0]);
-    }
-  }, [preselectedDate, form]);
-
-  const handleOpenChange = (open: boolean) => {
-    if (controlledIsOpen !== undefined && onClose) {
-      if (!open) onClose();
-    } else {
-      setIsOpen(open);
-    }
+    form.reset();
+    setOpen(false);
   };
 
-  const currentIsOpen = controlledIsOpen !== undefined ? controlledIsOpen : isOpen;
+  const eventTypes = [
+    { value: 'plantao', label: 'Plantão' },
+    { value: 'avaliacao', label: 'Avaliação' },
+    { value: 'reuniao', label: 'Reunião' },
+    { value: 'folga', label: 'Folga' },
+    { value: 'outro', label: 'Outro' },
+  ];
 
-  const onSubmit = async (data: EventFormData) => {
-    try {
-      const eventData: NewScheduleEventData = {
-        title: data.title,
-        employeeId: data.employeeId,
-        unit: data.unit as Unit,
-        date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        type: data.type,
-        description: data.description,
-        location: data.location,
-        emailAlert: data.emailAlert,
-        whatsappAlert: data.whatsappAlert,
-      };
+  const employees = [
+    { value: '1', label: 'Ana Silva' },
+    { value: '2', label: 'Carlos Santos' },
+    { value: '3', label: 'Maria Oliveira' },
+    { value: '4', label: 'João Costa' },
+  ];
+
+  const DialogComponent = () => (
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Adicionar Novo Evento</DialogTitle>
+      </DialogHeader>
       
-      if (conflicts.length > 0) {
-        toast({
-          title: 'Atenção',
-          description: 'Existem conflitos de horário. Deseja continuar mesmo assim?',
-          variant: 'destructive',
-        });
-        // Em uma implementação completa, aqui poderia abrir um modal de confirmação
-      }
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Título do Evento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Plantão Manhã" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      await addEvent(eventData);
-      form.reset();
-      setConflicts([]);
-      handleOpenChange(false);
-      
-      toast({
-        title: 'Evento criado',
-        description: 'O evento foi criado com sucesso.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar evento.',
-        variant: 'destructive',
-      });
-    }
-  };
+              
+              <FormField
+                control={form.control}
+                name="employeeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Colaborador</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o colaborador" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.value} value={employee.value}>
+                            {employee.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-  const activeEmployees = employees.filter(emp => emp.status === 'active');
+              <FormField
+                control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a unidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {UNITS.map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${unit.color}`}></div>
+                              {unit.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-  const DialogComponent = (
-    <Dialog open={currentIsOpen} onOpenChange={handleOpenChange}>
-      {controlledIsOpen === undefined && (
-        <DialogTrigger asChild>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Evento
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Novo Evento</DialogTitle>
-          <DialogDescription>
-            Crie um novo evento na agenda. Verifique conflitos de horário antes de salvar.
-          </DialogDescription>
-        </DialogHeader>
+              
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Evento</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {eventTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {conflicts.length > 0 && (
-          <ConflictAlert conflicts={conflicts} className="mb-4" />
-        )}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, 'PPP', { locale: ptBR })
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <EventForm
-          form={form}
-          employees={activeEmployees}
-          onSubmit={onSubmit}
-          onCancel={() => handleOpenChange(false)}
-          isLoading={isLoading}
-          submitLabel="Criar Evento"
-        />
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Horário de Início</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Horário de Fim</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Local (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Sala de reuniões" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Descrição (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Detalhes adicionais sobre o evento..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="md:col-span-2 space-y-3">
+                <h4 className="text-sm font-medium">Alertas</h4>
+                
+                <FormField
+                  control={form.control}
+                  name="emailAlert"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Alerta por Email</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Enviar notificação por email antes do evento
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="whatsappAlert"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Alerta por WhatsApp</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Enviar notificação por WhatsApp antes do evento
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Criando...' : 'Criar Evento'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
-    </Dialog>
   );
 
-  return DialogComponent;
+  // If using external state, don't wrap in Dialog
+  if (externalIsOpen !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogComponent />
+      </Dialog>
+    );
+  }
+
+  // Default behavior with trigger button
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Evento
+        </Button>
+      </DialogTrigger>
+      <DialogComponent />
+    </Dialog>
+  );
 };
 
 export default NewEventDialog;

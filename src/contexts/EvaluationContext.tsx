@@ -1,184 +1,167 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Evaluation, NewEvaluationData } from '@/types/evaluation';
-import { evaluationService } from '@/services/evaluationService';
-import { useToast } from '@/hooks/use-toast';
 
 interface EvaluationContextType {
   evaluations: Evaluation[];
   isLoading: boolean;
-  error: string | null;
-  addEvaluation: (evaluation: NewEvaluationData) => Promise<void>;
-  updateEvaluation: (id: string, updates: Partial<Evaluation>) => Promise<void>;
-  deleteEvaluation: (id: string) => Promise<void>;
-  getEvaluationsByType: (type: string) => Evaluation[];
-  getEvaluationsByEmployee: (employeeId: string) => Evaluation[];
-  getCoffeeConnectionSchedule: () => any[];
-  refreshEvaluations: () => Promise<void>;
+  addEvaluation: (data: NewEvaluationData) => void;
+  updateEvaluation: (id: string, data: Partial<Evaluation>) => void;
+  deleteEvaluation: (id: string) => void;
+  getCoffeeConnectionSchedule: () => Evaluation[];
 }
 
 const EvaluationContext = createContext<EvaluationContextType | undefined>(undefined);
 
-export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+// Mock data for demonstration
+const mockEvaluations: Evaluation[] = [
+  {
+    id: '1',
+    employeeId: '1',
+    employee: 'Ana Silva',
+    role: 'Professora de Piano',
+    unit: 'Centro',
+    type: 'Avaliação 360°',
+    period: '2024-T1',
+    score: 4.5,
+    status: 'Concluída',
+    date: '2024-03-15'
+  },
+  {
+    id: '2',
+    employeeId: '2',
+    employee: 'Carlos Santos',
+    role: 'Coordenador',
+    unit: 'Zona Sul',
+    type: 'Auto Avaliação',
+    period: '2024-T1',
+    score: 4.2,
+    status: 'Pendente',
+    date: '2024-03-10'
+  },
+  {
+    id: '3',
+    employeeId: '3',
+    employee: 'Maria Oliveira',
+    role: 'Professora de Violão',
+    unit: 'Norte',
+    type: 'Avaliação do Gestor',
+    period: '2024-T1',
+    score: 4.8,
+    status: 'Concluída',
+    date: '2024-03-12'
+  },
+  {
+    id: '4',
+    employeeId: '4',
+    employee: 'Felipe Carvalho',
+    role: 'Professor de Bateria',
+    unit: 'Campo Grande',
+    type: 'Coffee Connection',
+    period: '2024',
+    score: 0,
+    status: 'Pendente',
+    date: '2024-03-25',
+    meetingDate: '2024-03-25',
+    meetingTime: '14:00',
+    location: 'Café Central - Campo Grande',
+    topics: ['Desenvolvimento de carreira', 'Satisfação no trabalho'],
+    confidential: false
+  },
+  {
+    id: '5',
+    employeeId: '5',
+    employee: 'Luana Vieira',
+    role: 'Professora de Canto',
+    unit: 'Barra',
+    type: 'Coffee Connection',
+    period: '2024',
+    score: 4.6,
+    status: 'Concluída',
+    date: '2024-03-20',
+    meetingDate: '2024-03-20',
+    meetingTime: '10:30',
+    location: 'Sala de Reuniões - Barra',
+    topics: ['Feedback sobre liderança', 'Ideias de melhoria'],
+    followUpActions: 'Implementar sugestões de melhoria no processo pedagógico',
+    confidential: true
+  }
+];
 
-  const loadEvaluations = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      console.log('Loading evaluations...');
-      const data = await evaluationService.getEvaluations();
-      console.log('Evaluations loaded:', data.length);
-      setEvaluations(data);
-    } catch (error) {
-      console.error('Error loading evaluations:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      setError(errorMessage);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar avaliações: " + errorMessage,
-        variant: "destructive",
-      });
-    } finally {
+export const EvaluationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('EvaluationProvider: Initializing...');
+  const [evaluations, setEvaluations] = useState<Evaluation[]>(mockEvaluations);
+  const [isLoading, setIsLoading] = useState(false);
+
+  console.log('EvaluationProvider: Initial evaluations:', evaluations);
+
+  const addEvaluation = useCallback((data: NewEvaluationData) => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const newEvaluation: Evaluation = {
+        ...data,
+        id: Date.now().toString(),
+        employee: 'Colaborador', // This would come from employee lookup
+        role: 'Cargo', // This would come from employee lookup
+        unit: 'Unidade', // This would come from employee lookup
+        score: 0,
+        status: 'Pendente',
+        date: new Date().toISOString().split('T')[0]
+      };
+      
+      setEvaluations(prev => [...prev, newEvaluation]);
       setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvaluations();
+      
+      // If it's a Coffee Connection with scheduled date, it could be auto-added to schedule
+      if (data.type === 'Coffee Connection' && data.meetingDate) {
+        console.log('Coffee Connection scheduled for:', data.meetingDate);
+      }
+    }, 1000);
   }, []);
 
-  const addEvaluation = async (evaluationData: NewEvaluationData) => {
-    try {
-      console.log('Adding evaluation:', evaluationData);
-      const newEvaluation = await evaluationService.createEvaluation(evaluationData);
-      console.log('Evaluation added:', newEvaluation);
-      setEvaluations(prev => [...prev, newEvaluation]);
-      toast({
-        title: "Sucesso",
-        description: "Avaliação criada com sucesso",
-      });
-    } catch (error) {
-      console.error('Error adding evaluation:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: "Erro",
-        description: "Erro ao criar avaliação: " + errorMessage,
-        variant: "destructive",
-      });
-      throw error;
-    }
+  const updateEvaluation = useCallback((id: string, data: Partial<Evaluation>) => {
+    setEvaluations(prev => prev.map(evaluation => evaluation.id === id ? { ...evaluation, ...data } : evaluation));
+  }, []);
+
+  const deleteEvaluation = useCallback((id: string) => {
+    setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
+  }, []);
+
+  const getCoffeeConnectionSchedule = useCallback(() => {
+    return evaluations.filter(e => 
+      e.type === 'Coffee Connection' && 
+      e.status === 'Pendente' && 
+      e.meetingDate
+    );
+  }, [evaluations]);
+
+  const contextValue = {
+    evaluations,
+    isLoading,
+    addEvaluation,
+    updateEvaluation,
+    deleteEvaluation,
+    getCoffeeConnectionSchedule
   };
 
-  const updateEvaluation = async (id: string, updates: Partial<Evaluation>) => {
-    try {
-      console.log('Updating evaluation:', id, updates);
-      const updatedEvaluation = await evaluationService.updateEvaluation(id, updates);
-      console.log('Evaluation updated:', updatedEvaluation);
-      setEvaluations(prev => prev.map(evaluation => evaluation.id === id ? updatedEvaluation : evaluation));
-      toast({
-        title: "Sucesso",
-        description: "Avaliação atualizada com sucesso",
-      });
-    } catch (error) {
-      console.error('Error updating evaluation:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar avaliação: " + errorMessage,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const deleteEvaluation = async (id: string) => {
-    try {
-      console.log('Deleting evaluation:', id);
-      await evaluationService.deleteEvaluation(id);
-      console.log('Evaluation deleted:', id);
-      setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
-      toast({
-        title: "Sucesso",
-        description: "Avaliação removida com sucesso",
-      });
-    } catch (error) {
-      console.error('Error deleting evaluation:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast({
-        title: "Erro",
-        description: "Erro ao remover avaliação: " + errorMessage,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const getEvaluationsByType = (type: string) => {
-    try {
-      return evaluations.filter(evaluation => evaluation.type === type);
-    } catch (error) {
-      console.error('Error filtering evaluations by type:', error);
-      return [];
-    }
-  };
-
-  const getEvaluationsByEmployee = (employeeId: string) => {
-    try {
-      return evaluations.filter(evaluation => evaluation.employeeId === employeeId);
-    } catch (error) {
-      console.error('Error filtering evaluations by employee:', error);
-      return [];
-    }
-  };
-
-  const getCoffeeConnectionSchedule = () => {
-    try {
-      // Return coffee connection evaluations with schedule data
-      return evaluations
-        .filter(evaluation => evaluation.type === 'Coffee Connection')
-        .map(evaluation => ({
-          id: evaluation.id,
-          title: `Coffee Connection - ${evaluation.employee}`,
-          date: evaluation.meetingDate,
-          time: evaluation.meetingTime,
-          location: evaluation.location,
-          employee: evaluation.employee
-        }));
-    } catch (error) {
-      console.error('Error getting coffee connection schedule:', error);
-      return [];
-    }
-  };
-
-  const refreshEvaluations = async () => {
-    await loadEvaluations();
-  };
+  console.log('EvaluationProvider: Providing context value:', contextValue);
 
   return (
-    <EvaluationContext.Provider value={{
-      evaluations,
-      isLoading,
-      error,
-      addEvaluation,
-      updateEvaluation,
-      deleteEvaluation,
-      getEvaluationsByType,
-      getEvaluationsByEmployee,
-      getCoffeeConnectionSchedule,
-      refreshEvaluations
-    }}>
+    <EvaluationContext.Provider value={contextValue}>
       {children}
     </EvaluationContext.Provider>
   );
 };
 
 export const useEvaluations = () => {
+  console.log('useEvaluations: Hook called');
   const context = useContext(EvaluationContext);
+  console.log('useEvaluations: Context value:', context);
+  
   if (context === undefined) {
+    console.error('useEvaluations: Context is undefined - must be used within an EvaluationProvider');
     throw new Error('useEvaluations must be used within an EvaluationProvider');
   }
   return context;

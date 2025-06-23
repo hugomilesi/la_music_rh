@@ -1,124 +1,117 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ScheduleEvent, NewScheduleEventData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
-import { scheduleService } from '@/services/scheduleService';
-import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleContextType {
   events: ScheduleEvent[];
   isLoading: boolean;
-  addEvent: (data: NewScheduleEventData) => Promise<void>;
-  updateEvent: (id: string, data: Partial<ScheduleEvent>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
+  addEvent: (data: NewScheduleEventData) => void;
+  updateEvent: (id: string, data: Partial<ScheduleEvent>) => void;
+  deleteEvent: (id: string) => void;
   getEventsForUnits: (units: Unit[]) => ScheduleEvent[];
-  refreshEvents: () => Promise<void>;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
 
+// Mock data atualizado com as novas unidades
+const mockEvents: ScheduleEvent[] = [
+  {
+    id: '1',
+    title: 'Plantão Manhã',
+    employeeId: '1',
+    employee: 'Ana Silva',
+    unit: Unit.CAMPO_GRANDE,
+    date: '2024-03-21',
+    startTime: '08:00',
+    endTime: '12:00',
+    type: 'plantao',
+    description: 'Plantão de atendimento matinal',
+    location: 'Unidade Campo Grande',
+    emailAlert: true,
+    whatsappAlert: false,
+    createdAt: '2024-03-15T10:00:00Z',
+    updatedAt: '2024-03-15T10:00:00Z'
+  },
+  {
+    id: '2',
+    title: 'Avaliação 360°',
+    employeeId: '2',
+    employee: 'Carlos Santos',
+    unit: Unit.RECREIO,
+    date: '2024-03-21',
+    startTime: '14:00',
+    endTime: '15:00',
+    type: 'avaliacao',
+    description: 'Sessão de avaliação 360° trimestral',
+    location: 'Sala de reuniões - Recreio',
+    emailAlert: true,
+    whatsappAlert: true,
+    createdAt: '2024-03-15T11:00:00Z',
+    updatedAt: '2024-03-15T11:00:00Z'
+  },
+  {
+    id: '3',
+    title: 'Reunião Pedagógica',
+    employeeId: '3',
+    employee: 'Equipe Barra',
+    unit: Unit.BARRA,
+    date: '2024-03-22',
+    startTime: '16:00',
+    endTime: '17:30',
+    type: 'reuniao',
+    description: 'Reunião mensal da equipe pedagógica',
+    location: 'Auditório - Barra',
+    emailAlert: true,
+    whatsappAlert: false,
+    createdAt: '2024-03-15T12:00:00Z',
+    updatedAt: '2024-03-15T12:00:00Z'
+  }
+];
+
 export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [events, setEvents] = useState<ScheduleEvent[]>(mockEvents);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loadEvents = async () => {
-    try {
-      setIsLoading(true);
-      const data = await scheduleService.getScheduleEvents();
-      setEvents(data);
-    } catch (error) {
-      console.error('Error loading schedule events:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar eventos",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const addEvent = useCallback(async (data: NewScheduleEventData) => {
-    try {
-      setIsLoading(true);
-      const newEvent = await scheduleService.createScheduleEvent(data);
-      setEvents(prev => [...prev, newEvent]);
+  const addEvent = useCallback((data: NewScheduleEventData) => {
+    setIsLoading(true);
+    
+    // Simular chamada de API
+    setTimeout(() => {
+      const newEvent: ScheduleEvent = {
+        ...data,
+        id: Date.now().toString(),
+        employee: 'Colaborador', // Seria obtido do lookup de funcionários
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       
-      // Alertas (implementação simples via console, seria integrado com serviço de notificações)
+      setEvents(prev => [...prev, newEvent]);
+      setIsLoading(false);
+      
+      // Aqui seria implementado o envio de alertas
       if (data.emailAlert || data.whatsappAlert) {
         console.log('Enviando alertas para o evento:', newEvent.title);
       }
-      
-      toast({
-        title: "Sucesso",
-        description: "Evento criado com sucesso",
-      });
-    } catch (error) {
-      console.error('Error adding event:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar evento",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+    }, 1000);
+  }, []);
 
-  const updateEvent = useCallback(async (id: string, data: Partial<ScheduleEvent>) => {
-    try {
-      const updatedEvent = await scheduleService.updateScheduleEvent(id, data);
-      setEvents(prev => prev.map(event => 
-        event.id === id ? updatedEvent : event
-      ));
-      toast({
-        title: "Sucesso",
-        description: "Evento atualizado com sucesso",
-      });
-    } catch (error) {
-      console.error('Error updating event:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar evento",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  }, [toast]);
+  const updateEvent = useCallback((id: string, data: Partial<ScheduleEvent>) => {
+    setEvents(prev => prev.map(event => 
+      event.id === id 
+        ? { ...event, ...data, updatedAt: new Date().toISOString() } 
+        : event
+    ));
+  }, []);
 
-  const deleteEvent = useCallback(async (id: string) => {
-    try {
-      await scheduleService.deleteScheduleEvent(id);
-      setEvents(prev => prev.filter(event => event.id !== id));
-      toast({
-        title: "Sucesso",
-        description: "Evento removido com sucesso",
-      });
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao remover evento",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  }, [toast]);
+  const deleteEvent = useCallback((id: string) => {
+    setEvents(prev => prev.filter(event => event.id !== id));
+  }, []);
 
   const getEventsForUnits = useCallback((units: Unit[]) => {
     if (units.length === 0) return [];
     return events.filter(event => units.includes(event.unit));
   }, [events]);
-
-  const refreshEvents = async () => {
-    await loadEvents();
-  };
 
   return (
     <ScheduleContext.Provider value={{
@@ -127,8 +120,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addEvent,
       updateEvent,
       deleteEvent,
-      getEventsForUnits,
-      refreshEvents
+      getEventsForUnits
     }}>
       {children}
     </ScheduleContext.Provider>

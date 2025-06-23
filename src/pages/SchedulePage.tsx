@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,31 +16,17 @@ import WeekEvent from '@/components/schedule/WeekEvent';
 import TimeSlot from '@/components/schedule/TimeSlot';
 import { UnitSelector } from '@/components/common/UnitSelector';
 import { useDateDialog } from '@/hooks/useDateDialog';
-import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
-import { ScheduleStats } from '@/components/schedule/ScheduleStats';
-import { EventQuickActions } from '@/components/schedule/EventQuickActions';
 
 const SchedulePage: React.FC = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [duplicateEvent, setDuplicateEvent] = useState<ScheduleEvent | null>(null);
-  const { hasAnyUnitSelected } = useUnit();
+  const { getEventsForUnits } = useSchedule();
+  const { selectedUnits, hasAnyUnitSelected } = useUnit();
   const { toast } = useToast();
-
-  const {
-    currentDate,
-    viewMode,
-    setViewMode,
-    filteredEvents,
-    currentWeek,
-    getMonthDays,
-    navigateWeek,
-    navigateMonth,
-    goToToday,
-    getEventsForDate
-  } = useScheduleCalendar();
 
   const {
     selectedDate,
@@ -53,6 +38,9 @@ const SchedulePage: React.FC = () => {
     closeNewEventDialog,
     openNewEventFromDay
   } = useDateDialog();
+
+  // Filtrar eventos pelas unidades selecionadas
+  const filteredEvents = getEventsForUnits(selectedUnits);
 
   const getEventTypeColor = (type: string) => {
     const colors = {
@@ -79,6 +67,49 @@ const SchedulePage: React.FC = () => {
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const currentWeek = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(currentDate);
+    date.setDate(date.getDate() - date.getDay() + i);
+    return date;
+  });
+
+  const getMonthDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      days.push(day);
+    }
+    return days;
+  };
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    setCurrentDate(newDate);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    setCurrentDate(newDate);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+    toast({
+      title: 'Navegação',
+      description: 'Voltou para a data atual.',
+    });
+  };
 
   const handleGoogleSync = () => {
     toast({
@@ -109,12 +140,6 @@ const SchedulePage: React.FC = () => {
     }
   };
 
-  const handleDuplicateEvent = (event: ScheduleEvent) => {
-    setDuplicateEvent(event);
-    // Abrir dialog de novo evento com dados pré-preenchidos
-    openDialogForDate(new Date(event.date), []);
-  };
-
   const handleCloseEventDetails = () => {
     setShowEventDetails(false);
     setSelectedEvent(null);
@@ -123,6 +148,11 @@ const SchedulePage: React.FC = () => {
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
     setSelectedEvent(null);
+  };
+
+  const getEventsForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return filteredEvents.filter(event => event.date === dateStr);
   };
 
   const handleDayClick = (date: Date) => {
@@ -180,11 +210,6 @@ const SchedulePage: React.FC = () => {
         </Card>
       )}
 
-      {/* Statistics */}
-      {hasAnyUnitSelected && (
-        <ScheduleStats events={filteredEvents} selectedDate={currentDate} />
-      )}
-
       {/* Filters Panel */}
       {showFilters && (
         <Card>
@@ -219,7 +244,10 @@ const SchedulePage: React.FC = () => {
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <h2 className="text-lg font-semibold">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  {viewMode === 'week' 
+                    ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+                    : `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+                  }
                 </h2>
                 <Button 
                   variant="ghost" 
@@ -347,7 +375,7 @@ const SchedulePage: React.FC = () => {
 
                 {/* Month days */}
                 <div className="grid grid-cols-7 gap-1">
-                  {getMonthDays.map((date, index) => {
+                  {getMonthDays().map((date, index) => {
                     const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                     const isToday = date.toDateString() === new Date().toDateString();
                     const dayEvents = getEventsForDate(date);
@@ -376,26 +404,16 @@ const SchedulePage: React.FC = () => {
                             return (
                               <div
                                 key={event.id}
-                                className={`text-xs p-1 rounded ${getEventTypeColor(event.type)} border-l-2 relative group`}
+                                className={`text-xs p-1 rounded ${getEventTypeColor(event.type)} border-l-2`}
                                 style={{ borderLeftColor: unitInfo.color.replace('bg-', '#') }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEventClick(event);
                                 }}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1 flex-1 min-w-0">
-                                    <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
-                                    <span className="truncate">{event.title}</span>
-                                  </div>
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <EventQuickActions
-                                      event={event}
-                                      onView={handleEventClick}
-                                      onEdit={() => handleEditEvent(event.id)}
-                                      onDuplicate={handleDuplicateEvent}
-                                    />
-                                  </div>
+                                <div className="flex items-center gap-1">
+                                  <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
+                                  <span className="truncate">{event.title}</span>
                                 </div>
                               </div>
                             );
@@ -441,7 +459,7 @@ const SchedulePage: React.FC = () => {
                     return (
                       <div 
                         key={event.id} 
-                        className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer group"
+                        className="p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
                         onClick={() => handleEventClick(event)}
                       >
                         <div className="flex items-start justify-between">
@@ -459,19 +477,9 @@ const SchedulePage: React.FC = () => {
                               {event.startTime} - {event.endTime}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={`${getEventTypeColor(event.type)} text-xs`}>
-                              {getEventTypeLabel(event.type)}
-                            </Badge>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <EventQuickActions
-                                event={event}
-                                onView={handleEventClick}
-                                onEdit={() => handleEditEvent(event.id)}
-                                onDuplicate={handleDuplicateEvent}
-                              />
-                            </div>
-                          </div>
+                          <Badge className={`${getEventTypeColor(event.type)} text-xs`}>
+                            {getEventTypeLabel(event.type)}
+                          </Badge>
                         </div>
                         
                         {(event.emailAlert || event.whatsappAlert) && (

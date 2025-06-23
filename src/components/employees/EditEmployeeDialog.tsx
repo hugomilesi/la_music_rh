@@ -33,7 +33,7 @@ const formSchema = z.object({
   phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().min(2, 'Departamento é obrigatório'),
-  start_date: z.string().min(1, 'Data de início é obrigatória'),
+  startDate: z.string().min(1, 'Data de início é obrigatória'),
   units: z.array(z.nativeEnum(Unit)).min(1, 'Selecione pelo menos uma unidade'),
 });
 
@@ -61,7 +61,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
       phone: '',
       position: '',
       department: '',
-      start_date: '',
+      startDate: '',
       units: [],
     },
   });
@@ -75,7 +75,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
         phone: employee.phone,
         position: employee.position,
         department: employee.department,
-        start_date: employee.start_date,
+        startDate: employee.startDate,
         units: employee.units,
       });
     }
@@ -85,20 +85,28 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
     if (!employee) return;
 
     try {
-      await updateEmployee(employee.id, {
+      updateEmployee(employee.id, {
         name: data.name,
         email: data.email,
         phone: data.phone,
         position: data.position,
         department: data.department,
-        start_date: data.start_date,
+        startDate: data.startDate,
         units: data.units,
+      });
+      
+      toast({
+        title: 'Colaborador atualizado',
+        description: 'As informações do colaborador foram atualizadas com sucesso.',
       });
       
       onOpenChange(false);
     } catch (error) {
-      // Error handling is done in the context
-      console.error('Error updating employee:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao atualizar o colaborador.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -189,7 +197,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
 
               <FormField
                 control={form.control}
-                name="start_date"
+                name="startDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data de início</FormLabel>

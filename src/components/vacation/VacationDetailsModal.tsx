@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -154,7 +153,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Data de Admissão:</span>
-                      <p>{format(new Date(employee.start_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <p>{format(new Date(employee.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
                     </div>
                   </>
                 )}

@@ -8,12 +8,10 @@ export interface Employee {
   phone: string;
   position: string;
   department: string;
-  units: Unit[];
-  start_date: string;
+  units: Unit[]; // Changed from single unit to array of units
+  startDate: string;
   status: 'active' | 'inactive';
   avatar?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface NewEmployeeData {
@@ -22,6 +20,6 @@ export interface NewEmployeeData {
   phone: string;
   position: string;
   department: string;
-  units: Unit[];
-  start_date: string;
+  units: Unit[]; // Changed from single unit to array of units
+  startDate: string;
 }

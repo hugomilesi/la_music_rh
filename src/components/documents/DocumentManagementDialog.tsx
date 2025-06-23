@@ -7,10 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Document, DocumentStatus } from '@/types/document';
 import { useDocuments } from '@/contexts/DocumentContext';
-import { Download, Trash2, Edit, FileText, Calendar, User } from 'lucide-react';
+import { Download, Trash2, Edit } from 'lucide-react';
 
 interface DocumentManagementDialogProps {
   document: Document | null;
@@ -23,7 +22,7 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
   open,
   onOpenChange
 }) => {
-  const { updateDocument, deleteDocument, downloadDocument } = useDocuments();
+  const { updateDocument, deleteDocument } = useDocuments();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     status: '',
@@ -41,10 +40,10 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
     }
   }, [document]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!document) return;
     
-    await updateDocument(document.id, {
+    updateDocument(document.id, {
       status: formData.status as DocumentStatus,
       expiryDate: formData.expiryDate || null,
       notes: formData.notes
@@ -53,98 +52,45 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
     setIsEditing(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!document) return;
-    await deleteDocument(document.id);
+    deleteDocument(document.id);
     onOpenChange(false);
   };
 
   const handleDownload = () => {
     if (!document) return;
-    downloadDocument(document);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'válido': 'bg-green-100 text-green-800 border-green-200',
-      'vencido': 'bg-red-100 text-red-800 border-red-200',
-      'vencendo': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'pendente': 'bg-gray-100 text-gray-800 border-gray-200'
-    };
-    return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (!bytes) return 'N/A';
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+    console.log(`Downloading document: ${document.fileName}`);
+    // Simulate download
   };
 
   if (!document) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Gerenciar Documento
-          </DialogTitle>
+          <DialogTitle>Gerenciar Documento</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Document Info */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg text-gray-900">{document.document}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <User className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{document.employee}</span>
-                </div>
-              </div>
-              <Badge className={getStatusBadge(document.status)}>
-                {document.status}
-              </Badge>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Upload:</span>
-                <div className="flex items-center gap-1 mt-1">
-                  <Calendar className="w-3 h-3 text-gray-400" />
-                  <span>{new Date(document.uploadDate).toLocaleDateString('pt-BR')}</span>
-                </div>
-              </div>
-              
-              {document.expiryDate && (
-                <div>
-                  <span className="text-gray-500">Validade:</span>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Calendar className="w-3 h-3 text-gray-400" />
-                    <span>{new Date(document.expiryDate).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-medium">{document.document}</h3>
+            <p className="text-sm text-gray-600">{document.employee}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Uploaded: {new Date(document.uploadDate).toLocaleDateString('pt-BR')}
+            </p>
             {document.fileName && (
-              <div className="text-sm border-t pt-3">
-                <span className="text-gray-500">Arquivo:</span>
-                <div className="mt-1">
-                  <span className="font-medium">{document.fileName}</span>
-                  {document.fileSize && (
-                    <span className="text-gray-500 ml-2">({formatFileSize(document.fileSize)})</span>
-                  )}
-                </div>
-              </div>
+              <p className="text-xs text-gray-500">
+                Arquivo: {document.fileName} ({(document.fileSize! / 1024 / 1024).toFixed(2)} MB)
+              </p>
             )}
           </div>
 
           {/* Edit Form */}
           {isEditing ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -170,7 +116,6 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
                   id="expiryDate"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
@@ -186,20 +131,30 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Status:</span>
+                <span className={`text-sm font-medium ${
+                  document.status === 'válido' ? 'text-green-600' :
+                  document.status === 'vencido' ? 'text-red-600' :
+                  document.status === 'vencendo' ? 'text-yellow-600' :
+                  'text-gray-600'
+                }`}>
+                  {document.status}
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Validade:</span>
+                <span className="text-sm">
+                  {document.expiryDate ? new Date(document.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
+                </span>
+              </div>
+              
               {document.notes && (
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Observações:</span>
-                  <p className="text-sm text-gray-600 mt-1 p-3 bg-gray-50 rounded border">
-                    {document.notes}
-                  </p>
-                </div>
-              )}
-              
-              {document.uploadedBy && (
-                <div className="text-sm">
-                  <span className="text-gray-500">Enviado por:</span>
-                  <span className="ml-2 font-medium">{document.uploadedBy}</span>
+                  <span className="text-sm text-gray-600">Observações:</span>
+                  <p className="text-sm mt-1">{document.notes}</p>
                 </div>
               )}
             </div>
@@ -215,7 +170,7 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
                   <Trash2 className="w-4 h-4 mr-1" />
                   Excluir
                 </Button>
@@ -224,7 +179,7 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza de que deseja excluir este documento? Esta ação não pode ser desfeita e o arquivo será removido permanentemente.
+                    Tem certeza de que deseja excluir este documento? Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

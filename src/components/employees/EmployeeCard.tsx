@@ -63,13 +63,22 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
       .slice(0, 2);
   };
 
-  const handleStatusToggle = async () => {
+  const handleStatusToggle = () => {
     const newStatus = employee.status === 'active' ? 'inactive' : 'active';
-    await updateEmployee(employee.id, { status: newStatus });
+    updateEmployee(employee.id, { status: newStatus });
+    
+    toast({
+      title: 'Status atualizado',
+      description: `Colaborador ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso.`,
+    });
   };
 
-  const handleDelete = async () => {
-    await deleteEmployee(employee.id);
+  const handleDelete = () => {
+    deleteEmployee(employee.id);
+    toast({
+      title: 'Colaborador removido',
+      description: 'O colaborador foi removido com sucesso.',
+    });
   };
 
   return (
