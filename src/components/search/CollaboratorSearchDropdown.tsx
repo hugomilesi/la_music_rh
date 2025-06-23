@@ -4,10 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search, Phone, Mail, MapPin, User } from 'lucide-react';
-import { useEmployees } from '@/contexts/EmployeeContext';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
+
+// Create a safe hook that doesn't throw when used outside provider
+const useSafeEmployees = () => {
+  try {
+    const { useEmployees } = require('@/contexts/EmployeeContext');
+    return useEmployees();
+  } catch (error) {
+    console.log('EmployeeProvider not available, returning empty state');
+    return {
+      employees: [],
+      filteredEmployees: [],
+      isLoading: false,
+      error: null
+    };
+  }
+};
 
 interface CollaboratorSearchDropdownProps {
   placeholder?: string;
@@ -18,7 +33,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   placeholder = "Buscar colaboradores...",
   className = "w-80"
 }) => {
-  const { employees } = useEmployees();
+  const { employees } = useSafeEmployees();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -27,8 +42,11 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // If no employees available, show a disabled state
+  const isDisabled = !employees || employees.length === 0;
+
   useEffect(() => {
-    if (searchTerm.trim() === '') {
+    if (isDisabled || searchTerm.trim() === '') {
       setFilteredEmployees([]);
       setIsOpen(false);
       return;
@@ -44,7 +62,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
 
     setFilteredEmployees(filtered);
     setIsOpen(filtered.length > 0);
-  }, [searchTerm, employees]);
+  }, [searchTerm, employees, isDisabled]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -77,11 +95,13 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    if (!isDisabled) {
+      setSearchTerm(e.target.value);
+    }
   };
 
   const handleInputFocus = () => {
-    if (searchTerm.trim() !== '' && filteredEmployees.length > 0) {
+    if (!isDisabled && searchTerm.trim() !== '' && filteredEmployees.length > 0) {
       setIsOpen(true);
     }
   };
@@ -93,15 +113,16 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             ref={inputRef}
-            placeholder={placeholder}
+            placeholder={isDisabled ? "Busca não disponível" : placeholder}
             value={searchTerm}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
+            disabled={isDisabled}
             className="pl-10"
           />
         </div>
 
-        {isOpen && (
+        {isOpen && !isDisabled && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
             {filteredEmployees.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
@@ -161,11 +182,13 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
         )}
       </div>
 
-      <EditEmployeeDialog
-        employee={selectedEmployee}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-      />
+      {!isDisabled && (
+        <EditEmployeeDialog
+          employee={selectedEmployee}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </>
   );
 };
