@@ -153,11 +153,3 @@ export const integrationTests = {
     return passedTests === totalTests;
   }
 };
-
-// Auto-run tests in development
-if (import.meta.env.DEV) {
-  // Run tests after a short delay to allow context initialization
-  setTimeout(() => {
-    integrationTests.runAllTests();
-  }, 3000);
-}
