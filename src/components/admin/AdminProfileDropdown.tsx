@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EditProfileDialog } from './EditProfileDialog';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AdminProfile {
   id: string;
@@ -39,6 +41,8 @@ const mockAdminProfile: AdminProfile = {
 export const AdminProfileDropdown: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile>(mockAdminProfile);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleProfileUpdate = (updatedProfile: Partial<AdminProfile>) => {
     setProfile(prev => ({ ...prev, ...updatedProfile }));
@@ -46,7 +50,23 @@ export const AdminProfileDropdown: React.FC = () => {
 
   const handleLogout = () => {
     console.log('Logout clicked');
-    // Implement logout logic here
+    
+    // Clear any stored session data
+    localStorage.removeItem('admin_session');
+    sessionStorage.clear();
+    
+    // Show logout confirmation
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso.",
+    });
+    
+    // Redirect to home page
+    navigate('/');
+  };
+
+  const handleSettings = () => {
+    navigate('/configuracoes');
   };
 
   return (
@@ -124,7 +144,11 @@ export const AdminProfileDropdown: React.FC = () => {
                 Editar Perfil
               </Button>
               
-              <Button variant="ghost" className="w-full justify-start">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={handleSettings}
+              >
                 <Settings className="w-4 h-4 mr-2" />
                 Configurações
               </Button>
