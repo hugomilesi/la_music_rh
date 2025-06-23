@@ -7,22 +7,7 @@ import { Search, Phone, Mail, MapPin, User } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
-
-// Create a safe hook that doesn't throw when used outside provider
-const useSafeEmployees = () => {
-  try {
-    const { useEmployees } = require('@/contexts/EmployeeContext');
-    return useEmployees();
-  } catch (error) {
-    console.log('EmployeeProvider not available, returning empty state');
-    return {
-      employees: [],
-      filteredEmployees: [],
-      isLoading: false,
-      error: null
-    };
-  }
-};
+import { useEmployees } from '@/contexts/EmployeeContext';
 
 interface CollaboratorSearchDropdownProps {
   placeholder?: string;
@@ -33,7 +18,8 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   placeholder = "Buscar colaboradores...",
   className = "w-80"
 }) => {
-  const { employees } = useSafeEmployees();
+  // Use the real employee context hook
+  const { employees, isLoading, error } = useEmployees();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -42,8 +28,8 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // If no employees available, show a disabled state
-  const isDisabled = !employees || employees.length === 0;
+  // If loading or error, show appropriate state
+  const isDisabled = isLoading || error !== null || !employees || employees.length === 0;
 
   useEffect(() => {
     if (isDisabled || searchTerm.trim() === '') {
@@ -57,7 +43,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.units.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
+      employee.units?.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     setFilteredEmployees(filtered);
@@ -106,6 +92,13 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
     }
   };
 
+  const getPlaceholderText = () => {
+    if (isLoading) return "Carregando colaboradores...";
+    if (error) return "Erro ao carregar colaboradores";
+    if (!employees || employees.length === 0) return "Nenhum colaborador disponível";
+    return placeholder;
+  };
+
   return (
     <>
       <div className={`relative ${className}`} ref={dropdownRef}>
@@ -113,7 +106,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             ref={inputRef}
-            placeholder={isDisabled ? "Busca não disponível" : placeholder}
+            placeholder={getPlaceholderText()}
             value={searchTerm}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
@@ -144,14 +137,16 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
                         </h4>
                         <p className="text-xs text-gray-600 mb-2">{employee.position}</p>
                         
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {employee.units.map((unit) => (
-                            <Badge key={unit} variant="secondary" className="text-xs px-1 py-0">
-                              <MapPin className="w-2 h-2 mr-1" />
-                              {getUnitDisplayName(unit)}
-                            </Badge>
-                          ))}
-                        </div>
+                        {employee.units && employee.units.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {employee.units.map((unit) => (
+                              <Badge key={unit} variant="secondary" className="text-xs px-1 py-0">
+                                <MapPin className="w-2 h-2 mr-1" />
+                                {getUnitDisplayName(unit)}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex items-center gap-3 text-xs text-gray-600">
                           <div className="flex items-center gap-1">

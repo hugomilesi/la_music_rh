@@ -203,7 +203,7 @@ export const scheduleService = {
       whatsappAlert: event.whatsapp_alert || false, // alias
       created_at: event.created_at,
       createdAt: event.created_at, // alias
-      updated_at: data.updated_at,
+      updated_at: event.updated_at,
       updatedAt: event.updated_at // alias
     })) || [];
   }

@@ -17,7 +17,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
-import { NewScheduleEventData } from '@/types/schedule';
+import { NewScheduleEventData, EventFormData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
@@ -56,7 +56,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { checkEventConflicts } = useScheduleCalendar();
   const [conflicts, setConflicts] = useState<any[]>([]);
 
-  const form = useForm<FormData>({
+  // Create form with proper EventFormData type
+  const form = useForm<EventFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -108,7 +109,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   const currentIsOpen = controlledIsOpen !== undefined ? controlledIsOpen : isOpen;
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: EventFormData) => {
     try {
       const eventData: NewScheduleEventData = {
         title: data.title,
@@ -120,8 +121,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         type: data.type,
         description: data.description || '',
         location: data.location || '',
-        emailAlert: data.emailAlert,
-        whatsappAlert: data.whatsappAlert,
+        emailAlert: data.emailAlert || false,
+        whatsappAlert: data.whatsappAlert || false,
       };
       
       if (conflicts.length > 0) {
