@@ -7,10 +7,18 @@ import { useToast } from '@/hooks/use-toast';
 interface VacationContextType {
   requests: VacationRequest[];
   balances: VacationBalance[];
+  vacationRequests: VacationRequest[];
+  vacationAlerts: VacationAlert[];
   isLoading: boolean;
   addVacationRequest: (request: NewVacationRequest) => Promise<void>;
   updateVacationRequest: (id: string, updates: Partial<VacationRequest>) => Promise<void>;
   deleteVacationRequest: (id: string) => Promise<void>;
+  approveVacationRequest: (id: string, approvedBy: string) => Promise<void>;
+  rejectVacationRequest: (id: string, reason: string, rejectedBy: string) => Promise<void>;
+  getActiveVacations: () => VacationRequest[];
+  getPendingRequests: () => VacationRequest[];
+  getEmployeeBalance: (employeeId: string) => VacationBalance | null;
+  getEmployeeVacations: (employeeId: string) => VacationRequest[];
   getVacationAlerts: () => VacationAlert[];
   refreshData: () => Promise<void>;
 }
@@ -105,6 +113,43 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  const approveVacationRequest = async (id: string, approvedBy: string) => {
+    await updateVacationRequest(id, {
+      status: 'approved',
+      approvedBy,
+      approvedDate: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  const rejectVacationRequest = async (id: string, reason: string, rejectedBy: string) => {
+    await updateVacationRequest(id, {
+      status: 'rejected',
+      rejectionReason: reason
+    });
+  };
+
+  const getActiveVacations = () => {
+    const currentDate = new Date();
+    return requests.filter(request => {
+      if (request.status !== 'approved') return false;
+      const startDate = new Date(request.startDate);
+      const endDate = new Date(request.endDate);
+      return currentDate >= startDate && currentDate <= endDate;
+    });
+  };
+
+  const getPendingRequests = () => {
+    return requests.filter(request => request.status === 'pending');
+  };
+
+  const getEmployeeBalance = (employeeId: string): VacationBalance | null => {
+    return balances.find(balance => balance.employeeId === employeeId) || null;
+  };
+
+  const getEmployeeVacations = (employeeId: string): VacationRequest[] => {
+    return requests.filter(request => request.employeeId === employeeId);
+  };
+
   const getVacationAlerts = (): VacationAlert[] => {
     const alerts: VacationAlert[] = [];
     const currentDate = new Date();
@@ -148,14 +193,26 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
     await loadData();
   };
 
+  // Computed properties for compatibility
+  const vacationRequests = requests;
+  const vacationAlerts = getVacationAlerts();
+
   return (
     <VacationContext.Provider value={{
       requests,
       balances,
+      vacationRequests,
+      vacationAlerts,
       isLoading,
       addVacationRequest,
       updateVacationRequest,
       deleteVacationRequest,
+      approveVacationRequest,
+      rejectVacationRequest,
+      getActiveVacations,
+      getPendingRequests,
+      getEmployeeBalance,
+      getEmployeeVacations,
       getVacationAlerts,
       refreshData
     }}>

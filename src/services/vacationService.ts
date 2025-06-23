@@ -8,10 +8,9 @@ export const vacationService = {
       .from('vacation_requests')
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name),
-        approver:employees!vacation_requests_approved_by_fkey(name)
+        employee:employees!vacation_requests_employee_id_fkey(name)
       `)
-      .order('request_date', { ascending: false });
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching vacation requests:', error);
@@ -28,7 +27,7 @@ export const vacationService = {
       reason: request.reason,
       status: request.status as VacationRequest['status'],
       requestDate: request.request_date,
-      approvedBy: request.approver?.name,
+      approvedBy: request.approved_by,
       approvedDate: request.approved_date,
       rejectionReason: request.rejection_reason,
       type: request.type as VacationRequest['type']
@@ -38,10 +37,8 @@ export const vacationService = {
   async getVacationBalances(): Promise<VacationBalance[]> {
     const { data, error } = await supabase
       .from('vacation_balances')
-      .select(`
-        *,
-        employee:employees!vacation_balances_employee_id_fkey(name)
-      `);
+      .select('*')
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching vacation balances:', error);
@@ -59,13 +56,18 @@ export const vacationService = {
   },
 
   async createVacationRequest(requestData: NewVacationRequest): Promise<VacationRequest> {
+    // Calculate days between start and end date
+    const startDate = new Date(requestData.startDate);
+    const endDate = new Date(requestData.endDate);
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
     const { data, error } = await supabase
       .from('vacation_requests')
       .insert([{
         employee_id: requestData.employeeId,
         start_date: requestData.startDate,
         end_date: requestData.endDate,
-        days: this.calculateDays(requestData.startDate, requestData.endDate),
+        days,
         reason: requestData.reason,
         type: requestData.type
       }])
@@ -90,6 +92,9 @@ export const vacationService = {
       reason: data.reason,
       status: data.status as VacationRequest['status'],
       requestDate: data.request_date,
+      approvedBy: data.approved_by,
+      approvedDate: data.approved_date,
+      rejectionReason: data.rejection_reason,
       type: data.type as VacationRequest['type']
     };
   },
@@ -98,17 +103,20 @@ export const vacationService = {
     const { data, error } = await supabase
       .from('vacation_requests')
       .update({
+        start_date: updates.startDate,
+        end_date: updates.endDate,
+        days: updates.days,
+        reason: updates.reason,
         status: updates.status,
-        approved_by: updates.approvedBy ? 
-          (await this.getEmployeeIdByName(updates.approvedBy)) : undefined,
-        approved_date: updates.status === 'approved' ? new Date().toISOString().split('T')[0] : null,
-        rejection_reason: updates.rejectionReason
+        approved_by: updates.approvedBy,
+        approved_date: updates.approvedDate,
+        rejection_reason: updates.rejectionReason,
+        type: updates.type
       })
       .eq('id', id)
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name),
-        approver:employees!vacation_requests_approved_by_fkey(name)
+        employee:employees!vacation_requests_employee_id_fkey(name)
       `)
       .single();
     
@@ -127,7 +135,7 @@ export const vacationService = {
       reason: data.reason,
       status: data.status as VacationRequest['status'],
       requestDate: data.request_date,
-      approvedBy: data.approver?.name,
+      approvedBy: data.approved_by,
       approvedDate: data.approved_date,
       rejectionReason: data.rejection_reason,
       type: data.type as VacationRequest['type']
@@ -144,24 +152,5 @@ export const vacationService = {
       console.error('Error deleting vacation request:', error);
       throw error;
     }
-  },
-
-  // Helper methods
-  calculateDays(startDate: string, endDate: string): number {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  },
-
-  async getEmployeeIdByName(name: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('id')
-      .eq('name', name)
-      .single();
-    
-    if (error) return null;
-    return data?.id || null;
   }
 };

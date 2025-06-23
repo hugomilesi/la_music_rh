@@ -12,6 +12,7 @@ interface EvaluationContextType {
   deleteEvaluation: (id: string) => Promise<void>;
   getEvaluationsByType: (type: string) => Evaluation[];
   getEvaluationsByEmployee: (employeeId: string) => Evaluation[];
+  getCoffeeConnectionSchedule: () => any[];
   refreshEvaluations: () => Promise<void>;
 }
 
@@ -65,7 +66,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
   const updateEvaluation = async (id: string, updates: Partial<Evaluation>) => {
     try {
       const updatedEvaluation = await evaluationService.updateEvaluation(id, updates);
-      setEvaluations(prev => prev.map(eval => eval.id === id ? updatedEvaluation : eval));
+      setEvaluations(prev => prev.map(evaluation => evaluation.id === id ? updatedEvaluation : evaluation));
       toast({
         title: "Sucesso",
         description: "Avaliação atualizada com sucesso",
@@ -84,7 +85,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
   const deleteEvaluation = async (id: string) => {
     try {
       await evaluationService.deleteEvaluation(id);
-      setEvaluations(prev => prev.filter(eval => eval.id !== id));
+      setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
       toast({
         title: "Sucesso",
         description: "Avaliação removida com sucesso",
@@ -108,6 +109,20 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
     return evaluations.filter(evaluation => evaluation.employeeId === employeeId);
   };
 
+  const getCoffeeConnectionSchedule = () => {
+    // Return coffee connection evaluations with schedule data
+    return evaluations
+      .filter(evaluation => evaluation.type === 'Coffee Connection')
+      .map(evaluation => ({
+        id: evaluation.id,
+        title: `Coffee Connection - ${evaluation.employee}`,
+        date: evaluation.meetingDate,
+        time: evaluation.meetingTime,
+        location: evaluation.location,
+        employee: evaluation.employee
+      }));
+  };
+
   const refreshEvaluations = async () => {
     await loadEvaluations();
   };
@@ -121,6 +136,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
       deleteEvaluation,
       getEvaluationsByType,
       getEvaluationsByEmployee,
+      getCoffeeConnectionSchedule,
       refreshEvaluations
     }}>
       {children}

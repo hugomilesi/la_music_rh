@@ -17,6 +17,7 @@ interface NotificationContextType {
   notifications: Notification[];
   templates: NotificationTemplate[];
   recipients: NotificationRecipient[];
+  stats: NotificationStats;
   isLoading: boolean;
   createNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => Promise<void>;
   updateNotification: (id: string, updates: Partial<Notification>) => Promise<void>;
@@ -221,11 +222,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     await loadNotifications();
   };
 
+  // Computed stats property
+  const stats = getNotificationStats();
+
   return (
     <NotificationContext.Provider value={{
       notifications,
       templates,
       recipients,
+      stats,
       isLoading,
       createNotification,
       updateNotification,

@@ -6,7 +6,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface EmployeeContextType {
   employees: Employee[];
+  filteredEmployees: Employee[];
   isLoading: boolean;
+  searchTerm: string;
+  departmentFilter: string;
+  statusFilter: string;
+  setSearchTerm: (term: string) => void;
+  setDepartmentFilter: (department: string) => void;
+  setStatusFilter: (status: string) => void;
   addEmployee: (employee: NewEmployeeData) => Promise<void>;
   updateEmployee: (id: string, updates: Partial<Employee>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
@@ -19,6 +26,9 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(undefined
 export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const { toast } = useToast();
 
   const loadEmployees = async () => {
@@ -41,6 +51,18 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     loadEmployees();
   }, []);
+
+  // Filter employees based on search term and filters
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.position.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = departmentFilter === '' || employee.department === departmentFilter;
+    const matchesStatus = statusFilter === '' || employee.status === statusFilter;
+    
+    return matchesSearch && matchesDepartment && matchesStatus;
+  });
 
   const addEmployee = async (employeeData: NewEmployeeData) => {
     try {
@@ -110,7 +132,14 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
   return (
     <EmployeeContext.Provider value={{
       employees,
+      filteredEmployees,
       isLoading,
+      searchTerm,
+      departmentFilter,
+      statusFilter,
+      setSearchTerm,
+      setDepartmentFilter,
+      setStatusFilter,
       addEmployee,
       updateEmployee,
       deleteEmployee,
