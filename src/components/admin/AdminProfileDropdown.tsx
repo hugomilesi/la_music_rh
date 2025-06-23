@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EditProfileDialog } from './EditProfileDialog';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminProfile {
   id: string;
@@ -42,6 +43,7 @@ export const AdminProfileDropdown: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile>(mockAdminProfile);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { toast } = useToast();
 
   const handleProfileUpdate = (updatedProfile: Partial<AdminProfile>) => {
@@ -51,9 +53,8 @@ export const AdminProfileDropdown: React.FC = () => {
   const handleLogout = () => {
     console.log('Logout clicked');
     
-    // Clear any stored session data
-    localStorage.removeItem('admin_session');
-    sessionStorage.clear();
+    // Use the authentication context logout function
+    logout();
     
     // Show logout confirmation
     toast({
@@ -61,7 +62,7 @@ export const AdminProfileDropdown: React.FC = () => {
       description: "Você foi desconectado com sucesso.",
     });
     
-    // Redirect to home page
+    // Redirect to landing page
     navigate('/');
   };
 

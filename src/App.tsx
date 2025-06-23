@@ -1,5 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 import { EmployeeProvider } from './contexts/EmployeeContext';
 import { DocumentProvider } from './contexts/DocumentContext';
@@ -34,48 +37,219 @@ import NotFound from './pages/NotFound';
 function App() {
   return (
     <Router>
-      <UnitProvider>
-        <EmployeeProvider>
-          <DocumentProvider>
-            <EvaluationProvider>
-              <VacationProvider>
-                <ScheduleProvider>
+      <AuthProvider>
+        <Routes>
+          {/* Public landing page */}
+          <Route path="/" element={<Index />} />
+          
+          {/* Protected admin routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <DocumentProvider>
+                    <EvaluationProvider>
+                      <VacationProvider>
+                        <ScheduleProvider>
+                          <IncidentsProvider>
+                            <NPSProvider>
+                              <BenefitsProvider>
+                                <NotificationProvider>
+                                  <WhatsAppProvider>
+                                    <MainLayout>
+                                      <DashboardPage />
+                                    </MainLayout>
+                                  </WhatsAppProvider>
+                                </NotificationProvider>
+                              </BenefitsProvider>
+                            </NPSProvider>
+                          </IncidentsProvider>
+                        </ScheduleProvider>
+                      </VacationProvider>
+                    </EvaluationProvider>
+                  </DocumentProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/colaboradores" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <MainLayout>
+                    <EmployeesPage />
+                  </MainLayout>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/documentos" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <DocumentProvider>
+                    <MainLayout>
+                      <DocumentsPage />
+                    </MainLayout>
+                  </DocumentProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/avaliacoes" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <EvaluationProvider>
+                    <MainLayout>
+                      <EvaluationsPage />
+                    </MainLayout>
+                  </EvaluationProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ferias" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <VacationProvider>
+                    <MainLayout>
+                      <VacationPage />
+                    </MainLayout>
+                  </VacationProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/agenda" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <ScheduleProvider>
+                    <MainLayout>
+                      <SchedulePage />
+                    </MainLayout>
+                  </ScheduleProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ponto" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <MainLayout>
+                    <TimesheetPage />
+                  </MainLayout>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/nps" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <NPSProvider>
+                    <MainLayout>
+                      <NPSPage />
+                    </MainLayout>
+                  </NPSProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/reconhecimento" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <MainLayout>
+                    <RecognitionPage />
+                  </MainLayout>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ocorrencias" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
                   <IncidentsProvider>
-                    <NPSProvider>
-                      <BenefitsProvider>
-                        <NotificationProvider>
-                          <WhatsAppProvider>
-                            <MainLayout>
-                              <Routes>
-                                <Route path="/" element={<Index />} />
-                                <Route path="/dashboard" element={<DashboardPage />} />
-                                <Route path="/colaboradores" element={<EmployeesPage />} />
-                                <Route path="/documentos" element={<DocumentsPage />} />
-                                <Route path="/avaliacoes" element={<EvaluationsPage />} />
-                                <Route path="/ferias" element={<VacationPage />} />
-                                <Route path="/agenda" element={<SchedulePage />} />
-                                <Route path="/ponto" element={<TimesheetPage />} />
-                                <Route path="/nps" element={<NPSPage />} />
-                                <Route path="/reconhecimento" element={<RecognitionPage />} />
-                                <Route path="/ocorrencias" element={<IncidentsPage />} />
-                                <Route path="/beneficios" element={<BenefitsPage />} />
-                                <Route path="/whatsapp" element={<WhatsAppPage />} />
-                                <Route path="/notificacoes" element={<NotificationsPage />} />
-                                <Route path="/configuracoes" element={<SettingsPage />} />
-                                <Route path="*" element={<NotFound />} />
-                              </Routes>
-                            </MainLayout>
-                          </WhatsAppProvider>
-                        </NotificationProvider>
-                      </BenefitsProvider>
-                    </NPSProvider>
+                    <MainLayout>
+                      <IncidentsPage />
+                    </MainLayout>
                   </IncidentsProvider>
-                </ScheduleProvider>
-              </VacationProvider>
-            </EvaluationProvider>
-          </DocumentProvider>
-        </EmployeeProvider>
-      </UnitProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/beneficios" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <BenefitsProvider>
+                    <MainLayout>
+                      <BenefitsPage />
+                    </MainLayout>
+                  </BenefitsProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/whatsapp" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <WhatsAppProvider>
+                    <MainLayout>
+                      <WhatsAppPage />
+                    </MainLayout>
+                  </WhatsAppProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/notificacoes" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <NotificationProvider>
+                    <MainLayout>
+                      <NotificationsPage />
+                    </MainLayout>
+                  </NotificationProvider>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/configuracoes" element={
+            <ProtectedRoute>
+              <UnitProvider>
+                <EmployeeProvider>
+                  <MainLayout>
+                    <SettingsPage />
+                  </MainLayout>
+                </EmployeeProvider>
+              </UnitProvider>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }
