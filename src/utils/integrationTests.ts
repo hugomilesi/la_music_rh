@@ -2,6 +2,7 @@
 import { employeeService } from '@/services/employeeService';
 import { evaluationService } from '@/services/evaluationService';
 import { vacationService } from '@/services/vacationService';
+import { scheduleService } from '@/services/scheduleService';
 
 export const integrationTests = {
   async testEmployeeService() {
@@ -79,12 +80,63 @@ export const integrationTests = {
     }
   },
 
+  async testScheduleService() {
+    console.log('🧪 Testing Schedule Service...');
+    try {
+      const scheduleEvents = await scheduleService.getScheduleEvents();
+      console.log(`✅ Schedule Service: Loaded ${scheduleEvents.length} schedule events`);
+      
+      // Test data structure
+      if (scheduleEvents.length > 0) {
+        const firstEvent = scheduleEvents[0];
+        const requiredFields = ['id', 'title', 'employeeId', 'employee', 'unit', 'date', 'startTime', 'endTime', 'type'];
+        const missingFields = requiredFields.filter(field => !(field in firstEvent));
+        
+        if (missingFields.length === 0) {
+          console.log('✅ Schedule Service: Data structure is valid');
+        } else {
+          console.error('❌ Schedule Service: Missing fields:', missingFields);
+        }
+
+        // Test event type validation
+        const validTypes = ['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'];
+        if (validTypes.includes(firstEvent.type)) {
+          console.log('✅ Schedule Service: Event type is valid');
+        } else {
+          console.error('❌ Schedule Service: Invalid event type:', firstEvent.type);
+        }
+
+        // Test unit validation
+        const validUnits = ['uti_neonatal', 'uti_pediatrica', 'emergencia_pediatrica', 'internacao', 'ambulatorio'];
+        if (validUnits.includes(firstEvent.unit)) {
+          console.log('✅ Schedule Service: Unit type is valid');
+        } else {
+          console.error('❌ Schedule Service: Invalid unit:', firstEvent.unit);
+        }
+
+        // Test time format validation
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (timeRegex.test(firstEvent.startTime) && timeRegex.test(firstEvent.endTime)) {
+          console.log('✅ Schedule Service: Time format is valid');
+        } else {
+          console.error('❌ Schedule Service: Invalid time format');
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Schedule Service test failed:', error);
+      return false;
+    }
+  },
+
   async runAllTests() {
     console.log('🚀 Starting Integration Tests...');
     const results = await Promise.all([
       this.testEmployeeService(),
       this.testEvaluationService(),
-      this.testVacationService()
+      this.testVacationService(),
+      this.testScheduleService()
     ]);
     
     const passedTests = results.filter(Boolean).length;
