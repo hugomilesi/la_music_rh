@@ -14,12 +14,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useContent } from '@/contexts/ContentContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { getContentByKey, loading: contentLoading } = useContent();
 
   useEffect(() => {
     // Only redirect to dashboard if user is authenticated and loading is complete
@@ -72,13 +70,7 @@ const Index = () => {
     'Suporte técnico especializado'
   ];
 
-  // Get content sections
-  const heroContent = getContentByKey('hero');
-  const featuresContent = getContentByKey('features');
-  const benefitsContent = getContentByKey('benefits');
-  const ctaContent = getContentByKey('cta');
-
-  if (loading || contentLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -129,12 +121,13 @@ const Index = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8">
-            {heroContent?.title || 'Gerencie sua equipe com'}
+            Gerencie sua equipe com
             <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> inteligência</span>
           </h1>
           
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            {heroContent?.description || 'Sistema completo de gestão de pessoas para academias e empresas. Simplifique processos, aumente a produtividade e melhore o clima organizacional.'}
+            Sistema completo de gestão de pessoas para academias e empresas. 
+            Simplifique processos, aumente a produtividade e melhore o clima organizacional.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -162,10 +155,10 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              {featuresContent?.title || 'Funcionalidades Completas'}
+              Funcionalidades Completas
             </h2>
             <p className="text-xl text-gray-600">
-              {featuresContent?.description || 'Tudo que você precisa para gerenciar sua equipe em um só lugar'}
+              Tudo que você precisa para gerenciar sua equipe em um só lugar
             </p>
           </div>
           
@@ -195,7 +188,7 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-                {benefitsContent?.title || 'Por que escolher o LA Music RH?'}
+                Por que escolher o LA Music RH?
               </h2>
               
               <div className="space-y-4">
@@ -242,11 +235,11 @@ const Index = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
-            {ctaContent?.title || 'Pronto para transformar a gestão da sua equipe?'}
+            Pronto para transformar a gestão da sua equipe?
           </h2>
           
           <p className="text-xl text-purple-100 mb-12">
-            {ctaContent?.description || 'Junte-se a centenas de empresas que já otimizaram seus processos de RH'}
+            Junte-se a centenas de empresas que já otimizaram seus processos de RH
           </p>
           
           <Button 
