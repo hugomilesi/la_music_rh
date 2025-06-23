@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
-import { EmployeeProvider, useEmployees } from '@/contexts/EmployeeContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
 import { NewEmployeeDialog } from '@/components/employees/NewEmployeeDialog';
 import { EmployeeFilters } from '@/components/employees/EmployeeFilters';
 import { EmployeeCard } from '@/components/employees/EmployeeCard';
 
-const EmployeesContent: React.FC = () => {
+const EmployeesPage: React.FC = () => {
   const [isNewEmployeeDialogOpen, setIsNewEmployeeDialogOpen] = useState(false);
   const { filteredEmployees, employees } = useEmployees();
 
@@ -100,14 +100,6 @@ const EmployeesContent: React.FC = () => {
         onOpenChange={setIsNewEmployeeDialogOpen}
       />
     </div>
-  );
-};
-
-const EmployeesPage: React.FC = () => {
-  return (
-    <EmployeeProvider>
-      <EmployeesContent />
-    </EmployeeProvider>
   );
 };
 

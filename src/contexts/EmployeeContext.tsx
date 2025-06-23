@@ -4,6 +4,7 @@ import { Employee, NewEmployeeData } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabaseSubscription } from '@/hooks/useSupabaseSubscription';
 
 interface EmployeeContextType {
   employees: Employee[];
@@ -53,7 +54,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Transform database data to match our interface
       const transformedEmployees: Employee[] = data.map(emp => ({
         ...emp,
-        status: emp.status as 'active' | 'inactive', // Ensure proper type casting
+        status: emp.status as 'active' | 'inactive',
         units: emp.units as Unit[]
       }));
 
@@ -70,27 +71,18 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
 
-  // Setup initial fetch and real-time subscription
+  // Setup real-time subscription using the custom hook
+  useSupabaseSubscription({
+    channelName: 'employees-changes',
+    table: 'employees',
+    onDataChange: fetchEmployees,
+    enabled: true
+  });
+
+  // Initial fetch
   useEffect(() => {
-    // Initial fetch
     fetchEmployees();
-
-    // Setup real-time subscription
-    const channel = supabase
-      .channel('employees-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'employees' },
-        (payload) => {
-          console.log('Real-time update:', payload);
-          fetchEmployees(); // Refetch data on any change
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []); // Remove fetchEmployees from dependency array to prevent multiple subscriptions
+  }, [fetchEmployees]);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
