@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -88,7 +89,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover:shadow-lg">
                 <span className="text-white font-bold text-lg">LA</span>
               </div>
               <div>
@@ -101,13 +102,13 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 onClick={() => navigate('/auth')}
-                className="hidden sm:inline-flex"
+                className="hidden sm:inline-flex transform transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-gray-50 border-gray-300"
               >
                 Entrar
               </Button>
               <Button 
                 onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
               >
                 Começar Agora
                 <ArrowRight className="ml-2 w-4 h-4" />
@@ -157,12 +158,12 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow border-0 bg-white/80 backdrop-blur-sm">
+              <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 cursor-pointer group">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
+                    <feature.icon className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl group-hover:text-purple-700 transition-colors duration-300">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-gray-600 text-base">
@@ -186,9 +187,9 @@ const Index = () => {
               
               <div className="space-y-4">
                 {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-                    <span className="text-lg text-gray-700">{benefit}</span>
+                  <div key={index} className="flex items-center gap-3 group transform transition-all duration-300 hover:translate-x-2">
+                    <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="text-lg text-gray-700 group-hover:text-gray-900 transition-colors duration-300">{benefit}</span>
                   </div>
                 ))}
               </div>
@@ -197,7 +198,7 @@ const Index = () => {
                 <Button 
                   size="lg"
                   onClick={() => navigate('/auth')}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
                 >
                   Começar Agora
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -206,8 +207,8 @@ const Index = () => {
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl p-8 transform rotate-3">
-                <div className="bg-white rounded-xl p-6 transform -rotate-3 shadow-xl">
+              <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl p-8 transform rotate-3 transition-all duration-500 hover:rotate-1 hover:scale-105">
+                <div className="bg-white rounded-xl p-6 transform -rotate-3 shadow-xl transition-all duration-500 hover:shadow-2xl">
                   <div className="space-y-4">
                     <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
                     <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
@@ -238,7 +239,7 @@ const Index = () => {
           <Button 
             size="lg"
             onClick={() => navigate('/auth')}
-            className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
+            className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4 transform transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
           >
             Começar Agora
             <ArrowRight className="ml-2 w-5 h-5" />
@@ -250,8 +251,8 @@ const Index = () => {
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-4 md:mb-0 group">
+              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <span className="text-white font-bold text-sm">LA</span>
               </div>
               <div>
