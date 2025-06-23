@@ -14,7 +14,7 @@ import EmployeesPage from './pages/EmployeesPage';
 import DocumentsPage from './pages/DocumentsPage';
 import EvaluationsPage from './pages/EvaluationsPage';
 import VacationPage from './pages/VacationPage';
-// import SchedulePage from './pages/SchedulePage'; // Temporariamente desabilitado
+import SchedulePage from './pages/SchedulePage';
 import TimesheetPage from './pages/TimesheetPage';
 import NPSPage from './pages/NPSPage';
 import RecognitionPage from './pages/RecognitionPage';
@@ -75,13 +75,11 @@ function App() {
             </ProtectedPageWrapper>
           } />
           
-          {/* Rota da agenda temporariamente desabilitada
           <Route path="/agenda" element={
             <ProtectedPageWrapper>
               <SchedulePage />
             </ProtectedPageWrapper>
           } />
-          */}
           
           <Route path="/ponto" element={
             <ProtectedPageWrapper>
