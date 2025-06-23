@@ -29,10 +29,10 @@ const formSchema = z.object({
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
   type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'] as const),
-  description: z.string().default(''),
-  location: z.string().default(''),
-  emailAlert: z.boolean().default(false),
-  whatsappAlert: z.boolean().default(false),
+  description: z.string(),
+  location: z.string(),
+  emailAlert: z.boolean(),
+  whatsappAlert: z.boolean(),
 });
 
 type FormData = z.infer<typeof formSchema>;
