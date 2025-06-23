@@ -99,17 +99,10 @@ const Index = () => {
             
             <div className="flex items-center gap-4">
               <Button 
-                variant="outline" 
-                onClick={() => navigate('/auth')}
-                className="hidden sm:inline-flex"
-              >
-                Entrar
-              </Button>
-              <Button 
                 onClick={() => navigate('/auth')}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               >
-                Começar Agora
+                Entrar
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </div>
@@ -121,13 +114,13 @@ const Index = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8">
-            Gerencie sua equipe com
-            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> inteligência</span>
+            Sistema completo de
+            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> gestão de pessoas</span>
           </h1>
           
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Sistema completo de gestão de pessoas para academias e empresas. 
-            Simplifique processos, aumente a produtividade e melhore o clima organizacional.
+            Plataforma integrada para administração de colaboradores, férias, avaliações, reconhecimento e benefícios. 
+            Otimize processos e fortaleça o engajamento da sua equipe.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -136,15 +129,8 @@ const Index = () => {
               onClick={() => navigate('/auth')}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-4"
             >
-              Experimente Grátis
+              Experimentar Gratuitamente
               <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="text-lg px-8 py-4"
-            >
-              Ver Demonstração
             </Button>
           </div>
         </div>
@@ -155,10 +141,10 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Funcionalidades Completas
+              Recursos Avançados
             </h2>
             <p className="text-xl text-gray-600">
-              Tudo que você precisa para gerenciar sua equipe em um só lugar
+              Ferramentas profissionais para uma gestão de RH eficiente e moderna
             </p>
           </div>
           
@@ -188,7 +174,7 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-                Por que escolher o LA Music RH?
+                Vantagens Competitivas
               </h2>
               
               <div className="space-y-4">
@@ -235,11 +221,11 @@ const Index = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
-            Pronto para transformar a gestão da sua equipe?
+            Transforme a gestão da sua equipe hoje mesmo
           </h2>
           
           <p className="text-xl text-purple-100 mb-12">
-            Junte-se a centenas de empresas que já otimizaram seus processos de RH
+            Junte-se a empresas líderes que já revolucionaram seus processos de RH com nossa plataforma
           </p>
           
           <Button 
