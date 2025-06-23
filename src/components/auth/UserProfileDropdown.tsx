@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -19,9 +19,17 @@ export const UserProfileDropdown: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleSignOut = async () => {
+  // Debounced logout handler to prevent multiple simultaneous attempts
+  const handleSignOut = useCallback(async () => {
+    if (isLoggingOut) {
+      console.log('Logout already in progress, ignoring duplicate request');
+      return;
+    }
+
     console.log('Starting logout process...');
+    setIsLoggingOut(true);
     
     try {
       const { error } = await signOut();
@@ -32,13 +40,12 @@ export const UserProfileDropdown: React.FC = () => {
         // Handle specific error cases
         if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
           console.log('Session already invalid, proceeding with logout cleanup');
-          // Session is already invalid, but we should still redirect
           toast({
             title: 'Sessão finalizada',
             description: 'Você foi desconectado com sucesso.',
             variant: 'default'
           });
-          navigate('/');
+          // Don't navigate here - let AuthContext handle it
           return;
         }
         
@@ -47,18 +54,18 @@ export const UserProfileDropdown: React.FC = () => {
           description: 'Não foi possível fazer logout. Tente novamente.',
           variant: 'destructive'
         });
+        setIsLoggingOut(false);
         return;
       }
       
-      console.log('Logout successful, redirecting to home page');
+      console.log('Logout successful');
       toast({
         title: 'Sessão finalizada',
         description: 'Você foi desconectado com sucesso.',
         variant: 'default'
       });
       
-      // Redirect to the initial presentation screen
-      navigate('/');
+      // Don't navigate here - let AuthContext handle redirection
       
     } catch (error) {
       console.error('Unexpected logout error:', error);
@@ -67,8 +74,9 @@ export const UserProfileDropdown: React.FC = () => {
         description: 'Ocorreu um erro inesperado.',
         variant: 'destructive'
       });
+      setIsLoggingOut(false);
     }
-  };
+  }, [isLoggingOut, signOut, toast]);
 
   const getInitials = (name: string) => {
     return name
@@ -118,9 +126,13 @@ export const UserProfileDropdown: React.FC = () => {
           <span>Configurações</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem 
+          onClick={handleSignOut}
+          disabled={isLoggingOut}
+          className={isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Sair</span>
+          <span>{isLoggingOut ? 'Saindo...' : 'Sair'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

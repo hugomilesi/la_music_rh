@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -65,6 +66,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setUser(null);
     setProfile(null);
+    setIsSigningOut(false);
+  };
+
+  const handleSuccessfulLogout = () => {
+    console.log('Handling successful logout - clearing state and redirecting');
+    clearAuthState();
+    
+    // Force navigation to home page after logout
+    setTimeout(() => {
+      if (window.location.pathname !== '/') {
+        console.log('Redirecting to home page after logout');
+        window.location.href = '/';
+      }
+    }, 100);
   };
 
   useEffect(() => {
@@ -73,22 +88,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
-        if (event === 'SIGNED_OUT' || !session) {
-          clearAuthState();
+        if (event === 'SIGNED_OUT' || (!session && !isSigningOut)) {
+          console.log('User signed out or session lost');
+          if (isSigningOut) {
+            handleSuccessfulLogout();
+          } else {
+            clearAuthState();
+          }
           setLoading(false);
           return;
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
+        if (event === 'SIGNED_IN' && session) {
+          console.log('User signed in');
+          setSession(session);
+          setUser(session.user);
+          
           // Defer profile fetch to avoid deadlock
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
-        } else {
-          setProfile(null);
         }
         
         setLoading(false);
@@ -111,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isSigningOut]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -156,7 +175,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (isSigningOut) {
+      console.log('Sign out already in progress');
+      return { error: null };
+    }
+
     console.log('SignOut function called');
+    setIsSigningOut(true);
     
     try {
       const { error } = await supabase.auth.signOut();
@@ -166,20 +191,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Handle session not found errors gracefully
         if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
-          console.log('Session already invalid, clearing local state');
-          clearAuthState();
-          return { error: null }; // Treat as success since we're already logged out
+          console.log('Session already invalid, treating as successful logout');
+          handleSuccessfulLogout();
+          return { error: null };
         }
         
+        setIsSigningOut(false);
         return { error };
       }
       
-      console.log('SignOut successful');
-      clearAuthState();
+      console.log('Supabase signOut successful');
+      // Don't call handleSuccessfulLogout here - let the auth state change event handle it
       return { error: null };
       
     } catch (error) {
       console.error('Unexpected error during signOut:', error);
+      setIsSigningOut(false);
       return { error };
     }
   };

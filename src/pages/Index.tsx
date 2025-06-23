@@ -20,7 +20,10 @@ const Index = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (user && !loading) {
+    // Only redirect to dashboard if user is authenticated and loading is complete
+    // Also ensure we're not in the middle of a logout process
+    if (user && !loading && window.location.pathname === '/') {
+      console.log('Authenticated user detected, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
