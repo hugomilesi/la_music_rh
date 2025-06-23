@@ -1,168 +1,245 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Notification, NotificationStats, NotificationTemplate, NotificationRecipient } from '@/types/notification';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  Notification, 
+  NotificationTemplate, 
+  NotificationRecipient, 
+  NotificationStats, 
+  QuickAction,
+  NotificationType,
+  NotificationChannel,
+  NotificationStatus
+} from '@/types/notification';
+import { notificationService } from '@/services/notificationService';
+import { useToast } from '@/hooks/use-toast';
 
 interface NotificationContextType {
   notifications: Notification[];
-  stats: NotificationStats;
   templates: NotificationTemplate[];
   recipients: NotificationRecipient[];
-  loading: boolean;
+  stats: NotificationStats;
+  isLoading: boolean;
   createNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => Promise<void>;
   updateNotification: (id: string, updates: Partial<Notification>) => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  getNotificationStats: () => NotificationStats;
+  getQuickActions: () => QuickAction[];
   sendNotification: (id: string) => Promise<void>;
   scheduleNotification: (id: string, scheduledFor: string) => Promise<void>;
-  getTemplate: (id: string) => NotificationTemplate | undefined;
-  refreshStats: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Mock data
+// Mock data para templates e destinatários (seriam carregados do banco posteriormente)
 const mockTemplates: NotificationTemplate[] = [
   {
-    id: 'birthday-template',
-    name: 'Aniversário',
+    id: '1',
+    name: 'Lembrete de Aniversário',
     subject: 'Parabéns pelo seu aniversário!',
-    message: 'Parabéns, {name}! Desejamos muito sucesso e felicidade! 🎉',
+    message: 'Olá {name}, feliz aniversário! Que este novo ano seja repleto de alegrias e conquistas.',
     type: 'aniversario',
     variables: ['name']
   },
   {
-    id: 'meeting-reminder',
-    name: 'Lembrete de Reunião',
-    subject: 'Lembrete: Reunião {type}',
-    message: 'Lembrete: {name}, você tem uma reunião {type} agendada para {date} às {time}.',
+    id: '2',
+    name: 'Lembrete de Documento',
+    subject: 'Documento vencendo',
+    message: 'Olá {name}, seu documento {document} vence em {days} dias. Por favor, providencie a renovação.',
     type: 'lembrete',
-    variables: ['name', 'type', 'date', 'time']
-  },
-  {
-    id: 'general-announcement',
-    name: 'Comunicado Geral',
-    subject: 'Comunicado Importante',
-    message: 'Prezados colaboradores, {message}',
-    type: 'comunicado',
-    variables: ['message']
+    variables: ['name', 'document', 'days']
   }
 ];
 
 const mockRecipients: NotificationRecipient[] = [
-  { id: '1', name: 'Ana Silva', phone: '+5511999999999', email: 'ana@email.com', unit: 'Campo Grande', role: 'Professora' },
-  { id: '2', name: 'Carlos Santos', phone: '+5511888888888', email: 'carlos@email.com', unit: 'Vila Olímpia', role: 'Coordenador' },
-  { id: '3', name: 'Maria Oliveira', phone: '+5511777777777', email: 'maria@email.com', unit: 'Tatuapé', role: 'Recepcionista' },
-  { id: '4', name: 'João Costa', phone: '+5511666666666', email: 'joao@email.com', unit: 'Moema', role: 'Professor' },
-  { id: '5', name: 'Lucia Ferreira', phone: '+5511555555555', email: 'lucia@email.com', unit: 'Campo Grande', role: 'Consultora de Vendas' }
-];
-
-const mockNotifications: Notification[] = [
   {
     id: '1',
-    title: 'Reunião Pedagógica Mensal',
-    message: 'Lembrete: Reunião pedagógica agendada para amanhã às 14h',
-    type: 'lembrete',
-    recipients: ['1', '2'],
-    recipientNames: ['Ana Silva', 'Carlos Santos'],
-    channel: 'email',
-    status: 'enviado',
-    sentAt: '2024-03-20T10:00:00Z',
-    createdAt: '2024-03-20T09:00:00Z',
-    createdBy: 'Admin',
-    metadata: { readCount: 1, deliveredCount: 2, failedCount: 0 }
+    name: 'Ana Silva',
+    email: 'ana@example.com',
+    phone: '+5521999999999',
+    unit: 'Campo Grande',
+    role: 'Professor'
   },
   {
     id: '2',
-    title: 'Aniversário - Ana Silva',
-    message: 'Parabéns, Ana! Desejamos muito sucesso! 🎉',
-    type: 'aniversario',
-    recipients: ['1'],
-    recipientNames: ['Ana Silva'],
-    channel: 'whatsapp',
-    status: 'programado',
-    scheduledFor: '2024-03-21T09:00:00Z',
-    createdAt: '2024-03-20T08:00:00Z',
-    createdBy: 'Admin',
-    templateId: 'birthday-template'
+    name: 'Carlos Santos',
+    email: 'carlos@example.com',
+    phone: '+5521888888888',
+    unit: 'Recreio',
+    role: 'Coordenador'
   }
 ];
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [templates] = useState<NotificationTemplate[]>(mockTemplates);
+  const [recipients] = useState<NotificationRecipient[]>(mockRecipients);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const stats: NotificationStats = {
-    sentToday: 15,
-    scheduled: 8,
-    drafts: 3,
-    openRate: 87,
-    deliveryRate: 98,
-    totalSent: 156
+  const loadNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar notificações",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const createNotification = async (notification: Omit<Notification, 'id' | 'createdAt'>) => {
-    setLoading(true);
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const createNotification = async (notificationData: Omit<Notification, 'id' | 'createdAt'>) => {
     try {
-      const newNotification: Notification = {
-        ...notification,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      setNotifications(prev => [newNotification, ...prev]);
-    } finally {
-      setLoading(false);
+      const newNotification = await notificationService.createNotification(notificationData);
+      setNotifications(prev => [...prev, newNotification]);
+      toast({
+        title: "Sucesso",
+        description: "Notificação criada com sucesso",
+      });
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar notificação",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
   const updateNotification = async (id: string, updates: Partial<Notification>) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id ? { ...notification, ...updates } : notification
-      )
-    );
+    try {
+      const updatedNotification = await notificationService.updateNotification(id, updates);
+      setNotifications(prev => prev.map(notif => 
+        notif.id === id ? updatedNotification : notif
+      ));
+      toast({
+        title: "Sucesso",
+        description: "Notificação atualizada com sucesso",
+      });
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar notificação",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const deleteNotification = async (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(prev => prev.filter(notif => notif.id !== id));
+      toast({
+        title: "Sucesso",
+        description: "Notificação removida com sucesso",
+      });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover notificação",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
+  const getNotificationStats = (): NotificationStats => {
+    const today = new Date().toISOString().split('T')[0];
+    const sentToday = notifications.filter(n => 
+      n.sentAt && n.sentAt.startsWith(today)
+    ).length;
+    
+    const scheduled = notifications.filter(n => n.status === 'programado').length;
+    const drafts = notifications.filter(n => n.status === 'rascunho').length;
+    const totalSent = notifications.filter(n => n.status === 'enviado').length;
+    const delivered = notifications.filter(n => n.status === 'entregue').length;
+    const read = notifications.filter(n => n.status === 'lido').length;
+    
+    return {
+      sentToday,
+      scheduled,
+      drafts,
+      openRate: totalSent > 0 ? (read / totalSent) * 100 : 0,
+      deliveryRate: totalSent > 0 ? (delivered / totalSent) * 100 : 0,
+      totalSent
+    };
+  };
+
+  const getQuickActions = (): QuickAction[] => [
+    {
+      id: '1',
+      title: 'Lembrete de Aniversário',
+      description: 'Enviar parabéns para aniversariantes',
+      icon: 'cake',
+      type: 'aniversario',
+      templateId: '1'
+    },
+    {
+      id: '2',
+      title: 'Comunicado Geral',
+      description: 'Enviar comunicado para todos',
+      icon: 'megaphone',
+      type: 'comunicado'
+    },
+    {
+      id: '3',
+      title: 'Lembrete Personalizado',
+      description: 'Criar lembrete customizado',
+      icon: 'bell',
+      type: 'lembrete'
+    }
+  ];
+
   const sendNotification = async (id: string) => {
-    await updateNotification(id, {
+    await updateNotification(id, { 
       status: 'enviado',
       sentAt: new Date().toISOString()
     });
   };
 
   const scheduleNotification = async (id: string, scheduledFor: string) => {
-    await updateNotification(id, {
+    await updateNotification(id, { 
       status: 'programado',
       scheduledFor
     });
   };
 
-  const getTemplate = (id: string) => {
-    return mockTemplates.find(template => template.id === id);
+  const refreshNotifications = async () => {
+    await loadNotifications();
   };
 
-  const refreshStats = async () => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => setLoading(false), 1000);
-  };
+  // Computed stats property
+  const stats = getNotificationStats();
 
   return (
     <NotificationContext.Provider value={{
       notifications,
+      templates,
+      recipients,
       stats,
-      templates: mockTemplates,
-      recipients: mockRecipients,
-      loading,
+      isLoading,
       createNotification,
       updateNotification,
       deleteNotification,
+      getNotificationStats,
+      getQuickActions,
       sendNotification,
       scheduleNotification,
-      getTemplate,
-      refreshStats
+      refreshNotifications
     }}>
       {children}
     </NotificationContext.Provider>

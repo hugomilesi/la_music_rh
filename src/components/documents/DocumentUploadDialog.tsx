@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface DocumentUploadDialogProps {
   open: boolean;
@@ -28,38 +29,79 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     notes: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png', 
+    'image/jpg',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    setUploadError(null);
+    
     if (file) {
+      // Validate file size
+      if (file.size > maxFileSize) {
+        setUploadError(`Arquivo muito grande. Tamanho máximo: ${maxFileSize / 1024 / 1024}MB`);
+        return;
+      }
+
+      // Validate file type
+      if (!allowedTypes.includes(file.type)) {
+        setUploadError('Tipo de arquivo não suportado. Use PDF, DOC, DOCX, JPG ou PNG.');
+        return;
+      }
+
       setSelectedFile(file);
     }
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadError(null);
     
     if (!selectedFile || !formData.employeeId || !formData.documentType) {
+      setUploadError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    await uploadDocument({
-      file: selectedFile,
-      employeeId: formData.employeeId,
-      documentType: formData.documentType,
-      expiryDate: formData.expiryDate || undefined,
-      notes: formData.notes || undefined
-    });
+    try {
+      await uploadDocument({
+        file: selectedFile,
+        employeeId: formData.employeeId,
+        documentType: formData.documentType,
+        expiryDate: formData.expiryDate || undefined,
+        notes: formData.notes || undefined
+      });
 
-    // Reset form
-    setFormData({
-      employeeId: '',
-      documentType: '',
-      expiryDate: '',
-      notes: ''
-    });
-    setSelectedFile(null);
-    onOpenChange(false);
+      // Reset form on success
+      setFormData({
+        employeeId: '',
+        documentType: '',
+        expiryDate: '',
+        notes: ''
+      });
+      setSelectedFile(null);
+      setUploadError(null);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      setUploadError('Erro ao enviar documento. Tente novamente.');
+    }
   };
 
   const documentTypes = [
@@ -73,19 +115,49 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     'Título de Eleitor',
     'Atestado Médico',
     'Certificado de Curso',
+    'Licença Médica',
+    'Atestado de Comparecimento',
     'Outros'
   ];
 
+  const resetForm = () => {
+    setFormData({
+      employeeId: '',
+      documentType: '',
+      expiryDate: '',
+      notes: ''
+    });
+    setSelectedFile(null);
+    setUploadError(null);
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Enviar Documento</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Enviar Documento
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {uploadError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{uploadError}</AlertDescription>
+            </Alert>
+          )}
+
           <div>
-            <Label htmlFor="employee">Colaborador</Label>
+            <Label htmlFor="employee">Colaborador *</Label>
             <Select
               value={formData.employeeId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, employeeId: value }))}
@@ -104,7 +176,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="documentType">Tipo de Documento</Label>
+            <Label htmlFor="documentType">Tipo de Documento *</Label>
             <Select
               value={formData.documentType}
               onValueChange={(value) => setFormData(prev => ({ ...prev, documentType: value }))}
@@ -123,7 +195,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="file">Arquivo</Label>
+            <Label htmlFor="file">Arquivo *</Label>
             <div className="mt-1">
               <input
                 type="file"
@@ -139,18 +211,18 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                 {selectedFile ? (
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
-                      <Upload className="w-6 h-6 text-green-600" />
+                      <FileText className="w-6 h-6 text-green-600" />
                     </div>
-                    <p className="text-sm font-medium">{selectedFile.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
                     <p className="text-xs text-gray-500">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      {formatFileSize(selectedFile.size)}
                     </p>
                   </div>
                 ) : (
                   <div className="text-center">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">Clique para enviar arquivo</p>
-                    <p className="text-xs text-gray-400">PDF, DOC, JPG até 10MB</p>
+                    <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG até 10MB</p>
                   </div>
                 )}
               </label>
@@ -159,7 +231,10 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedFile(null)}
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setUploadError(null);
+                  }}
                   className="mt-2"
                 >
                   <X className="w-4 h-4 mr-1" />
@@ -176,6 +251,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
               id="expiryDate"
               value={formData.expiryDate}
               onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
+              min={new Date().toISOString().split('T')[0]}
             />
           </div>
 
@@ -191,7 +267,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
             <Button 

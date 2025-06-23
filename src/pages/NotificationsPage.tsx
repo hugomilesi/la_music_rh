@@ -11,17 +11,30 @@ import { EditNotificationDialog } from '@/components/notifications/EditNotificat
 import { EnhancedStatsModal } from '@/components/notifications/EnhancedStatsModal';
 import { PerformanceAnalytics } from '@/components/notifications/PerformanceAnalytics';
 import { QuickActions } from '@/components/notifications/QuickActions';
+import { NotificationDetailsModal } from '@/components/notifications/NotificationDetailsModal';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Notification } from '@/types/notification';
 
 const NotificationsPage: React.FC = () => {
-  const { notifications, stats } = useNotifications();
+  const { notifications, stats, deleteNotification } = useNotifications();
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   const handleEditNotification = (notification: Notification) => {
     setEditingNotification(notification);
     setEditDialogOpen(true);
+  };
+
+  const handleViewDetails = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setDetailsModalOpen(true);
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    await deleteNotification(id);
+    setDetailsModalOpen(false);
   };
 
   const getTypeBadge = (type: string) => {
@@ -182,7 +195,11 @@ const NotificationsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {notifications.map((notification) => (
-                  <div key={notification.id} className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
+                  <div 
+                    key={notification.id} 
+                    className="flex items-start justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleViewDetails(notification)}
+                  >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-medium">{notification.title}</h3>
@@ -211,7 +228,10 @@ const NotificationsPage: React.FC = () => {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => handleEditNotification(notification)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditNotification(notification);
+                        }}
                       >
                         Editar
                       </Button>
@@ -229,6 +249,15 @@ const NotificationsPage: React.FC = () => {
         notification={editingNotification}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
+      />
+
+      {/* Notification Details Modal */}
+      <NotificationDetailsModal
+        notification={selectedNotification}
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        onEdit={handleEditNotification}
+        onDelete={handleDeleteNotification}
       />
     </div>
   );

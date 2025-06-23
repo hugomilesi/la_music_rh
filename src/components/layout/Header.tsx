@@ -4,7 +4,7 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CollaboratorSearchDropdown } from '@/components/search/CollaboratorSearchDropdown';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { AdminProfileDropdown } from '@/components/admin/AdminProfileDropdown';
+import { UserProfileDropdown } from '@/components/auth/UserProfileDropdown';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <NotificationDropdown />
           
           <div className="border-l pl-3">
-            <AdminProfileDropdown />
+            <UserProfileDropdown />
           </div>
         </div>
       </div>

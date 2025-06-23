@@ -1,12 +1,12 @@
 
-import { Unit } from './unit';
+import { Unit } from '@/types/unit';
 
 export interface ScheduleEvent {
   id: string;
   title: string;
   employeeId: string;
   employee: string;
-  unit: Unit; // Changed to use Unit enum
+  unit: Unit;
   date: string;
   startTime: string;
   endTime: string;
@@ -22,7 +22,7 @@ export interface ScheduleEvent {
 export interface NewScheduleEventData {
   title: string;
   employeeId: string;
-  unit: Unit; // Changed to use Unit enum
+  unit: Unit;
   date: string;
   startTime: string;
   endTime: string;
