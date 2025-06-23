@@ -60,11 +60,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const clearAuthState = () => {
+    console.log('Clearing auth state');
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          clearAuthState();
+          setLoading(false);
+          return;
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -143,8 +156,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    console.log('SignOut function called');
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        
+        // Handle session not found errors gracefully
+        if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
+          console.log('Session already invalid, clearing local state');
+          clearAuthState();
+          return { error: null }; // Treat as success since we're already logged out
+        }
+        
+        return { error };
+      }
+      
+      console.log('SignOut successful');
+      clearAuthState();
+      return { error: null };
+      
+    } catch (error) {
+      console.error('Unexpected error during signOut:', error);
+      return { error };
+    }
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {

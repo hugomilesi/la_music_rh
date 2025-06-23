@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,18 +18,50 @@ import { useToast } from '@/hooks/use-toast';
 export const UserProfileDropdown: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
+    console.log('Starting logout process...');
+    
     try {
       const { error } = await signOut();
+      
       if (error) {
+        console.error('Logout error:', error);
+        
+        // Handle specific error cases
+        if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
+          console.log('Session already invalid, proceeding with logout cleanup');
+          // Session is already invalid, but we should still redirect
+          toast({
+            title: 'Sessão finalizada',
+            description: 'Você foi desconectado com sucesso.',
+            variant: 'default'
+          });
+          navigate('/');
+          return;
+        }
+        
         toast({
           title: 'Erro ao sair',
           description: 'Não foi possível fazer logout. Tente novamente.',
           variant: 'destructive'
         });
+        return;
       }
+      
+      console.log('Logout successful, redirecting to home page');
+      toast({
+        title: 'Sessão finalizada',
+        description: 'Você foi desconectado com sucesso.',
+        variant: 'default'
+      });
+      
+      // Redirect to the initial presentation screen
+      navigate('/');
+      
     } catch (error) {
+      console.error('Unexpected logout error:', error);
       toast({
         title: 'Erro ao sair',
         description: 'Ocorreu um erro inesperado.',

@@ -22,7 +22,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    console.log('User not authenticated, redirecting to home page');
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
