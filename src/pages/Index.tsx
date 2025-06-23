@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -126,11 +125,11 @@ const Index = () => {
           </h1>
           
           <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Sistema completo de gestão de pessoas para academias e empresas. 
+            Sistema completo de gestão de pessoas para escolas de música. 
             Simplifique processos, aumente a produtividade e melhore o clima organizacional.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <Button 
               size="lg"
               onClick={() => navigate('/auth')}
@@ -138,13 +137,6 @@ const Index = () => {
             >
               Experimente Grátis
               <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="text-lg px-8 py-4"
-            >
-              Ver Demonstração
             </Button>
           </div>
         </div>
