@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
 import { NewScheduleEventData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
+import { EventFormData } from '@/types/scheduleForm';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
 
@@ -34,9 +35,11 @@ const formSchema = z.object({
   location: z.string().default(''),
   emailAlert: z.boolean().default(false),
   whatsappAlert: z.boolean().default(false),
-});
-
-type FormData = z.infer<typeof formSchema>;
+}).transform((data) => ({
+  ...data,
+  description: data.description || '',
+  location: data.location || '',
+})) satisfies z.ZodType<EventFormData>;
 
 interface NewEventDialogProps {
   preselectedDate?: Date | null;
@@ -56,7 +59,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { checkEventConflicts } = useScheduleCalendar();
   const [conflicts, setConflicts] = useState<any[]>([]);
 
-  const form = useForm<FormData>({
+  const form = useForm<EventFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -107,7 +110,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   const currentIsOpen = controlledIsOpen !== undefined ? controlledIsOpen : isOpen;
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: EventFormData) => {
     try {
       const eventData: NewScheduleEventData = {
         title: data.title,
@@ -117,8 +120,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         startTime: data.startTime,
         endTime: data.endTime,
         type: data.type,
-        description: data.description || '',
-        location: data.location || '',
+        description: data.description,
+        location: data.location,
         emailAlert: data.emailAlert,
         whatsappAlert: data.whatsappAlert,
       };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import {
@@ -15,20 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Employee } from '@/types/employee';
 import { Unit, UNITS } from '@/types/unit';
-
-interface EventFormData {
-  title: string;
-  employeeId: string;
-  unit: Unit;
-  date: string;
-  startTime: string;
-  endTime: string;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
-  description: string;
-  location: string;
-  emailAlert: boolean;
-  whatsappAlert: boolean;
-}
+import { EventFormData } from '@/types/scheduleForm';
 
 interface EventFormProps {
   form: UseFormReturn<EventFormData>;
