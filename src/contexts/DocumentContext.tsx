@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Document, DocumentFilter, DocumentUpload, DocumentStats, DocumentType, DocumentStatus } from '@/types/document';
 import { useEmployees } from './EmployeeContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface DocumentContextType {
   documents: Document[];
@@ -21,111 +24,8 @@ interface DocumentContextType {
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
 
-// Enhanced mock data with real employee names
-const mockDocuments: Document[] = [
-  {
-    id: '1',
-    employeeId: '1',
-    employee: 'Aline Cristina Pessanha Faria',
-    document: 'Contrato de Trabalho',
-    type: 'obrigatorio',
-    uploadDate: '2024-01-15',
-    expiryDate: '2025-01-15',
-    status: 'válido',
-    fileName: 'contrato_aline.pdf',
-    fileSize: 2048576,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: '2',
-    employeeId: '2',
-    employee: 'Felipe Elias Carvalho',
-    document: 'Atestado Médico',
-    type: 'temporario',
-    uploadDate: '2024-03-10',
-    expiryDate: '2024-03-20',
-    status: 'vencido',
-    fileName: 'atestado_felipe.pdf',
-    fileSize: 1024000,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: '3',
-    employeeId: '3',
-    employee: 'Luciano Nazario de Oliveira',
-    document: 'Carteira de Trabalho',
-    type: 'obrigatorio',
-    uploadDate: '2024-02-05',
-    expiryDate: null,
-    status: 'válido',
-    fileName: 'carteira_luciano.pdf',
-    fileSize: 1536000,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: '4',
-    employeeId: '4',
-    employee: 'Fabio Magarinos da Silva',
-    document: 'Certificado de Curso',
-    type: 'complementar',
-    uploadDate: '2024-03-01',
-    expiryDate: '2025-03-01',
-    status: 'vencendo',
-    fileName: 'certificado_fabio.pdf',
-    fileSize: 2560000,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: '5',
-    employeeId: '5',
-    employee: 'Fabiana Candido de Assis Silva',
-    document: 'RG',
-    type: 'obrigatorio',
-    uploadDate: '2024-02-15',
-    expiryDate: null,
-    status: 'válido',
-    fileName: 'rg_fabiana.pdf',
-    fileSize: 1024000,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  // Additional documents for better grouping demonstration
-  {
-    id: '6',
-    employeeId: '1',
-    employee: 'Aline Cristina Pessanha Faria',
-    document: 'CPF',
-    type: 'obrigatorio',
-    uploadDate: '2024-01-20',
-    expiryDate: null,
-    status: 'válido',
-    fileName: 'cpf_aline.pdf',
-    fileSize: 512000,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  },
-  {
-    id: '7',
-    employeeId: '2',
-    employee: 'Felipe Elias Carvalho',
-    document: 'Contrato de Trabalho',
-    type: 'obrigatorio',
-    uploadDate: '2024-02-01',
-    expiryDate: '2025-02-01',
-    status: 'válido',
-    fileName: 'contrato_felipe.pdf',
-    fileSize: 2048576,
-    uploadedBy: 'Admin',
-    fileUrl: 'https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf'
-  }
-];
-
 export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [filter, setFilterState] = useState<DocumentFilter>({
     searchTerm: '',
     type: 'all',
@@ -134,6 +34,95 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [isLoading, setIsLoading] = useState(false);
   const { employees } = useEmployees();
+  const { toast } = useToast();
+
+  // Fetch documents from Supabase
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching documents from Supabase...');
+      
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          employees!documents_employee_id_fkey(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching documents:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao carregar documentos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Transform database data to match our interface
+      const transformedDocuments: Document[] = data.map(doc => ({
+        id: doc.id,
+        employeeId: doc.employee_id,
+        employee: doc.employees?.name || 'Unknown',
+        document: doc.document_name,
+        type: getDocumentTypeFromName(doc.document_type),
+        uploadDate: doc.created_at.split('T')[0],
+        expiryDate: doc.expiry_date,
+        status: doc.status as DocumentStatus,
+        fileName: doc.file_name,
+        fileSize: doc.file_size,
+        uploadedBy: doc.uploaded_by,
+        notes: doc.notes,
+        fileUrl: doc.file_path
+      }));
+
+      console.log('Documents fetched successfully:', transformedDocuments.length);
+      setDocuments(transformedDocuments);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar documentos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Helper function to determine document type from name
+  const getDocumentTypeFromName = (documentType: string): DocumentType => {
+    const obligatoryDocs = [
+      'Contrato de Trabalho',
+      'Carteira de Trabalho', 
+      'CPF',
+      'RG',
+      'Comprovante de Residência',
+      'Atestado de Saúde Ocupacional',
+      'PIS/PASEP',
+      'Título de Eleitor'
+    ];
+    
+    const temporaryDocs = [
+      'Atestado Médico',
+      'Licença Médica',
+      'Atestado de Comparecimento'
+    ];
+
+    if (obligatoryDocs.includes(documentType)) {
+      return 'obrigatorio';
+    } else if (temporaryDocs.includes(documentType)) {
+      return 'temporario';
+    } else {
+      return 'complementar';
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.employee.toLowerCase().includes(filter.searchTerm.toLowerCase()) ||
@@ -154,39 +143,180 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const uploadDocument = useCallback(async (upload: DocumentUpload) => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const employee = employees.find(emp => emp.id === upload.employeeId);
-    const newDocument: Document = {
-      id: Date.now().toString(),
-      employeeId: upload.employeeId,
-      employee: employee?.name || 'Unknown',
-      document: upload.documentType,
-      type: 'complementar', // Default type
-      uploadDate: new Date().toISOString().split('T')[0],
-      expiryDate: upload.expiryDate || null,
-      status: 'válido',
-      fileName: upload.file.name,
-      fileSize: upload.file.size,
-      uploadedBy: 'Admin',
-      notes: upload.notes,
-      fileUrl: URL.createObjectURL(upload.file)
-    };
-    
-    setDocuments(prev => [...prev, newDocument]);
-    setIsLoading(false);
-  }, [employees]);
+    try {
+      setIsLoading(true);
+      console.log('Starting document upload...', upload.file.name);
+      
+      const employee = employees.find(emp => emp.id === upload.employeeId);
+      if (!employee) {
+        throw new Error('Employee not found');
+      }
 
-  const updateDocument = useCallback((id: string, updates: Partial<Document>) => {
-    setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
-  }, []);
+      // Generate unique file path
+      const fileExtension = upload.file.name.split('.').pop();
+      const timestamp = Date.now();
+      const sanitizedFileName = upload.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${employee.name}/${upload.documentType}/${timestamp}_${sanitizedFileName}`;
 
-  const deleteDocument = useCallback((id: string) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== id));
-  }, []);
+      console.log('Uploading file to storage...', filePath);
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, upload.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('File uploaded successfully:', uploadData.path);
+
+      // Insert document record into database
+      const { data: documentData, error: dbError } = await supabase
+        .from('documents')
+        .insert([{
+          employee_id: upload.employeeId,
+          document_name: upload.documentType,
+          document_type: upload.documentType,
+          file_name: upload.file.name,
+          file_path: uploadData.path,
+          file_size: upload.file.size,
+          mime_type: upload.file.type,
+          expiry_date: upload.expiryDate || null,
+          notes: upload.notes || null,
+          uploaded_by: 'Admin'
+        }])
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        // Clean up uploaded file if database insert fails
+        await supabase.storage.from('documents').remove([uploadData.path]);
+        throw dbError;
+      }
+
+      console.log('Document record created:', documentData);
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documento enviado com sucesso.',
+      });
+
+      // Refresh documents list
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao enviar documento.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [employees, toast, fetchDocuments]);
+
+  const updateDocument = useCallback(async (id: string, updates: Partial<Document>) => {
+    try {
+      console.log('Updating document:', id, updates);
+
+      // Convert updates to database format
+      const dbUpdates: any = {};
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.document) dbUpdates.document_name = updates.document;
+
+      const { error } = await supabase
+        .from('documents')
+        .update(dbUpdates)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating document:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao atualizar documento.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documento atualizado com sucesso.',
+      });
+
+      // Refresh documents list
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error updating document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar documento.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast, fetchDocuments]);
+
+  const deleteDocument = useCallback(async (id: string) => {
+    try {
+      console.log('Deleting document:', id);
+
+      // First get the document to find the file path
+      const { data: document, error: fetchError } = await supabase
+        .from('documents')
+        .select('file_path')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching document for deletion:', fetchError);
+        throw fetchError;
+      }
+
+      // Delete file from storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([document.file_path]);
+
+      if (storageError) {
+        console.error('Error deleting file from storage:', storageError);
+        // Continue with database deletion even if storage deletion fails
+      }
+
+      // Delete document record from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) {
+        console.error('Error deleting document from database:', dbError);
+        throw dbError;
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documento removido com sucesso.',
+      });
+
+      // Refresh documents list
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao remover documento.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast, fetchDocuments]);
 
   const setFilter = useCallback((newFilter: Partial<DocumentFilter>) => {
     setFilterState(prev => ({ ...prev, ...newFilter }));
@@ -194,7 +324,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const exportDocuments = useCallback((format: 'pdf' | 'excel') => {
     console.log(`Exporting documents in ${format} format...`);
-    // Simulate export
     const data = filteredDocuments.map(doc => ({
       Colaborador: doc.employee,
       Documento: doc.document,
@@ -204,7 +333,11 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       Status: doc.status
     }));
     console.log('Export data:', data);
-  }, [filteredDocuments]);
+    toast({
+      title: 'Exportação iniciada',
+      description: `Exportação em formato ${format.toUpperCase()} iniciada!`,
+    });
+  }, [filteredDocuments, toast]);
 
   const exportDocumentsByEmployee = useCallback((employeeId: string, format: 'pdf' | 'excel') => {
     const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
@@ -222,8 +355,11 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
     
     console.log('Employee export data:', data);
-    alert(`Exportação de documentos de ${employee?.name} em formato ${format.toUpperCase()} iniciada!`);
-  }, [documents, employees]);
+    toast({
+      title: 'Exportação iniciada',
+      description: `Exportação de documentos de ${employee?.name} em formato ${format.toUpperCase()} iniciada!`,
+    });
+  }, [documents, employees, toast]);
 
   const getDocumentsByEmployee = useCallback((employeeId: string) => {
     return documents.filter(doc => doc.employeeId === employeeId);
@@ -239,25 +375,48 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [documents]);
 
-  const downloadDocument = useCallback((doc: Document) => {
-    console.log('Downloading document:', doc.fileName);
-    
-    if (doc.fileUrl) {
-      // Create a temporary link element
+  const downloadDocument = useCallback(async (doc: Document) => {
+    try {
+      console.log('Downloading document:', doc.fileName);
+      
+      // Get signed URL from Supabase Storage
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(doc.fileUrl || doc.fileName, 3600); // 1 hour expiry
+
+      if (urlError) {
+        console.error('Error creating signed URL:', urlError);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao gerar link de download.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Create a temporary link element and trigger download
       const link = document.createElement('a');
-      link.href = doc.fileUrl;
+      link.href = signedUrlData.signedUrl;
       link.download = doc.fileName || 'document.pdf';
       link.target = '_blank';
       
-      // Append to body, click, and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } else {
-      // Fallback for documents without URL
-      alert(`Download de ${doc.fileName} iniciado!`);
+
+      toast({
+        title: 'Sucesso',
+        description: 'Download iniciado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao fazer download do documento.',
+        variant: 'destructive',
+      });
     }
-  }, []);
+  }, [toast]);
 
   return (
     <DocumentContext.Provider value={{
