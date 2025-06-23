@@ -17,14 +17,15 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
-import { NewScheduleEventData, MedicalUnit } from '@/types/schedule';
+import { NewScheduleEventData } from '@/types/schedule';
+import { Unit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.enum(['uti_neonatal', 'uti_pediatrica', 'emergencia_pediatrica', 'internacao', 'ambulatorio'] as const),
+  unit: z.nativeEnum(Unit),
   date: z.string().min(1, 'Data é obrigatória'),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
@@ -60,7 +61,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     defaultValues: {
       title: '',
       employeeId: '',
-      unit: 'uti_neonatal',
+      unit: Unit.CAMPO_GRANDE,
       date: preselectedDate ? preselectedDate.toISOString().split('T')[0] : '',
       startTime: '',
       endTime: '',
@@ -111,7 +112,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       const eventData: NewScheduleEventData = {
         title: data.title,
         employeeId: data.employeeId,
-        unit: data.unit as MedicalUnit,
+        unit: data.unit as Unit,
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,

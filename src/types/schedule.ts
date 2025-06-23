@@ -1,12 +1,12 @@
 
-export type MedicalUnit = 'uti_neonatal' | 'uti_pediatrica' | 'emergencia_pediatrica' | 'internacao' | 'ambulatorio';
+import { Unit } from '@/types/unit';
 
 export interface ScheduleEvent {
   id: string;
   title: string;
   employeeId: string;
   employee: string;
-  unit: MedicalUnit;
+  unit: Unit;
   date: string;
   startTime: string;
   endTime: string;
@@ -22,7 +22,7 @@ export interface ScheduleEvent {
 export interface NewScheduleEventData {
   title: string;
   employeeId: string;
-  unit: MedicalUnit;
+  unit: Unit;
   date: string;
   startTime: string;
   endTime: string;

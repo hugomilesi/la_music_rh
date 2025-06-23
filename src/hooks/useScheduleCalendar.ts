@@ -1,5 +1,7 @@
+
 import { useState, useMemo } from 'react';
-import { ScheduleEvent, MedicalUnit } from '@/types/schedule';
+import { ScheduleEvent } from '@/types/schedule';
+import { Unit } from '@/types/unit';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -9,11 +11,11 @@ export const useScheduleCalendar = () => {
   const { getEventsForUnits } = useSchedule();
   const { toast } = useToast();
 
-  // Para compatibilidade temporária, usando todas as unidades médicas
-  const allMedicalUnits: MedicalUnit[] = ['uti_neonatal', 'uti_pediatrica', 'emergencia_pediatrica', 'internacao', 'ambulatorio'];
+  // Para compatibilidade temporária, usando todas as unidades
+  const allUnits: Unit[] = [Unit.CAMPO_GRANDE, Unit.RECREIO, Unit.BARRA];
 
   const filteredEvents = useMemo(() => {
-    return getEventsForUnits(allMedicalUnits);
+    return getEventsForUnits(allUnits);
   }, [getEventsForUnits]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
