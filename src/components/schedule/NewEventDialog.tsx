@@ -56,6 +56,14 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { checkEventConflicts } = useScheduleCalendar();
   const [conflicts, setConflicts] = useState<any[]>([]);
 
+  console.log('NewEventDialog render:', { 
+    preselectedDate, 
+    controlledIsOpen, 
+    isOpen,
+    employeesCount: employees.length,
+    isLoading 
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,12 +87,14 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     const [employeeId, date, startTime, endTime] = watchedValues;
     
     if (employeeId && date && startTime && endTime) {
+      console.log('Checking conflicts for:', { employeeId, date, startTime, endTime });
       const conflicts = checkEventConflicts({
         employeeId,
         date,
         startTime,
         endTime
       });
+      console.log('Found conflicts:', conflicts);
       setConflicts(conflicts);
     } else {
       setConflicts([]);
@@ -93,11 +103,14 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   React.useEffect(() => {
     if (preselectedDate) {
-      form.setValue('date', preselectedDate.toISOString().split('T')[0]);
+      const dateString = preselectedDate.toISOString().split('T')[0];
+      console.log('Setting preselected date:', dateString);
+      form.setValue('date', dateString);
     }
   }, [preselectedDate, form]);
 
   const handleOpenChange = (open: boolean) => {
+    console.log('NewEventDialog handleOpenChange:', open);
     if (controlledIsOpen !== undefined && onClose) {
       if (!open) onClose();
     } else {
@@ -109,6 +122,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
+      console.log('Submitting event data:', data);
+      
       const eventData: NewScheduleEventData = {
         title: data.title,
         employeeId: data.employeeId,
@@ -124,6 +139,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       };
       
       if (conflicts.length > 0) {
+        console.log('Warning: conflicts detected but proceeding:', conflicts);
         toast({
           title: 'Atenção',
           description: 'Existem conflitos de horário. Deseja continuar mesmo assim?',
@@ -133,6 +149,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       }
 
       await addEvent(eventData);
+      console.log('Event created successfully');
       form.reset();
       setConflicts([]);
       handleOpenChange(false);
@@ -142,6 +159,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         description: 'O evento foi criado com sucesso.',
       });
     } catch (error) {
+      console.error('Error creating event:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao criar evento.',
@@ -151,6 +169,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   };
 
   const activeEmployees = employees.filter(emp => emp.status === 'active');
+  console.log('Active employees:', activeEmployees.length);
 
   const DialogComponent = (
     <Dialog open={currentIsOpen} onOpenChange={handleOpenChange}>
