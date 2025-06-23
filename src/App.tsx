@@ -25,12 +25,14 @@ import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
 
-// Wrapper component for protected pages
+// Wrapper component for protected pages with global context
 const ProtectedPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
-    <MainLayout>
-      {children}
-    </MainLayout>
+    <GlobalContextProvider>
+      <MainLayout>
+        {children}
+      </MainLayout>
+    </GlobalContextProvider>
   </ProtectedRoute>
 );
 
@@ -42,117 +44,89 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
           
-          {/* Protected routes wrapped with global context provider */}
+          {/* All protected routes share the same GlobalContextProvider instance */}
           <Route path="/dashboard" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <DashboardPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <DashboardPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/colaboradores" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <EmployeesPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <EmployeesPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/documentos" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <DocumentsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <DocumentsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/avaliacoes" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <EvaluationsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <EvaluationsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/ferias" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <VacationPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <VacationPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/agenda" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <SchedulePage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <SchedulePage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/ponto" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <TimesheetPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <TimesheetPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/nps" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <NPSPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <NPSPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/reconhecimento" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <RecognitionPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <RecognitionPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/ocorrencias" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <IncidentsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <IncidentsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/beneficios" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <BenefitsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <BenefitsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/whatsapp" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <WhatsAppPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <WhatsAppPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/notificacoes" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <NotificationsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <NotificationsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="/configuracoes" element={
-            <GlobalContextProvider>
-              <ProtectedPageWrapper>
-                <SettingsPage />
-              </ProtectedPageWrapper>
-            </GlobalContextProvider>
+            <ProtectedPageWrapper>
+              <SettingsPage />
+            </ProtectedPageWrapper>
           } />
           
           <Route path="*" element={<NotFound />} />

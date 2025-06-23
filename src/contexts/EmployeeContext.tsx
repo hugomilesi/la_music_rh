@@ -32,10 +32,12 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Fetch employees from Supabase
+  // Stable fetch function without dependencies to avoid re-subscriptions
   const fetchEmployees = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching employees from Supabase...');
+      
       const { data, error } = await supabase
         .from('employees')
         .select('*')
@@ -58,6 +60,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         units: emp.units as Unit[]
       }));
 
+      console.log('Employees fetched successfully:', transformedEmployees.length);
       setEmployees(transformedEmployees);
     } catch (error) {
       console.error('Error fetching employees:', error);
@@ -69,9 +72,9 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, []); // No dependencies to keep it stable
 
-  // Setup real-time subscription using the custom hook
+  // Setup real-time subscription using the optimized hook
   useSupabaseSubscription({
     channelName: 'employees-changes',
     table: 'employees',
@@ -79,10 +82,10 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     enabled: true
   });
 
-  // Initial fetch
+  // Initial fetch only once
   useEffect(() => {
     fetchEmployees();
-  }, [fetchEmployees]);
+  }, []); // Empty dependency array - fetch only once
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

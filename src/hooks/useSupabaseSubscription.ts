@@ -10,26 +10,35 @@ interface SubscriptionConfig {
   enabled?: boolean;
 }
 
+// Global registry to track active subscriptions
+const activeSubscriptions = new Map<string, RealtimeChannel>();
+
 export const useSupabaseSubscription = ({ 
   channelName, 
   table, 
   onDataChange, 
   enabled = true 
 }: SubscriptionConfig) => {
-  const channelRef = useRef<RealtimeChannel | null>(null);
-  const isSubscribedRef = useRef(false);
+  const isInitializedRef = useRef(false);
 
   const cleanup = useCallback(() => {
-    if (channelRef.current && isSubscribedRef.current) {
+    const existingChannel = activeSubscriptions.get(channelName);
+    if (existingChannel) {
       console.log(`Cleaning up subscription for ${channelName}`);
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+      supabase.removeChannel(existingChannel);
+      activeSubscriptions.delete(channelName);
     }
   }, [channelName]);
 
   const subscribe = useCallback(() => {
-    if (!enabled || isSubscribedRef.current) {
+    if (!enabled || isInitializedRef.current) {
+      return;
+    }
+
+    // Check if subscription already exists
+    if (activeSubscriptions.has(channelName)) {
+      console.log(`Subscription for ${channelName} already exists, skipping`);
+      isInitializedRef.current = true;
       return;
     }
 
@@ -47,11 +56,10 @@ export const useSupabaseSubscription = ({
       .subscribe((status) => {
         console.log(`Subscription status for ${channelName}:`, status);
         if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
+          activeSubscriptions.set(channelName, channel);
+          isInitializedRef.current = true;
         }
       });
-
-    channelRef.current = channel;
   }, [channelName, table, onDataChange, enabled]);
 
   useEffect(() => {
@@ -59,8 +67,13 @@ export const useSupabaseSubscription = ({
       subscribe();
     }
 
-    return cleanup;
-  }, [enabled, subscribe, cleanup]);
+    return () => {
+      // Only cleanup when component unmounts, not on every re-render
+      if (!enabled) {
+        cleanup();
+      }
+    };
+  }, [enabled, subscribe]); // Removed cleanup from dependencies to prevent re-subscriptions
 
   return { cleanup };
 };
