@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -135,10 +134,10 @@ const Index = () => {
             <Button 
               size="lg"
               onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-4"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-xl px-12 py-6 rounded-xl transform transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/25 active:scale-95"
             >
-              Experimente Grátis
-              <ArrowRight className="ml-2 w-5 h-5" />
+              Começar Agora
+              <ArrowRight className="ml-2 w-6 h-6" />
             </Button>
           </div>
         </div>
@@ -241,7 +240,7 @@ const Index = () => {
             onClick={() => navigate('/auth')}
             className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4"
           >
-            Criar Conta Gratuita
+            Começar Agora
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </div>
