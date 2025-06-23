@@ -23,6 +23,7 @@ interface AuthContextType {
   signOut: () => Promise<{ error: any }>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
+  forceLogout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +34,39 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+// Utility function to clear all auth-related storage
+const clearAllAuthStorage = () => {
+  console.log('Clearing all auth-related storage');
+  try {
+    // Clear Supabase-specific keys
+    const keysToRemove = [
+      'supabase.auth.token',
+      'sb-dzmatfnltgtgjvbputtb-auth-token',
+      'sb-auth-token'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    
+    // Clear any remaining auth-related keys
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('supabase') || key.includes('auth')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.includes('supabase') || key.includes('auth')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch (error) {
+    console.warn('Error clearing storage:', error);
+  }
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -66,12 +100,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setUser(null);
     setProfile(null);
-    setIsSigningOut(false);
+  };
+
+  const forceLogout = async () => {
+    console.log('Force logout initiated');
+    setIsSigningOut(true);
+    
+    try {
+      // Clear state immediately
+      clearAuthState();
+      
+      // Clear all storage
+      clearAllAuthStorage();
+      
+      // Try to sign out from Supabase (but don't wait for it or handle errors)
+      supabase.auth.signOut().catch(() => {
+        console.log('Supabase signOut failed, but continuing with forced logout');
+      });
+      
+      // Force redirect to home
+      window.location.href = '/';
+    } catch (error) {
+      console.warn('Error during force logout, but continuing:', error);
+      // Even if there's an error, force redirect
+      window.location.href = '/';
+    }
   };
 
   const handleSuccessfulLogout = () => {
     console.log('Handling successful logout - clearing state and redirecting');
     clearAuthState();
+    clearAllAuthStorage();
+    setIsSigningOut(false);
     
     // Force navigation to home page after logout
     setTimeout(() => {
@@ -83,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('Setting up auth state listener');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -94,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             handleSuccessfulLogout();
           } else {
             clearAuthState();
+            clearAllAuthStorage();
           }
           setLoading(false);
           return;
@@ -117,6 +180,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
+      
+      // Validate session is actually valid
+      if (session) {
+        // Check if session is expired
+        const now = Math.floor(Date.now() / 1000);
+        if (session.expires_at && session.expires_at < now) {
+          console.log('Session expired, clearing it');
+          clearAllAuthStorage();
+          clearAuthState();
+          setLoading(false);
+          return;
+        }
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -126,6 +203,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }, 0);
       }
       
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error getting initial session:', error);
+      clearAllAuthStorage();
+      clearAuthState();
       setLoading(false);
     });
 
@@ -184,30 +266,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsSigningOut(true);
     
     try {
+      // Clear state and storage immediately
+      clearAuthState();
+      clearAllAuthStorage();
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Supabase signOut error:', error);
         
         // Handle session not found errors gracefully
-        if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
+        if (error.message?.includes('session_not_found') || 
+            error.message?.includes('Session not found') ||
+            error.message?.includes('Invalid session')) {
           console.log('Session already invalid, treating as successful logout');
           handleSuccessfulLogout();
           return { error: null };
         }
         
-        setIsSigningOut(false);
-        return { error };
+        // For other errors, still try to logout locally
+        console.log('Supabase signOut failed, but continuing with local logout');
+        handleSuccessfulLogout();
+        return { error: null };
       }
       
       console.log('Supabase signOut successful');
-      // Don't call handleSuccessfulLogout here - let the auth state change event handle it
+      handleSuccessfulLogout();
       return { error: null };
       
     } catch (error) {
       console.error('Unexpected error during signOut:', error);
-      setIsSigningOut(false);
-      return { error };
+      // Even if there's an error, force local logout
+      handleSuccessfulLogout();
+      return { error: null };
     }
   };
 
@@ -248,7 +339,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithGoogle,
     signOut,
     updateProfile,
-    resendConfirmation
+    resendConfirmation,
+    forceLogout
   };
 
   return (

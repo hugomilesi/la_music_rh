@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,16 +17,17 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    // Only redirect to dashboard if user is authenticated and loading is complete
-    // Also ensure we're not in the middle of a logout process
-    if (user && !loading && window.location.pathname === '/') {
-      console.log('Authenticated user detected, redirecting to dashboard');
-      navigate('/dashboard');
+    // Only redirect if we have a valid authenticated user with session and haven't redirected yet
+    if (user && session && !loading && !hasRedirected && window.location.pathname === '/') {
+      console.log('Authenticated user with valid session detected, redirecting to dashboard');
+      setHasRedirected(true);
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, session, loading, navigate, hasRedirected]);
 
   const features = [
     {
