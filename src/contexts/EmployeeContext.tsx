@@ -70,10 +70,12 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
 
-  // Setup real-time subscription
+  // Setup initial fetch and real-time subscription
   useEffect(() => {
+    // Initial fetch
     fetchEmployees();
 
+    // Setup real-time subscription
     const channel = supabase
       .channel('employees-changes')
       .on('postgres_changes', 
@@ -88,7 +90,7 @@ export const EmployeeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchEmployees]);
+  }, []); // Remove fetchEmployees from dependency array to prevent multiple subscriptions
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
