@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -22,10 +23,19 @@ import {
 } from '@/components/ui/form';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { AvatarUpload } from './AvatarUpload';
 
 const profileFormSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  avatar_url: z.string().url('URL inválida').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  department: z.string().optional(),
+  position: z.string().optional(),
+  bio: z.string().optional(),
+  birth_date: z.string().optional(),
+  address: z.string().optional(),
+  emergency_contact: z.string().optional(),
+  emergency_phone: z.string().optional(),
+  start_date: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -46,7 +56,15 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       full_name: profile?.full_name || '',
-      avatar_url: profile?.avatar_url || '',
+      phone: (profile as any)?.phone || '',
+      department: (profile as any)?.department || '',
+      position: (profile as any)?.position || '',
+      bio: (profile as any)?.bio || '',
+      birth_date: (profile as any)?.birth_date || '',
+      address: (profile as any)?.address || '',
+      emergency_contact: (profile as any)?.emergency_contact || '',
+      emergency_phone: (profile as any)?.emergency_phone || '',
+      start_date: (profile as any)?.start_date || '',
     },
   });
 
@@ -54,7 +72,15 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     if (profile && open) {
       form.reset({
         full_name: profile.full_name || '',
-        avatar_url: profile.avatar_url || '',
+        phone: (profile as any)?.phone || '',
+        department: (profile as any)?.department || '',
+        position: (profile as any)?.position || '',
+        bio: (profile as any)?.bio || '',
+        birth_date: (profile as any)?.birth_date || '',
+        address: (profile as any)?.address || '',
+        emergency_contact: (profile as any)?.emergency_contact || '',
+        emergency_phone: (profile as any)?.emergency_phone || '',
+        start_date: (profile as any)?.start_date || '',
       });
     }
   }, [profile, open, form]);
@@ -63,7 +89,15 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     try {
       const updates = {
         full_name: data.full_name,
-        avatar_url: data.avatar_url || null,
+        ...(data.phone && { phone: data.phone }),
+        ...(data.department && { department: data.department }),
+        ...(data.position && { position: data.position }),
+        ...(data.bio && { bio: data.bio }),
+        ...(data.birth_date && { birth_date: data.birth_date }),
+        ...(data.address && { address: data.address }),
+        ...(data.emergency_contact && { emergency_contact: data.emergency_contact }),
+        ...(data.emergency_phone && { emergency_phone: data.emergency_phone }),
+        ...(data.start_date && { start_date: data.start_date }),
       };
 
       const { error } = await updateProfile(updates);
@@ -95,7 +129,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
           <DialogDescription>
@@ -103,37 +137,161 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex justify-center mb-6">
+          <AvatarUpload size="lg" showUploadButton={false} showDeleteButton={false} />
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Nome Completo *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Seu nome completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birth_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Nascimento</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Recursos Humanos" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cargo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Analista de RH" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="start_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Início</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="full_name"
+              name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
+                    <Input placeholder="Endereço completo" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="emergency_contact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contato de Emergência</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome do contato" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emergency_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone de Emergência</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="avatar_url"
+              name="bio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL do Avatar (Opcional)</FormLabel>
+                  <FormLabel>Biografia</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://..." {...field} />
+                    <Textarea 
+                      placeholder="Conte um pouco sobre você..."
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>

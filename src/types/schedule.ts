@@ -1,34 +1,43 @@
 
-import { Unit } from '@/types/unit';
+import { Unit } from './unit';
+
+export interface EventFormData {
+  title: string;
+  employeeId: string;
+  unit: Unit;
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  date: string;
+  startTime: string;
+  endTime: string;
+  description?: string;
+  location?: string;
+  emailAlert?: boolean;
+  whatsappAlert?: boolean;
+}
 
 export interface ScheduleEvent {
   id: string;
   title: string;
-  employeeId: string;
-  employee: string;
-  unit: Unit;
-  date: string;
-  startTime: string;
-  endTime: string;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  employee_id: string;
+  unit: string;
+  type: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
   description?: string;
   location?: string;
-  emailAlert: boolean;
-  whatsappAlert: boolean;
-  createdAt: string;
-  updatedAt: string;
+  email_alert?: boolean;
+  whatsapp_alert?: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface NewScheduleEventData {
-  title: string;
-  employeeId: string;
-  unit: Unit;
+export interface TimeSlot {
+  time: string;
+  events: ScheduleEvent[];
+}
+
+export interface DaySchedule {
   date: string;
-  startTime: string;
-  endTime: string;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
-  description?: string;
-  location?: string;
-  emailAlert: boolean;
-  whatsappAlert: boolean;
+  timeSlots: TimeSlot[];
 }

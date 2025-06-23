@@ -421,27 +421,60 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
           created_at: string | null
+          department: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
           full_name: string | null
           id: string
+          phone: string | null
+          position: string | null
+          preferences: Json | null
           role: string | null
+          start_date: string | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string | null
+          department?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
+          position?: string | null
+          preferences?: Json | null
           role?: string | null
+          start_date?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string | null
+          department?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
+          position?: string | null
+          preferences?: Json | null
           role?: string | null
+          start_date?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -620,7 +653,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_avatar_url: {
+        Args: { avatar_path: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
