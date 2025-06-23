@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Users, 
-  Calendar, 
+  // Calendar, // Temporariamente removido
   FileText, 
   TrendingUp, 
   Award, 
@@ -38,12 +38,15 @@ const menuItems = [
     href: '/avaliacoes',
     description: 'Feedbacks e avaliações'
   },
+  // Item da agenda temporariamente removido
+  /*
   {
     title: 'Agenda',
     icon: Calendar,
     href: '/agenda',
     description: 'Plantões e escalas'
   },
+  */
   {
     title: 'Férias',
     icon: Plane,

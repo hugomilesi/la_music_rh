@@ -4,7 +4,7 @@ import { EmployeeProvider } from './EmployeeContext';
 import { DocumentProvider } from './DocumentContext';
 import { EvaluationProvider } from './EvaluationContext';
 import { VacationProvider } from './VacationContext';
-import { ScheduleProvider } from './ScheduleContext';
+// import { ScheduleProvider } from './ScheduleContext'; // Temporariamente desabilitado
 import { UnitProvider } from './UnitContext';
 import { IncidentsProvider } from './IncidentsContext';
 import { NPSProvider } from './NPSContext';
@@ -23,7 +23,8 @@ export const GlobalContextProvider: React.FC<GlobalContextProviderProps> = ({ ch
         <DocumentProvider>
           <EvaluationProvider>
             <VacationProvider>
-              <ScheduleProvider>
+              {/* ScheduleProvider temporariamente desabilitado */}
+              {/* <ScheduleProvider> */}
                 <IncidentsProvider>
                   <NPSProvider>
                     <BenefitsProvider>
@@ -35,7 +36,7 @@ export const GlobalContextProvider: React.FC<GlobalContextProviderProps> = ({ ch
                     </BenefitsProvider>
                   </NPSProvider>
                 </IncidentsProvider>
-              </ScheduleProvider>
+              {/* </ScheduleProvider> */}
             </VacationProvider>
           </EvaluationProvider>
         </DocumentProvider>
