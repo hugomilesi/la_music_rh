@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EmergencyLogout } from '@/components/layout/EmergencyLogout';
 
 export const UserProfileDropdown: React.FC = () => {
+  const navigate = useNavigate();
   const { user, profile, signOut, session } = useAuth();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -53,6 +55,14 @@ export const UserProfileDropdown: React.FC = () => {
     } finally {
       setIsLoggingOut(false);
     }
+  };
+
+  const handleProfileClick = () => {
+    navigate('/perfil');
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/configuracoes-usuario');
   };
 
   const getInitials = (name: string | null) => {
@@ -140,12 +150,12 @@ export const UserProfileDropdown: React.FC = () => {
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleProfileClick}>
             <User className="mr-2 h-4 w-4" />
             Perfil
           </DropdownMenuItem>
           
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSettingsClick}>
             <Settings className="mr-2 h-4 w-4" />
             Configurações
           </DropdownMenuItem>

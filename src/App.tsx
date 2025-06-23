@@ -23,6 +23,8 @@ import BenefitsPage from './pages/BenefitsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import UserProfilePage from './pages/UserProfilePage';
+import UserSettingsPage from './pages/UserSettingsPage';
 import NotFound from './pages/NotFound';
 
 // Wrapper component for protected pages with global context
@@ -36,6 +38,15 @@ const ProtectedPageWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   </ProtectedRoute>
 );
 
+// Wrapper component for user pages without global context (since they don't need all the data contexts)
+const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ProtectedRoute>
+    <MainLayout>
+      {children}
+    </MainLayout>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <Router>
@@ -43,6 +54,19 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
+          
+          {/* User profile and settings routes */}
+          <Route path="/perfil" element={
+            <UserPageWrapper>
+              <UserProfilePage />
+            </UserPageWrapper>
+          } />
+          
+          <Route path="/configuracoes-usuario" element={
+            <UserPageWrapper>
+              <UserSettingsPage />
+            </UserPageWrapper>
+          } />
           
           {/* All protected routes share the same GlobalContextProvider instance */}
           <Route path="/dashboard" element={
