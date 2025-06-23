@@ -21,6 +21,7 @@ export const evaluationService = {
     // Transform the data to match the frontend interface
     return data?.map(evaluation => ({
       ...evaluation,
+      employeeId: evaluation.employee_id,
       employee: evaluation.employee?.name || 'Unknown',
       role: evaluation.employee?.position || 'Unknown',
       unit: evaluation.employee?.units?.[0] || 'campo-grande',
@@ -63,6 +64,7 @@ export const evaluationService = {
     
     return {
       ...data,
+      employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
       unit: data.employee?.units?.[0] || 'campo-grande',
@@ -92,6 +94,7 @@ export const evaluationService = {
     
     return {
       ...data,
+      employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
       unit: data.employee?.units?.[0] || 'campo-grande',

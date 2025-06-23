@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Employee, NewEmployeeData } from '@/types/employee';
+import { Unit } from '@/types/unit';
 
 export const employeeService = {
   async getEmployees(): Promise<Employee[]> {
@@ -14,7 +15,10 @@ export const employeeService = {
       throw error;
     }
     
-    return data || [];
+    return data?.map(employee => ({
+      ...employee,
+      units: employee.units.map((unit: string) => unit as Unit)
+    })) || [];
   },
 
   async getEmployeeById(id: string): Promise<Employee | null> {
@@ -29,7 +33,10 @@ export const employeeService = {
       return null;
     }
     
-    return data;
+    return data ? {
+      ...data,
+      units: data.units.map((unit: string) => unit as Unit)
+    } : null;
   },
 
   async createEmployee(employeeData: NewEmployeeData): Promise<Employee> {
@@ -44,7 +51,10 @@ export const employeeService = {
       throw error;
     }
     
-    return data;
+    return {
+      ...data,
+      units: data.units.map((unit: string) => unit as Unit)
+    };
   },
 
   async updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee> {
@@ -60,7 +70,10 @@ export const employeeService = {
       throw error;
     }
     
-    return data;
+    return {
+      ...data,
+      units: data.units.map((unit: string) => unit as Unit)
+    };
   },
 
   async deleteEmployee(id: string): Promise<void> {
