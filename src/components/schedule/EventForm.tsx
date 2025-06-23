@@ -24,8 +24,8 @@ interface EventFormData {
   startTime: string;
   endTime: string;
   type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
-  description?: string;
-  location?: string;
+  description: string;
+  location: string;
   emailAlert: boolean;
   whatsappAlert: boolean;
 }
