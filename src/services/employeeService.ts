@@ -17,6 +17,7 @@ export const employeeService = {
     
     return data?.map(employee => ({
       ...employee,
+      status: employee.status as 'active' | 'inactive',
       units: employee.units.map((unit: string) => unit as Unit)
     })) || [];
   },
@@ -35,6 +36,7 @@ export const employeeService = {
     
     return data ? {
       ...data,
+      status: data.status as 'active' | 'inactive',
       units: data.units.map((unit: string) => unit as Unit)
     } : null;
   },
@@ -53,6 +55,7 @@ export const employeeService = {
     
     return {
       ...data,
+      status: data.status as 'active' | 'inactive',
       units: data.units.map((unit: string) => unit as Unit)
     };
   },
@@ -72,6 +75,7 @@ export const employeeService = {
     
     return {
       ...data,
+      status: data.status as 'active' | 'inactive',
       units: data.units.map((unit: string) => unit as Unit)
     };
   },
