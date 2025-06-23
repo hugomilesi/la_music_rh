@@ -20,10 +20,10 @@ export const GlobalContextProvider: React.FC<GlobalContextProviderProps> = ({ ch
   return (
     <UnitProvider>
       <EmployeeProvider>
-        <DocumentProvider>
-          <EvaluationProvider>
-            <VacationProvider>
-              <ScheduleProvider>
+        <ScheduleProvider>
+          <DocumentProvider>
+            <EvaluationProvider>
+              <VacationProvider>
                 <IncidentsProvider>
                   <NPSProvider>
                     <BenefitsProvider>
@@ -35,10 +35,10 @@ export const GlobalContextProvider: React.FC<GlobalContextProviderProps> = ({ ch
                     </BenefitsProvider>
                   </NPSProvider>
                 </IncidentsProvider>
-              </ScheduleProvider>
-            </VacationProvider>
-          </EvaluationProvider>
-        </DocumentProvider>
+              </VacationProvider>
+            </EvaluationProvider>
+          </DocumentProvider>
+        </ScheduleProvider>
       </EmployeeProvider>
     </UnitProvider>
   );

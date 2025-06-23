@@ -192,7 +192,7 @@ export const EventForm: React.FC<EventFormProps> = ({
               <FormItem>
                 <FormLabel>Local (Opcional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Local do evento" {...field} />
+                  <Input placeholder="Local do evento" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -211,6 +211,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   placeholder="Descrição do evento"
                   className="min-h-[80px]"
                   {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
