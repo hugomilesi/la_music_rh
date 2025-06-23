@@ -15,21 +15,44 @@ export interface EventFormData {
   whatsappAlert?: boolean;
 }
 
+export interface NewScheduleEventData {
+  title: string;
+  employeeId: string;
+  unit: Unit;
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  date: string;
+  startTime: string;
+  endTime: string;
+  description?: string;
+  location?: string;
+  emailAlert?: boolean;
+  whatsappAlert?: boolean;
+}
+
 export interface ScheduleEvent {
   id: string;
   title: string;
   employee_id: string;
-  unit: string;
-  type: string;
+  employeeId: string; // alias for compatibility
+  employee: string; // employee name
+  unit: Unit;
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
   event_date: string;
+  date: string; // alias for compatibility
   start_time: string;
+  startTime: string; // alias for compatibility
   end_time: string;
+  endTime: string; // alias for compatibility
   description?: string;
   location?: string;
   email_alert?: boolean;
+  emailAlert?: boolean; // alias for compatibility
   whatsapp_alert?: boolean;
+  whatsappAlert?: boolean; // alias for compatibility
   created_at: string;
+  createdAt: string; // alias for compatibility
   updated_at: string;
+  updatedAt: string; // alias for compatibility
 }
 
 export interface TimeSlot {

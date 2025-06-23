@@ -21,19 +21,27 @@ export const scheduleService = {
     return data?.map(event => ({
       id: event.id,
       title: event.title,
-      employeeId: event.employee_id,
+      employee_id: event.employee_id,
+      employeeId: event.employee_id, // alias
       employee: event.employee?.name || 'Unknown',
       unit: event.unit as Unit,
-      date: event.event_date,
-      startTime: event.start_time,
-      endTime: event.end_time,
+      date: event.event_date, // alias
+      event_date: event.event_date,
+      start_time: event.start_time,
+      startTime: event.start_time, // alias
+      end_time: event.end_time,
+      endTime: event.end_time, // alias
       type: event.type as ScheduleEvent['type'],
       description: event.description,
       location: event.location,
-      emailAlert: event.email_alert || false,
-      whatsappAlert: event.whatsapp_alert || false,
-      createdAt: event.created_at,
-      updatedAt: event.updated_at
+      email_alert: event.email_alert || false,
+      emailAlert: event.email_alert || false, // alias
+      whatsapp_alert: event.whatsapp_alert || false,
+      whatsappAlert: event.whatsapp_alert || false, // alias
+      created_at: event.created_at,
+      createdAt: event.created_at, // alias
+      updated_at: event.updated_at,
+      updatedAt: event.updated_at // alias
     })) || [];
   },
 
@@ -67,19 +75,27 @@ export const scheduleService = {
     return {
       id: data.id,
       title: data.title,
-      employeeId: data.employee_id,
+      employee_id: data.employee_id,
+      employeeId: data.employee_id, // alias
       employee: data.employee?.name || 'Unknown',
       unit: data.unit as Unit,
-      date: data.event_date,
-      startTime: data.start_time,
-      endTime: data.end_time,
+      date: data.event_date, // alias
+      event_date: data.event_date,
+      start_time: data.start_time,
+      startTime: data.start_time, // alias
+      end_time: data.end_time,
+      endTime: data.end_time, // alias
       type: data.type as ScheduleEvent['type'],
       description: data.description,
       location: data.location,
-      emailAlert: data.email_alert || false,
-      whatsappAlert: data.whatsapp_alert || false,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
+      email_alert: data.email_alert || false,
+      emailAlert: data.email_alert || false, // alias
+      whatsapp_alert: data.whatsapp_alert || false,
+      whatsappAlert: data.whatsapp_alert || false, // alias
+      created_at: data.created_at,
+      createdAt: data.created_at, // alias
+      updated_at: data.updated_at,
+      updatedAt: data.updated_at // alias
     };
   },
 
@@ -88,16 +104,16 @@ export const scheduleService = {
       .from('schedule_events')
       .update({
         title: updates.title,
-        employee_id: updates.employeeId,
+        employee_id: updates.employeeId || updates.employee_id,
         unit: updates.unit,
-        event_date: updates.date,
-        start_time: updates.startTime,
-        end_time: updates.endTime,
+        event_date: updates.date || updates.event_date,
+        start_time: updates.startTime || updates.start_time,
+        end_time: updates.endTime || updates.end_time,
         type: updates.type,
         description: updates.description,
         location: updates.location,
-        email_alert: updates.emailAlert,
-        whatsapp_alert: updates.whatsappAlert
+        email_alert: updates.emailAlert ?? updates.email_alert,
+        whatsapp_alert: updates.whatsappAlert ?? updates.whatsapp_alert
       })
       .eq('id', id)
       .select(`
@@ -114,19 +130,27 @@ export const scheduleService = {
     return {
       id: data.id,
       title: data.title,
-      employeeId: data.employee_id,
+      employee_id: data.employee_id,
+      employeeId: data.employee_id, // alias
       employee: data.employee?.name || 'Unknown',
       unit: data.unit as Unit,
-      date: data.event_date,
-      startTime: data.start_time,
-      endTime: data.end_time,
+      date: data.event_date, // alias
+      event_date: data.event_date,
+      start_time: data.start_time,
+      startTime: data.start_time, // alias
+      end_time: data.end_time,
+      endTime: data.end_time, // alias
       type: data.type as ScheduleEvent['type'],
       description: data.description,
       location: data.location,
-      emailAlert: data.email_alert || false,
-      whatsappAlert: data.whatsapp_alert || false,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
+      email_alert: data.email_alert || false,
+      emailAlert: data.email_alert || false, // alias
+      whatsapp_alert: data.whatsapp_alert || false,
+      whatsappAlert: data.whatsapp_alert || false, // alias
+      created_at: data.created_at,
+      createdAt: data.created_at, // alias
+      updated_at: data.updated_at,
+      updatedAt: data.updated_at // alias
     };
   },
 
@@ -160,19 +184,27 @@ export const scheduleService = {
     return data?.map(event => ({
       id: event.id,
       title: event.title,
-      employeeId: event.employee_id,
+      employee_id: event.employee_id,
+      employeeId: event.employee_id, // alias
       employee: event.employee?.name || 'Unknown',
       unit: event.unit as Unit,
-      date: event.event_date,
-      startTime: event.start_time,
-      endTime: event.end_time,
+      date: event.event_date, // alias
+      event_date: event.event_date,
+      start_time: event.start_time,
+      startTime: event.start_time, // alias
+      end_time: event.end_time,
+      endTime: event.end_time, // alias
       type: event.type as ScheduleEvent['type'],
       description: event.description,
       location: event.location,
-      emailAlert: event.email_alert || false,
-      whatsappAlert: event.whatsapp_alert || false,
-      createdAt: event.created_at,
-      updatedAt: event.updated_at
+      email_alert: event.email_alert || false,
+      emailAlert: event.email_alert || false, // alias
+      whatsapp_alert: event.whatsapp_alert || false,
+      whatsappAlert: event.whatsapp_alert || false, // alias
+      created_at: event.created_at,
+      createdAt: event.created_at, // alias
+      updated_at: data.updated_at,
+      updatedAt: event.updated_at // alias
     })) || [];
   }
 };

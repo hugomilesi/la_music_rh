@@ -84,15 +84,15 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
       form.reset({
         title: event.title,
         employeeId: event.employeeId,
-        unit: event.unit,
+        unit: event.unit as Unit,
         date: new Date(event.date),
         startTime: event.startTime,
         endTime: event.endTime,
         type: event.type,
         description: event.description || '',
         location: event.location || '',
-        emailAlert: event.emailAlert,
-        whatsappAlert: event.whatsappAlert,
+        emailAlert: event.emailAlert || false,
+        whatsappAlert: event.whatsappAlert || false,
       });
     }
   }, [event, form]);
@@ -103,15 +103,21 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
     const updatedData: Partial<ScheduleEvent> = {
       title: data.title,
       employeeId: data.employeeId,
+      employee_id: data.employeeId, // for database compatibility
       unit: data.unit,
       date: format(data.date, 'yyyy-MM-dd'),
+      event_date: format(data.date, 'yyyy-MM-dd'), // for database compatibility
       startTime: data.startTime,
+      start_time: data.startTime, // for database compatibility
       endTime: data.endTime,
+      end_time: data.endTime, // for database compatibility
       type: data.type,
       description: data.description || undefined,
       location: data.location || undefined,
       emailAlert: data.emailAlert,
+      email_alert: data.emailAlert, // for database compatibility
       whatsappAlert: data.whatsappAlert,
+      whatsapp_alert: data.whatsappAlert, // for database compatibility
     };
 
     updateEvent(event.id, updatedData);
