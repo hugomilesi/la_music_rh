@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Document, DocumentFilter, DocumentUpload, DocumentStats, DocumentType, DocumentStatus } from '@/types/document';
 import { useEmployees } from './EmployeeContext';
@@ -61,7 +60,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Transform database data to match our interface
-      const transformedDocuments: Document[] = data.map(doc => ({
+      const transformedDocuments: Document[] = (data || []).map((doc: any) => ({
         id: doc.id,
         employeeId: doc.employee_id,
         employee: doc.employees?.name || 'Unknown',
@@ -281,13 +280,15 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Delete file from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([document.file_path]);
+      if (document?.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([document.file_path]);
 
-      if (storageError) {
-        console.error('Error deleting file from storage:', storageError);
-        // Continue with database deletion even if storage deletion fails
+        if (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+          // Continue with database deletion even if storage deletion fails
+        }
       }
 
       // Delete document record from database

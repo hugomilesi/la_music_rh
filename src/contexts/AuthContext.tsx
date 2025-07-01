@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setProfile(data);
+      setProfile(data as Profile | null);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }

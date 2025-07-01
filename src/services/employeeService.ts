@@ -24,7 +24,7 @@ export const employeeService = {
 
   async getEmployeeById(id: string): Promise<Employee | null> {
     const { data, error } = await supabase
-      .from('employees')
+      .from('employees') 
       .select('*')
       .eq('id', id)
       .single();
