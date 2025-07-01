@@ -30,10 +30,10 @@ const formSchema = z.object({
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
   type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'] as const),
-  description: z.string().optional(),
-  location: z.string().optional(),
-  emailAlert: z.boolean(),
-  whatsappAlert: z.boolean(),
+  description: z.string().default(''),
+  location: z.string().default(''),
+  emailAlert: z.boolean().default(false),
+  whatsappAlert: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -56,8 +56,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { checkEventConflicts } = useScheduleCalendar();
   const [conflicts, setConflicts] = useState<any[]>([]);
 
-  // Create form with proper EventFormData type
-  const form = useForm<EventFormData>({
+  // Create form with proper FormData type
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -109,7 +109,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   const currentIsOpen = controlledIsOpen !== undefined ? controlledIsOpen : isOpen;
 
-  const onSubmit = async (data: EventFormData) => {
+  const onSubmit = async (data: FormData) => {
     try {
       const eventData: NewScheduleEventData = {
         title: data.title,
@@ -119,10 +119,10 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         startTime: data.startTime,
         endTime: data.endTime,
         type: data.type,
-        description: data.description || '',
-        location: data.location || '',
-        emailAlert: data.emailAlert || false,
-        whatsappAlert: data.whatsappAlert || false,
+        description: data.description,
+        location: data.location,
+        emailAlert: data.emailAlert,
+        whatsappAlert: data.whatsappAlert,
       };
       
       if (conflicts.length > 0) {
@@ -155,6 +155,21 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   const activeEmployees = employees.filter(emp => emp.status === 'active');
 
+  // Convert FormData to EventFormData for the EventForm component
+  const convertToEventFormData = (data: FormData): EventFormData => ({
+    title: data.title,
+    employeeId: data.employeeId,
+    unit: data.unit,
+    date: data.date,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    type: data.type,
+    description: data.description,
+    location: data.location,
+    emailAlert: data.emailAlert,
+    whatsappAlert: data.whatsappAlert,
+  });
+
   const DialogComponent = (
     <Dialog open={currentIsOpen} onOpenChange={handleOpenChange}>
       {controlledIsOpen === undefined && (
@@ -178,9 +193,9 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         )}
 
         <EventForm
-          form={form}
+          form={form as any}
           employees={activeEmployees}
-          onSubmit={onSubmit}
+          onSubmit={(data) => onSubmit(data as FormData)}
           onCancel={() => handleOpenChange(false)}
           isLoading={isLoading}
           submitLabel="Criar Evento"
