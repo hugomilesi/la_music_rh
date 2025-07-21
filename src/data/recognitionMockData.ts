@@ -5,11 +5,11 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'fideliza',
     name: 'Fideliza+',
-    description: 'Estrelas por retenção de alunos e encantamento',
-    color: 'blue',
+    description: 'Programa de fidelização para colaboradores administrativos',
+    color: '#3B82F6',
     icon: 'Star',
     totalPossibleStars: 50,
-    targetRoles: ['Coordenadora Pedagógica', 'Recepcionista', 'Assistente Administrativo', 'Coordenador Administrativo'],
+    targetRoles: ['Coord. Pedagógica', 'Recepção'],
     criteria: [
       {
         id: 'retention-rate',
@@ -56,11 +56,11 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'matriculador',
     name: 'Matriculador+ LA',
-    description: 'Comissões por matrículas realizadas',
-    color: 'green',
+    description: 'Programa de incentivo para equipe de vendas',
+    color: '#10B981',
     icon: 'DollarSign',
-    totalPossibleStars: 40,
-    targetRoles: ['Consultor de Vendas', 'Consultora de Vendas', 'Coordenadora de Vendas', 'Coordenador de Vendas', 'Gerente de Vendas'],
+    totalPossibleStars: 60,
+    targetRoles: ['Consultores', 'Coord. Vendas'],
     criteria: [
       {
         id: 'monthly-target',
@@ -99,11 +99,11 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'professor',
     name: 'Professor+ LA',
-    description: 'Estrelas por engajamento pedagógico',
-    color: 'purple',
+    description: 'Programa de reconhecimento para professores',
+    color: '#8B5CF6',
     icon: 'Award',
     totalPossibleStars: 45,
-    targetRoles: ['Professor', 'Professor Senior', 'Professora', 'Coordenador Pedagógico'],
+    targetRoles: ['Professores'],
     criteria: [
       {
         id: 'class-preparation',

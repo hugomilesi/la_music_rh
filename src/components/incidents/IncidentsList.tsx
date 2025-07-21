@@ -1,0 +1,372 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Grid,
+  IconButton,
+  Menu,
+  MenuItem,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+  useTheme
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  Archive as ArchiveIcon
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+import { incidentService } from '../../services/incidentService';
+import { Incident, IncidentFilter } from '../../types/incident';
+import IncidentDialog from './IncidentDialog';
+import ConfirmDialog from '../common/ConfirmDialog';
+import EmptyState from '../common/EmptyState';
+import LoadingState from '../common/LoadingState';
+
+const getSeverityColor = (severity: string) => {
+  switch (severity) {
+    case 'baixa': return 'info';
+    case 'media': return 'warning';
+    case 'alta': return 'error';
+    case 'critica': return 'error';
+    default: return 'default';
+  }
+};
+
+const getSeverityBorderColor = (severity: string, theme: any) => {
+  switch (severity) {
+    case 'baixa': return theme.palette.info.main;
+    case 'media': return theme.palette.warning.main;
+    case 'alta': return theme.palette.error.main;
+    case 'critica': return theme.palette.error.dark;
+    default: return theme.palette.grey[400];
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'aberto': return 'error';
+    case 'em_andamento': return 'warning';
+    case 'resolvido': return 'success';
+    case 'cancelado': return 'default';
+    default: return 'default';
+  }
+};
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'aberto': return 'Aberto';
+    case 'em_andamento': return 'Em Andamento';
+    case 'resolvido': return 'Resolvido';
+    case 'cancelado': return 'Cancelado';
+    default: return status;
+  }
+};
+
+const IncidentsList: React.FC = () => {
+  const theme = useTheme();
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<IncidentFilter>('all');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentIncident, setCurrentIncident] = useState<Incident | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [incidentToDelete, setIncidentToDelete] = useState<number | null>(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: number, status: 'em_andamento' | 'resolvido' | 'cancelado'} | null>(null);
+  
+  // Menu de ações
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
+
+  const fetchIncidents = async () => {
+    setLoading(true);
+    try {
+      const data = await incidentService.getFiltered(filter);
+      setIncidents(data);
+    } catch (error) {
+      console.error('Erro ao buscar incidentes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchIncidents();
+  }, [filter]);
+
+  // Separate effect for subscription to avoid re-subscribing on filter changes
+  useEffect(() => {
+    // Inscrever-se para atualizações em tempo real
+    const subscription = incidentService.subscribeToChanges(() => {
+      fetchIncidents();
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Empty dependency array to prevent re-subscription
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, incidentId: number) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedIncidentId(incidentId);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setSelectedIncidentId(null);
+  };
+
+  const handleAddIncident = () => {
+    setCurrentIncident(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditIncident = (incident: Incident) => {
+    setCurrentIncident(incident);
+    setDialogOpen(true);
+    handleCloseMenu();
+  };
+
+  const handleDeleteIncident = (id: number) => {
+    setIncidentToDelete(id);
+    setConfirmDialogOpen(true);
+    handleCloseMenu();
+  };
+
+  const handleUpdateStatus = (id: number, status: 'em_andamento' | 'resolvido' | 'cancelado') => {
+    setIncidentToUpdateStatus({ id, status });
+    setStatusDialogOpen(true);
+    handleCloseMenu();
+  };
+
+  const confirmDelete = async () => {
+    if (incidentToDelete) {
+      try {
+        await incidentService.delete(incidentToDelete);
+        setIncidents(incidents.filter(i => i.id !== incidentToDelete));
+      } catch (error) {
+        console.error('Erro ao excluir incidente:', error);
+      }
+    }
+    setConfirmDialogOpen(false);
+    setIncidentToDelete(null);
+  };
+
+  const confirmStatusUpdate = async () => {
+    if (incidentToUpdateStatus) {
+      try {
+        await incidentService.update(incidentToUpdateStatus.id, { status: incidentToUpdateStatus.status });
+        await fetchIncidents();
+      } catch (error) {
+        console.error('Erro ao atualizar status do incidente:', error);
+      }
+    }
+    setStatusDialogOpen(false);
+    setIncidentToUpdateStatus(null);
+  };
+
+  const handleSaveIncident = async (incident: Incident | Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      if ('id' in incident) {
+        await incidentService.update(incident.id, incident);
+      } else {
+        await incidentService.add(incident);
+      }
+      await fetchIncidents();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar incidente:', error);
+    }
+  };
+
+  const handleFilterChange = (_: React.SyntheticEvent, newValue: IncidentFilter) => {
+    setFilter(newValue);
+  };
+
+  if (loading) {
+    return <LoadingState message="Carregando incidentes..." />;
+  }
+
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" component="h2">
+          Incidentes
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={handleAddIncident}
+        >
+          Novo Incidente
+        </Button>
+      </Box>
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={filter} onChange={handleFilterChange} aria-label="filtros de incidentes">
+          <Tab label="Todos" value="all" />
+          <Tab label="Abertos" value="active" />
+          <Tab label="Resolvidos" value="resolved" />
+          <Tab label="Este Mês" value="thisMonth" />
+        </Tabs>
+      </Box>
+
+      {incidents.length === 0 ? (
+        <EmptyState 
+          message="Nenhum incidente encontrado"
+          description={`Não há incidentes ${filter === 'active' ? 'abertos' : filter === 'resolved' ? 'resolvidos' : filter === 'thisMonth' ? 'neste mês' : ''} para exibir.`}
+          actionText="Adicionar Incidente"
+          onAction={handleAddIncident}
+        />
+      ) : (
+        <Grid container spacing={3}>
+          {incidents.map((incident) => (
+            <Grid xs={12} md={6} lg={4} key={incident.id}>
+              <Card 
+                elevation={2} 
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  borderLeft: `4px solid ${getSeverityBorderColor(incident.severity, theme)}`
+                }}
+              >
+                <IconButton
+                  aria-label="ações"
+                  onClick={(e) => handleOpenMenu(e, incident.id)}
+                  sx={{ position: 'absolute', top: 8, right: 8 }}
+                >
+                  <MoreVertIcon />
+                </IconButton>
+                
+                <CardContent sx={{ flexGrow: 1, pt: 2, pb: 2 }}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                        {incident.type}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {format(new Date(incident.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Chip 
+                        label={incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1)} 
+                        size="small" 
+                        color={getSeverityColor(incident.severity)} 
+                      />
+                      <Chip 
+                        label={getStatusText(incident.status)} 
+                        size="small" 
+                        color={getStatusColor(incident.status)} 
+                      />
+                    </Box>
+                    
+                    <Typography variant="body2">
+                      {incident.description}
+                    </Typography>
+                    
+                    <Divider />
+                    
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Funcionário:</strong> {incident.employee}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        <strong>Reportado por:</strong> {incident.reporter}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* Menu de ações */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        <MenuItem onClick={() => {
+          const incident = incidents.find(i => i.id === selectedIncidentId);
+          if (incident) handleEditIncident(incident);
+        }}>
+          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          Editar
+        </MenuItem>
+        
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'aberto' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'em_andamento')}>
+            <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+            Marcar Em Andamento
+          </MenuItem>
+        )}
+        
+        {selectedIncidentId && (incidents.find(i => i.id === selectedIncidentId)?.status === 'aberto' || incidents.find(i => i.id === selectedIncidentId)?.status === 'em_andamento') && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'resolvido')}>
+            <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+            Marcar como Resolvido
+          </MenuItem>
+        )}
+        
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'cancelado' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolvido' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'cancelado')}>
+            <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
+            Cancelar
+          </MenuItem>
+        )}
+        
+        <MenuItem onClick={() => selectedIncidentId && handleDeleteIncident(selectedIncidentId)}>
+          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+          Excluir
+        </MenuItem>
+      </Menu>
+
+      {/* Diálogo de criação/edição */}
+      <IncidentDialog 
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSave={handleSaveIncident}
+        incident={currentIncident}
+      />
+
+      {/* Diálogo de confirmação de exclusão */}
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        title="Excluir Incidente"
+        content="Tem certeza que deseja excluir este incidente? Esta ação não pode ser desfeita."
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialogOpen(false)}
+      />
+
+      {/* Diálogo de confirmação de mudança de status */}
+      <ConfirmDialog
+        open={statusDialogOpen}
+        title={`${incidentToUpdateStatus?.status === 'resolvido' ? 'Resolver' : 'Arquivar'} Incidente`}
+        content={`Tem certeza que deseja marcar este incidente como ${incidentToUpdateStatus?.status === 'resolvido' ? 'resolvido' : incidentToUpdateStatus?.status === 'em_andamento' ? 'em andamento' : 'cancelado'}?`}
+        onConfirm={confirmStatusUpdate}
+        onCancel={() => setStatusDialogOpen(false)}
+      />
+    </Box>
+  );
+};
+
+export default IncidentsList;

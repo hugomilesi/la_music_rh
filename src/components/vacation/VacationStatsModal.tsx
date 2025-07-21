@@ -81,11 +81,11 @@ export const VacationStatsModal: React.FC<VacationStatsModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'pendente':
         return <Badge variant="outline" className="text-orange-600">Pendente</Badge>;
-      case 'approved':
+      case 'aprovado':
         return <Badge variant="outline" className="text-green-600">Aprovada</Badge>;
-      case 'rejected':
+      case 'rejeitado':
         return <Badge variant="outline" className="text-red-600">Rejeitada</Badge>;
       default:
         return null;

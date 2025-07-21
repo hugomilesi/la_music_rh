@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Plus, Gift, DollarSign, Star } from 'lucide-react';
+import { useEmployees } from '@/hooks/useEmployees';
 
 interface NewBonusDialogProps {
   open: boolean;
@@ -28,13 +29,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
   const [description, setDescription] = useState('');
   const [program, setProgram] = useState('');
 
-  const employees = [
-    { id: '1', name: 'Aline Cristina Pessanha Faria', unit: 'Campo Grande' },
-    { id: '2', name: 'Felipe Elias Carvalho', unit: 'Campo Grande' },
-    { id: '3', name: 'Igor Esteves Alves Baiao', unit: 'Barra' },
-    { id: '4', name: 'Maria Silva', unit: 'Tijuca' },
-    { id: '5', name: 'João Santos', unit: 'Copacabana' }
-  ];
+  const { employees } = useEmployees();
 
   const bonusTypes = [
     { value: 'performance', label: 'Bônus por Performance', icon: Star },
@@ -104,16 +99,22 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
                       <SelectValue placeholder="Escolha um colaborador" />
                     </SelectTrigger>
                     <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <span>{employee.name}</span>
-                            <Badge variant="outline" className="ml-2">
-                              {employee.unit}
-                            </Badge>
-                          </div>
+                      {employees && employees.length > 0 ? (
+                        employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{employee.name}</span>
+                              <Badge variant="outline" className="ml-2">
+                                {employee.units?.[0] || 'Sem unidade'}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-employees" disabled>
+                          Nenhum colaborador disponível
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

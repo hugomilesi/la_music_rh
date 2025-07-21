@@ -1,27 +1,51 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { useIncidents, Incident } from '@/contexts/IncidentsContext';
+import { Combobox } from '@/components/ui/combobox';
+import { useIncidents } from '@/contexts/IncidentsContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface EditIncidentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  incident: Incident | null;
+  incident: {
+    id: string;
+    employee?: string;
+    type: string;
+    severity: 'leve' | 'moderado' | 'grave';
+    description: string;
+    incidentDate: string;
+    reporter?: string;
+    status: 'ativo' | 'resolvido' | 'arquivado';
+  } | null;
 }
 
 interface IncidentFormData {
-  employee: string;
+  employeeId: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'baixa' | 'media' | 'alta' | 'critica';
   description: string;
-  date: string;
-  reporter: string;
-  status: 'ativo' | 'resolvido' | 'arquivado';
+  incidentDate: string;
+  reporterId: string;
+  status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
 }
 
 export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
@@ -30,29 +54,30 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   incident
 }) => {
   const { updateIncident } = useIncidents();
+  const { employees } = useEmployees();
   const { toast } = useToast();
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
-      employee: incident?.employee || '',
+      employeeId: incident?.employee || '',
       type: incident?.type || '',
-      severity: incident?.severity || 'leve',
+      severity: incident?.severity || 'baixa',
       description: incident?.description || '',
-      date: incident?.date || '',
-      reporter: incident?.reporter || '',
-      status: incident?.status || 'ativo'
+      incidentDate: incident?.incidentDate || '',
+      reporterId: incident?.reporter || '',
+      status: incident?.status || 'aberto'
     }
   });
 
   React.useEffect(() => {
     if (incident) {
       form.reset({
-        employee: incident.employee,
+        employeeId: incident.employee || '',
         type: incident.type,
         severity: incident.severity,
         description: incident.description,
-        date: incident.date,
-        reporter: incident.reporter,
+        incidentDate: incident.incidentDate,
+        reporterId: incident.reporter || '',
         status: incident.status
       });
     }
@@ -85,12 +110,22 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="employee"
+                name="employeeId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Colaborador</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Nome do colaborador" required />
+                      <Combobox
+                        options={employees.map((employee) => ({
+                          value: employee.id,
+                          label: employee.name,
+                        }))}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione um colaborador"
+                        searchPlaceholder="Buscar colaborador..."
+                        emptyText="Nenhum colaborador encontrado."
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -128,9 +163,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Gravidade</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="leve">Leve</option>
-                        <option value="moderado">Moderado</option>
-                        <option value="grave">Grave</option>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -146,9 +182,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Status</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="ativo">Ativo</option>
+                        <option value="aberto">Aberto</option>
+                        <option value="em_andamento">Em Andamento</option>
                         <option value="resolvido">Resolvido</option>
-                        <option value="arquivado">Arquivado</option>
+                        <option value="cancelado">Cancelado</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -158,10 +195,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
               
               <FormField
                 control={form.control}
-                name="date"
+                name="incidentDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel>Data da Ocorrência</FormLabel>
                     <FormControl>
                       <Input {...field} type="date" required />
                     </FormControl>
@@ -192,12 +229,22 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
 
             <FormField
               control={form.control}
-              name="reporter"
+              name="reporterId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsável pelo Registro</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nome do responsável" required />
+                    <Combobox
+                      options={employees.map((employee) => ({
+                        value: employee.id,
+                        label: employee.name,
+                      }))}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Selecione o responsável"
+                      searchPlaceholder="Buscar responsável..."
+                      emptyText="Nenhum colaborador encontrado."
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

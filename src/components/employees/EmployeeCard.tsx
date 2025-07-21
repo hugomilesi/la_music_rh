@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, Edit } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import {
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { EditEmployeeDialog } from './EditEmployeeDialog';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PermissionAlert } from '@/components/ui/PermissionAlert';
 
 interface EmployeeCardProps {
   employee: Employee;
@@ -38,7 +40,9 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
 }) => {
   const { updateEmployee, deleteEmployee } = useEmployees();
   const { toast } = useToast();
+  const { checkPermission } = usePermissions();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showPermissionAlert, setShowPermissionAlert] = useState(false);
 
   // Auto-open edit dialog when autoOpenEdit prop is true
   useEffect(() => {
@@ -69,7 +73,18 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleDelete = async () => {
-    await deleteEmployee(employee.id);
+    const canDelete = checkPermission('canDeleteEmployees');
+    
+    if (!canDelete) {
+      setShowPermissionAlert(true);
+      return;
+    }
+    
+    try {
+      await deleteEmployee(employee.id);
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+    }
   };
 
   return (
@@ -121,6 +136,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Remover Colaborador
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
@@ -133,7 +149,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
                       Remover
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -148,6 +164,15 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         employee={employee}
         open={isEditDialogOpen}
         onOpenChange={handleEditDialogOpenChange}
+      />
+      
+      <PermissionAlert
+        open={showPermissionAlert}
+        onOpenChange={setShowPermissionAlert}
+        title="Permissão Negada"
+        description="Você não tem permissão para deletar funcionários. Esta ação é restrita a administradores."
+        variant="error"
+        action="Contatar Administrador"
       />
     </>
   );

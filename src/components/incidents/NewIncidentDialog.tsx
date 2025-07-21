@@ -1,12 +1,15 @@
-
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { useForm } from 'react-hook-form';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useToast } from '@/hooks/use-toast';
+import { useEmployees } from '@/hooks/useEmployees';
 
 interface NewIncidentDialogProps {
   open: boolean;
@@ -14,12 +17,13 @@ interface NewIncidentDialogProps {
 }
 
 interface IncidentFormData {
-  employee: string;
+  title: string;
+  employeeId: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'baixa' | 'media' | 'alta' | 'critica';
   description: string;
-  date: string;
-  reporter: string;
+  incidentDate: string;
+  reporterId: string;
 }
 
 export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
@@ -28,23 +32,35 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
 }) => {
   const { addIncident } = useIncidents();
   const { toast } = useToast();
+  const { employees, loading: loadingEmployees } = useEmployees();
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
-      employee: '',
+      title: '',
+      employeeId: '',
       type: '',
-      severity: 'leve',
+      severity: 'baixa',
       description: '',
-      date: new Date().toISOString().split('T')[0],
-      reporter: 'Aline Cristina Pessanha Faria'
+      incidentDate: new Date().toISOString().split('T')[0],
+      reporterId: 'eea4767c-7c68-4667-b783-cba2b30c9fcf' // Default reporter ID
     }
   });
 
   const onSubmit = (data: IncidentFormData) => {
-    addIncident({
-      ...data,
-      status: 'ativo'
-    });
+    const incidentData = {
+      title: data.title,
+      employeeId: data.employeeId,
+      employeeName: employees.find(emp => emp.id === data.employeeId)?.name || '',
+      type: data.type,
+      severity: data.severity,
+      description: data.description,
+      incidentDate: data.incidentDate,
+      reporterId: data.reporterId,
+      reporterName: employees.find(emp => emp.id === data.reporterId)?.name || '',
+      status: 'aberto' as const
+    };
+    
+    addIncident(incidentData);
     
     toast({
       title: "Ocorrência criada",
@@ -64,15 +80,39 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título da Ocorrência</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: Atraso no horário de entrada" required />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="employee"
+                name="employeeId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Colaborador</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Nome do colaborador" required />
+                      <Combobox
+                        options={employees.map((employee) => ({
+                          value: employee.id,
+                          label: employee.name,
+                        }))}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione um colaborador"
+                        searchPlaceholder="Buscar colaborador..."
+                        emptyText="Nenhum colaborador encontrado."
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -110,9 +150,10 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
                     <FormLabel>Gravidade</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="leve">Leve</option>
-                        <option value="moderado">Moderado</option>
-                        <option value="grave">Grave</option>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -122,10 +163,10 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
               
               <FormField
                 control={form.control}
-                name="date"
+                name="incidentDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel>Data da Ocorrência</FormLabel>
                     <FormControl>
                       <Input {...field} type="date" required />
                     </FormControl>
@@ -156,12 +197,27 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
 
             <FormField
               control={form.control}
-              name="reporter"
+              name="reporterId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsável pelo Registro</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nome do responsável" required />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingEmployees ? (
+                          <SelectItem value="" disabled>Carregando...</SelectItem>
+                        ) : (
+                          employees.map((employee) => (
+                            <SelectItem key={employee.id} value={employee.id}>
+                              {employee.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

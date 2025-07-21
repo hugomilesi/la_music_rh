@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,9 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
             <Search className="w-5 h-5" />
             Buscar Colaboradores
           </DialogTitle>
+          <DialogDescription>
+            Encontre rapidamente colaboradores por nome, email, cargo ou unidade.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

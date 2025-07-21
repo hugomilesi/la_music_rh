@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Mail, FileText, Search, Package } from 'lucide-react';
+import { Download, Mail, FileText, Search, Package, Eye, Edit, Trash2 } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { Document } from '@/types/document';
+import { EditDocumentDialog } from './EditDocumentDialog';
 
 interface EmployeeDocumentsModalProps {
   employeeId: string | null;
@@ -24,8 +25,10 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   onOpenChange,
   onSendToAccountant
 }) => {
-  const { getDocumentsByEmployee, downloadDocument, exportDocumentsByEmployee } = useDocuments();
+  const { getDocumentsByEmployee, downloadDocument, exportDocumentsByEmployee, viewDocument, deleteDocument } = useDocuments();
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   if (!employeeId) return null;
 
@@ -64,7 +67,8 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -135,9 +139,48 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => downloadDocument(doc)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => viewDocument(doc)}
+                          title="Visualizar documento"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => downloadDocument(doc)}
+                          title="Baixar documento"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setEditingDocument(doc);
+                            setEditDialogOpen(true);
+                          }}
+                          title="Editar documento"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (confirm('Tem certeza que deseja excluir este documento?')) {
+                              deleteDocument(doc.id);
+                            }
+                          }}
+                          title="Excluir documento"
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -158,6 +201,16 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      
+      <EditDocumentDialog
+        document={editingDocument}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditingDocument(null);
+        }}
+      />
+    </>
   );
 };

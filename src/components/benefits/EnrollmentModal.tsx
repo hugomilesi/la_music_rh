@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, X, Users } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
+import { useEmployees } from '@/contexts/EmployeeContext';
 import { Benefit, Dependent } from '@/types/benefits';
 
 interface EnrollmentModalProps {
@@ -21,6 +22,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   benefit
 }) => {
   const { enrollEmployee } = useBenefits();
+  const { employees } = useEmployees();
   const [employeeId, setEmployeeId] = useState('');
   const [dependents, setDependents] = useState<Dependent[]>([]);
   const [newDependent, setNewDependent] = useState({
@@ -62,10 +64,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
       return;
     }
 
-    if (dependents.length + 1 > benefit.maxBeneficiaries) {
-      alert(`Este benefício permite no máximo ${benefit.maxBeneficiaries} beneficiários`);
-      return;
-    }
+
 
     enrollEmployee(employeeId, benefit.id, dependents);
     
@@ -83,6 +82,9 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
             <Users className="w-5 h-5" />
             Inscrever Funcionário - {benefit.name}
           </DialogTitle>
+          <DialogDescription>
+            Selecione um funcionário e adicione dependentes para inscrever no benefício {benefit.name}.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -92,14 +94,10 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
               <CardTitle className="text-lg">Informações do Benefício</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Valor:</span>
                   <span className="ml-2 font-medium">R$ {benefit.value.toFixed(2)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Máx. Beneficiários:</span>
-                  <span className="ml-2 font-medium">{benefit.maxBeneficiaries}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Fornecedor:</span>
@@ -117,25 +115,25 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 <SelectValue placeholder="Selecione um funcionário" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">João Silva</SelectItem>
-                <SelectItem value="2">Maria Santos</SelectItem>
-                <SelectItem value="3">Pedro Oliveira</SelectItem>
-                <SelectItem value="4">Ana Costa</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           {/* Dependentes */}
-          {benefit.maxBeneficiaries > 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center justify-between">
-                  Dependentes
-                  <span className="text-sm text-gray-600">
-                    {dependents.length} de {benefit.maxBeneficiaries - 1} possíveis
-                  </span>
-                </CardTitle>
-              </CardHeader>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                Dependentes
+                <span className="text-sm text-gray-600">
+                  {dependents.length} dependente(s) adicionado(s)
+                </span>
+              </CardTitle>
+            </CardHeader>
               <CardContent className="space-y-4">
                 {/* Lista de Dependentes */}
                 {dependents.map((dependent) => (
@@ -158,8 +156,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 ))}
 
                 {/* Adicionar Novo Dependente */}
-                {dependents.length < benefit.maxBeneficiaries - 1 && (
-                  <div className="border-t pt-4">
+                <div className="border-t pt-4">
                     <h4 className="font-medium mb-3">Adicionar Dependente</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Input
@@ -202,11 +199,9 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                       <Plus className="w-4 h-4 mr-2" />
                       Adicionar Dependente
                     </Button>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
-          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

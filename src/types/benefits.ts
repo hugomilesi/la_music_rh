@@ -7,14 +7,14 @@ export interface Benefit {
   value: number;
   coverage: string[];
   eligibilityRules: EligibilityRule[];
-  provider: string;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Fields that don't exist in DB but are needed for UI compatibility
+  provider: string;
   startDate: string;
   endDate?: string;
   documents: string[];
-  maxBeneficiaries: number;
-  createdAt: string;
-  updatedAt: string;
   // Universal features - now available for all benefits
   performanceGoals?: PerformanceGoal[];
   renewalSettings?: RenewalSettings;
@@ -42,7 +42,7 @@ export interface EmployeeBenefit {
   benefitId: string;
   benefitName: string;
   enrollmentDate: string;
-  status: 'active' | 'pending' | 'cancelled' | 'suspended';
+  // Status is determined by dates: active if no end date or future end date
   dependents: Dependent[];
   documents: BenefitDocument[];
   lastUpdate: string;

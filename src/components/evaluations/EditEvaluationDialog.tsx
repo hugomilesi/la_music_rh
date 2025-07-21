@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,6 +90,9 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
             <Edit className="w-5 h-5" />
             Editar Avaliação - {evaluation.employee}
           </DialogTitle>
+          <DialogDescription>
+            Atualize as informações da avaliação de desempenho.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

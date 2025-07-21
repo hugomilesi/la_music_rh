@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { NPSResponse, NPSSurvey, NPSStats, NPSEvolution, Department } from '@/types/nps';
+import { NPSService } from '@/services/npsService';
 
 interface NPSContextType {
   responses: NPSResponse[];
@@ -8,12 +9,14 @@ interface NPSContextType {
   stats: NPSStats;
   evolution: NPSEvolution[];
   departments: Department[];
-  addResponse: (response: NPSResponse) => void;
-  createSurvey: (survey: Omit<NPSSurvey, 'id'>) => void;
-  updateSurvey: (id: string, survey: Partial<NPSSurvey>) => void;
-  deleteSurvey: (id: string) => void;
+  loading: boolean;
+  addResponse: (response: Omit<NPSResponse, 'id'>) => Promise<void>;
+  createSurvey: (survey: Omit<NPSSurvey, 'id'>) => Promise<void>;
+  updateSurvey: (id: string, survey: Partial<NPSSurvey>) => Promise<void>;
+  deleteSurvey: (id: string) => Promise<void>;
   sendSurveyToWhatsApp: (surveyId: string, phones: string[]) => Promise<void>;
   categorizeResponse: (score: number, surveyType: 'nps' | 'satisfaction') => string;
+  refreshData: () => Promise<void>;
 }
 
 const NPSContext = createContext<NPSContextType | undefined>(undefined);
@@ -31,143 +34,70 @@ interface NPSProviderProps {
 }
 
 export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
-  // Mock departments data
+  const [responses, setResponses] = useState<NPSResponse[]>([]);
+  const [surveys, setSurveys] = useState<NPSSurvey[]>([]);
+  const [stats, setStats] = useState<NPSStats>({
+    currentScore: 0,
+    previousScore: 0,
+    promoters: 0,
+    neutrals: 0,
+    detractors: 0,
+    totalResponses: 0,
+    responseRate: 0,
+    satisfied: 0,
+    neutralSatisfaction: 0,
+    dissatisfied: 0
+  });
+  const [evolution, setEvolution] = useState<NPSEvolution[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Departments baseados nos dados reais do banco
   const [departments] = useState<Department[]>([
-    { id: 'rh', name: 'Recursos Humanos', employeeCount: 8 },
-    { id: 'vendas', name: 'Vendas', employeeCount: 15 },
-    { id: 'marketing', name: 'Marketing', employeeCount: 6 },
-    { id: 'ti', name: 'Tecnologia da Informação', employeeCount: 12 },
-    { id: 'financeiro', name: 'Financeiro', employeeCount: 5 },
-    { id: 'producao', name: 'Produção', employeeCount: 25 }
+    { id: 'RH', name: 'Recursos Humanos', employeeCount: 1 },
+    { id: 'Vendas', name: 'Vendas', employeeCount: 2 },
+    { id: 'Marketing', name: 'Marketing', employeeCount: 1 },
+    { id: 'TI', name: 'Tecnologia da Informação', employeeCount: 2 },
+    { id: 'Financeiro', name: 'Financeiro', employeeCount: 1 },
+    { id: 'Estrategico', name: 'Estratégico', employeeCount: 1 }
   ]);
 
-  // Mock data inicial expandido
-  const [responses] = useState<NPSResponse[]>([
-    {
-      id: '1',
-      employeeId: 'emp1',
-      employeeName: 'Maria Silva',
-      score: 9,
-      comment: 'Ambiente muito positivo, me sinto valorizada na equipe.',
-      date: '2024-03-15',
-      surveyId: 'survey1',
-      category: 'promotor',
-      department: 'rh'
-    },
-    {
-      id: '2',
-      employeeId: 'emp2',
-      employeeName: 'João Santos',
-      score: 7,
-      comment: 'Gostaria de mais oportunidades de crescimento profissional.',
-      date: '2024-03-14',
-      surveyId: 'survey1',
-      category: 'neutro',
-      department: 'vendas'
-    },
-    {
-      id: '3',
-      employeeId: 'emp3',
-      employeeName: 'Ana Costa',
-      score: 10,
-      comment: 'Excelente liderança e comunicação clara dos objetivos.',
-      date: '2024-03-13',
-      surveyId: 'survey1',
-      category: 'promotor',
-      department: 'marketing'
-    },
-    {
-      id: '4',
-      employeeId: 'emp4',
-      employeeName: 'Carlos Oliveira',
-      score: 4,
-      comment: 'Muito satisfeito com o ambiente de trabalho e benefícios.',
-      date: '2024-03-12',
-      surveyId: 'survey2',
-      category: 'satisfeito',
-      department: 'ti'
-    },
-    {
-      id: '5',
-      employeeId: 'emp5',
-      employeeName: 'Fernanda Lima',
-      score: 2,
-      comment: 'Precisa melhorar a comunicação entre as equipes.',
-      date: '2024-03-11',
-      surveyId: 'survey2',
-      category: 'insatisfeito',
-      department: 'financeiro'
+  // Carregar dados do Supabase na inicialização
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      await refreshData();
+    } catch (error) {
+      console.error('Erro ao carregar dados iniciais:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const [surveys, setSurveys] = useState<NPSSurvey[]>([
-    {
-      id: 'survey1',
-      title: 'Pesquisa de Clima Organizacional - Março 2024',
-      description: 'Avaliação mensal do ambiente de trabalho',
-      questions: [
-        {
-          id: 'q1',
-          type: 'nps',
-          question: 'Em uma escala de 0 a 10, o quanto você recomendaria nossa empresa como um lugar para trabalhar?',
-          required: true
-        },
-        {
-          id: 'q2',
-          type: 'text',
-          question: 'O que podemos melhorar para tornar seu ambiente de trabalho ainda melhor?',
-          required: false
-        }
-      ],
-      status: 'active',
-      startDate: '2024-03-01',
-      endDate: '2024-03-31',
-      responses: [],
-      targetEmployees: ['emp1', 'emp2', 'emp3'],
-      targetDepartments: ['rh', 'vendas', 'marketing'],
-      surveyType: 'nps'
-    },
-    {
-      id: 'survey2',
-      title: 'Pesquisa de Satisfação - Março 2024',
-      description: 'Avaliação de satisfação geral dos colaboradores',
-      questions: [
-        {
-          id: 'q1',
-          type: 'satisfaction',
-          question: 'Em uma escala de 0 a 5, qual seu nível de satisfação com a empresa?',
-          required: true
-        }
-      ],
-      status: 'active',
-      startDate: '2024-03-01',
-      endDate: '2024-03-31',
-      responses: [],
-      targetEmployees: ['emp4', 'emp5'],
-      targetDepartments: ['ti', 'financeiro'],
-      surveyType: 'satisfaction'
-    }
-  ]);
-
-  const stats: NPSStats = {
-    currentScore: 65,
-    previousScore: 58,
-    promoters: 78,
-    neutrals: 13,
-    detractors: 9,
-    totalResponses: 23,
-    responseRate: 85,
-    // Estatísticas para pesquisas de satisfação
-    satisfied: 80,
-    neutralSatisfaction: 15,
-    dissatisfied: 5
   };
 
-  const evolution: NPSEvolution[] = [
-    { date: '2024-01', score: 45, responses: 18 },
-    { date: '2024-02', score: 58, responses: 22 },
-    { date: '2024-03', score: 65, responses: 23 }
-  ];
+  const refreshData = async () => {
+    try {
+      const [surveysData, responsesData, statsData, evolutionData] = await Promise.all([
+        NPSService.getSurveys(),
+        NPSService.getResponses(),
+        NPSService.calculateNPSStats(),
+        NPSService.getNPSEvolution()
+      ]);
+
+      setSurveys(surveysData);
+      setResponses(responsesData);
+      setStats(statsData);
+      setEvolution(evolutionData);
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+    }
+  };
+
+
+
+
 
   const categorizeResponse = (score: number, surveyType: 'nps' | 'satisfaction'): string => {
     if (surveyType === 'nps') {
@@ -182,34 +112,73 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     }
   };
 
-  const addResponse = (response: NPSResponse) => {
-    console.log('Nova resposta adicionada:', response);
+  const addResponse = async (response: Omit<NPSResponse, 'id'>) => {
+    try {
+      const newResponse = await NPSService.addResponse(response);
+      if (newResponse) {
+        setResponses(prev => [newResponse, ...prev]);
+        // Recalcular estatísticas
+        const newStats = await NPSService.calculateNPSStats();
+        setStats(newStats);
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar resposta:', error);
+      throw error;
+    }
   };
 
-  const createSurvey = (survey: Omit<NPSSurvey, 'id'>) => {
-    const newSurvey: NPSSurvey = {
-      ...survey,
-      id: Date.now().toString()
-    };
-    setSurveys(prev => [...prev, newSurvey]);
-    console.log('Nova pesquisa criada:', newSurvey);
+  const createSurvey = async (survey: Omit<NPSSurvey, 'id'>) => {
+    try {
+      const newSurvey = await NPSService.createSurvey(survey);
+      if (newSurvey) {
+        setSurveys(prev => [newSurvey, ...prev]);
+      }
+    } catch (error) {
+      console.error('Erro ao criar pesquisa:', error);
+      throw error;
+    }
   };
 
-  const updateSurvey = (id: string, updatedSurvey: Partial<NPSSurvey>) => {
-    setSurveys(prev => prev.map(survey => 
-      survey.id === id ? { ...survey, ...updatedSurvey } : survey
-    ));
-    console.log('Pesquisa atualizada:', id, updatedSurvey);
+  const updateSurvey = async (id: string, updatedSurvey: Partial<NPSSurvey>) => {
+    try {
+      const updated = await NPSService.updateSurvey(id, updatedSurvey);
+      if (updated) {
+        setSurveys(prev => prev.map(survey => 
+          survey.id === id ? updated : survey
+        ));
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar pesquisa:', error);
+      throw error;
+    }
   };
 
-  const deleteSurvey = (id: string) => {
-    setSurveys(prev => prev.filter(survey => survey.id !== id));
-    console.log('Pesquisa deletada:', id);
+  const deleteSurvey = async (id: string) => {
+    try {
+      const success = await NPSService.deleteSurvey(id);
+      if (success) {
+        setSurveys(prev => prev.filter(survey => survey.id !== id));
+        // Remover respostas relacionadas
+        setResponses(prev => prev.filter(response => response.surveyId !== id));
+        // Recalcular estatísticas
+        const newStats = await NPSService.calculateNPSStats();
+        setStats(newStats);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar pesquisa:', error);
+      throw error;
+    }
   };
 
   const sendSurveyToWhatsApp = async (surveyId: string, phones: string[]) => {
-    console.log('Enviando pesquisa via WhatsApp:', { surveyId, phones });
-    return Promise.resolve();
+    try {
+      // TODO: Implementar integração real com WhatsApp
+      console.log('Enviando pesquisa via WhatsApp:', { surveyId, phones });
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Erro ao enviar pesquisa via WhatsApp:', error);
+      throw error;
+    }
   };
 
   return (
@@ -219,12 +188,14 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       stats,
       evolution,
       departments,
+      loading,
       addResponse,
       createSurvey,
       updateSurvey,
       deleteSurvey,
       sendSurveyToWhatsApp,
-      categorizeResponse
+      categorizeResponse,
+      refreshData
     }}>
       {children}
     </NPSContext.Provider>

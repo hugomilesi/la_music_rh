@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -23,18 +22,20 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
-      'leve': 'bg-yellow-100 text-yellow-800',
-      'moderado': 'bg-orange-100 text-orange-800',
-      'grave': 'bg-red-100 text-red-800'
+      'baixa': 'bg-yellow-100 text-yellow-800',
+      'media': 'bg-orange-100 text-orange-800',
+      'alta': 'bg-red-100 text-red-800',
+      'critica': 'bg-red-200 text-red-900'
     };
     return variants[severity as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      'ativo': 'bg-red-100 text-red-800',
+      'aberto': 'bg-red-100 text-red-800',
+      'em_andamento': 'bg-blue-100 text-blue-800',
       'resolvido': 'bg-green-100 text-green-800',
-      'arquivado': 'bg-gray-100 text-gray-800'
+      'cancelado': 'bg-gray-100 text-gray-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };

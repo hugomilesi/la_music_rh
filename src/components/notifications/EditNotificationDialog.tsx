@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,11 +23,11 @@ export const EditNotificationDialog: React.FC<EditNotificationDialogProps> = ({
   open, 
   onOpenChange 
 }) => {
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [type, setType] = useState('');
-  const [channel, setChannel] = useState('');
-  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [title, setTitle] = useState(notification?.title || '');
+  const [message, setMessage] = useState(notification?.message || '');
+  const [type, setType] = useState(notification?.type || '');
+  const [channel, setChannel] = useState(notification?.channel || '');
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>(notification?.recipients || []);
 
   const { recipients, updateNotification } = useNotifications();
   const { toast } = useToast();
@@ -35,11 +35,11 @@ export const EditNotificationDialog: React.FC<EditNotificationDialogProps> = ({
   // Pre-populate form when notification changes
   useEffect(() => {
     if (notification) {
-      setTitle(notification.title);
-      setMessage(notification.message);
-      setType(notification.type);
-      setChannel(notification.channel);
-      setSelectedRecipients(notification.recipients);
+      setTitle(notification.title || '');
+      setMessage(notification.message || '');
+      setType(notification.type || '');
+      setChannel(notification.channel || '');
+      setSelectedRecipients(notification.recipients || []);
     }
   }, [notification]);
 
@@ -112,6 +112,9 @@ export const EditNotificationDialog: React.FC<EditNotificationDialogProps> = ({
             <Edit className="w-5 h-5" />
             Editar Notificação
           </DialogTitle>
+          <DialogDescription>
+            Edite os detalhes da notificação, incluindo título, mensagem, tipo e destinatários.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

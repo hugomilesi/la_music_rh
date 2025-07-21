@@ -3,6 +3,7 @@ import { Users, TrendingUp, Calendar, AlertTriangle, Award, Clock } from 'lucide
 import { StatCard } from './StatCard';
 import { BirthdayCard } from './BirthdayCard';
 import { AlertCard } from './AlertCard';
+import { VacationAlerts } from '../vacation/VacationAlerts';
 import { KPIModal } from './KPIModal';
 
 export const Dashboard: React.FC = () => {
@@ -111,9 +112,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Interactive Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <BirthdayCard />
         <AlertCard />
+        <VacationAlerts />
       </div>
 
       {/* KPI Modal */}

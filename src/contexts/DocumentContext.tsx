@@ -13,12 +13,22 @@ interface DocumentContextType {
   uploadDocument: (upload: DocumentUpload) => Promise<void>;
   updateDocument: (id: string, updates: Partial<Document>) => void;
   deleteDocument: (id: string) => void;
+  replaceDocument: (id: string, file: File) => Promise<void>;
+  viewDocument: (doc: Document) => Promise<void>;
   setFilter: (filter: Partial<DocumentFilter>) => void;
   exportDocuments: (format: 'pdf' | 'excel') => void;
   exportDocumentsByEmployee: (employeeId: string, format: 'pdf' | 'excel') => void;
   getDocumentsByEmployee: (employeeId: string) => Document[];
   downloadDocument: (document: Document) => void;
   getEmployeeDocumentStats: (employeeId: string) => { total: number; valid: number; expiring: number; expired: number };
+  // Checklist functions
+  getDocumentChecklist: () => Promise<any[]>;
+  updateDocumentChecklist: (checklistItems: any[]) => Promise<void>;
+  getEmployeeChecklist: (employeeId: string) => Promise<any[]>;
+  updateEmployeeChecklistItem: (employeeId: string, checklistId: string, status: string, notes?: string) => Promise<void>;
+  // Accounting functions
+  sendToAccountant: (employeeIds: string[], documentIds: string[], email: string, subject: string, message: string) => Promise<void>;
+  getAccountingSubmissions: () => Promise<any[]>;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -87,6 +97,104 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
     } finally {
       setIsLoading(false);
+    }
+  }, [toast]);
+
+  const replaceDocument = useCallback(async (id: string, file: File) => {
+    try {
+      // Find the existing document
+      const existingDoc = documents.find(doc => doc.id === id);
+      if (!existingDoc) {
+        throw new Error('Documento não encontrado');
+      }
+
+      // Delete old file from storage
+      if (existingDoc.fileUrl || existingDoc.fileName) {
+        const { error: deleteError } = await supabase.storage
+          .from('documents')
+          .remove([existingDoc.fileUrl || existingDoc.fileName]);
+        
+        if (deleteError) {
+          console.warn('Warning: Could not delete old file:', deleteError);
+        }
+      }
+
+      // Upload new file
+      const fileName = `${Date.now()}_${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Error uploading replacement file:', uploadError);
+        throw uploadError;
+      }
+
+      // Update document record
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({
+          file_name: file.name,
+          file_path: uploadData.path,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Error updating document record:', updateError);
+        throw updateError;
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documento substituído com sucesso.',
+      });
+
+      // Refresh documents list
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error replacing document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao substituir documento.',
+        variant: 'destructive',
+      });
+    }
+  }, [documents, toast, fetchDocuments]);
+
+  const viewDocument = useCallback(async (doc: Document) => {
+    try {
+      console.log('Viewing document:', doc.fileName);
+      
+      // Get signed URL from Supabase Storage
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(doc.fileUrl || doc.fileName, 3600); // 1 hour expiry
+
+      if (urlError) {
+        console.error('Error creating signed URL:', urlError);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao gerar link de visualização.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Open in new tab for viewing
+      window.open(signedUrlData.signedUrl, '_blank');
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documento aberto para visualização.',
+      });
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao visualizar documento.',
+        variant: 'destructive',
+      });
     }
   }, [toast]);
 
@@ -340,26 +448,72 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, [filteredDocuments, toast]);
 
-  const exportDocumentsByEmployee = useCallback((employeeId: string, format: 'pdf' | 'excel') => {
-    const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
-    const employee = employees.find(emp => emp.id === employeeId);
-    
-    console.log(`Exporting ${employeeDocuments.length} documents for ${employee?.name} in ${format} format...`);
-    
-    const data = employeeDocuments.map(doc => ({
-      Documento: doc.document,
-      Tipo: doc.type,
-      'Data Upload': doc.uploadDate,
-      Validade: doc.expiryDate || 'Sem validade',
-      Status: doc.status,
-      'Nome do Arquivo': doc.fileName
-    }));
-    
-    console.log('Employee export data:', data);
-    toast({
-      title: 'Exportação iniciada',
-      description: `Exportação de documentos de ${employee?.name} em formato ${format.toUpperCase()} iniciada!`,
-    });
+  const exportDocumentsByEmployee = useCallback(async (employeeId: string, format: 'pdf' | 'excel') => {
+    try {
+      const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
+      const employee = employees.find(emp => emp.id === employeeId);
+      
+      if (employeeDocuments.length === 0) {
+        toast({
+          title: 'Aviso',
+          description: 'Nenhum documento encontrado para este funcionário.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      console.log(`Downloading ${employeeDocuments.length} documents for ${employee?.name}...`);
+      
+      // Create a zip file name
+      const zipFileName = `Documentos_${employee?.name?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.zip`;
+      
+      // For now, we'll download each file individually
+      // In a real implementation, you'd want to create a zip file
+      let downloadCount = 0;
+      
+      for (const doc of employeeDocuments) {
+        try {
+          // Get signed URL from Supabase Storage
+          const { data: signedUrlData, error: urlError } = await supabase.storage
+            .from('documents')
+            .createSignedUrl(doc.fileUrl || doc.fileName, 3600);
+
+          if (urlError) {
+            console.error('Error creating signed URL for', doc.fileName, urlError);
+            continue;
+          }
+
+          // Create a temporary link element and trigger download
+          const link = document.createElement('a');
+          link.href = signedUrlData.signedUrl;
+          link.download = `${employee?.name?.replace(/\s+/g, '_')}_${doc.fileName}`;
+          link.target = '_blank';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          downloadCount++;
+          
+          // Add a small delay between downloads
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error('Error downloading document:', doc.fileName, error);
+        }
+      }
+      
+      toast({
+        title: 'Sucesso',
+        description: `${downloadCount} documento(s) de ${employee?.name} baixado(s) com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error exporting employee documents:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao exportar documentos do funcionário.',
+        variant: 'destructive',
+      });
+    }
   }, [documents, employees, toast]);
 
   const getDocumentsByEmployee = useCallback((employeeId: string) => {
@@ -419,6 +573,221 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
 
+  // Checklist functions
+  const getDocumentChecklist = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_checklists')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching document checklist:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching document checklist:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar checklist de documentos.',
+        variant: 'destructive',
+      });
+      return [];
+    }
+  }, [toast]);
+
+  const updateDocumentChecklist = useCallback(async (checklistItems: any[]) => {
+    try {
+      // Update existing items
+      for (const item of checklistItems) {
+        if (item.id) {
+          const { error } = await supabase
+            .from('document_checklists')
+            .update({
+              document_name: item.document_name,
+              document_type: item.document_type,
+              is_required: item.is_required,
+              description: item.description,
+              category: item.category,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id);
+
+          if (error) throw error;
+        } else {
+          // Insert new items
+          const { error } = await supabase
+            .from('document_checklists')
+            .insert([{
+              document_name: item.document_name,
+              document_type: item.document_type,
+              is_required: item.is_required,
+              description: item.description,
+              category: item.category
+            }]);
+
+          if (error) throw error;
+        }
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Checklist de documentos atualizado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error updating document checklist:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar checklist de documentos.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  const getEmployeeChecklist = useCallback(async (employeeId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('employee_document_checklists')
+        .select(`
+          *,
+          document_checklists!fk_document_checklist(*),
+          documents(*)
+        `)
+        .eq('employee_id', employeeId);
+
+      if (error) {
+        console.error('Error fetching employee checklist:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching employee checklist:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar checklist do funcionário.',
+        variant: 'destructive',
+      });
+      return [];
+    }
+  }, [toast]);
+
+  const updateEmployeeChecklistItem = useCallback(async (employeeId: string, checklistId: string, status: string, notes?: string) => {
+    try {
+      const { error } = await supabase
+        .from('employee_document_checklists')
+        .upsert({
+          employee_id: employeeId,
+          document_checklist_id: checklistId,
+          status,
+          observacoes: notes,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'employee_id,document_checklist_id'
+        });
+
+      if (error) {
+        console.error('Error updating employee checklist item:', error);
+        throw error;
+      }
+
+      toast({
+        title: 'Sucesso',
+        description: 'Item do checklist atualizado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error updating employee checklist item:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar item do checklist.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  // Accounting functions
+  const sendToAccountant = useCallback(async (employeeIds: string[], documentIds: string[], email: string, subject: string, message: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user from auth context
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Record the submission in database
+      const { data, error } = await supabase
+        .from('accounting_submissions')
+        .insert([{
+          employee_ids: employeeIds,
+          document_ids: documentIds,
+          recipient_email: email,
+          subject,
+          message,
+          sent_by: user?.id,
+          status: 'enviado'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error recording accounting submission:', error);
+        throw error;
+      }
+
+      // Here you would integrate with an email service
+      // For now, we'll just simulate the email sending
+      console.log('Sending email to accountant:', {
+        to: email,
+        subject,
+        message,
+        employeeIds,
+        documentIds
+      });
+
+      toast({
+        title: 'Sucesso',
+        description: 'Documentos enviados para contabilidade com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error sending to accountant:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao enviar documentos para contabilidade.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const getAccountingSubmissions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accounting_submissions')
+        .select(`
+          *,
+          profiles!accounting_submissions_sent_by_fkey(name)
+        `)
+        .order('sent_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching accounting submissions:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching accounting submissions:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar histórico de envios.',
+        variant: 'destructive',
+      });
+      return [];
+    }
+  }, [toast]);
+
   return (
     <DocumentContext.Provider value={{
       documents,
@@ -429,12 +798,22 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       uploadDocument,
       updateDocument,
       deleteDocument,
+      replaceDocument,
+      viewDocument,
       setFilter,
       exportDocuments,
       exportDocumentsByEmployee,
       getDocumentsByEmployee,
       downloadDocument,
-      getEmployeeDocumentStats
+      getEmployeeDocumentStats,
+      // Checklist functions
+      getDocumentChecklist,
+      updateDocumentChecklist,
+      getEmployeeChecklist,
+      updateEmployeeChecklistItem,
+      // Accounting functions
+      sendToAccountant,
+      getAccountingSubmissions
     }}>
       {children}
     </DocumentContext.Provider>

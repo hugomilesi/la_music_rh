@@ -122,9 +122,7 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const deleteEmployee = async (id: string) => {
     try {
-      console.log('Deleting employee:', id);
       await employeeService.deleteEmployee(id);
-      console.log('Employee deleted:', id);
       setEmployees(prev => prev.filter(emp => emp.id !== id));
       toast({
         title: "Sucesso",

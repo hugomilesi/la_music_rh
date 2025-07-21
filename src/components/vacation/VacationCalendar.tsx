@@ -16,7 +16,7 @@ export const VacationCalendar: React.FC = () => {
 
   const getVacationsForDate = (date: Date) => {
     return vacationRequests.filter(request => {
-      if (request.status !== 'approved') return false;
+      if (request.status !== 'aprovado') return false;
       const startDate = new Date(request.startDate);
       const endDate = new Date(request.endDate);
       return date >= startDate && date <= endDate;

@@ -5,21 +5,18 @@ export const createUserSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
+  position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),
   phone: z.string().optional(),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string(),
   permissions: z.array(z.string()).default([]),
   status: z.enum(['active', 'inactive']).default('active')
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não coincidem",
-  path: ["confirmPassword"],
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
+  position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),
   phone: z.string().optional(),
   permissions: z.array(z.string()).default([]),

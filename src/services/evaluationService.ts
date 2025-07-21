@@ -19,25 +19,44 @@ export const evaluationService = {
     }
     
     // Transform the data to match the frontend interface
-    return data?.map(evaluation => ({
-      ...evaluation,
-      employeeId: evaluation.employee_id,
-      employee: evaluation.employee?.name || 'Unknown',
-      role: evaluation.employee?.position || 'Unknown',
-      unit: evaluation.employee?.units?.[0] || 'campo-grande',
-      evaluator: evaluation.evaluator?.name,
-      type: this.mapEvaluationType(evaluation.type),
-      status: this.mapEvaluationStatus(evaluation.status),
-      topics: evaluation.topics || []
-    })) || [];
+    return data?.map(evaluation => {
+      // Parse units from JSON string if it exists
+      let units = [];
+      if (evaluation.employee?.units) {
+        try {
+          units = typeof evaluation.employee.units === 'string' 
+            ? JSON.parse(evaluation.employee.units) 
+            : evaluation.employee.units;
+        } catch (e) {
+          console.warn('Error parsing units:', e);
+          units = [];
+        }
+      }
+      
+      return {
+        ...evaluation,
+        employeeId: evaluation.employee_id,
+        employee: evaluation.employee?.name || 'Unknown',
+        role: evaluation.employee?.position || 'Unknown',
+        unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
+        evaluator: evaluation.evaluator?.name,
+        type: this.mapEvaluationType(evaluation.type),
+        status: this.mapEvaluationStatus(evaluation.status),
+        score: evaluation.score || 0, // Ensure score is always a number
+        topics: evaluation.topics || []
+      };
+    }) || [];
   },
 
   async createEvaluation(evaluationData: NewEvaluationData): Promise<Evaluation> {
     const dbData = {
       employee_id: evaluationData.employeeId,
-      evaluator_id: evaluationData.evaluatorId,
+      evaluator_id: evaluationData.evaluatorId || evaluationData.employeeId, // Use employee as evaluator if no evaluator provided
+      date: new Date().toISOString().split('T')[0], // Set current date as required field
       type: this.mapEvaluationTypeToDb(evaluationData.type),
+      status: 'pendente', // Set default status as required field
       period: evaluationData.period,
+      unit: evaluationData.unit,
       comments: evaluationData.comments,
       meeting_date: evaluationData.meetingDate,
       meeting_time: evaluationData.meetingTime,
@@ -62,23 +81,71 @@ export const evaluationService = {
       throw error;
     }
     
+    // Parse units from JSON string if it exists
+    let units = [];
+    if (data.employee?.units) {
+      try {
+        units = typeof data.employee.units === 'string' 
+          ? JSON.parse(data.employee.units) 
+          : data.employee.units;
+      } catch (e) {
+        console.warn('Error parsing units:', e);
+        units = [];
+      }
+    }
+    
     return {
       ...data,
       employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
-      unit: data.employee?.units?.[0] || 'campo-grande',
+      unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
       evaluator: data.evaluator?.name,
       type: this.mapEvaluationType(data.type),
       status: this.mapEvaluationStatus(data.status),
+      score: data.score || 0, // Ensure score is always a number
       topics: data.topics || []
     };
   },
 
   async updateEvaluation(id: string, updates: Partial<Evaluation>): Promise<Evaluation> {
+    // Map camelCase frontend fields to snake_case database fields
+  const dbUpdates: any = {};
+  
+  // Map specific camelCase fields to snake_case
+  const fieldMapping: Record<string, string> = {
+    followUpActions: 'follow_up_actions',
+    meetingDate: 'meeting_date',
+    meetingTime: 'meeting_time'
+  };
+  
+  Object.keys(updates).forEach((key: string) => {
+    const value = (updates as any)[key];
+    
+    // Skip empty string values for date and time fields to avoid database errors
+    if ((key === 'meetingDate' || key === 'meetingTime') && value === '') {
+      return;
+    }
+    
+    if (key === 'status') {
+      dbUpdates.status = this.mapEvaluationStatusToDb(updates.status!);
+    } else if (fieldMapping[key]) {
+      // Only add non-empty values for mapped fields
+      if (value !== '' && value !== null && value !== undefined) {
+        dbUpdates[fieldMapping[key]] = value;
+      }
+    } else {
+      // Fields that don't need mapping (score, location, topics, confidential, etc.)
+      // Only add non-empty values
+      if (value !== '' && value !== null && value !== undefined) {
+        dbUpdates[key] = value;
+      }
+    }
+  });
+    
     const { data, error } = await supabase
       .from('evaluations')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
       .select(`
         *,
@@ -92,15 +159,29 @@ export const evaluationService = {
       throw error;
     }
     
+    // Parse units from JSON string if it exists
+    let units = [];
+    if (data.employee?.units) {
+      try {
+        units = typeof data.employee.units === 'string' 
+          ? JSON.parse(data.employee.units) 
+          : data.employee.units;
+      } catch (e) {
+        console.warn('Error parsing units:', e);
+        units = [];
+      }
+    }
+    
     return {
       ...data,
       employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
-      unit: data.employee?.units?.[0] || 'campo-grande',
+      unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
       evaluator: data.evaluator?.name,
       type: this.mapEvaluationType(data.type),
       status: this.mapEvaluationStatus(data.status),
+      score: data.score || 0, // Ensure score is always a number
       topics: data.topics || []
     };
   },
@@ -145,5 +226,14 @@ export const evaluationService = {
       'concluida': 'Concluída'
     };
     return statusMap[dbStatus] || 'Pendente';
+  },
+
+  mapEvaluationStatusToDb(frontendStatus: Evaluation['status']): string {
+    const statusMap: Record<Evaluation['status'], string> = {
+      'Pendente': 'pendente',
+      'Em Andamento': 'em_andamento',
+      'Concluída': 'concluida'
+    };
+    return statusMap[frontendStatus] || 'pendente';
   }
 };

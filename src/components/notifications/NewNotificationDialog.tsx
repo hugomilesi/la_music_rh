@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -102,6 +102,9 @@ export const NewNotificationDialog: React.FC<NewNotificationDialogProps> = ({ ch
             <Plus className="w-5 h-5" />
             Nova Notificação
           </DialogTitle>
+          <DialogDescription>
+            Crie uma nova notificação para enviar aos funcionários via WhatsApp ou e-mail.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

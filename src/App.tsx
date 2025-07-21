@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
@@ -10,7 +11,7 @@ import { GlobalContextProvider } from './contexts/GlobalContextProvider';
 import Index from './pages/Index';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
-import EmployeesPage from './pages/EmployeesPage';
+
 import DocumentsPage from './pages/DocumentsPage';
 import EvaluationsPage from './pages/EvaluationsPage';
 import VacationPage from './pages/VacationPage';
@@ -18,7 +19,7 @@ import SchedulePage from './pages/SchedulePage';
 import TimesheetPage from './pages/TimesheetPage';
 import NPSPage from './pages/NPSPage';
 import RecognitionPage from './pages/RecognitionPage';
-import IncidentsPage from './pages/IncidentsPage';
+import IncidentsPage from './pages/incidents';
 import BenefitsPage from './pages/BenefitsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -49,8 +50,9 @@ const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <HelmetProvider>
+      <Router>
+        <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -75,11 +77,7 @@ function App() {
             </ProtectedPageWrapper>
           } />
           
-          <Route path="/colaboradores" element={
-            <ProtectedPageWrapper>
-              <EmployeesPage />
-            </ProtectedPageWrapper>
-          } />
+
           
           <Route path="/documentos" element={
             <ProtectedPageWrapper>
@@ -155,8 +153,9 @@ function App() {
           
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
-    </Router>
+        </AuthProvider>
+      </Router>
+    </HelmetProvider>
   );
 }
 

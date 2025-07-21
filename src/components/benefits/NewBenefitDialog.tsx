@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Upload, FileText } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { BenefitType, EligibilityRule } from '@/types/benefits';
 
@@ -27,26 +27,30 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
     typeId: '',
     description: '',
     value: '',
-    provider: '',
-    maxBeneficiaries: '1',
-    isActive: true,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    provider: '',
+    supplier: '',
+    isActive: true
   });
   const [coverage, setCoverage] = useState<string[]>([]);
   const [newCoverage, setNewCoverage] = useState('');
   const [eligibilityRules, setEligibilityRules] = useState<EligibilityRule[]>([]);
+  const [documents, setDocuments] = useState<File[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.typeId || !formData.description || !formData.value || !formData.provider) {
+    if (!formData.name || !formData.typeId || !formData.description || !formData.value || !formData.startDate) {
       alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
     const selectedType = benefitTypes.find(type => type.id === formData.typeId);
-    if (!selectedType) return;
+    if (!selectedType) {
+      alert('Tipo de benefício não encontrado. Por favor, selecione um tipo válido.');
+      return;
+    }
 
     addBenefit({
       name: formData.name,
@@ -55,12 +59,11 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
       value: parseFloat(formData.value),
       coverage,
       eligibilityRules,
-      provider: formData.provider,
+      provider: formData.supplier,
       isActive: formData.isActive,
       startDate: formData.startDate,
-      endDate: formData.endDate || undefined,
-      documents: [],
-      maxBeneficiaries: parseInt(formData.maxBeneficiaries)
+      endDate: formData.endDate,
+      documents: documents.map(file => ({ name: file.name, url: '', type: file.type }))
     });
 
     // Reset form
@@ -69,14 +72,15 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
       typeId: '',
       description: '',
       value: '',
-      provider: '',
-      maxBeneficiaries: '1',
-      isActive: true,
       startDate: '',
-      endDate: ''
+      endDate: '',
+      provider: '',
+      supplier: '',
+      isActive: true
     });
     setCoverage([]);
     setEligibilityRules([]);
+    setDocuments([]);
     onOpenChange(false);
   };
 
@@ -89,6 +93,15 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
 
   const removeCoverage = (item: string) => {
     setCoverage(coverage.filter(c => c !== item));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setDocuments(prev => [...prev, ...files]);
+  };
+
+  const removeDocument = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -141,37 +154,48 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="value">Valor (R$)</Label>
+            <Input
+              id="value"
+              type="number"
+              step="0.01"
+              value={formData.value}
+              onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="supplier">Fornecedor</Label>
+            <Input
+              id="supplier"
+              value={formData.supplier}
+              onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+              placeholder="Ex: Unimed, Santander, etc."
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="value">Valor (R$) *</Label>
+              <Label htmlFor="startDate">Data de Início *</Label>
               <Input
-                id="value"
-                type="number"
-                step="0.01"
-                value={formData.value}
-                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                placeholder="0.00"
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="provider">Fornecedor *</Label>
+              <Label htmlFor="endDate">Data de Fim</Label>
               <Input
-                id="provider"
-                value={formData.provider}
-                onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                placeholder="Ex: Unimed, Alelo"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="maxBeneficiaries">Máx. Beneficiários</Label>
-              <Input
-                id="maxBeneficiaries"
-                type="number"
-                min="1"
-                value={formData.maxBeneficiaries}
-                onChange={(e) => setFormData({ ...formData, maxBeneficiaries: e.target.value })}
+                id="endDate"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                min={formData.startDate}
               />
             </div>
           </div>
@@ -202,26 +226,54 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Data de Início</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              />
+          <div className="space-y-2">
+            <Label>Documentos (Opcional)</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <div className="text-center">
+                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 mb-2">Clique para fazer upload ou arraste arquivos aqui</p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="document-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('document-upload')?.click()}
+                >
+                  Selecionar Arquivos
+                </Button>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Data de Fim (opcional)</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              />
-            </div>
+            {documents.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Arquivos selecionados:</p>
+                <div className="space-y-1">
+                  {documents.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{file.name}</span>
+                        <span className="text-xs text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDocument(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">

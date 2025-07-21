@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee } from 'lucide-react';
+import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee, Trash2 } from 'lucide-react';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
 import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
@@ -13,21 +13,24 @@ import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectio
 import { InteractiveStatsCards } from '@/components/evaluations/InteractiveStatsCards';
 import { CoffeeConnectionScheduleIntegration } from '@/components/evaluations/CoffeeConnectionScheduleIntegration';
 import { EditEvaluationDialog } from '@/components/evaluations/EditEvaluationDialog';
+import ViewEvaluationDialog from '@/components/evaluation/ViewEvaluationDialog';
 import { Evaluation } from '@/types/evaluation';
 
 const EvaluationsPage: React.FC = () => {
   console.log('EvaluationsPage: Component rendering...');
   
-  const { evaluations } = useEvaluations();
+  const { evaluations, deleteEvaluation } = useEvaluations();
   console.log('EvaluationsPage: Retrieved evaluations:', evaluations);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUnit, setSelectedUnit] = useState('all');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState('');
   const [isNewEvaluationDialogOpen, setIsNewEvaluationDialogOpen] = useState(false);
   const [isCoffeeConnectionDialogOpen, setIsCoffeeConnectionDialogOpen] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
+  const [viewingEvaluation, setViewingEvaluation] = useState<Evaluation | null>(null);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -51,7 +54,44 @@ const EvaluationsPage: React.FC = () => {
     return 'text-red-600';
   };
 
-  console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length);
+  const handleDeleteEvaluation = async (evaluation: Evaluation) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja remover a avaliação de ${evaluation.employee}?\n\nEsta ação não pode ser desfeita.`
+    );
+    
+    if (confirmed) {
+      try {
+        await deleteEvaluation(evaluation.id);
+      } catch (error) {
+        console.error('Erro ao deletar avaliação:', error);
+        alert('Erro ao remover a avaliação. Tente novamente.');
+      }
+    }
+  };
+
+  // Filter evaluations based on search and filter criteria
+  const filteredEvaluations = evaluations.filter((evaluation) => {
+    // Search filter
+    const matchesSearch = evaluation.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         evaluation.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         evaluation.period.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Unit filter
+    const matchesUnit = !selectedUnit || evaluation.unit === selectedUnit;
+    
+    // Type filter
+    const matchesType = !selectedType || evaluation.type === selectedType;
+    
+    // Status filter
+    const matchesStatus = !selectedStatus || evaluation.status === selectedStatus;
+    
+    // Employee filter
+    const matchesEmployee = !selectedEmployee || evaluation.employee === selectedEmployee;
+    
+    return matchesSearch && matchesUnit && matchesType && matchesStatus && matchesEmployee;
+  });
+
+  console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length, 'filtered:', filteredEvaluations.length);
 
   return (
     <div className="space-y-6">
@@ -102,13 +142,26 @@ const EvaluationsPage: React.FC = () => {
             <div className="flex gap-2">
               <select 
                 className="px-3 py-2 border border-gray-200 rounded-md text-sm"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                <option value="">Todos os Colaboradores</option>
+                {Array.from(new Set(evaluations.map(e => e.employee))).map((employee) => (
+                  <option key={employee} value={employee}>
+                    {employee}
+                  </option>
+                ))}
+              </select>
+
+              <select 
+                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value)}
               >
-                <option value="all">Todas as Unidades</option>
-                <option value="centro">Centro</option>
-                <option value="zona-sul">Zona Sul</option>
-                <option value="norte">Norte</option>
+                <option value="">Todas as Unidades</option>
+                <option value="Campo Grande">Campo Grande</option>
+                <option value="Recreio">Recreio</option>
+                <option value="Barra">Barra</option>
               </select>
 
               <select 
@@ -116,11 +169,11 @@ const EvaluationsPage: React.FC = () => {
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
               >
-                <option value="all">Todos os Tipos</option>
-                <option value="360">Avaliação 360°</option>
-                <option value="auto">Auto Avaliação</option>
-                <option value="gestor">Avaliação do Gestor</option>
-                <option value="coffee">Coffee Connection</option>
+                <option value="">Todos os Tipos</option>
+                <option value="Avaliação 360°">Avaliação 360°</option>
+                <option value="Auto Avaliação">Auto Avaliação</option>
+                <option value="Avaliação do Gestor">Avaliação do Gestor</option>
+                <option value="Coffee Connection">Coffee Connection</option>
               </select>
 
               <select 
@@ -128,10 +181,10 @@ const EvaluationsPage: React.FC = () => {
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
               >
-                <option value="all">Todos os Status</option>
-                <option value="concluida">Concluída</option>
-                <option value="pendente">Pendente</option>
-                <option value="andamento">Em Andamento</option>
+                <option value="">Todos os Status</option>
+                <option value="Concluída">Concluída</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Em Andamento">Em Andamento</option>
               </select>
 
               <Button variant="outline" size="sm">
@@ -164,7 +217,7 @@ const EvaluationsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {evaluations.map((evaluation) => (
+              {filteredEvaluations.map((evaluation) => (
                 <TableRow key={evaluation.id}>
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
@@ -180,8 +233,8 @@ const EvaluationsPage: React.FC = () => {
                     {evaluation.type === 'Coffee Connection' && evaluation.status === 'Pendente' ? (
                       <span className="text-gray-500">-</span>
                     ) : (
-                      <span className={`font-bold ${getScoreColor(evaluation.score)}`}>
-                        {evaluation.score.toFixed(1)}
+                      <span className={`font-bold ${getScoreColor(evaluation.score || 0)}`}>
+                        {(evaluation.score || 0).toFixed(1)}
                       </span>
                     )}
                   </TableCell>
@@ -193,7 +246,12 @@ const EvaluationsPage: React.FC = () => {
                   <TableCell>{new Date(evaluation.date).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setViewingEvaluation(evaluation)}
+                        title="Visualizar detalhes"
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button 
@@ -202,6 +260,14 @@ const EvaluationsPage: React.FC = () => {
                         onClick={() => setEditingEvaluation(evaluation)}
                       >
                         <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteEvaluation(evaluation)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -227,6 +293,12 @@ const EvaluationsPage: React.FC = () => {
         open={!!editingEvaluation}
         onOpenChange={(open) => !open && setEditingEvaluation(null)}
         evaluation={editingEvaluation}
+      />
+
+      <ViewEvaluationDialog
+        open={!!viewingEvaluation}
+        onOpenChange={(open) => !open && setViewingEvaluation(null)}
+        evaluation={viewingEvaluation}
       />
     </div>
   );

@@ -7,7 +7,7 @@ export interface VacationRequest {
   endDate: string;
   days: number;
   reason: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
   requestDate: string;
   approvedBy?: string;
   approvedDate?: string;

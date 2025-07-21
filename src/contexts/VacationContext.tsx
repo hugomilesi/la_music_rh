@@ -114,24 +114,57 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const approveVacationRequest = async (id: string, approvedBy: string) => {
-    await updateVacationRequest(id, {
-      status: 'approved',
-      approvedBy,
-      approvedDate: new Date().toISOString().split('T')[0]
-    });
+    try {
+      const updatedRequest = await vacationService.approveVacationRequest(id, approvedBy);
+      
+      setRequests(prev => 
+        prev.map(request => 
+          request.id === id ? updatedRequest : request
+        )
+      );
+      
+      toast({
+        title: "Sucesso",
+        description: "Solicitação aprovada com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error approving vacation request:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao aprovar solicitação",
+        variant: "destructive",
+      });
+    }
   };
 
   const rejectVacationRequest = async (id: string, reason: string, rejectedBy: string) => {
-    await updateVacationRequest(id, {
-      status: 'rejected',
-      rejectionReason: reason
-    });
+    try {
+      const updatedRequest = await vacationService.rejectVacationRequest(id, reason);
+      
+      setRequests(prev => 
+        prev.map(request => 
+          request.id === id ? updatedRequest : request
+        )
+      );
+      
+      toast({
+        title: "Sucesso",
+        description: "Solicitação rejeitada com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error rejecting vacation request:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao rejeitar solicitação",
+        variant: "destructive",
+      });
+    }
   };
 
   const getActiveVacations = () => {
     const currentDate = new Date();
     return requests.filter(request => {
-      if (request.status !== 'approved') return false;
+      if (request.status !== 'aprovado') return false;
       const startDate = new Date(request.startDate);
       const endDate = new Date(request.endDate);
       return currentDate >= startDate && currentDate <= endDate;
@@ -139,7 +172,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const getPendingRequests = () => {
-    return requests.filter(request => request.status === 'pending');
+    return requests.filter(request => request.status === 'pendente');
   };
 
   const getEmployeeBalance = (employeeId: string): VacationBalance | null => {
@@ -155,7 +188,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
     const currentDate = new Date();
     
     // Check for pending approvals
-    const pendingRequests = requests.filter(req => req.status === 'pending');
+    const pendingRequests = requests.filter(req => req.status === 'pendente');
     pendingRequests.forEach(req => {
       alerts.push({
         id: `pending_${req.id}`,

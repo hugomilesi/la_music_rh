@@ -26,17 +26,21 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   onOpenChange,
   benefit
 }) => {
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      health: 'bg-red-100 text-red-800',
-      dental: 'bg-blue-100 text-blue-800',
-      food: 'bg-green-100 text-green-800',
-      transport: 'bg-yellow-100 text-yellow-800',
-      education: 'bg-purple-100 text-purple-800',
-      life: 'bg-gray-100 text-gray-800',
-      other: 'bg-orange-100 text-orange-800'
+  const getTypeBadgeColor = (color: string) => {
+    // Convert Tailwind background color to badge color
+    const colorMap: { [key: string]: string } = {
+      'bg-purple-500': 'bg-purple-100 text-purple-800',
+      'bg-orange-500': 'bg-orange-100 text-orange-800',
+      'bg-red-500': 'bg-red-100 text-red-800',
+      'bg-blue-500': 'bg-blue-100 text-blue-800',
+      'bg-green-500': 'bg-green-100 text-green-800',
+      'bg-yellow-500': 'bg-yellow-100 text-yellow-800',
+      'bg-gray-500': 'bg-gray-100 text-gray-800',
+      'bg-pink-500': 'bg-pink-100 text-pink-800',
+      'bg-indigo-500': 'bg-indigo-100 text-indigo-800',
+      'bg-teal-500': 'bg-teal-100 text-teal-800'
     };
-    return colors[category as keyof typeof colors] || colors.other;
+    return colorMap[color] || 'bg-gray-100 text-gray-800';
   };
 
   const formatDate = (dateString: string) => {
@@ -49,7 +53,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl">{benefit.name}</DialogTitle>
-            <Badge className={getCategoryColor(benefit.type.category)}>
+            <Badge className={getTypeBadgeColor(benefit.type.color)}>
               {benefit.type.name}
             </Badge>
           </div>
@@ -57,7 +61,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
         
         <div className="space-y-6">
           {/* Status e Informações Básicas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -77,18 +81,6 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
                   <div>
                     <p className="text-sm text-gray-600">Valor</p>
                     <p className="font-semibold">R$ {benefit.value.toFixed(2)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Máx. Beneficiários</p>
-                    <p className="font-semibold">{benefit.maxBeneficiaries}</p>
                   </div>
                 </div>
               </CardContent>
@@ -115,7 +107,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-semibold text-lg">{benefit.provider}</p>
+                <p className="font-semibold text-lg">{benefit.provider || 'Não informado'}</p>
               </CardContent>
             </Card>
 
@@ -148,7 +140,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
           </div>
 
           {/* Cobertura */}
-          {benefit.coverage && benefit.coverage.length > 0 && (
+          {benefit.coverage && Array.isArray(benefit.coverage) && benefit.coverage.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">

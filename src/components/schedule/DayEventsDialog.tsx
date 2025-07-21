@@ -3,6 +3,7 @@ import React from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -58,14 +59,19 @@ const DayEventsDialog: React.FC<DayEventsDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              Eventos do dia {date.toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </DialogTitle>
+            <div>
+              <DialogTitle className="text-xl font-bold">
+                Eventos do dia {date.toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </DialogTitle>
+              <DialogDescription>
+                Visualize e gerencie todos os eventos agendados para este dia.
+              </DialogDescription>
+            </div>
             <Button size="sm" onClick={onNewEvent}>
               <Plus className="w-4 h-4 mr-2" />
               Novo Evento

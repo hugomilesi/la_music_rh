@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,9 +19,10 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
 
   // Generate chart data
   const severityData = [
-    { name: 'Leve', value: incidents.filter(i => i.severity === 'leve').length, color: '#fbbf24' },
-    { name: 'Moderado', value: incidents.filter(i => i.severity === 'moderado').length, color: '#f97316' },
-    { name: 'Grave', value: incidents.filter(i => i.severity === 'grave').length, color: '#ef4444' }
+    { name: 'Baixa', value: incidents.filter(i => i.severity === 'baixa').length, color: '#fbbf24' },
+    { name: 'Média', value: incidents.filter(i => i.severity === 'media').length, color: '#f97316' },
+    { name: 'Alta', value: incidents.filter(i => i.severity === 'alta').length, color: '#ef4444' },
+    { name: 'Crítica', value: incidents.filter(i => i.severity === 'critica').length, color: '#b91c1c' }
   ];
 
   const typeData = incidents.reduce((acc, incident) => {
@@ -88,7 +88,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-red-600">
-                    {incidents.filter(i => i.status === 'ativo').length}
+                    {incidents.filter(i => i.status === 'aberto').length}
                   </p>
                   <p className="text-sm text-gray-600">Ativas</p>
                 </div>
@@ -108,9 +108,9 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-orange-600">
-                    {incidents.filter(i => i.severity === 'grave').length}
-                  </p>
-                  <p className="text-sm text-gray-600">Graves</p>
+                    {incidents.filter(i => i.severity === 'critica').length}
+              </div>
+              <p className="text-sm text-gray-600">Críticas</p>
                 </div>
               </CardContent>
             </Card>

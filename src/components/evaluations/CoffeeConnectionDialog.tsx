@@ -30,6 +30,7 @@ import { Coffee, X, Plus } from 'lucide-react';
 
 const formSchema = z.object({
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
+  unit: z.string().optional(),
   meetingDate: z.string().min(1, 'Data é obrigatória'),
   meetingTime: z.string().min(1, 'Horário é obrigatório'),
   location: z.string().min(1, 'Local é obrigatório'),
@@ -46,17 +47,6 @@ interface CoffeeConnectionDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const suggestedTopics = [
-  'Desenvolvimento de carreira',
-  'Satisfação no trabalho',
-  'Desafios atuais',
-  'Objetivos pessoais',
-  'Feedback sobre liderança',
-  'Ambiente de trabalho',
-  'Ideias de melhoria',
-  'Reconhecimento'
-];
-
 export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
   open,
   onOpenChange,
@@ -66,11 +56,13 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
   const { toast } = useToast();
   const [selectedTopics, setSelectedTopics] = React.useState<string[]>([]);
   const [customTopic, setCustomTopic] = React.useState('');
+  const [suggestedTopics, setSuggestedTopics] = React.useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: '',
+      unit: '',
       meetingDate: '',
       meetingTime: '',
       location: '',
@@ -102,6 +94,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         employeeId: data.employeeId,
         type: 'Coffee Connection',
         period: new Date().getFullYear().toString(),
+        unit: data.unit || '',
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,
         location: data.location,
@@ -161,6 +154,28 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                             {employee.name} - {employee.position}
                           </option>
                         ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade (Opcional)</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Selecione uma unidade</option>
+                        <option value="Campo Grande">Campo Grande</option>
+                        <option value="Recreio">Recreio</option>
+                        <option value="Barra">Barra</option>
                       </select>
                     </FormControl>
                     <FormMessage />

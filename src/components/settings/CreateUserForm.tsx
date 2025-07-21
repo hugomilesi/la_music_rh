@@ -99,37 +99,17 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
         </div>
       </div>
 
-      {/* Credenciais */}
+      {/* Informações de Acesso */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Credenciais de Acesso</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="password">Senha *</Label>
-            <Input
-              id="password"
-              type="password"
-              {...register('password')}
-              placeholder="Senha inicial"
-              className={errors.password ? 'border-red-500' : ''}
-            />
-            {errors.password && (
-              <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              {...register('confirmPassword')}
-              placeholder="Confirme a senha"
-              className={errors.confirmPassword ? 'border-red-500' : ''}
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
-            )}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">ℹ</span>
+            </div>
+            <p className="text-sm text-blue-700">
+              <strong>Senha automática:</strong> Uma senha segura será gerada automaticamente e exibida após a criação do usuário.
+            </p>
           </div>
         </div>
       </div>
@@ -153,6 +133,19 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="position">Cargo *</Label>
+            <Input
+              id="position"
+              {...register('position')}
+              placeholder="Ex: Assistente, Coordenador, Professor"
+              className={errors.position ? 'border-red-500' : ''}
+            />
+            {errors.position && (
+              <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
             )}
           </div>
 

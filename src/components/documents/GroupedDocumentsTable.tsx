@@ -4,9 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ChevronDown, ChevronRight, User, FileText, Download, Mail, Package } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, FileText, Download, Mail, Package, Eye, Edit, Trash2 } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { EditDocumentDialog } from './EditDocumentDialog';
 import { Document } from '@/types/document';
 
 interface GroupedDocumentsTableProps {
@@ -28,9 +29,11 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
   onEmployeeClick,
   onSendToAccountant
 }) => {
-  const { filteredDocuments, downloadDocument, exportDocumentsByEmployee } = useDocuments();
+  const { filteredDocuments, downloadDocument, exportDocumentsByEmployee, viewDocument, deleteDocument } = useDocuments();
   const { employees } = useEmployees();
   const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
+  const [editingDocument, setEditingDocument] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const groupedDocuments = useMemo(() => {
     const groups = new Map<string, EmployeeDocumentGroup>();
@@ -108,7 +111,8 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
   };
 
   return (
-    <Card>
+    <div>
+      <Card>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
@@ -123,96 +127,108 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {groupedDocuments.map((group) => (
-              <React.Fragment key={group.employeeId}>
-                {/* Employee Row */}
-                <TableRow 
-                  className="cursor-pointer hover:bg-gray-50 border-b-2" 
-                  onClick={() => toggleEmployee(group.employeeId)}
-                >
-                  <TableCell>
-                    {expandedEmployees.has(group.employeeId) ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">
+            {groupedDocuments.map((group) => [
+              // Employee Row
+              <TableRow 
+                key={group.employeeId}
+                className="cursor-pointer hover:bg-gray-50 border-b-2" 
+                onClick={() => toggleEmployee(group.employeeId)}
+              >
+                <TableCell>
+                  {expandedEmployees.has(group.employeeId) ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-500" />
+                    <span 
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEmployeeClick(group.employeeId, group.employeeName);
+                      }}
+                    >
+                      {group.employeeName}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{group.totalDocuments}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className="bg-green-100 text-green-800">{group.validDocuments}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className="bg-yellow-100 text-yellow-800">{group.expiringDocuments}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className="bg-red-100 text-red-800">{group.expiredDocuments}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => handleEmployeeExport(group.employeeId, 'excel', e)}
+                      title="Exportar documentos do funcionário"
+                    >
+                      <Package className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => handleSendEmployeeDocuments(group.documents, e)}
+                      title="Enviar documentos ao contador"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>,
+
+              // Documents Rows (when expanded)
+              ...(expandedEmployees.has(group.employeeId) ? group.documents.map((doc) => (
+                <TableRow key={`${group.employeeId}-${doc.id}`} className="bg-gray-50">
+                  <TableCell></TableCell>
+                  <TableCell className="pl-8">
                     <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-500" />
-                      <span 
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEmployeeClick(group.employeeId, group.employeeName);
-                        }}
-                      >
-                        {group.employeeName}
-                      </span>
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">{doc.document}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{group.totalDocuments}</Badge>
+                    <Badge className={getTypeColor(doc.type)} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                      {doc.type === 'obrigatorio' ? 'Obrigatório' : 
+                       doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-green-100 text-green-800">{group.validDocuments}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-yellow-100 text-yellow-800">{group.expiringDocuments}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-red-100 text-red-800">{group.expiredDocuments}</Badge>
+                    <Badge className={getStatusBadge(doc.status)} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                      {doc.status}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button 
                         variant="ghost" 
-                        size="sm"
-                        onClick={(e) => handleEmployeeExport(group.employeeId, 'excel', e)}
-                        title="Exportar documentos do funcionário"
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          viewDocument(doc);
+                        }}
+                        title="Visualizar documento"
                       >
-                        <Package className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => handleSendEmployeeDocuments(group.documents, e)}
-                        title="Enviar documentos ao contador"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-
-                {/* Documents Rows (when expanded) */}
-                {expandedEmployees.has(group.employeeId) && group.documents.map((doc) => (
-                  <TableRow key={doc.id} className="bg-gray-50">
-                    <TableCell></TableCell>
-                    <TableCell className="pl-8">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">{doc.document}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getTypeColor(doc.type)} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                        {doc.type === 'obrigatorio' ? 'Obrigatório' : 
-                         doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadge(doc.status)} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                        {doc.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -220,14 +236,41 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
                           e.stopPropagation();
                           downloadDocument(doc);
                         }}
+                        title="Baixar documento"
                       >
                         <Download className="w-4 h-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </React.Fragment>
-            ))}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingDocument(doc);
+                          setEditDialogOpen(true);
+                        }}
+                        title="Editar documento"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Tem certeza que deseja excluir este documento?')) {
+                            deleteDocument(doc.id);
+                          }
+                        }}
+                        title="Excluir documento"
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )) : [])
+            ]).flat()}
           </TableBody>
         </Table>
         
@@ -237,6 +280,16 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+     
+      <EditDocumentDialog
+        document={editingDocument}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditingDocument(null);
+        }}
+      />
+    </div>
   );
 };

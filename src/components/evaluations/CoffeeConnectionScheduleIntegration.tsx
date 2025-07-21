@@ -14,31 +14,51 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
   
   const scheduledConnections = getCoffeeConnectionSchedule();
 
-  const addToCalendar = (connection: any) => {
+  const addToCalendar = async (connection: any) => {
     if (connection.meetingDate && connection.meetingTime) {
-      const [hours, minutes] = connection.meetingTime.split(':');
-      const startDate = new Date(connection.meetingDate);
-      startDate.setHours(parseInt(hours), parseInt(minutes));
-      
-      const endDate = new Date(startDate);
-      endDate.setHours(startDate.getHours() + 1); // 1 hour duration
+      try {
+        const [hours, minutes] = connection.meetingTime.split(':');
+        const startDate = new Date(connection.meetingDate);
+        startDate.setHours(parseInt(hours), parseInt(minutes));
+        
+        const endDate = new Date(startDate);
+        endDate.setHours(startDate.getHours() + 1); // 1 hour duration
 
-      const newEvent = {
-        title: `Coffee Connection - ${connection.employee}`,
-        employeeId: connection.employeeId,
-        unit: Unit.CAMPO_GRANDE, // Default unit, could be mapped from connection data
-        date: connection.meetingDate,
-        startTime: connection.meetingTime,
-        endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
-        type: 'avaliacao' as const, // Coffee Connection maps to evaluation type
-        description: `Coffee Connection com ${connection.employee}\nLocal: ${connection.location || 'A definir'}\nTópicos: ${connection.topics?.join(', ') || 'Conversa geral'}`,
-        location: connection.location || '',
-        emailAlert: true,
-        whatsappAlert: false
-      };
+        // Map unit string to Unit enum
+        let unit = Unit.CAMPO_GRANDE; // Default
+        if (connection.unit) {
+          switch (connection.unit) {
+            case 'Campo Grande':
+              unit = Unit.CAMPO_GRANDE;
+              break;
+            case 'Recreio':
+              unit = Unit.RECREIO;
+              break;
+            case 'Barra':
+              unit = Unit.BARRA;
+              break;
+          }
+        }
 
-      addEvent(newEvent);
-      console.log('Coffee Connection adicionado ao calendário:', newEvent);
+        const newEvent = {
+          title: `Coffee Connection - ${connection.employee}`,
+          employeeId: connection.employeeId,
+          unit: unit,
+          date: connection.meetingDate,
+          startTime: connection.meetingTime,
+          endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
+          type: 'avaliacao' as const, // Coffee Connection maps to evaluation type
+          description: `Coffee Connection com ${connection.employee}\nLocal: ${connection.location || 'A definir'}\nTópicos: ${connection.topics?.join(', ') || 'Conversa geral'}`,
+          location: connection.location || '',
+          emailAlert: true,
+          whatsappAlert: false
+        };
+
+        await addEvent(newEvent);
+        console.log('Coffee Connection adicionado ao calendário:', newEvent);
+      } catch (error) {
+        console.error('Erro ao adicionar Coffee Connection ao calendário:', error);
+      }
     }
   };
 

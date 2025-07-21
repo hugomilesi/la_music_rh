@@ -33,6 +33,7 @@ const BenefitsPage: React.FC = () => {
   const { 
     benefits, 
     stats, 
+    loading,
     deleteBenefit, 
     updatePerformanceGoals, 
     updateRenewalSettings, 
@@ -84,18 +85,25 @@ const BenefitsPage: React.FC = () => {
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      health: 'bg-red-100 text-red-800',
-      dental: 'bg-blue-100 text-blue-800',
-      food: 'bg-green-100 text-green-800',
-      transport: 'bg-yellow-100 text-yellow-800',
-      education: 'bg-purple-100 text-purple-800',
-      life: 'bg-gray-100 text-gray-800',
-      performance: 'bg-orange-100 text-orange-800',
-      other: 'bg-slate-100 text-slate-800'
+  const getTypeBadgeColor = (color: string) => {
+    // Convert Tailwind background color to badge color
+    const colorMap: { [key: string]: string } = {
+      'bg-purple-500': 'bg-purple-100 text-purple-800',
+      'bg-orange-500': 'bg-orange-100 text-orange-800',
+      'bg-red-500': 'bg-red-100 text-red-800',
+      'bg-blue-500': 'bg-blue-100 text-blue-800',
+      'bg-green-500': 'bg-green-100 text-green-800',
+      'bg-yellow-500': 'bg-yellow-100 text-yellow-800',
+      'bg-gray-500': 'bg-gray-100 text-gray-800',
+      'bg-pink-500': 'bg-pink-100 text-pink-800',
+      'bg-indigo-500': 'bg-indigo-100 text-indigo-800',
+      'bg-teal-500': 'bg-teal-100 text-teal-800'
     };
-    return colors[category as keyof typeof colors] || colors.other;
+    return colorMap[color] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusBadgeColor = (isActive: boolean) => {
+    return isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -207,14 +215,26 @@ const BenefitsPage: React.FC = () => {
           <CardTitle>Lista de Benefícios</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {benefits.map((benefit) => (
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <span className="ml-2 text-gray-600">Carregando benefícios...</span>
+            </div>
+          ) : benefits.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Heart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>Nenhum benefício encontrado</p>
+              <p className="text-sm">Clique em "Novo Benefício" para começar</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {benefits.map((benefit) => (
               <Card key={benefit.id} className="border-l-4 border-l-purple-500">
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-lg">{benefit.name}</h3>
-                      <Badge className={getCategoryColor(benefit.type.category)}>
+                      <Badge className={getTypeBadgeColor(benefit.type.color)}>
                         {benefit.type.name}
                       </Badge>
                     </div>
@@ -225,10 +245,6 @@ const BenefitsPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4 text-green-600" />
                         <span>R$ {benefit.value.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        <span>Max: {benefit.maxBeneficiaries}</span>
                       </div>
                     </div>
 
@@ -260,7 +276,7 @@ const BenefitsPage: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Badge variant={benefit.isActive ? "default" : "secondary"}>
+                      <Badge className={getStatusBadgeColor(benefit.isActive)}>
                         {benefit.isActive ? 'Ativo' : 'Inativo'}
                       </Badge>
                       <span className="text-xs text-gray-500">{benefit.provider}</span>
@@ -318,19 +334,6 @@ const BenefitsPage: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-          
-          {benefits.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Heart className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p>Nenhum benefício cadastrado</p>
-              <Button
-                className="mt-4"
-                onClick={() => setShowNewBenefitDialog(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Benefício
-              </Button>
             </div>
           )}
         </CardContent>

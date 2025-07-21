@@ -16,6 +16,7 @@ import { VacationStats } from '@/components/vacation/VacationStats';
 import { VacationStatsModal } from '@/components/vacation/VacationStatsModal';
 import { VacationDetailsModal } from '@/components/vacation/VacationDetailsModal';
 import { AlertDetailsModal } from '@/components/vacation/AlertDetailsModal';
+import { EditVacationDialog } from '@/components/vacation/EditVacationDialog';
 
 const VacationPage = () => {
   const [showNewVacationDialog, setShowNewVacationDialog] = useState(false);
@@ -31,6 +32,11 @@ const VacationPage = () => {
     isOpen: boolean;
     alertId: string | null;
   }>({ isOpen: false, alertId: null });
+
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    requestId: string | null;
+  }>({ isOpen: false, requestId: null });
   
   // Add error handling for contexts
   const vacation = useVacation();
@@ -115,6 +121,10 @@ const VacationPage = () => {
     setDetailsModal({ isOpen: true, requestId });
   };
 
+  const handleEditRequest = (requestId: string) => {
+    setEditModal({ isOpen: true, requestId });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -166,7 +176,10 @@ const VacationPage = () => {
         </TabsList>
 
         <TabsContent value="requests">
-          <VacationRequestsList onViewDetails={handleViewDetails} />
+          <VacationRequestsList 
+            onViewDetails={handleViewDetails}
+            onEditRequest={handleEditRequest}
+          />
         </TabsContent>
 
         <TabsContent value="calendar">
@@ -255,6 +268,12 @@ const VacationPage = () => {
         onClose={() => setAlertModal({ isOpen: false, alertId: null })}
         alertId={alertModal.alertId}
         onViewVacationDetails={handleViewVacationFromAlert}
+      />
+
+      <EditVacationDialog
+        isOpen={editModal.isOpen}
+        onClose={() => setEditModal({ isOpen: false, requestId: null })}
+        requestId={editModal.requestId}
       />
     </div>
   );

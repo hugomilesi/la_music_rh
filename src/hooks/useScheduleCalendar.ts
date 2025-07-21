@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ScheduleEvent } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { useSchedule } from '@/contexts/ScheduleContext';
@@ -43,7 +43,7 @@ export const useScheduleCalendar = () => {
     return filteredEvents.filter(event => event.date === dateStr);
   };
 
-  const checkEventConflicts = (newEvent: {
+  const checkEventConflicts = useCallback((newEvent: {
     employeeId: string;
     date: string;
     startTime: string;
@@ -62,7 +62,7 @@ export const useScheduleCalendar = () => {
     });
 
     return conflicts;
-  };
+  }, [filteredEvents]);
 
   const currentWeek = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {

@@ -26,6 +26,7 @@ export interface NewEvaluationData {
   employeeId: string;
   type: 'Avaliação 360°' | 'Auto Avaliação' | 'Avaliação do Gestor' | 'Coffee Connection';
   period: string;
+  unit?: string;
   evaluatorId?: string;
   comments?: string;
   // Campos específicos do Coffee Connection

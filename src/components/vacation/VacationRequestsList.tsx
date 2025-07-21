@@ -17,25 +17,41 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreHorizontal, Check, X, Eye } from 'lucide-react';
+import { Search, MoreHorizontal, Check, X, Eye, Edit, Trash2 } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { VacationRequest } from '@/types/vacation';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface VacationRequestsListProps {
   onViewDetails?: (requestId: string) => void;
+  onEditRequest?: (request: VacationRequest) => void;
 }
 
-export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onViewDetails }) => {
+export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onViewDetails, onEditRequest }) => {
   const { 
     vacationRequests, 
     approveVacationRequest, 
-    rejectVacationRequest 
+    rejectVacationRequest,
+    deleteVacationRequest,
+    updateVacationRequest 
   } = useVacation();
+  const { user } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const formatSafeDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'Data inválida';
+    try {
+      const date = new Date(dateString);
+      if (!isValid(date)) return 'Data inválida';
+      return format(date, 'dd/MM/yyyy', { locale: ptBR });
+    } catch {
+      return 'Data inválida';
+    }
+  };
 
   const filteredRequests = vacationRequests.filter(request => {
     const matchesSearch = request.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,12 +63,14 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
 
   const getStatusBadge = (status: VacationRequest['status']) => {
     switch (status) {
-      case 'pending':
+      case 'pendente':
         return <Badge variant="outline" className="text-orange-600">Pendente</Badge>;
-      case 'approved':
+      case 'aprovado':
         return <Badge variant="outline" className="text-green-600">Aprovada</Badge>;
-      case 'rejected':
+      case 'rejeitado':
         return <Badge variant="outline" className="text-red-600">Rejeitada</Badge>;
+      case 'cancelado':
+        return <Badge variant="outline" className="text-gray-600">Cancelada</Badge>;
       default:
         return null;
     }
@@ -71,13 +89,34 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
   };
 
   const handleApprove = (id: string) => {
-    approveVacationRequest(id, 'Admin');
+    if (!user?.id) {
+      alert('Usuário não autenticado');
+      return;
+    }
+    approveVacationRequest(id, user.id);
   };
 
   const handleReject = (id: string) => {
+    if (!user?.id) {
+      alert('Usuário não autenticado');
+      return;
+    }
     const reason = prompt('Motivo da rejeição:');
     if (reason) {
-      rejectVacationRequest(id, reason, 'Admin');
+      rejectVacationRequest(id, reason, user.id);
+    }
+  };
+
+  const handleDelete = (id: string, employeeName: string) => {
+    if (confirm(`Tem certeza que deseja excluir a solicitação de férias de ${employeeName}?`)) {
+      deleteVacationRequest(id);
+    }
+  };
+
+  const handleCancelApproved = (id: string, employeeName: string) => {
+    if (confirm(`Tem certeza que deseja cancelar a solicitação de férias aprovada de ${employeeName}? Esta ação não pode ser desfeita.`)) {
+      // Update the status to 'cancelado' instead of deleting
+      updateVacationRequest(id, { status: 'cancelado' });
     }
   };
 
@@ -102,9 +141,10 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="approved">Aprovada</SelectItem>
-                <SelectItem value="rejected">Rejeitada</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="aprovado">Aprovada</SelectItem>
+                <SelectItem value="rejeitado">Rejeitada</SelectItem>
+                <SelectItem value="cancelado">Cancelada</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -135,8 +175,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                       <div>
                         <span className="font-medium">Período:</span>
                         <p>
-                          {format(new Date(request.startDate), 'dd/MM/yyyy', { locale: ptBR })} - {' '}
-                          {format(new Date(request.endDate), 'dd/MM/yyyy', { locale: ptBR })}
+                          {formatSafeDate(request.startDate)} - {formatSafeDate(request.endDate)}
                         </p>
                       </div>
                       <div>
@@ -145,7 +184,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                       </div>
                       <div>
                         <span className="font-medium">Solicitado em:</span>
-                        <p>{format(new Date(request.requestDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                        <p>{formatSafeDate(request.requestDate)}</p>
                       </div>
                     </div>
                     
@@ -154,7 +193,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                       <p className="text-sm">{request.reason}</p>
                     </div>
 
-                    {request.status === 'rejected' && request.rejectionReason && (
+                    {request.status === 'rejeitado' && request.rejectionReason && (
                       <div className="mt-3 p-3 bg-red-50 rounded-lg">
                         <span className="font-medium text-sm text-red-800">Motivo da rejeição:</span>
                         <p className="text-sm text-red-700">{request.rejectionReason}</p>
@@ -163,8 +202,17 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {request.status === 'pending' && (
+                    {request.status === 'pendente' && (
                       <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(request.id, request.employeeName)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Excluir
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -184,6 +232,18 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                           Rejeitar
                         </Button>
                       </>
+                    )}
+
+                    {(request.status === 'aprovado' || request.status === 'rejeitado') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(request.id, request.employeeName)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir
+                      </Button>
                     )}
 
                     {/* View Details Button */}

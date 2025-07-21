@@ -1,108 +1,131 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-export interface Incident {
-  id: number;
-  employee: string;
-  type: string;
-  severity: 'leve' | 'moderado' | 'grave';
-  description: string;
-  date: string;
-  reporter: string;
-  status: 'ativo' | 'resolvido' | 'arquivado';
-}
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { incidentService } from '../services/incidentService';
+import type { Incident, IncidentFilter, IncidentStats } from '../types/incident';
+import { toast } from 'sonner';
 
 interface IncidentsContextType {
   incidents: Incident[];
-  addIncident: (incident: Omit<Incident, 'id'>) => void;
-  updateIncident: (id: number, updates: Partial<Incident>) => void;
-  deleteIncident: (id: number) => void;
-  getFilteredIncidents: (filter: 'all' | 'active' | 'resolved' | 'thisMonth') => Incident[];
+  loading: boolean;
+  stats: IncidentStats | null;
+  addIncident: (incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateIncident: (id: string, updates: Partial<Incident>) => Promise<void>;
+  deleteIncident: (id: string) => Promise<void>;
+  getFilteredIncidents: (filter: IncidentFilter) => Promise<Incident[]>;
+  refreshIncidents: () => Promise<void>;
+  refreshStats: () => Promise<void>;
 }
 
 const IncidentsContext = createContext<IncidentsContextType | undefined>(undefined);
 
-const mockIncidents: Incident[] = [
-  {
-    id: 1,
-    employee: 'Fabio Magarinos da Silva',
-    type: 'Atraso',
-    severity: 'leve',
-    description: 'Chegou 30 minutos atrasado sem justificativa',
-    date: '2024-03-15',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  },
-  {
-    id: 2,
-    employee: 'Luciano Nazario de Oliveira',
-    type: 'Falta Injustificada',
-    severity: 'moderado',
-    description: 'Não compareceu ao trabalho sem comunicação prévia',
-    date: '2024-03-10',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'resolvido'
-  },
-  {
-    id: 3,
-    employee: 'Felipe Elias Carvalho',
-    type: 'Comportamento Inadequado',
-    severity: 'grave',
-    description: 'Atendimento inadequado aos alunos relatado por pais',
-    date: '2024-03-08',
-    reporter: 'Aline Cristina Pessanha Faria',
-    status: 'ativo'
-  }
-];
-
 export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [incidents, setIncidents] = useState<Incident[]>(mockIncidents);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<IncidentStats | null>(null);
 
-  const addIncident = (incident: Omit<Incident, 'id'>) => {
-    const newIncident = {
-      ...incident,
-      id: Math.max(...incidents.map(i => i.id)) + 1
+  const refreshIncidents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await incidentService.getAll();
+      setIncidents(data);
+    } catch (error) {
+      console.error('Erro ao carregar incidentes:', error);
+      toast.error('Erro ao carregar incidentes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const statsData = await incidentService.getStats();
+      setStats(statsData);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    }
+  }, []);
+
+  // Carrega incidentes ao montar o componente
+  useEffect(() => {
+    refreshIncidents();
+    refreshStats();
+  }, [refreshIncidents, refreshStats]);
+
+  // Inscreve-se para atualizações em tempo real
+  useEffect(() => {
+    const subscription = incidentService.subscribeToChanges(() => {
+      // Use the functions directly to avoid dependency issues
+      refreshIncidents();
+      refreshStats();
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
-    setIncidents(prev => [...prev, newIncident]);
+  }, []); // Empty dependency array to prevent re-subscription
+
+  const addIncident = async (incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newIncident = await incidentService.add(incident);
+      setIncidents(prev => [newIncident, ...prev]);
+      await refreshStats();
+      toast.success('Incidente adicionado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar incidente:', error);
+      toast.error('Erro ao adicionar incidente');
+      throw error;
+    }
   };
 
-  const updateIncident = (id: number, updates: Partial<Incident>) => {
-    setIncidents(prev => prev.map(incident => 
-      incident.id === id ? { ...incident, ...updates } : incident
-    ));
+  const updateIncident = async (id: string, updates: Partial<Incident>) => {
+    try {
+      await incidentService.update(id, updates);
+      setIncidents(prev => prev.map(incident => 
+        incident.id === id ? { ...incident, ...updates } : incident
+      ));
+      await refreshStats();
+      toast.success('Incidente atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar incidente:', error);
+      toast.error('Erro ao atualizar incidente');
+      throw error;
+    }
   };
 
-  const deleteIncident = (id: number) => {
-    setIncidents(prev => prev.filter(incident => incident.id !== id));
+  const deleteIncident = async (id: string) => {
+    try {
+      await incidentService.delete(id);
+      setIncidents(prev => prev.filter(incident => incident.id !== id));
+      await refreshStats();
+      toast.success('Incidente removido com sucesso!');
+    } catch (error) {
+      console.error('Erro ao remover incidente:', error);
+      toast.error('Erro ao remover incidente');
+      throw error;
+    }
   };
 
-  const getFilteredIncidents = (filter: 'all' | 'active' | 'resolved' | 'thisMonth') => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    switch (filter) {
-      case 'active':
-        return incidents.filter(incident => incident.status === 'ativo');
-      case 'resolved':
-        return incidents.filter(incident => incident.status === 'resolvido');
-      case 'thisMonth':
-        return incidents.filter(incident => {
-          const incidentDate = new Date(incident.date);
-          return incidentDate.getMonth() === currentMonth && 
-                 incidentDate.getFullYear() === currentYear;
-        });
-      default:
-        return incidents;
+  const getFilteredIncidents = async (filter: IncidentFilter) => {
+    try {
+      return await incidentService.getFiltered(filter);
+    } catch (error) {
+      console.error('Erro ao filtrar incidentes:', error);
+      toast.error('Erro ao filtrar incidentes');
+      return [];
     }
   };
 
   return (
     <IncidentsContext.Provider value={{
       incidents,
+      loading,
+      stats,
       addIncident,
       updateIncident,
       deleteIncident,
-      getFilteredIncidents
+      getFilteredIncidents,
+      refreshIncidents,
+      refreshStats
     }}>
       {children}
     </IncidentsContext.Provider>

@@ -10,6 +10,18 @@ interface Profile {
   role: string;
   created_at: string;
   updated_at: string;
+  level?: string;
+  permissions?: string[];
+  metadata?: any;
+  nome?: string;
+  nivel?: string;
+  cargo?: string;
+  departamento?: string;
+  phone?: string;
+  position?: string;
+  bio?: string;
+  status?: string;
+  preferences?: any;
 }
 
 interface AuthContextType {

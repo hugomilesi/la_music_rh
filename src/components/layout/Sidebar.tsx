@@ -26,12 +26,7 @@ const menuItems = [
     href: '/dashboard',
     description: 'Visão geral do sistema'
   },
-  {
-    title: 'Colaboradores',
-    icon: Users,
-    href: '/colaboradores',
-    description: 'Gestão de funcionários'
-  },
+
   {
     title: 'Avaliações',
     icon: UserCheck,

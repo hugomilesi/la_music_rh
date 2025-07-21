@@ -11,7 +11,11 @@ import { DataExportDialog } from '@/components/settings/DataExportDialog';
 import { AddUserDialog } from '@/components/settings/AddUserDialog';
 import { EditUserDialog } from '@/components/settings/EditUserDialog';
 import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
+import { NewEmployeeDialog } from '@/components/employees/NewEmployeeDialog';
+import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
 import { SystemUser, CreateSystemUserData, UpdateSystemUserData } from '@/types/systemUser';
+import { useEmployees } from '@/contexts/EmployeeContext';
+import { Employee } from '@/types/employee';
 
 const mockRoles = [
   { id: 1, name: 'Professor', department: 'Educação Musical', employees: 45 },
@@ -21,6 +25,10 @@ const mockRoles = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const { employees, loadEmployees } = useEmployees();
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [isEditEmployeeDialogOpen, setIsEditEmployeeDialogOpen] = useState(false);
+  
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([
     {
       id: 1,
@@ -104,6 +112,33 @@ const SettingsPage: React.FC = () => {
 
   const handleConfirmDeleteUser = (id: number) => {
     setSystemUsers(users => users.filter(user => user.id !== id));
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsEditEmployeeDialogOpen(true);
+  };
+
+  const handleDeleteEmployee = async (employee: Employee) => {
+    if (window.confirm(`Tem certeza que deseja excluir o colaborador ${employee.name}?`)) {
+      try {
+        // Aqui você implementaria a lógica de exclusão
+        console.log('Excluindo colaborador:', employee.id);
+        await loadEmployees(); // Recarrega a lista
+      } catch (error) {
+        console.error('Erro ao excluir colaborador:', error);
+      }
+    }
+  };
+
+  const handleEmployeeUpdate = async () => {
+    await loadEmployees();
+    setIsEditEmployeeDialogOpen(false);
+    setEditingEmployee(null);
+  };
+
+  const handleEmployeeAdd = async () => {
+    await loadEmployees();
   };
 
   const getRoleBadge = (role: string) => {
@@ -248,6 +283,68 @@ const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Employees Management */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Colaboradores</CardTitle>
+            <NewEmployeeDialog onEmployeeAdd={handleEmployeeAdd}>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Colaborador
+              </Button>
+            </NewEmployeeDialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Departamento</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {employees.map((employee) => (
+                <TableRow key={employee.id}>
+                  <TableCell className="font-medium">{employee.name}</TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell>{employee.position}</TableCell>
+                  <TableCell>{employee.department}</TableCell>
+                  <TableCell>
+                    <Badge className={employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {employee.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditEmployee(employee)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeleteEmployee(employee)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* Roles and Departments */}
       <Card>
         <CardHeader>
@@ -354,6 +451,14 @@ const SettingsPage: React.FC = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onUserDelete={handleConfirmDeleteUser}
+      />
+
+      {/* Edit Employee Dialog */}
+      <EditEmployeeDialog
+        employee={editingEmployee}
+        open={isEditEmployeeDialogOpen}
+        onOpenChange={setIsEditEmployeeDialogOpen}
+        onEmployeeUpdate={handleEmployeeUpdate}
       />
     </div>
   );

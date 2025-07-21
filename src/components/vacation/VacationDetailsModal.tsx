@@ -25,7 +25,7 @@ import {
 import { useVacation } from '@/contexts/VacationContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { VacationRequest } from '@/types/vacation';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 
@@ -53,6 +53,16 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
 
+  // Helper function to safely format dates
+  const formatSafeDate = (dateValue: string | Date | null | undefined): string => {
+    if (!dateValue) return 'Data inválida';
+    
+    const date = new Date(dateValue);
+    if (!isValid(date)) return 'Data inválida';
+    
+    return format(date, 'dd/MM/yyyy', { locale: ptBR });
+  };
+
   const request = vacationRequests.find(req => req.id === requestId);
   const employee = employees.find(emp => emp.id === request?.employeeId);
   const balance = request ? getEmployeeBalance(request.employeeId) : null;
@@ -61,11 +71,11 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
 
   const getStatusBadge = (status: VacationRequest['status']) => {
     switch (status) {
-      case 'pending':
+      case 'pendente':
         return <Badge variant="outline" className="text-orange-600">Pendente</Badge>;
-      case 'approved':
+      case 'aprovado':
         return <Badge variant="outline" className="text-green-600">Aprovada</Badge>;
-      case 'rejected':
+      case 'rejeitado':
         return <Badge variant="outline" className="text-red-600">Rejeitada</Badge>;
     }
   };
@@ -82,7 +92,10 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
   };
 
   const handleApprove = () => {
-    approveVacationRequest(request.id, 'Admin');
+    // Use a valid employee ID instead of hardcoded 'Admin'
+    // This should ideally come from the current user context
+    const approverId = 'e0ba1ef1-2840-4d95-a6ab-8af93afb19ac'; // Anne Krissya - Gerente Comercial
+    approveVacationRequest(request.id, approverId);
     toast({
       title: 'Solicitação aprovada',
       description: 'A solicitação de férias foi aprovada com sucesso.',
@@ -99,7 +112,9 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
       return;
     }
     
-    rejectVacationRequest(request.id, rejectionReason, 'Admin');
+    // Use a valid employee ID instead of hardcoded 'Admin'
+    const approverId = 'e0ba1ef1-2840-4d95-a6ab-8af93afb19ac'; // Anne Krissya - Gerente Comercial
+    rejectVacationRequest(request.id, rejectionReason, approverId);
     toast({
       title: 'Solicitação rejeitada',
       description: 'A solicitação de férias foi rejeitada.',
@@ -154,7 +169,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Data de Admissão:</span>
-                      <p>{format(new Date(employee.start_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <p>{formatSafeDate(employee.start_date)}</p>
                     </div>
                   </>
                 )}
@@ -185,7 +200,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
                   <div className="text-center">
                     <p className="text-sm font-medium">Expira em:</p>
                     <p className="text-sm text-gray-600">
-                      {format(new Date(balance.expirationDate), 'dd/MM/yyyy', { locale: ptBR })}
+                      {formatSafeDate(balance.expirationDate)}
                     </p>
                   </div>
                 </div>
@@ -205,11 +220,11 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <span className="font-medium text-gray-700">Data de Início:</span>
-                  <p>{format(new Date(request.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                  <p>{formatSafeDate(request.startDate)}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Data de Fim:</span>
-                  <p>{format(new Date(request.endDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                  <p>{formatSafeDate(request.endDate)}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Total de Dias:</span>
@@ -226,22 +241,22 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
               
               <div>
                 <span className="font-medium text-gray-700">Data da Solicitação:</span>
-                <p>{format(new Date(request.requestDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                <p>{formatSafeDate(request.requestDate)}</p>
               </div>
 
-              {request.status === 'approved' && request.approvedBy && (
+              {request.status === 'aprovado' && request.approvedBy && (
                 <div className="p-3 bg-green-50 rounded-lg">
                   <span className="font-medium text-green-800">Aprovada por:</span>
                   <p className="text-green-700">{request.approvedBy}</p>
                   {request.approvedDate && (
                     <p className="text-sm text-green-600">
-                      em {format(new Date(request.approvedDate), 'dd/MM/yyyy', { locale: ptBR })}
+                      em {formatSafeDate(request.approvedDate)}
                     </p>
                   )}
                 </div>
               )}
 
-              {request.status === 'rejected' && request.rejectionReason && (
+              {request.status === 'rejeitado' && request.rejectionReason && (
                 <div className="p-3 bg-red-50 rounded-lg">
                   <span className="font-medium text-red-800">Rejeitada por:</span>
                   <p className="text-red-700">{request.approvedBy}</p>
@@ -249,7 +264,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
                   <p className="text-red-700">{request.rejectionReason}</p>
                   {request.approvedDate && (
                     <p className="text-sm text-red-600">
-                      em {format(new Date(request.approvedDate), 'dd/MM/yyyy', { locale: ptBR })}
+                      em {formatSafeDate(request.approvedDate)}
                     </p>
                   )}
                 </div>
@@ -258,7 +273,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
           </Card>
 
           {/* Actions */}
-          {request.status === 'pending' && (
+          {request.status === 'pendente' && (
             <Card>
               <CardHeader>
                 <CardTitle>Ações</CardTitle>

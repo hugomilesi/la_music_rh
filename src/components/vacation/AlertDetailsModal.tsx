@@ -228,11 +228,11 @@ export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={
-                          vacation.status === 'approved' ? 'outline' : 
-                          vacation.status === 'pending' ? 'secondary' : 'destructive'
+                          vacation.status === 'aprovado' ? 'outline' :
+vacation.status === 'pendente' ? 'secondary' : 'destructive'
                         }>
-                          {vacation.status === 'approved' ? 'Aprovada' : 
-                           vacation.status === 'pending' ? 'Pendente' : 'Rejeitada'}
+                          {vacation.status === 'aprovado' ? 'Aprovada' :
+vacation.status === 'pendente' ? 'Pendente' : 'Rejeitada'}
                         </Badge>
                         {onViewVacationDetails && (
                           <Button

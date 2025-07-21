@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +51,9 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
             <Filter className="w-5 h-5" />
             <DialogTitle>Filtros Avançados</DialogTitle>
           </div>
+          <DialogDescription>
+            Configure filtros específicos para encontrar incidentes mais facilmente.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -133,9 +135,10 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
                 onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
               >
                 <option value="all">Todas as Gravidades</option>
-                <option value="leve">Leve</option>
-                <option value="moderado">Moderado</option>
-                <option value="grave">Grave</option>
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
               </select>
             </div>
 
@@ -148,9 +151,10 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               >
                 <option value="all">Todos os Status</option>
-                <option value="ativo">Ativas</option>
+                <option value="aberto">Abertas</option>
+                <option value="em_andamento">Em Andamento</option>
                 <option value="resolvido">Resolvidas</option>
-                <option value="arquivado">Arquivadas</option>
+                <option value="cancelado">Canceladas</option>
               </select>
             </div>
           </div>

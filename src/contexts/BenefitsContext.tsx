@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Benefit, EmployeeBenefit, BenefitStats, BenefitType, BenefitUsage, PerformanceGoal, RenewalSettings, PerformanceData } from '@/types/benefits';
+import { benefitsService } from '@/services/benefitsService';
+import { toast } from 'sonner';
 
 interface BenefitsContextType {
   benefits: Benefit[];
@@ -7,230 +9,39 @@ interface BenefitsContextType {
   employeeBenefits: EmployeeBenefit[];
   stats: BenefitStats;
   usage: BenefitUsage[];
-  addBenefit: (benefit: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateBenefit: (id: string, benefit: Partial<Benefit>) => void;
-  deleteBenefit: (id: string) => void;
-  enrollEmployee: (employeeId: string, benefitId: string, dependents?: any[]) => void;
-  updateEnrollment: (id: string, data: Partial<EmployeeBenefit>) => void;
-  cancelEnrollment: (id: string) => void;
+  loading: boolean;
+  addBenefit: (benefit: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateBenefit: (id: string, benefit: Partial<Benefit>) => Promise<void>;
+  deleteBenefit: (id: string) => Promise<void>;
+  enrollEmployee: (employeeId: string, benefitId: string, dependents?: any[]) => Promise<void>;
+  updateEnrollment: (id: string, data: Partial<EmployeeBenefit>) => Promise<void>;
+  cancelEnrollment: (id: string) => Promise<void>;
   refreshStats: () => void;
   // Universal functions - now available for all benefits
-  updatePerformanceGoals: (benefitId: string, goals: PerformanceGoal[]) => void;
-  updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => void;
-  updatePerformanceData: (enrollmentId: string, data: PerformanceData) => void;
+  updatePerformanceGoals: (benefitId: string, goals: PerformanceGoal[]) => Promise<void>;
+  updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => Promise<void>;
+  updatePerformanceData: (enrollmentId: string, data: PerformanceData) => Promise<void>;
   checkRenewals: () => EmployeeBenefit[];
   // Renewal management functions
-  approveRenewal: (enrollmentId: string, comments?: string) => void;
-  denyRenewal: (enrollmentId: string, comments: string) => void;
-  extendRenewal: (enrollmentId: string, newDate: string) => void;
+  approveRenewal: (enrollmentId: string, comments?: string) => Promise<void>;
+  denyRenewal: (enrollmentId: string, comments: string) => Promise<void>;
+  extendRenewal: (enrollmentId: string, newDate: string) => Promise<void>;
+  loadInitialData: () => Promise<void>;
 }
 
 const BenefitsContext = createContext<BenefitsContextType | undefined>(undefined);
 
-// Mock data
-const mockBenefitTypes: BenefitType[] = [
-  { id: '1', name: 'Plano de Saúde', category: 'health', icon: 'Heart', color: 'bg-red-500' },
-  { id: '2', name: 'Plano Odontológico', category: 'dental', icon: 'Smile', color: 'bg-blue-500' },
-  { id: '3', name: 'Vale Refeição', category: 'food', icon: 'Utensils', color: 'bg-green-500' },
-  { id: '4', name: 'Vale Transporte', category: 'transport', icon: 'Car', color: 'bg-yellow-500' },
-  { id: '5', name: 'Auxílio Educação', category: 'education', icon: 'GraduationCap', color: 'bg-purple-500' },
-  { id: '6', name: 'Seguro de Vida', category: 'life', icon: 'Shield', color: 'bg-gray-500' },
-  { id: '7', name: 'Bônus Performance', category: 'performance', icon: 'Target', color: 'bg-orange-500' }
-];
 
-const mockBenefits: Benefit[] = [
-  {
-    id: '1',
-    name: 'Plano de Saúde Premium',
-    type: mockBenefitTypes[0],
-    description: 'Cobertura completa incluindo consultas, exames e internações',
-    value: 450.00,
-    coverage: ['Consultas médicas', 'Exames laboratoriais', 'Internações', 'Cirurgias'],
-    eligibilityRules: [{ id: '1', rule: 'tempo_empresa', value: 90, operator: 'greater_than' }],
-    provider: 'Unimed',
-    isActive: true,
-    startDate: '2024-01-01',
-    documents: ['contrato_unimed.pdf'],
-    maxBeneficiaries: 4,
-    renewalSettings: {
-      id: '1',
-      renewalPeriod: 'annual',
-      requiresPerformanceReview: false,
-      minimumPerformanceScore: 0,
-      autoRenewal: true,
-      reminderDays: 30,
-      gracePeriodDays: 7
-    },
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Vale Refeição',
-    type: mockBenefitTypes[2],
-    description: 'Cartão para alimentação com valor mensal',
-    value: 600.00,
-    coverage: ['Restaurantes', 'Supermercados', 'Lanchonetes'],
-    eligibilityRules: [],
-    provider: 'Alelo',
-    isActive: true,
-    startDate: '2024-01-01',
-    documents: ['contrato_alelo.pdf'],
-    maxBeneficiaries: 1,
-    performanceGoals: [
-      {
-        id: '1',
-        title: 'Uso Responsável',
-        description: 'Utilizar o benefício de forma consciente e responsável',
-        targetValue: 90,
-        currentValue: 0,
-        unit: '%',
-        weight: 100,
-        deadline: '2024-12-31',
-        status: 'pending',
-        createdBy: 'hr_admin',
-        createdAt: '2024-01-01T00:00:00Z'
-      }
-    ],
-    renewalSettings: {
-      id: '2',
-      renewalPeriod: 'monthly',
-      requiresPerformanceReview: true,
-      minimumPerformanceScore: 80,
-      autoRenewal: false,
-      reminderDays: 7,
-      gracePeriodDays: 3
-    },
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '3',
-    name: 'Bônus por Performance Anual',
-    type: mockBenefitTypes[6],
-    description: 'Bônus baseado no atingimento de metas de performance',
-    value: 2000.00,
-    coverage: ['Bônus em dinheiro', 'Reconhecimento'],
-    eligibilityRules: [{ id: '2', rule: 'tempo_empresa', value: 365, operator: 'greater_than' }],
-    provider: 'LA Music RH',
-    isActive: true,
-    startDate: '2024-01-01',
-    documents: [],
-    maxBeneficiaries: 1,
-    performanceGoals: [
-      {
-        id: '1',
-        title: 'Meta de Vendas',
-        description: 'Atingir 120% da meta de vendas individual',
-        targetValue: 120,
-        currentValue: 0,
-        unit: '%',
-        weight: 40,
-        deadline: '2024-12-31',
-        status: 'pending',
-        createdBy: 'hr_admin',
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      {
-        id: '2',
-        title: 'Satisfação do Cliente',
-        description: 'Manter NPS acima de 80',
-        targetValue: 80,
-        currentValue: 0,
-        unit: 'pontos',
-        weight: 30,
-        deadline: '2024-12-31',
-        status: 'pending',
-        createdBy: 'hr_admin',
-        createdAt: '2024-01-01T00:00:00Z'
-      }
-    ],
-    renewalSettings: {
-      id: '3',
-      renewalPeriod: 'annual',
-      requiresPerformanceReview: true,
-      minimumPerformanceScore: 80,
-      autoRenewal: false,
-      reminderDays: 60,
-      gracePeriodDays: 15
-    },
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  }
-];
 
-const mockEmployeeBenefits: EmployeeBenefit[] = [
-  {
-    id: '1',
-    employeeId: '1',
-    employeeName: 'João Silva',
-    benefitId: '1',
-    benefitName: 'Plano de Saúde Premium',
-    enrollmentDate: '2024-02-01',
-    status: 'active',
-    dependents: [
-      {
-        id: '1',
-        name: 'Maria Silva',
-        relationship: 'spouse',
-        birthDate: '1990-05-15',
-        documentNumber: '123.456.789-01',
-        isActive: true
-      }
-    ],
-    documents: [],
-    lastUpdate: '2024-02-01T00:00:00Z'
-  },
-  {
-    id: '2',
-    employeeId: '1',
-    employeeName: 'João Silva',
-    benefitId: '3',
-    benefitName: 'Bônus por Performance Anual',
-    enrollmentDate: '2024-03-01',
-    status: 'active',
-    dependents: [],
-    documents: [],
-    lastUpdate: '2024-03-01T00:00:00Z',
-    nextRenewalDate: '2025-03-01',
-    renewalStatus: 'requires_review',
-    performanceData: {
-      id: '1',
-      employeeId: '1',
-      benefitId: '3',
-      overallScore: 75,
-      goalProgress: [
-        {
-          goalId: '1',
-          goalTitle: 'Meta de Vendas',
-          currentValue: 95,
-          targetValue: 120,
-          completionPercentage: 79,
-          status: 'in_progress',
-          lastUpdated: '2024-11-01T00:00:00Z'
-        },
-        {
-          goalId: '2',
-          goalTitle: 'Satisfação do Cliente',
-          currentValue: 85,
-          targetValue: 80,
-          completionPercentage: 100,
-          status: 'completed',
-          lastUpdated: '2024-10-15T00:00:00Z'
-        }
-      ],
-      lastEvaluationDate: '2024-11-01T00:00:00Z',
-      nextEvaluationDate: '2024-12-01T00:00:00Z',
-      evaluatorId: 'manager_1',
-      comments: 'Bom progresso, precisa melhorar vendas'
-    }
-  }
-];
+
+
+
 
 export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [benefits, setBenefits] = useState<Benefit[]>(mockBenefits);
-  const [benefitTypes] = useState<BenefitType[]>(mockBenefitTypes);
-  const [employeeBenefits, setEmployeeBenefits] = useState<EmployeeBenefit[]>(mockEmployeeBenefits);
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
+  const [benefitTypes, setBenefitTypes] = useState<BenefitType[]>([]);
+  const [employeeBenefits, setEmployeeBenefits] = useState<EmployeeBenefit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<BenefitStats>({
     totalBenefits: 0,
     activeBenefits: 0,
@@ -244,137 +55,209 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [usage, setUsage] = useState<BenefitUsage[]>([]);
 
-  const refreshStats = () => {
-    const activeBenefits = benefits.filter(b => b.isActive).length;
-    const benefitsWithGoals = benefits.filter(b => b.performanceGoals && b.performanceGoals.length > 0).length;
-    const totalEnrollments = employeeBenefits.filter(eb => eb.status === 'active').length;
-    const pendingApprovals = employeeBenefits.filter(eb => eb.status === 'pending').length;
-    const pendingRenewals = employeeBenefits.filter(eb => eb.renewalStatus === 'requires_review').length;
-    const totalCost = employeeBenefits
-      .filter(eb => eb.status === 'active')
-      .reduce((sum, eb) => {
+  const refreshStats = async () => {
+    try {
+      // Get statistics from backend
+      const { stats: backendStats, usage: backendUsage } = await benefitsService.getStats();
+      
+      // Calculate additional frontend-only stats
+      const benefitsWithGoals = benefits.filter(b => b.performanceGoals && b.performanceGoals.length > 0).length;
+      const pendingRenewals = employeeBenefits.filter(eb => {
+        if (!eb.nextRenewalDate) return false;
+        const renewalDate = new Date(eb.nextRenewalDate);
+        const today = new Date();
+        const daysUntilRenewal = Math.ceil((renewalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Check if renewal is due within 30 days or overdue
+        return daysUntilRenewal <= 30;
+      }).length;
+      
+      // Merge backend stats with frontend calculations
+      setStats({
+        ...backendStats,
+        benefitsWithGoals,
+        pendingRenewals
+      });
+      
+      setUsage(backendUsage);
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+      // Fallback to local calculation if backend fails
+      const activeBenefits = benefits.filter(b => b.isActive).length;
+      const benefitsWithGoals = benefits.filter(b => b.performanceGoals && b.performanceGoals.length > 0).length;
+      // Consider active enrollments as those without end date or with future end date
+      const currentDate = new Date();
+      const activeEnrollments = employeeBenefits.filter(eb => 
+        !eb.nextRenewalDate || new Date(eb.nextRenewalDate) > currentDate
+      );
+      
+      const totalEnrollments = activeEnrollments.length;
+      const pendingApprovals = 0; // Since we don't have status column, assume no pending approvals
+      const pendingRenewals = employeeBenefits.filter(eb => eb.renewalStatus === 'requires_review').length;
+      const totalCost = activeEnrollments.reduce((sum, eb) => {
         const benefit = benefits.find(b => b.id === eb.benefitId);
         return sum + (benefit?.value || 0);
       }, 0);
 
-    setStats({
-      totalBenefits: benefits.length,
-      activeBenefits,
-      totalEnrollments,
-      pendingApprovals,
-      totalCost,
-      mostPopularBenefit: 'Plano de Saúde Premium',
-      utilizationRate: benefits.length > 0 ? (totalEnrollments / benefits.length) * 100 : 0,
-      benefitsWithGoals,
-      pendingRenewals
-    });
+      setStats({
+        totalBenefits: benefits.length,
+        activeBenefits,
+        totalEnrollments,
+        pendingApprovals,
+        totalCost,
+        mostPopularBenefit: 'N/A',
+        utilizationRate: benefits.length > 0 ? (totalEnrollments / benefits.length) * 100 : 0,
+        benefitsWithGoals,
+        pendingRenewals
+      });
 
-    // Calculate usage statistics
-    const usageStats = benefits.map(benefit => {
-      const enrollments = employeeBenefits.filter(eb => eb.benefitId === benefit.id && eb.status === 'active').length;
-      return {
-        benefitId: benefit.id,
-        benefitName: benefit.name,
-        enrollments,
-        utilizationRate: enrollments > 0 ? (enrollments / 100) * 100 : 0, // Assuming 100 total employees
-        totalCost: enrollments * benefit.value,
-        avgCostPerEmployee: benefit.value
-      };
-    });
-    setUsage(usageStats);
+      // Calculate usage statistics as fallback
+      const usageStats = benefits.map(benefit => {
+        const benefitActiveEnrollments = activeEnrollments.filter(eb => eb.benefitId === benefit.id);
+        const enrollments = benefitActiveEnrollments.length;
+        return {
+          benefitId: benefit.id,
+          benefitName: benefit.name,
+          enrollments,
+          utilizationRate: enrollments > 0 ? (enrollments / 100) * 100 : 0,
+          totalCost: enrollments * benefit.value,
+          avgCostPerEmployee: benefit.value
+        };
+      });
+      setUsage(usageStats);
+    }
   };
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
 
   useEffect(() => {
     refreshStats();
   }, [benefits, employeeBenefits]);
 
-  const addBenefit = (benefitData: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newBenefit: Benefit = {
-      ...benefitData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setBenefits(prev => [...prev, newBenefit]);
-  };
-
-  const updateBenefit = (id: string, benefitData: Partial<Benefit>) => {
-    setBenefits(prev => prev.map(benefit => 
-      benefit.id === id 
-        ? { ...benefit, ...benefitData, updatedAt: new Date().toISOString() }
-        : benefit
-    ));
-  };
-
-  const deleteBenefit = (id: string) => {
-    setBenefits(prev => prev.filter(benefit => benefit.id !== id));
-    setEmployeeBenefits(prev => prev.filter(eb => eb.benefitId !== id));
-  };
-
-  const enrollEmployee = (employeeId: string, benefitId: string, dependents: any[] = []) => {
-    const benefit = benefits.find(b => b.id === benefitId);
-    if (!benefit) return;
-
-    const newEnrollment: EmployeeBenefit = {
-      id: Date.now().toString(),
-      employeeId,
-      employeeName: `Funcionário ${employeeId}`, // In real app, get from employee data
-      benefitId,
-      benefitName: benefit.name,
-      enrollmentDate: new Date().toISOString(),
-      status: 'pending',
-      dependents: dependents || [],
-      documents: [],
-      lastUpdate: new Date().toISOString()
-    };
-
-    // If it has renewal settings, set renewal info
-    if (benefit.renewalSettings) {
-      const renewalDate = new Date();
-      switch (benefit.renewalSettings.renewalPeriod) {
-        case 'monthly':
-          renewalDate.setMonth(renewalDate.getMonth() + 1);
-          break;
-        case 'quarterly':
-          renewalDate.setMonth(renewalDate.getMonth() + 3);
-          break;
-        case 'biannual':
-          renewalDate.setMonth(renewalDate.getMonth() + 6);
-          break;
-        case 'annual':
-          renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-          break;
-      }
-      newEnrollment.nextRenewalDate = renewalDate.toISOString();
-      newEnrollment.renewalStatus = benefit.renewalSettings.autoRenewal ? 'automatic' : 'requires_review';
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const [benefitsData, benefitTypesData, employeeBenefitsData] = await Promise.all([
+        benefitsService.getBenefits(),
+        benefitsService.getBenefitTypes(),
+        benefitsService.getEmployeeBenefits()
+      ]);
+      
+      setBenefits(benefitsData);
+      setBenefitTypes(benefitTypesData);
+      setEmployeeBenefits(employeeBenefitsData);
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      toast.error('Erro ao carregar dados dos benefícios');
+    } finally {
+      setLoading(false);
     }
-
-    setEmployeeBenefits(prev => [...prev, newEnrollment]);
   };
 
-  const updateEnrollment = (id: string, data: Partial<EmployeeBenefit>) => {
-    setEmployeeBenefits(prev => prev.map(enrollment =>
-      enrollment.id === id
-        ? { ...enrollment, ...data, lastUpdate: new Date().toISOString() }
-        : enrollment
-    ));
+  const addBenefit = async (benefitData: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newBenefit = await benefitsService.createBenefit(benefitData);
+      setBenefits(prev => [...prev, newBenefit]);
+      toast.success('Benefício criado com sucesso!');
+    } catch (error) {
+      console.error('Error creating benefit:', error);
+      toast.error('Erro ao criar benefício');
+      throw error;
+    }
   };
 
-  const cancelEnrollment = (id: string) => {
-    updateEnrollment(id, { status: 'cancelled' });
+  const updateBenefit = async (id: string, benefitData: Partial<Benefit>) => {
+    try {
+      const updatedBenefit = await benefitsService.updateBenefit(id, benefitData);
+      setBenefits(prev => prev.map(benefit => 
+        benefit.id === id ? updatedBenefit : benefit
+      ));
+      toast.success('Benefício atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating benefit:', error);
+      toast.error('Erro ao atualizar benefício');
+      throw error;
+    }
+  };
+
+  const deleteBenefit = async (id: string) => {
+    try {
+      await benefitsService.deleteBenefit(id);
+      setBenefits(prev => prev.filter(benefit => benefit.id !== id));
+      setEmployeeBenefits(prev => prev.filter(eb => eb.benefitId !== id));
+      toast.success('Benefício excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting benefit:', error);
+      toast.error('Erro ao excluir benefício');
+      throw error;
+    }
+  };
+
+  const enrollEmployee = async (employeeId: string, benefitId: string, dependents: any[] = []) => {
+    try {
+      const benefit = benefits.find(b => b.id === benefitId);
+      if (!benefit) {
+        toast.error('Benefício não encontrado');
+        return;
+      }
+
+      const enrollmentData = {
+        employeeId,
+        benefitId,
+        dependents: dependents || [],
+        documents: []
+      };
+
+      const newEnrollment = await benefitsService.createEmployeeBenefit(enrollmentData);
+      setEmployeeBenefits(prev => [...prev, newEnrollment]);
+      toast.success('Funcionário inscrito no benefício com sucesso!');
+    } catch (error) {
+      console.error('Error enrolling employee:', error);
+      toast.error('Erro ao inscrever funcionário no benefício');
+      throw error;
+    }
+  };
+
+  const updateEnrollment = async (id: string, data: Partial<EmployeeBenefit>) => {
+    try {
+      const updatedEnrollment = await benefitsService.updateEmployeeBenefit(id, data);
+      setEmployeeBenefits(prev => prev.map(enrollment =>
+        enrollment.id === id ? updatedEnrollment : enrollment
+      ));
+      toast.success('Inscrição atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error updating enrollment:', error);
+      toast.error('Erro ao atualizar inscrição');
+      throw error;
+    }
+  };
+
+  const cancelEnrollment = async (id: string) => {
+    try {
+      // Set end date to today to mark as cancelled
+      const today = new Date().toISOString().split('T')[0];
+      await updateEnrollment(id, { nextRenewalDate: today });
+      toast.success('Inscrição cancelada com sucesso!');
+    } catch (error) {
+      console.error('Error cancelling enrollment:', error);
+      toast.error('Erro ao cancelar inscrição');
+      throw error;
+    }
   };
 
   // Universal functions - now available for all benefits
-  const updatePerformanceGoals = (benefitId: string, goals: PerformanceGoal[]) => {
-    updateBenefit(benefitId, { performanceGoals: goals });
+  const updatePerformanceGoals = async (benefitId: string, goals: PerformanceGoal[]) => {
+    await updateBenefit(benefitId, { performanceGoals: goals });
   };
 
-  const updateRenewalSettings = (benefitId: string, settings: RenewalSettings) => {
-    updateBenefit(benefitId, { renewalSettings: settings });
+  const updateRenewalSettings = async (benefitId: string, settings: RenewalSettings) => {
+    await updateBenefit(benefitId, { renewalSettings: settings });
   };
 
-  const updatePerformanceData = (enrollmentId: string, data: PerformanceData) => {
-    updateEnrollment(enrollmentId, { performanceData: data });
+  const updatePerformanceData = async (enrollmentId: string, data: PerformanceData) => {
+    await updateEnrollment(enrollmentId, { performanceData: data });
   };
 
   const checkRenewals = () => {
@@ -390,55 +273,79 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   // Renewal management functions
-  const approveRenewal = (enrollmentId: string, comments?: string) => {
-    const enrollment = employeeBenefits.find(eb => eb.id === enrollmentId);
-    if (!enrollment) return;
+  const approveRenewal = async (enrollmentId: string, comments?: string) => {
+    try {
+      const enrollment = employeeBenefits.find(eb => eb.id === enrollmentId);
+      if (!enrollment) {
+        toast.error('Inscrição não encontrada');
+        return;
+      }
 
-    const benefit = benefits.find(b => b.id === enrollment.benefitId);
-    if (!benefit?.renewalSettings) return;
+      const benefit = benefits.find(b => b.id === enrollment.benefitId);
+      if (!benefit?.renewalSettings) {
+        toast.error('Configurações de renovação não encontradas');
+        return;
+      }
 
-    // Calculate next renewal date
-    const renewalDate = new Date();
-    switch (benefit.renewalSettings.renewalPeriod) {
-      case 'monthly':
-        renewalDate.setMonth(renewalDate.getMonth() + 1);
-        break;
-      case 'quarterly':
-        renewalDate.setMonth(renewalDate.getMonth() + 3);
-        break;
-      case 'biannual':
-        renewalDate.setMonth(renewalDate.getMonth() + 6);
-        break;
-      case 'annual':
-        renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-        break;
+      // Calculate next renewal date
+      const renewalDate = new Date();
+      switch (benefit.renewalSettings.renewalPeriod) {
+        case 'monthly':
+          renewalDate.setMonth(renewalDate.getMonth() + 1);
+          break;
+        case 'quarterly':
+          renewalDate.setMonth(renewalDate.getMonth() + 3);
+          break;
+        case 'biannual':
+          renewalDate.setMonth(renewalDate.getMonth() + 6);
+          break;
+        case 'annual':
+          renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+          break;
+      }
+
+      await updateEnrollment(enrollmentId, {
+        renewalStatus: 'automatic',
+        nextRenewalDate: renewalDate.toISOString()
+        // Status is now determined by dates, not a separate column
+      });
+
+      toast.success('Renovação aprovada com sucesso!');
+      console.log(`Renewal approved for enrollment ${enrollmentId}`, comments);
+    } catch (error) {
+      console.error('Error approving renewal:', error);
+      toast.error('Erro ao aprovar renovação');
     }
-
-    updateEnrollment(enrollmentId, {
-      renewalStatus: 'automatic',
-      nextRenewalDate: renewalDate.toISOString(),
-      status: 'active'
-    });
-
-    console.log(`Renewal approved for enrollment ${enrollmentId}`, comments);
   };
 
-  const denyRenewal = (enrollmentId: string, comments: string) => {
-    updateEnrollment(enrollmentId, {
-      renewalStatus: 'expired',
-      status: 'cancelled'
-    });
+  const denyRenewal = async (enrollmentId: string, comments: string) => {
+    try {
+      await updateEnrollment(enrollmentId, {
+        renewalStatus: 'expired'
+        // Status is now determined by dates, not a separate column
+      });
 
-    console.log(`Renewal denied for enrollment ${enrollmentId}: ${comments}`);
+      toast.success('Renovação negada');
+      console.log(`Renewal denied for enrollment ${enrollmentId}: ${comments}`);
+    } catch (error) {
+      console.error('Error denying renewal:', error);
+      toast.error('Erro ao negar renovação');
+    }
   };
 
-  const extendRenewal = (enrollmentId: string, newDate: string) => {
-    updateEnrollment(enrollmentId, {
-      nextRenewalDate: newDate,
-      renewalStatus: 'requires_review'
-    });
+  const extendRenewal = async (enrollmentId: string, newDate: string) => {
+    try {
+      await updateEnrollment(enrollmentId, {
+        nextRenewalDate: newDate,
+        renewalStatus: 'requires_review'
+      });
 
-    console.log(`Renewal extended for enrollment ${enrollmentId} to ${newDate}`);
+      toast.success('Prazo de renovação estendido');
+      console.log(`Renewal extended for enrollment ${enrollmentId} to ${newDate}`);
+    } catch (error) {
+      console.error('Error extending renewal:', error);
+      toast.error('Erro ao estender renovação');
+    }
   };
 
   return (
@@ -448,6 +355,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       employeeBenefits,
       stats,
       usage,
+      loading,
       addBenefit,
       updateBenefit,
       deleteBenefit,
@@ -461,7 +369,8 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       checkRenewals,
       approveRenewal,
       denyRenewal,
-      extendRenewal
+      extendRenewal,
+      loadInitialData
     }}>
       {children}
     </BenefitsContext.Provider>

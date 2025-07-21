@@ -1,16 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoginForm } from './LoginForm';
-import { SignUpForm } from './SignUpForm';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('login');
 
   useEffect(() => {
     if (user && !loading) {
@@ -44,24 +41,11 @@ export const AuthPage: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Bem-vindo</CardTitle>
             <CardDescription className="text-center">
-              Faça login ou crie sua conta para continuar
+              Faça login para acessar o sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login" className="space-y-4">
-                <LoginForm onSwitchToSignUp={() => setActiveTab('signup')} />
-              </TabsContent>
-              
-              <TabsContent value="signup" className="space-y-4">
-                <SignUpForm onSwitchToLogin={() => setActiveTab('login')} />
-              </TabsContent>
-            </Tabs>
+            <LoginForm />
           </CardContent>
         </Card>
 

@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.env
+.env.local
+/PROMPTS/
+.trae/
+console_errors.md
+coverage-errors-resolution.md
+guides/
+test/

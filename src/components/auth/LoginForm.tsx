@@ -9,11 +9,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-interface LoginFormProps {
-  onSwitchToSignUp: () => void;
-}
-
-export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
+export const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -252,16 +248,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
         Continuar com Google
       </Button>
 
-      <div className="text-center text-sm">
-        <span className="text-gray-600">Não tem uma conta? </span>
-        <button
-          type="button"
-          onClick={onSwitchToSignUp}
-          className="text-purple-600 hover:text-purple-700 font-medium"
-          disabled={loading}
-        >
-          Cadastre-se
-        </button>
+      <div className="text-center text-sm text-gray-600">
+        <p>Precisa de acesso? Entre em contato com o administrador do sistema.</p>
       </div>
     </div>
   );

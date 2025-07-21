@@ -74,11 +74,12 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     },
   });
 
-  const watchedValues = form.watch(['employeeId', 'date', 'startTime', 'endTime']);
+  const employeeId = form.watch('employeeId');
+  const date = form.watch('date');
+  const startTime = form.watch('startTime');
+  const endTime = form.watch('endTime');
 
   React.useEffect(() => {
-    const [employeeId, date, startTime, endTime] = watchedValues;
-    
     if (employeeId && date && startTime && endTime) {
       const conflicts = checkEventConflicts({
         employeeId,
@@ -90,7 +91,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     } else {
       setConflicts([]);
     }
-  }, [watchedValues, checkEventConflicts]);
+  }, [employeeId, date, startTime, endTime, checkEventConflicts]);
 
   React.useEffect(() => {
     if (preselectedDate) {
