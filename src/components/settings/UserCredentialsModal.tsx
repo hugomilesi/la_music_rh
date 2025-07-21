@@ -169,10 +169,10 @@ Departamento: ${userCredentials.department}` : ''}`;
 
           {/* Cargo */}
           <div className="space-y-2">
-            <Label htmlFor="position">Cargo</Label>
+            <Label htmlFor="modal-position">Cargo</Label>
             <div className="flex space-x-2">
               <Input
-                id="position"
+                id="modal-position"
                 value={userCredentials.position}
                 readOnly
                 className="bg-gray-50"

@@ -40,7 +40,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
       role: 'usuario',
       department: '',
       phone: '',
-      permissions: [],
       status: 'active'
     }
   });
@@ -53,7 +52,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         role: user.role,
         department: user.department || '',
         phone: user.phone || '',
-        permissions: user.permissions,
         status: user.status
       });
     }

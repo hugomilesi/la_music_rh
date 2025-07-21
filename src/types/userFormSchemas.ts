@@ -8,7 +8,6 @@ export const createUserSchema = z.object({
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),
   phone: z.string().optional(),
-  permissions: z.array(z.string()).default([]),
   status: z.enum(['active', 'inactive']).default('active')
 });
 
@@ -19,7 +18,6 @@ export const updateUserSchema = z.object({
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),
   phone: z.string().optional(),
-  permissions: z.array(z.string()).default([]),
   status: z.enum(['active', 'inactive']).default('active')
 });
 

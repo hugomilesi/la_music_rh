@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { SystemUser } from '@/types/systemUser';
+import { deleteSystemUser } from '@/services/settingsService';
 
 interface DeleteUserDialogProps {
   user: SystemUser | null;
@@ -34,8 +35,8 @@ export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
 
     setIsLoading(true);
     try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Chamar a função real de exclusão
+      await deleteSystemUser(user.id);
       
       onUserDelete(user.id);
       
@@ -46,6 +47,7 @@ export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
 
       onOpenChange(false);
     } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
       toast({
         title: "Erro ao remover usuário",
         description: "Tente novamente em alguns instantes",

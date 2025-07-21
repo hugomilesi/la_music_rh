@@ -10,8 +10,103 @@ interface CreateUserResult {
     name: string;
     position: string;
     department?: string;
-  };
-  error?: string;
+  }
+}
+
+// Função para deletar colaborador
+export async function deleteEmployee(employeeId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: dbResult, error: dbError } = await supabase
+      .rpc('delete_employee', {
+        emp_id: employeeId
+      });
+    
+    if (dbError) {
+      return {
+        success: false,
+        error: `Erro ao deletar colaborador: ${dbError.message}`
+      };
+    }
+    
+    if (dbResult && dbResult.length > 0) {
+      const result = dbResult[0];
+      return {
+        success: result.success,
+        error: result.success ? undefined : result.message
+      };
+    }
+    
+    return {
+      success: false,
+      error: 'Resposta inesperada do banco de dados'
+    };
+    
+  } catch (error) {
+    console.error('Erro ao deletar colaborador:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    };
+  }
+}
+
+// Função para atualizar colaborador
+export async function updateEmployee(employeeId: string, updateData: Partial<CreateUserFormData>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: dbResult, error: dbError } = await supabase
+      .rpc('update_employee', {
+        emp_id: employeeId,
+        emp_name: updateData.name,
+        emp_email: updateData.email,
+        emp_phone: updateData.phone,
+        emp_position: updateData.position,
+        emp_department: updateData.department,
+        emp_status: updateData.status
+      });
+    
+    if (dbError) {
+      return {
+        success: false,
+        error: `Erro ao atualizar colaborador: ${dbError.message}`
+      };
+    }
+    
+    if (dbResult && dbResult.length > 0) {
+      const result = dbResult[0];
+      
+      // Atualizar perfil se necessário
+      if (updateData.role) {
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: employeeId,
+            full_name: updateData.name,
+            role: updateData.role,
+            department: updateData.department,
+            position: updateData.position,
+            phone: updateData.phone,
+            preferences: updateData.role === 'admin' ? { super_user: true } : {}
+          });
+      }
+      
+      return {
+        success: result.success,
+        error: result.success ? undefined : result.message
+      };
+    }
+    
+    return {
+      success: false,
+      error: 'Resposta inesperada do banco de dados'
+    };
+    
+  } catch (error) {
+    console.error('Erro ao atualizar colaborador:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    };
+  }
 }
 
 // Função para gerar senha aleatória no frontend
@@ -29,104 +124,38 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     // Gerar senha automática
     const autoPassword = generateRandomPassword(12);
     
-    // Verificar se o email já existe
-    const { data: existingUser, error: checkError } = await supabase
-      .from('employees')
-      .select('id')
-      .eq('email', userData.email)
-      .single();
-    
-    if (existingUser) {
-      return {
-        success: false,
-        error: 'Este email já está cadastrado no sistema'
-      };
-    }
-    
-    // Tentar usar a função do banco de dados primeiro
-    const { data: dbResult, error: dbError } = await supabase
-      .rpc('create_employee_with_auth', {
-        p_name: userData.name,
-        p_email: userData.email,
-        p_password: autoPassword,
-        p_cargo: userData.position,
-        p_departamento: userData.department || 'Não informado',
-        p_phone: userData.phone || null
-      });
-    
-    if (dbResult && dbResult.success) {
-      return {
-        success: true,
-        user: {
-          id: dbResult.user_id,
-          email: userData.email,
-          password: autoPassword,
-          name: userData.name,
-          position: userData.position,
-          department: userData.department
-        }
-      };
-    }
-    
-    // Se a função do banco falhar, criar manualmente
-    console.log('Função do banco falhou, criando manualmente:', dbError);
-    
-    // Gerar UUID para o usuário
-    const userId = crypto.randomUUID();
-    
-    // Inserir na tabela employees
-    const { data: employee, error: employeeError } = await supabase
-      .from('employees')
-      .insert({
-        id: userId,
+    // Call the Edge Function to create user
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: {
         name: userData.name,
         email: userData.email,
-        cargo: userData.position,
-        departamento: userData.department || 'Não informado',
-        data_admissao: new Date().toISOString().split('T')[0],
-        phone: userData.phone || null,
+        phone: userData.phone,
         position: userData.position,
-        department: userData.department || 'Não informado',
-        status: userData.status || 'active'
-      })
-      .select()
-      .single();
-    
-    if (employeeError) {
-      console.error('Erro ao criar employee:', employeeError);
+        department: userData.department,
+        role: userData.role,
+        password: autoPassword
+      }
+    });
+
+    if (error) {
+      console.error('Erro ao criar usuário:', error);
       return {
         success: false,
-        error: `Erro ao criar funcionário: ${employeeError.message}`
+        error: `Erro ao criar usuário: ${error.message}`
       };
     }
-    
-    // Inserir na tabela profiles
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId,
-        nome: userData.name,
-        cargo: userData.position,
-        departamento: userData.department || 'Não informado',
-        nivel: userData.role === 'admin' ? 'admin' : 'usuario',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    
-    if (profileError) {
-      console.error('Erro ao criar profile:', profileError);
-      // Tentar remover o employee criado
-      await supabase.from('employees').delete().eq('id', userId);
+
+    if (!data.success) {
       return {
         success: false,
-        error: `Erro ao criar perfil: ${profileError.message}`
+        error: data.error || 'Erro desconhecido ao criar usuário'
       };
     }
-    
+
     return {
       success: true,
       user: {
-        id: userId,
+        id: data.user.id,
         email: userData.email,
         password: autoPassword,
         name: userData.name,
@@ -149,7 +178,7 @@ export async function updateUserPermissions(userId: string, permissions: string[
     const { error } = await supabase
       .from('profiles')
       .update({
-        permissions: permissions,
+        preferences: { permissions: permissions },
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
@@ -166,7 +195,8 @@ export async function promoteToAdmin(userId: string): Promise<boolean> {
     const { error } = await supabase
       .from('profiles')
       .update({
-        nivel: 'admin',
+        role: 'admin',
+        preferences: { super_user: true },
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
@@ -182,7 +212,7 @@ export async function checkUserPermissions(userId: string): Promise<{ isAdmin: b
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('nivel, permissions')
+      .select('role, preferences')
       .eq('id', userId)
       .single();
     
@@ -191,8 +221,8 @@ export async function checkUserPermissions(userId: string): Promise<{ isAdmin: b
     }
     
     return {
-      isAdmin: data.nivel === 'admin',
-      permissions: data.permissions || []
+      isAdmin: data.role === 'admin',
+      permissions: data.preferences?.permissions || []
     };
   } catch (error) {
     console.error('Erro ao verificar permissões:', error);

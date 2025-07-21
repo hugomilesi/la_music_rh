@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2 } from 'lucide-react';
+import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
@@ -11,83 +11,73 @@ import { DataExportDialog } from '@/components/settings/DataExportDialog';
 import { AddUserDialog } from '@/components/settings/AddUserDialog';
 import { EditUserDialog } from '@/components/settings/EditUserDialog';
 import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
-import { NewEmployeeDialog } from '@/components/employees/NewEmployeeDialog';
-import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
-import { SystemUser, CreateSystemUserData, UpdateSystemUserData } from '@/types/systemUser';
-import { useEmployees } from '@/contexts/EmployeeContext';
-import { Employee } from '@/types/employee';
 
-const mockRoles = [
-  { id: 1, name: 'Professor', department: 'Educação Musical', employees: 45 },
-  { id: 2, name: 'Coordenador', department: 'Coordenação', employees: 8 },
-  { id: 3, name: 'Recepcionista', department: 'Atendimento', employees: 12 },
-  { id: 4, name: 'Professor de Canto', department: 'Educação Musical', employees: 3 }
-];
+import { SystemUser, CreateSystemUserData, UpdateSystemUserData } from '@/types/systemUser';
+import { 
+  fetchSystemUsers, 
+  fetchRolesData, 
+  fetchSystemStats, 
+  deleteSystemUser, 
+  updateSystemUser,
+  RoleData,
+  SystemStats 
+} from '@/services/settingsService';
+
 
 const SettingsPage: React.FC = () => {
-  const { employees, loadEmployees } = useEmployees();
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [isEditEmployeeDialogOpen, setIsEditEmployeeDialogOpen] = useState(false);
   
-  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([
-    {
-      id: 1,
-      name: 'Admin Geral',
-      email: 'admin@lamusic.com',
-      role: 'admin',
-      department: 'Administração',
-      phone: '(11) 99999-9999',
-      status: 'active',
-      lastAccess: '2024-03-21 10:30',
-      createdAt: '2024-01-15',
-      permissions: ['employees', 'documents', 'schedule', 'evaluations', 'settings', 'reports']
-    },
-    {
-      id: 2,
-      name: 'Aline Cristina Pessanha Faria',
-      email: 'aline.faria@lamusic.com',
-      role: 'coordenador',
-      department: 'Coordenação',
-      phone: '(11) 98888-8888',
-      status: 'active',
-      lastAccess: '2024-03-21 09:15',
-      createdAt: '2024-01-20',
-      permissions: ['employees', 'documents', 'schedule', 'evaluations']
-    },
-    {
-      id: 3,
-      name: 'Felipe Elias Carvalho',
-      email: 'felipe.carvalho@lamusic.com',
-      role: 'professor',
-      department: 'Educação Musical',
-      phone: '(11) 97777-7777',
-      status: 'active',
-      lastAccess: '2024-03-20 16:45',
-      createdAt: '2024-02-01',
-      permissions: ['documents', 'schedule']
-    }
-  ]);
+  // State for real data
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
+  const [rolesData, setRolesData] = useState<RoleData[]>([]);
+  const [systemStats, setSystemStats] = useState<SystemStats>({
+    totalEmployees: 0,
+    totalUsers: 0,
+    activeUnits: 0,
+    lastBackup: 'Carregando...'
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<SystemUser | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const handleAddUser = (userData: CreateSystemUserData) => {
-    const newUser: SystemUser = {
-      id: Date.now(),
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      department: userData.department,
-      phone: userData.phone,
-      status: userData.status,
-      lastAccess: 'Nunca acessou',
-      createdAt: new Date().toISOString().split('T')[0],
-      permissions: userData.permissions
-    };
+  // Load data on component mount
+  useEffect(() => {
+    loadAllData();
+  }, []);
 
-    setSystemUsers([...systemUsers, newUser]);
+  const loadAllData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [usersData, rolesDataResult, statsData] = await Promise.all([
+        fetchSystemUsers(),
+        fetchRolesData(),
+        fetchSystemStats()
+      ]);
+      
+      setSystemUsers(usersData);
+      setRolesData(rolesDataResult);
+      setSystemStats(statsData);
+    } catch (err) {
+      console.error('Error loading settings data:', err);
+      setError('Erro ao carregar dados. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddUser = async (userData: CreateSystemUserData) => {
+    try {
+      // This would need to be implemented in userManagementService
+      // For now, just reload the data
+      await loadAllData();
+    } catch (error) {
+      console.error('Error adding user:', error);
+      setError('Erro ao adicionar usuário.');
+    }
   };
 
   const handleEditUser = (user: SystemUser) => {
@@ -95,14 +85,14 @@ const SettingsPage: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateUser = (id: number, userData: UpdateSystemUserData) => {
-    setSystemUsers(users => 
-      users.map(user => 
-        user.id === id 
-          ? { ...user, ...userData }
-          : user
-      )
-    );
+  const handleUpdateUser = async (id: number, userData: UpdateSystemUserData) => {
+    try {
+      await updateSystemUser(id, userData);
+      await loadAllData();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError('Erro ao atualizar usuário.');
+    }
   };
 
   const handleDeleteUser = (user: SystemUser) => {
@@ -110,36 +100,17 @@ const SettingsPage: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDeleteUser = (id: number) => {
-    setSystemUsers(users => users.filter(user => user.id !== id));
-  };
-
-  const handleEditEmployee = (employee: Employee) => {
-    setEditingEmployee(employee);
-    setIsEditEmployeeDialogOpen(true);
-  };
-
-  const handleDeleteEmployee = async (employee: Employee) => {
-    if (window.confirm(`Tem certeza que deseja excluir o colaborador ${employee.name}?`)) {
-      try {
-        // Aqui você implementaria a lógica de exclusão
-        console.log('Excluindo colaborador:', employee.id);
-        await loadEmployees(); // Recarrega a lista
-      } catch (error) {
-        console.error('Erro ao excluir colaborador:', error);
-      }
+  const handleConfirmDeleteUser = async (id: number) => {
+    try {
+      await deleteSystemUser(id);
+      await loadAllData();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError('Erro ao excluir usuário.');
     }
   };
 
-  const handleEmployeeUpdate = async () => {
-    await loadEmployees();
-    setIsEditEmployeeDialogOpen(false);
-    setEditingEmployee(null);
-  };
 
-  const handleEmployeeAdd = async () => {
-    await loadEmployees();
-  };
 
   const getRoleBadge = (role: string) => {
     const variants = {
@@ -223,11 +194,11 @@ const SettingsPage: React.FC = () => {
         </DataExportDialog>
       </div>
 
-      {/* System Users */}
+      {/* Usuários e Colaboradores Unificados */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Usuários do Sistema</CardTitle>
+            <CardTitle>Usuários e Colaboradores</CardTitle>
             <AddUserDialog onUserAdd={handleAddUser}>
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-2" />
@@ -242,108 +213,154 @@ const SettingsPage: React.FC = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead>Último Acesso</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {systemUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge className={getRoleBadge(user.role)}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.lastAccess}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDeleteUser(user)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Employees Management */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Colaboradores</CardTitle>
-            <NewEmployeeDialog onEmployeeAdd={handleEmployeeAdd}>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Colaborador
-              </Button>
-            </NewEmployeeDialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Departamento</TableHead>
+                <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell className="font-medium">{employee.name}</TableCell>
-                  <TableCell>{employee.email}</TableCell>
-                  <TableCell>{employee.position}</TableCell>
-                  <TableCell>{employee.department}</TableCell>
-                  <TableCell>
-                    <Badge className={employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {employee.status === 'active' ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditEmployee(employee)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDeleteEmployee(employee)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    <p className="mt-2 text-gray-500">Carregando usuários...</p>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : systemUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <p className="text-gray-500">Nenhum usuário encontrado</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                systemUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.position || 'Não informado'}</TableCell>
+                    <TableCell>{user.department || 'Não informado'}</TableCell>
+                    <TableCell>
+                      <Badge className={getRoleBadge(user.role)}>
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                        {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">{error}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={loadAllData}
+            className="mt-2"
+          >
+            Tentar Novamente
+          </Button>
+        </div>
+      )}
+
+      {/* System Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-600">Total de Funcionários</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    systemStats.totalEmployees
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600">Usuários do Sistema</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    systemStats.totalUsers
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Settings className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600">Unidades Ativas</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    systemStats.activeUnits
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="text-sm text-gray-600">Último Backup</p>
+                <p className="text-sm font-medium">
+                  {isLoading ? 'Carregando...' : systemStats.lastBackup}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Roles and Departments */}
       <Card>
@@ -369,29 +386,44 @@ const SettingsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockRoles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>{role.department}</TableCell>
-                  <TableCell>
-                    <Badge className="bg-blue-100 text-blue-800">
-                      {role.employees} pessoas
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <RolesDialog>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </RolesDialog>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    <p className="mt-2 text-gray-500">Carregando cargos...</p>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : rolesData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    <p className="text-gray-500">Nenhum cargo encontrado</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rolesData.map((role) => (
+                  <TableRow key={role.id}>
+                    <TableCell className="font-medium">{role.name}</TableCell>
+                    <TableCell>{role.department}</TableCell>
+                    <TableCell>
+                      <Badge className="bg-blue-100 text-blue-800">
+                        {role.employees} pessoas
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <RolesDialog>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </RolesDialog>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -453,13 +485,7 @@ const SettingsPage: React.FC = () => {
         onUserDelete={handleConfirmDeleteUser}
       />
 
-      {/* Edit Employee Dialog */}
-      <EditEmployeeDialog
-        employee={editingEmployee}
-        open={isEditEmployeeDialogOpen}
-        onOpenChange={setIsEditEmployeeDialogOpen}
-        onEmployeeUpdate={handleEmployeeUpdate}
-      />
+
     </div>
   );
 };

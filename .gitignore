@@ -30,3 +30,4 @@ console_errors.md
 coverage-errors-resolution.md
 guides/
 test/
+.trae/
