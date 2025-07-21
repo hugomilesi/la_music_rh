@@ -9,9 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Copy, Eye, EyeOff, CheckCircle, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface UserCredentialsModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const UserCredentialsModal: React.FC<UserCredentialsModalProps> = ({
   onClose,
   userCredentials
 }) => {
+  const { canCreateUsers } = usePermissions();
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState<{ [key: string]: boolean }>({});
 
@@ -62,6 +64,30 @@ Departamento: ${userCredentials.department}` : ''}`;
       toast.error('Erro ao copiar credenciais');
     }
   };
+
+  // Verificação de permissão
+  if (!canCreateUsers) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar credenciais de usuários.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -14,8 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search, Building } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Building, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Role {
   id: number;
@@ -47,6 +48,32 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     description: ''
   });
   const { toast } = useToast();
+  const { canAccessSettings } = usePermissions();
+
+  // Check if user has permission to manage roles
+  if (!canAccessSettings) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para gerenciar cargos e setores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline">Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const filteredRoles = roles.filter(role =>
     role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

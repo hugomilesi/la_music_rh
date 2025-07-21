@@ -228,12 +228,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // signUp function removed - users are now created only by administrators
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    return { error };
+    console.log('Attempting to sign in with email:', email);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Sign in error:', error.message);
+      }
+      
+      return { error };
+    } catch (e) {
+      console.error('Unexpected error during sign in:', e);
+      return { error: new Error('Unexpected error during sign in') };
+    }
   };
 
   const signInWithGoogle = async () => {

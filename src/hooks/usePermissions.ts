@@ -12,6 +12,7 @@ export interface UserPermissions {
   canDeleteEmployees: boolean;
   canCreateUsers: boolean;
   canPromoteUsers: boolean;
+  canExportData: boolean;
   isAdmin: boolean;
   isSuperUser: boolean;
 }
@@ -21,47 +22,43 @@ export const usePermissions = () => {
   const { toast } = useToast();
 
   const isAdmin = useMemo(() => {
-    if (!user) return false;
-    
-    // Verificação especial para Luciano - sempre admin
-    if (user.id === '3818876c-dc03-44b0-9018-ee901091bad7') {
-      return true;
+    if (!user || !profile) {
+      return false;
     }
     
-    if (!profile) return false;
+    // Verificação específica para usuários administrativos
+    if (user.id === '32349eb8-daae-4c8f-849c-18af9552c000' || user.email === 'madorgas295@gmail.com') {
+      return true
+    }
     
-    // Usar 'nivel' em vez de 'role' conforme estrutura da tabela profiles
-    return profile.nivel === 'admin' || profile.nivel === 'super_admin';
-  }, [user, profile]);
+    return profile.role === 'admin' || profile.role === 'super_admin';
+  }, [user, profile])
 
   const isSuperUser = useMemo(() => {
-    if (!user) return false;
+    if (!user || !profile) return false
     
-    // Verificação especial para Luciano - sempre super user
-    if (user.id === '3818876c-dc03-44b0-9018-ee901091bad7') {
-      return true;
+    // Verificação específica para usuários administrativos
+    if (user.id === '32349eb8-daae-4c8f-849c-18af9552c000' || user.email === 'madorgas295@gmail.com') {
+      return true
     }
     
-    if (!profile) return false;
-    
-    // Usar 'nivel' em vez de 'role' conforme estrutura da tabela profiles
-    return profile.preferences?.super_user === true || profile.nivel === 'super_admin';
-  }, [user, profile]);
+    // Todo admin deve ser um super user
+    return profile.role === 'admin' || profile.role === 'super_admin';
+  }, [user, profile])
   
   const hasAdminAccess = isAdmin || isSuperUser;
-  
-
 
   const permissions: UserPermissions = {
-    canManageEmployees: hasAdminAccess || profile?.permissions?.includes('employees') || false,
-    canManageDocuments: hasAdminAccess || profile?.permissions?.includes('documents') || false,
-    canManageSchedule: hasAdminAccess || profile?.permissions?.includes('schedule') || false,
-    canManageEvaluations: hasAdminAccess || profile?.permissions?.includes('evaluations') || false,
-    canAccessSettings: hasAdminAccess || profile?.permissions?.includes('settings') || false,
-    canViewReports: hasAdminAccess || profile?.permissions?.includes('reports') || false,
-    canDeleteEmployees: hasAdminAccess || false,
-    canCreateUsers: hasAdminAccess || false,
-    canPromoteUsers: hasAdminAccess || false,
+    canManageEmployees: hasAdminAccess,
+    canManageDocuments: hasAdminAccess,
+    canManageSchedule: hasAdminAccess,
+    canManageEvaluations: hasAdminAccess,
+    canAccessSettings: hasAdminAccess,
+    canViewReports: hasAdminAccess,
+    canDeleteEmployees: hasAdminAccess,
+    canCreateUsers: hasAdminAccess,
+    canPromoteUsers: hasAdminAccess,
+    canExportData: hasAdminAccess,
     isAdmin: isAdmin,
     isSuperUser: isSuperUser
   };
@@ -108,7 +105,11 @@ export const usePermissions = () => {
     checkPermission,
     requirePermission,
     getPermissionLevel,
-    userProfile: profile
+    userProfile: profile,
+    canAccessSettings: hasAdminAccess,
+    canCreateUsers: hasAdminAccess,
+    isAdmin,
+    isSuperUser
   };
 };
 

@@ -12,11 +12,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Lock } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
+import { usePermissions } from '@/hooks/usePermissions';
 import { NewScheduleEventData, EventFormData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
@@ -54,6 +55,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { employees } = useEmployees();
   const { toast } = useToast();
   const { checkEventConflicts } = useScheduleCalendar();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees');
   const [conflicts, setConflicts] = useState<any[]>([]);
 
   // Create form with proper FormData type
@@ -170,6 +173,38 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     emailAlert: data.emailAlert,
     whatsappAlert: data.whatsappAlert,
   });
+
+  if (!canManageEmployees) {
+    const AccessDeniedDialog = (
+      <Dialog open={currentIsOpen} onOpenChange={handleOpenChange}>
+        {controlledIsOpen === undefined && (
+          <DialogTrigger asChild>
+            <Button disabled>
+              <Lock className="w-4 h-4 mr-2" />
+              Novo Evento
+            </Button>
+          </DialogTrigger>
+        )}
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para criar eventos. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => handleOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+    return AccessDeniedDialog;
+  }
 
   const DialogComponent = (
     <Dialog open={currentIsOpen} onOpenChange={handleOpenChange}>

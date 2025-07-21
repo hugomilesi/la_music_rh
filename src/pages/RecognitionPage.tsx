@@ -1,11 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye, Filter, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye, Filter, Loader2, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { CriteriaModal } from '@/components/recognition/CriteriaModal';
 import { NewBonusDialog } from '@/components/recognition/NewBonusDialog';
 import { DeliverPrizeDialog } from '@/components/recognition/DeliverPrizeDialog';
@@ -18,6 +21,10 @@ import type { RecognitionProgram as DBRecognitionProgram, EmployeeRanking } from
 import { toast } from 'sonner';
 
 const RecognitionPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
+  
   const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<DetailedRankingEmployee | null>(null);
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
@@ -236,6 +243,32 @@ const RecognitionPage: React.FC = () => {
         <Loader2 className="w-8 h-8 animate-spin" />
         <span className="ml-2">Carregando dados de reconhecimento...</span>
       </div>
+    );
+  }
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={true} onOpenChange={() => navigate(-1)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar informações de reconhecimento e colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500 mb-6">
+              Entre em contato com o administrador para solicitar acesso.
+            </p>
+            <Button onClick={() => navigate(-1)} className="w-full">
+              Voltar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 

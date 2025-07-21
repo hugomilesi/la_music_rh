@@ -13,8 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Shield, Users, Settings, FileText, Calendar, Award } from 'lucide-react';
+import { Shield, Users, Settings, FileText, Calendar, Award, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Permission {
   id: string;
@@ -74,6 +75,32 @@ interface PermissionsDialogProps {
 export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }) => {
   const [permissions, setPermissions] = useState<Permission[]>(mockPermissions);
   const { toast } = useToast();
+  const { permissions: userPermissions } = usePermissions();
+
+  // Verificar se o usuário tem permissão para acessar configurações
+  if (!userPermissions.canAccessSettings) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para gerenciar permissões do sistema. Entre em contato com um administrador.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline">Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handlePermissionChange = (permissionId: string, role: string, value: boolean) => {
     setPermissions(prev => prev.map(permission => 

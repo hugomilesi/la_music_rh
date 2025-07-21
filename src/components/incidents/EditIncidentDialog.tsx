@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -19,9 +20,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
+import { Lock } from 'lucide-react';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface EditIncidentDialogProps {
   open: boolean;
@@ -56,6 +59,31 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   const { updateIncident } = useIncidents();
   const { employees } = useEmployees();
   const { toast } = useToast();
+  const { checkPermission } = usePermissions();
+  
+  // Verificar se o usuário tem permissão para gerenciar colaboradores
+  const canManageEmployees = checkPermission('canManageEmployees', false);
+  
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para editar ocorrências de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
   
   const form = useForm<IncidentFormData>({
     defaultValues: {

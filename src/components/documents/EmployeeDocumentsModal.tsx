@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Mail, FileText, Search, Package, Eye, Edit, Trash2 } from 'lucide-react';
+import { Download, Mail, FileText, Search, Package, Eye, Edit, Trash2, Lock } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Document } from '@/types/document';
 import { EditDocumentDialog } from './EditDocumentDialog';
 
@@ -26,9 +27,34 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   onSendToAccountant
 }) => {
   const { getDocumentsByEmployee, downloadDocument, exportDocumentsByEmployee, viewDocument, deleteDocument } = useDocuments();
+  const { checkPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  
+  // Verificar se o usuário tem permissão para gerenciar colaboradores
+  const canManageEmployees = checkPermission('canManageEmployees');
+  
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar documentos de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!employeeId) return null;
 

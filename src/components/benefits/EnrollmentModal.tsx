@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Users } from 'lucide-react';
+import { Plus, X, Users, Lock } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Benefit, Dependent } from '@/types/benefits';
 
 interface EnrollmentModalProps {
@@ -23,6 +24,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
 }) => {
   const { enrollEmployee } = useBenefits();
   const { employees } = useEmployees();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
   const [employeeId, setEmployeeId] = useState('');
   const [dependents, setDependents] = useState<Dependent[]>([]);
   const [newDependent, setNewDependent] = useState({
@@ -73,6 +76,29 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     setDependents([]);
     onOpenChange(false);
   };
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para inscrever funcionários em benefícios. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,11 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee, Trash2, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
 import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
@@ -18,6 +21,10 @@ import { Evaluation } from '@/types/evaluation';
 
 const EvaluationsPage: React.FC = () => {
   console.log('EvaluationsPage: Component rendering...');
+  
+  const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
   
   const { evaluations, deleteEvaluation } = useEvaluations();
   console.log('EvaluationsPage: Retrieved evaluations:', evaluations);
@@ -92,6 +99,32 @@ const EvaluationsPage: React.FC = () => {
   });
 
   console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length, 'filtered:', filteredEvaluations.length);
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={true} onOpenChange={() => navigate(-1)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar avaliações e informações de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500 mb-6">
+              Entre em contato com o administrador para solicitar acesso.
+            </p>
+            <Button onClick={() => navigate(-1)} className="w-full">
+              Voltar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <div className="space-y-6">

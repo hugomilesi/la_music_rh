@@ -124,6 +124,16 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     // Gerar senha automática
     const autoPassword = generateRandomPassword(12);
     
+    // Get current session to ensure we have auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return {
+        success: false,
+        error: 'Usuário não autenticado. Faça login novamente.'
+      };
+    }
+    
     // Call the Edge Function to create user
     const { data, error } = await supabase.functions.invoke('create-user', {
       body: {
@@ -138,7 +148,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     });
 
     if (error) {
-      console.error('Erro ao criar usuário:', error);
+      console.error('Erro na Edge Function:', error);
       return {
         success: false,
         error: `Erro ao criar usuário: ${error.message}`

@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Phone, Mail, MapPin, User } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, User, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface CollaboratorSearchModalProps {
   isOpen: boolean;
@@ -19,8 +20,33 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
   onClose
 }) => {
   const { employees } = useEmployees();
+  const { permissions, checkPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
+
+  // Verificar se o usuário tem permissão para visualizar colaboradores
+  const canViewEmployees = checkPermission('canManageEmployees', false);
+
+  if (!canViewEmployees) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar informações de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   useEffect(() => {
     if (searchTerm.trim() === '') {

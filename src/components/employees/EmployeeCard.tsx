@@ -68,6 +68,13 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleStatusToggle = async () => {
+    const canEdit = checkPermission('canManageEmployees');
+    
+    if (!canEdit) {
+      setShowPermissionAlert(true);
+      return;
+    }
+    
     const newStatus = employee.status === 'active' ? 'inactive' : 'active';
     await updateEmployee(employee.id, { status: newStatus });
   };
@@ -126,7 +133,14 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white">
-              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+              <DropdownMenuItem onClick={() => {
+                const canEdit = checkPermission('canManageEmployees');
+                if (!canEdit) {
+                  setShowPermissionAlert(true);
+                  return;
+                }
+                setIsEditDialogOpen(true);
+              }}>
                 <Edit className="w-4 h-4 mr-2" />
                 Editar Colaborador
               </DropdownMenuItem>
@@ -170,7 +184,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         open={showPermissionAlert}
         onOpenChange={setShowPermissionAlert}
         title="Permissão Negada"
-        description="Você não tem permissão para deletar funcionários. Esta ação é restrita a administradores."
+        description="Você não tem permissão para gerenciar funcionários. Esta ação é restrita a administradores."
         variant="error"
         action="Contatar Administrador"
       />

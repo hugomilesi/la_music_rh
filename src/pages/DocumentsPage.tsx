@@ -1,9 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploadDialog } from '@/components/documents/DocumentUploadDialog';
@@ -19,6 +22,10 @@ import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
+  
   const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
   const { employees } = useEmployees();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -61,6 +68,32 @@ const DocumentsPage: React.FC = () => {
     expiring: filteredDocuments.filter(doc => doc.status === 'vencendo').length,
     expired: filteredDocuments.filter(doc => doc.status === 'vencido').length
   };
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={true} onOpenChange={() => navigate(-1)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar documentos e informações de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500 mb-6">
+              Entre em contato com o administrador para solicitar acesso.
+            </p>
+            <Button onClick={() => navigate(-1)} className="w-full">
+              Voltar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <div className="space-y-6">

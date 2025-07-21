@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { FileText, Plus, Edit, Trash2, Copy, Eye, CheckCircle, Clock } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Copy, Eye, CheckCircle, Clock, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface MessageTemplate {
   id: string;
@@ -76,6 +77,9 @@ const mockTemplates: MessageTemplate[] = [
 ];
 
 export const TemplateManager: React.FC = () => {
+  const { checkPermission } = usePermissions();
+  const canAccessSettings = checkPermission('canAccessSettings');
+  
   const [templates, setTemplates] = useState<MessageTemplate[]>(mockTemplates);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
@@ -227,6 +231,23 @@ export const TemplateManager: React.FC = () => {
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
+
+  // Verificação de permissão
+  if (!canAccessSettings) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Lock className="w-12 h-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
+            <p className="text-gray-600 text-center">
+              Você não tem permissão para gerenciar templates de mensagens.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

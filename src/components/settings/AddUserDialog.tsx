@@ -18,6 +18,8 @@ import { UserCredentialsModal } from './UserCredentialsModal';
 import { CreateSystemUserData } from '@/types/systemUser';
 import { createUserSchema, CreateUserFormData } from '@/types/userFormSchemas';
 import { createUserWithAutoPassword } from '@/services/userManagementService';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Lock } from 'lucide-react';
 
 interface AddUserDialogProps {
   children: React.ReactNode;
@@ -30,6 +32,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAd
   const [showCredentials, setShowCredentials] = useState(false);
   const [userCredentials, setUserCredentials] = useState<any>(null);
   const { toast } = useToast();
+  const { canCreateUsers } = usePermissions();
 
   const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
@@ -46,6 +49,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAd
   });
 
   const onSubmit = async (data: CreateUserFormData) => {
+    // Verificar permissões antes de prosseguir
+    if (!canCreateUsers) {
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Criar usuário com senha automática
@@ -96,6 +104,33 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAd
       setIsLoading(false);
     }
   };
+
+  // Verificação de permissão
+  if (!canCreateUsers) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para criar novos usuários.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>

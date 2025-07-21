@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,9 +28,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Lock } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { NewVacationRequest } from '@/types/vacation';
 
 const formSchema = z.object({
@@ -60,6 +62,8 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   const { addVacationRequest, isLoading } = useVacation();
   const { employees } = useEmployees();
   const { toast } = useToast();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -111,6 +115,29 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   // Add error boundary for employee data
   if (!employees || employees.length === 0) {
     console.log('No employees available for vacation dialog');
+  }
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para criar solicitações de férias. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (

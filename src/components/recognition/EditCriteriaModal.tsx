@@ -11,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X, Lock } from 'lucide-react';
 import { RecognitionProgram, RecognitionCriterion } from '@/types/recognition';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface EditCriteriaModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
   program,
   onSave
 }) => {
+  const { canManageEvaluations } = usePermissions();
   const [editedProgram, setEditedProgram] = useState<RecognitionProgram>({ ...program });
   const [editingCriterion, setEditingCriterion] = useState<RecognitionCriterion | null>(null);
 
@@ -96,6 +98,32 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
       default: return 'border-l-gray-500 bg-gray-50';
     }
   };
+
+  // Verificação de permissão
+  if (!canManageEvaluations) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para editar critérios de avaliação.
+            </p>
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

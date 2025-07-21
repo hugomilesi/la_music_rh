@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { SystemUser, CreateSystemUserData, UpdateSystemUserData, SystemUserFilters } from '@/types/systemUser';
 import { AddUserDialog } from './AddUserDialog';
 import { EditUserDialog } from './EditUserDialog';
@@ -62,6 +63,7 @@ interface SystemUsersDialogProps {
 }
 
 export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }) => {
+  const { canAccessSettings } = usePermissions();
   const [users, setUsers] = useState<SystemUser[]>(mockUsers);
   const [filters, setFilters] = useState<SystemUserFilters>({
     searchQuery: '',
@@ -140,6 +142,33 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
       ? 'bg-green-100 text-green-800'
       : 'bg-gray-100 text-gray-800';
   };
+
+  // Verificação de permissão
+  if (!canAccessSettings) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para gerenciar usuários do sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500 mb-6">
+              Entre em contato com o administrador para solicitar acesso.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>

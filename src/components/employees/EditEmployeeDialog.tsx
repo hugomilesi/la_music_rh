@@ -22,8 +22,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Employee } from '@/types/employee';
 import { Unit, UNITS } from '@/types/unit';
 
@@ -52,6 +54,31 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
 }) => {
   const { updateEmployee } = useEmployees();
   const { toast } = useToast();
+  const { checkPermission } = usePermissions();
+  
+  // Verificar se o usuário tem permissão para gerenciar colaboradores
+  const canManageEmployees = checkPermission('canManageEmployees');
+  
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para editar informações de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),

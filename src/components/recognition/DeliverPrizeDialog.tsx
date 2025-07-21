@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Trophy, Gift, Medal, Crown, Star } from 'lucide-react';
+import { Trophy, Gift, Medal, Crown, Star, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface DeliverPrizeDialogProps {
   open: boolean;
@@ -21,6 +22,8 @@ export const DeliverPrizeDialog: React.FC<DeliverPrizeDialogProps> = ({
   onOpenChange,
   onDeliverPrize
 }) => {
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees', false);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [prizeType, setPrizeType] = useState('');
   const [achievement, setAchievement] = useState('');
@@ -106,6 +109,29 @@ export const DeliverPrizeDialog: React.FC<DeliverPrizeDialogProps> = ({
 
   const selectedEmployee_data = topPerformers.find(e => e.id === selectedEmployee);
   const selectedPrizeType_data = prizeTypes.find(type => type.value === prizeType);
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para entregar prêmios. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

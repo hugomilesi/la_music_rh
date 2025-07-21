@@ -23,12 +23,13 @@ import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calendar as CalendarIcon, Save, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Save, X, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ScheduleEvent } from '@/types/schedule';
 import { Unit, UNITS } from '@/types/unit';
 
@@ -61,6 +62,8 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
 }) => {
   const { updateEvent, isLoading } = useSchedule();
   const { toast } = useToast();
+  const { checkPermission } = usePermissions();
+  const canManageEmployees = checkPermission('canManageEmployees');
 
   const form = useForm<EditEventFormData>({
     resolver: zodResolver(editEventSchema),
@@ -149,6 +152,29 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
     { value: '3', label: 'Maria Oliveira' },
     { value: '4', label: 'João Costa' },
   ];
+
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para editar eventos. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleClose}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

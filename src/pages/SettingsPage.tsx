@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2, Lock } from 'lucide-react';
 import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
@@ -22,9 +24,12 @@ import {
   RoleData,
   SystemStats 
 } from '@/services/settingsService';
+import { usePermissions } from '@/hooks/usePermissions';
 
 
 const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { permissions, canAccessSettings } = usePermissions();
   
   // State for real data
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
@@ -122,6 +127,33 @@ const SettingsPage: React.FC = () => {
     return variants[role as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
+  // Check permissions first
+  if (!canAccessSettings) {
+    return (
+      <Dialog open={true} onOpenChange={() => navigate(-1)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-gray-600 mb-4">
+              Você não tem permissão para acessar as configurações do sistema.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Entre em contato com o administrador para solicitar acesso.
+            </p>
+            <Button onClick={() => navigate(-1)} className="w-full">
+              Voltar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -199,12 +231,14 @@ const SettingsPage: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Usuários e Colaboradores</CardTitle>
-            <AddUserDialog onUserAdd={handleAddUser}>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Usuário
-              </Button>
-            </AddUserDialog>
+            {permissions.canCreateUsers && (
+              <AddUserDialog onUserAdd={handleAddUser}>
+                <Button size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Usuário
+                </Button>
+              </AddUserDialog>
+            )}
           </div>
         </CardHeader>
         <CardContent>

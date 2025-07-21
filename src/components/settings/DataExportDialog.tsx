@@ -14,8 +14,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Download, FileText, Users, Calendar, Award, Shield, Clock } from 'lucide-react';
+import { Download, FileText, Users, Calendar, Award, Shield, Clock, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ExportOption {
   id: string;
@@ -87,6 +88,32 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({ children }) 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const { toast } = useToast();
+  const { canExportData } = usePermissions();
+
+  // Check if user has permission to export data
+  if (!canExportData) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para exportar dados do sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline">Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
     if (checked) {

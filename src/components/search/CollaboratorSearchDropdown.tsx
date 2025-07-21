@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Phone, Mail, MapPin, User } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, User, Lock } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface CollaboratorSearchDropdownProps {
   placeholder?: string;
@@ -20,6 +21,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
 }) => {
   // Use the real employee context hook
   const { employees, isLoading, error } = useEmployees();
+  const { checkPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -28,8 +30,11 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Verificar se o usuário tem permissão para visualizar colaboradores
+  const canViewEmployees = checkPermission('canManageEmployees', false);
+
   // If loading or error, show appropriate state
-  const isDisabled = isLoading || error !== null || !employees || employees.length === 0;
+  const isDisabled = isLoading || error !== null || !employees || employees.length === 0 || !canViewEmployees;
 
   useEffect(() => {
     if (isDisabled || searchTerm.trim() === '') {
@@ -93,6 +98,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   };
 
   const getPlaceholderText = () => {
+    if (!canViewEmployees) return "Sem permissão para visualizar colaboradores";
     if (isLoading) return "Carregando colaboradores...";
     if (error) return "Erro ao carregar colaboradores";
     if (!employees || employees.length === 0) return "Nenhum colaborador disponível";

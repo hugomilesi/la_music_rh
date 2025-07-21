@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, Star, Save, X } from 'lucide-react';
+import { Trash2, Edit, Plus, Star, Save, X, Lock } from 'lucide-react';
 import { RecognitionService } from '@/services/recognitionService';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { EmployeeEvaluation, RecognitionProgram, RecognitionCriterion } from '@/types/supabase-recognition';
 
 interface RankingCRUDModalProps {
@@ -47,6 +48,8 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<EvaluationFormData | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const { checkPermission } = usePermissions();
+  const canManageEvaluations = checkPermission('canManageEvaluations');
 
   useEffect(() => {
     if (open && employeeId) {
@@ -225,6 +228,29 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
       observation: ''
     };
   };
+
+  if (!canManageEvaluations) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para gerenciar avaliações de colaboradores. Esta ação é restrita a administradores.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

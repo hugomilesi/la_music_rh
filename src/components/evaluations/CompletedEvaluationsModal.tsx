@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Evaluation } from '@/types/evaluation';
-import { Star, Edit, Coffee } from 'lucide-react';
+import { Star, Edit, Coffee, Lock } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface CompletedEvaluationsModalProps {
   open: boolean;
@@ -23,6 +24,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
   onOpenChange,
   evaluations
 }) => {
+  const { canManageEvaluations } = usePermissions();
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name'>('date');
 
   const getSortedEvaluations = () => {
@@ -56,6 +58,32 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
     : 0;
 
   const sortedEvaluations = getSortedEvaluations();
+
+  // Verificação de permissão
+  if (!canManageEvaluations) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para visualizar avaliações concluídas.
+            </p>
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

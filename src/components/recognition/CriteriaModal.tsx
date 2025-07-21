@@ -6,9 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Star, CheckCircle, FileText, Award, Edit } from 'lucide-react';
+import { Star, CheckCircle, FileText, Award, Edit, Lock } from 'lucide-react';
 import { RecognitionProgram, CriterionEvaluation } from '@/types/recognition';
 import { EditCriteriaModal } from './EditCriteriaModal';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface CriteriaModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export const CriteriaModal: React.FC<CriteriaModalProps> = ({
   onSaveEvaluation,
   onSaveProgram
 }) => {
+  const { canManageEvaluations } = usePermissions();
   const [currentProgram, setCurrentProgram] = useState<RecognitionProgram>(program);
   const [evaluations, setEvaluations] = useState<CriterionEvaluation[]>(
     currentProgram.criteria.map(criterion => ({
@@ -102,6 +104,32 @@ export const CriteriaModal: React.FC<CriteriaModalProps> = ({
       onSaveProgram(updatedProgram);
     }
   };
+
+  // Verificação de permissão
+  if (!canManageEvaluations) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-500" />
+              Acesso Negado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Você não tem permissão para gerenciar critérios de avaliação.
+            </p>
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>

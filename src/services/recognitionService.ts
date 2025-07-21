@@ -126,7 +126,7 @@ export class RecognitionService {
       .from('employee_achievements')
       .select(`
         *,
-        employees!inner(name)
+        employees!employee_achievements_employee_id_fkey(name)
       `)
       .order('achievement_date', { ascending: false })
       .limit(10)

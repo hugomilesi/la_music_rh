@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, User, MapPin } from 'lucide-react';
+import { Search, User, MapPin, Lock } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface EmployeeSelectorProps {
   value?: string;
@@ -22,6 +23,8 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   disabled = false
 }) => {
   const { employees, isLoading, error: employeesError } = useEmployees();
+  const { checkPermission } = usePermissions();
+  const canViewEmployees = checkPermission('canManageEmployees');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +32,7 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isDisabled = disabled || isLoading || employeesError !== null || !employees || employees.length === 0;
+  const isDisabled = disabled || isLoading || employeesError !== null || !employees || employees.length === 0 || !canViewEmployees;
 
   // Set initial selected employee name based on value
   useEffect(() => {
@@ -117,6 +120,7 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   };
 
   const getPlaceholderText = () => {
+    if (!canViewEmployees) return "Sem permissão para visualizar funcionários";
     if (isLoading) return "Carregando funcionários...";
     if (employeesError) return "Erro ao carregar funcionários";
     if (!employees || employees.length === 0) return "Nenhum funcionário disponível";
@@ -126,7 +130,11 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {canViewEmployees ? (
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        ) : (
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        )}
         <Input
           ref={inputRef}
           placeholder={getPlaceholderText()}

@@ -54,8 +54,8 @@ export class NPSService {
         .from('nps_responses')
         .select(`
           *,
-          nps_surveys(titulo),
-          profiles(nome, departamento)
+          nps_surveys(title),
+          employees(name, department)
         `)
         .order('created_at', { ascending: false });
 
@@ -135,8 +135,8 @@ export class NPSService {
         .insert([dbResponse])
         .select(`
           *,
-          nps_surveys(titulo),
-          profiles(nome, departamento)
+          nps_surveys(title),
+          employees(name, department)
         `)
         .single();
 
@@ -235,58 +235,59 @@ export class NPSService {
   private static mapDatabaseSurveyToNPSSurvey(dbSurvey: any): NPSSurvey {
     return {
       id: dbSurvey.id,
-      title: dbSurvey.titulo,
-      description: dbSurvey.descricao || '',
+      title: dbSurvey.title,
+      description: dbSurvey.description || '',
       questions: [
         {
           id: 'q1',
           type: 'nps',
-          question: dbSurvey.pergunta,
+          question: 'Como você avaliaria nossa empresa?',
           required: true
         }
       ],
       status: dbSurvey.status as 'draft' | 'active' | 'completed',
-      startDate: dbSurvey.data_inicio,
-      endDate: dbSurvey.data_fim,
+      startDate: dbSurvey.start_date,
+      endDate: dbSurvey.end_date,
       responses: [],
-      targetEmployees: [],
-      targetDepartments: [],
-      surveyType: 'nps'
+      targetEmployees: dbSurvey.target_employees || [],
+      targetDepartments: dbSurvey.target_departments || [],
+      surveyType: dbSurvey.survey_type || 'nps'
     };
   }
 
   private static mapNPSSurveyToDatabaseSurvey(survey: NPSSurvey): Partial<DatabaseNPSSurvey> {
     return {
-      titulo: survey.title,
-      descricao: survey.description,
-      pergunta: survey.questions[0]?.question || '',
-      data_inicio: survey.startDate,
-      data_fim: survey.endDate,
+      title: survey.title,
+      description: survey.description,
+      survey_type: survey.surveyType || 'nps',
+      start_date: survey.startDate,
+      end_date: survey.endDate,
       status: survey.status,
-      anonimo: false
+      target_employees: survey.targetEmployees || [],
+      target_departments: survey.targetDepartments || []
     };
   }
 
   private static mapDatabaseResponseToNPSResponse(dbResponse: any): NPSResponse {
     return {
       id: dbResponse.id,
-      employeeId: dbResponse.respondente_id,
-      employeeName: dbResponse.profiles?.nome || 'Anônimo',
-      score: dbResponse.pontuacao,
-      comment: dbResponse.comentario || '',
+      employeeId: dbResponse.employee_id,
+      employeeName: dbResponse.employees?.name || 'Anônimo',
+      score: dbResponse.score,
+      comment: dbResponse.comment || '',
       date: dbResponse.created_at.split('T')[0],
       surveyId: dbResponse.survey_id,
-      category: this.categorizeResponse(dbResponse.pontuacao, 'nps'),
-      department: dbResponse.profiles?.departamento || 'Não informado'
+      category: this.categorizeResponse(dbResponse.score, 'nps'),
+      department: dbResponse.employees?.department || 'Não informado'
     };
   }
 
   private static mapNPSResponseToDatabaseResponse(response: Omit<NPSResponse, 'id'>): Partial<DatabaseNPSResponse> {
     return {
       survey_id: response.surveyId,
-      respondente_id: response.employeeId,
-      pontuacao: response.score,
-      comentario: response.comment
+      employee_id: response.employeeId,
+      score: response.score,
+      comment: response.comment
     };
   }
 
