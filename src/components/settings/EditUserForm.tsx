@@ -59,6 +59,19 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
           </div>
 
           <div>
+            <Label htmlFor="position">Cargo *</Label>
+            <Input
+              id="position"
+              {...register('position')}
+              placeholder="Digite o cargo"
+              className={errors.position ? 'border-red-500' : ''}
+            />
+            {errors.position && (
+              <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
+            )}
+          </div>
+
+          <div>
             <Label htmlFor="phone">Telefone</Label>
             <Input
               id="phone"

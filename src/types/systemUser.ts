@@ -4,6 +4,7 @@ export interface SystemUser {
   name: string;
   email: string;
   role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  position?: string;
   department?: string;
   phone?: string;
   status: 'active' | 'inactive';
@@ -28,6 +29,7 @@ export interface UpdateSystemUserData {
   name: string;
   email: string;
   role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  position?: string;
   department?: string;
   phone?: string;
   permissions: string[];

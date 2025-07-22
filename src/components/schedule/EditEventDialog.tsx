@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -63,7 +63,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
   const { updateEvent, isLoading } = useSchedule();
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees');
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
   const form = useForm<EditEventFormData>({
     resolver: zodResolver(editEventSchema),

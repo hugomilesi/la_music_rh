@@ -63,7 +63,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   const { employees } = useEmployees();
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),

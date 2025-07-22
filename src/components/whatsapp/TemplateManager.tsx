@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,7 @@ const mockTemplates: MessageTemplate[] = [
 
 export const TemplateManager: React.FC = () => {
   const { checkPermission } = usePermissions();
-  const canAccessSettings = checkPermission('canAccessSettings');
+  const canAccessSettings = useMemo(() => checkPermission('canAccessSettings', false), [checkPermission]);
   
   const [templates, setTemplates] = useState<MessageTemplate[]>(mockTemplates);
   const [showNewDialog, setShowNewDialog] = useState(false);

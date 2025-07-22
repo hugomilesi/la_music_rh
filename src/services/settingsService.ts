@@ -1,19 +1,6 @@
-import { supabase } from '@/lib/supabase';
-import { SystemUser } from '@/types/systemUser';
-
-export interface RoleData {
-  id: string;
-  name: string;
-  department: string;
-  employees: number;
-}
-
-export interface SystemStats {
-  totalEmployees: number;
-  totalUsers: number;
-  activeUnits: number;
-  lastBackup: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { SystemUser, RoleData, SystemStats } from '@/types/settings';
+import { updateSystemUserAsAdmin } from './adminService';
 
 /**
  * Fetch all system users from profiles table
@@ -46,6 +33,7 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
       name: profile.full_name || 'Nome não informado',
       email: '', // Email is stored in auth.users, would need a join or separate query
       role: profile.role || 'usuario',
+      position: profile.position || 'Não informado',
       department: profile.department || 'Não informado',
       phone: profile.phone || 'Não informado',
       status: profile.status || 'active',
@@ -212,22 +200,23 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
  */
 export const updateSystemUser = async (userId: string, updates: Partial<SystemUser>): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: updates.name,
-        role: updates.role,
-        department: updates.department,
-        phone: updates.phone,
-        status: updates.status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Error updating system user:', error);
-      throw error;
-    }
+    console.log('updateSystemUser called with:', { userId, updates });
+    
+    const updateData = {
+      full_name: updates.name,
+      role: updates.role,
+      department: updates.department,
+      position: updates.position,
+      phone: updates.phone,
+      status: updates.status
+    };
+    
+    console.log('Update data being sent to admin service:', updateData);
+    
+    // Use the admin service to update the user
+    await updateSystemUserAsAdmin(userId, updateData);
+    
+    console.log('User updated successfully via admin service');
   } catch (error) {
     console.error('Error in updateSystemUser:', error);
     throw error;

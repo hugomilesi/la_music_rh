@@ -62,7 +62,7 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   const { checkPermission } = usePermissions();
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
-  const canManageEmployees = checkPermission('canManageEmployees', false);
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   
   if (!canManageEmployees) {
     return (

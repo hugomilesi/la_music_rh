@@ -31,7 +31,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Verificar se o usuário tem permissão para visualizar colaboradores
-  const canViewEmployees = checkPermission('canManageEmployees', false);
+  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
   // If loading or error, show appropriate state
   const isDisabled = isLoading || error !== null || !employees || employees.length === 0 || !canViewEmployees;

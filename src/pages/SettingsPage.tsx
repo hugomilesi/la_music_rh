@@ -92,7 +92,7 @@ const SettingsPage: React.FC = () => {
 
   const handleUpdateUser = async (id: number, userData: UpdateSystemUserData) => {
     try {
-      await updateSystemUser(id, userData);
+      await updateSystemUser(String(id), userData);
       await loadAllData();
     } catch (error) {
       console.error('Error updating user:', error);
@@ -107,7 +107,7 @@ const SettingsPage: React.FC = () => {
 
   const handleConfirmDeleteUser = async (id: number) => {
     try {
-      await deleteSystemUser(id);
+      await deleteSystemUser(String(id));
       await loadAllData();
     } catch (error) {
       console.error('Error deleting user:', error);

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -39,12 +39,13 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
   const { employees } = useEmployees();
   const { checkPermission } = usePermissions();
 
+  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+
   if (!type) return null;
 
   const getModalContent = () => {
     switch (type) {
       case 'employees':
-        const canViewEmployees = checkPermission('canManageEmployees');
         
         if (!canViewEmployees) {
           return {

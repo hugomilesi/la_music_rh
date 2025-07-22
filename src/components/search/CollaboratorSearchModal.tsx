@@ -25,7 +25,7 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
 
   // Verificar se o usuário tem permissão para visualizar colaboradores
-  const canViewEmployees = checkPermission('canManageEmployees', false);
+  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
   if (!canViewEmployees) {
     return (

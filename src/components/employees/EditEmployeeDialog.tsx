@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -57,7 +57,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
   const { checkPermission } = usePermissions();
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
-  const canManageEmployees = checkPermission('canManageEmployees');
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   
   if (!canManageEmployees) {
     return (

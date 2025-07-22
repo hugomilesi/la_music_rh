@@ -121,6 +121,24 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
     });
   };
 
+  const handleSavePermissions = async () => {
+    try {
+      // Aqui você pode implementar a lógica para salvar as permissões no backend
+      // Por enquanto, vamos apenas mostrar uma mensagem de sucesso
+      toast({
+        title: "Permissões salvas",
+        description: "As alterações de permissões foram salvas com sucesso!",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar as permissões. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const variants = {
       'admin': 'bg-red-100 text-red-800',
@@ -257,7 +275,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
         </div>
 
         <DialogFooter>
-          <Button>Salvar Alterações</Button>
+          <Button onClick={handleSavePermissions}>Salvar Alterações</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

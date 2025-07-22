@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +43,9 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   const { checkPermission } = usePermissions();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showPermissionAlert, setShowPermissionAlert] = useState(false);
+  
+  const canEdit = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canDelete = useMemo(() => checkPermission('canDeleteEmployees', false), [checkPermission]);
 
   // Auto-open edit dialog when autoOpenEdit prop is true
   useEffect(() => {
@@ -68,8 +71,6 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleStatusToggle = async () => {
-    const canEdit = checkPermission('canManageEmployees');
-    
     if (!canEdit) {
       setShowPermissionAlert(true);
       return;
@@ -80,8 +81,6 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleDelete = async () => {
-    const canDelete = checkPermission('canDeleteEmployees');
-    
     if (!canDelete) {
       setShowPermissionAlert(true);
       return;
@@ -134,7 +133,6 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white">
               <DropdownMenuItem onClick={() => {
-                const canEdit = checkPermission('canManageEmployees');
                 if (!canEdit) {
                   setShowPermissionAlert(true);
                   return;

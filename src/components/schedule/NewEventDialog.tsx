@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -56,7 +56,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { toast } = useToast();
   const { checkEventConflicts } = useScheduleCalendar();
   const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees');
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   const [conflicts, setConflicts] = useState<any[]>([]);
 
   // Create form with proper FormData type

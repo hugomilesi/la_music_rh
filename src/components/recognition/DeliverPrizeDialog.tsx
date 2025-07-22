@@ -23,7 +23,7 @@ export const DeliverPrizeDialog: React.FC<DeliverPrizeDialogProps> = ({
   onDeliverPrize
 }) => {
   const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [prizeType, setPrizeType] = useState('');
   const [achievement, setAchievement] = useState('');

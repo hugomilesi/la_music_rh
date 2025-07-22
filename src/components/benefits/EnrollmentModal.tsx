@@ -25,7 +25,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const { enrollEmployee } = useBenefits();
   const { employees } = useEmployees();
   const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
+  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   const [employeeId, setEmployeeId] = useState('');
   const [dependents, setDependents] = useState<Dependent[]>([]);
   const [newDependent, setNewDependent] = useState({

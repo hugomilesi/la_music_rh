@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +49,7 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
   const [editingEvaluation, setEditingEvaluation] = useState<EvaluationFormData | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { checkPermission } = usePermissions();
-  const canManageEvaluations = checkPermission('canManageEvaluations');
+  const canManageEvaluations = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
 
   useEffect(() => {
     if (open && employeeId) {

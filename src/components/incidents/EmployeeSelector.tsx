@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, User, MapPin, Lock } from 'lucide-react';
@@ -24,7 +24,7 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
 }) => {
   const { employees, isLoading, error: employeesError } = useEmployees();
   const { checkPermission } = usePermissions();
-  const canViewEmployees = checkPermission('canManageEmployees');
+  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);

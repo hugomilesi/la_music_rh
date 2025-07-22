@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const { checkPermission } = usePermissions();
-  const canViewEmployees = checkPermission('canManageEmployees');
+  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
   if (!employee) return null;
 
