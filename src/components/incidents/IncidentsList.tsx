@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -236,7 +235,7 @@ const IncidentsList: React.FC = () => {
       ) : (
         <Grid container spacing={3}>
           {incidents.map((incident) => (
-            <Grid item xs={12} md={6} lg={4} key={incident.id}>
+            <Grid component="div" item xs={12} md={6} lg={4} key={incident.id}>
               <Card 
                 elevation={2} 
                 sx={{

@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Criterion, CriterionFormData } from '@/types/recognitionCriteria';
+import { RecognitionProgram } from '@/types/recognition';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -46,18 +47,22 @@ const formSchema = z.object({
 interface EditCriteriaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  program?: RecognitionProgram;
+  onSave?: (program: RecognitionProgram) => void;
 }
 
 export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
   open,
   onOpenChange,
+  program,
+  onSave,
 }) => {
   const { toast } = useToast();
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [editingCriterion, setEditingCriterion] = useState<Criterion | null>(null);
   const [isNewCriterion, setIsNewCriterion] = useState(false);
 
-  const form = useForm<CriterionFormData>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -68,24 +73,36 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
   });
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    setCriteria([
-      {
-        id: '1',
-        name: 'Pontualidade',
-        description: 'Chegar no horário estabelecido',
-        weight: 8,
-        isActive: true,
-      },
-      {
-        id: '2',
-        name: 'Proatividade',
-        description: 'Tomar iniciativa em situações que requerem ação',
-        weight: 9,
-        isActive: true,
-      },
-    ]);
-  }, []);
+    if (program) {
+      // Convert program criteria to local criteria format
+      const convertedCriteria: Criterion[] = program.criteria.map(criterion => ({
+        id: criterion.id,
+        name: criterion.title,
+        description: criterion.description,
+        weight: criterion.weight,
+        isActive: true, // Assuming all criteria are active by default
+      }));
+      setCriteria(convertedCriteria);
+    } else {
+      // Mock data - replace with actual API call
+      setCriteria([
+        {
+          id: '1',
+          name: 'Pontualidade',
+          description: 'Chegar no horário estabelecido',
+          weight: 8,
+          isActive: true,
+        },
+        {
+          id: '2',
+          name: 'Proatividade',
+          description: 'Tomar iniciativa em situações que requerem ação',
+          weight: 9,
+          isActive: true,
+        },
+      ]);
+    }
+  }, [program]);
 
   const handleNewCriterion = () => {
     setIsNewCriterion(true);
@@ -117,11 +134,14 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
     });
   };
 
-  const onSubmit = (data: CriterionFormData) => {
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
     if (isNewCriterion) {
       const newCriterion: Criterion = {
         id: Date.now().toString(),
-        ...data,
+        name: data.name,
+        description: data.description,
+        weight: data.weight,
+        isActive: data.isActive,
       };
       setCriteria(prev => [...prev, newCriterion]);
       toast({
@@ -131,13 +151,35 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
     } else if (editingCriterion) {
       setCriteria(prev =>
         prev.map(c =>
-          c.id === editingCriterion.id ? { ...editingCriterion, ...data } : c
+          c.id === editingCriterion.id ? { 
+            ...editingCriterion, 
+            name: data.name,
+            description: data.description,
+            weight: data.weight,
+            isActive: data.isActive,
+          } : c
         )
       );
       toast({
         title: 'Critério atualizado',
         description: 'As alterações foram salvas com sucesso.',
       });
+    }
+
+    // Save updated program if provided
+    if (program && onSave) {
+      const updatedProgram: RecognitionProgram = {
+        ...program,
+        criteria: criteria.map(criterion => ({
+          id: criterion.id,
+          title: criterion.name,
+          description: criterion.description,
+          type: 'checkbox' as const,
+          weight: criterion.weight,
+          isRequired: false,
+        }))
+      };
+      onSave(updatedProgram);
     }
 
     setEditingCriterion(null);
