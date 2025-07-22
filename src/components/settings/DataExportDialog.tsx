@@ -88,10 +88,10 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({ children }) 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const { toast } = useToast();
-  const { canExportData } = usePermissions();
+  const { checkPermission } = usePermissions();
 
   // Check if user has permission to export data
-  if (!canExportData) {
+  if (!checkPermission('canViewReports', false)) {
     return (
       <Dialog>
         <DialogTrigger asChild>

@@ -78,8 +78,8 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         position: data.position,
         department: data.department,
         phone: data.phone,
-        permissions: data.permissions,
-        status: data.status
+        status: data.status,
+        permissions: []
       };
       
       onUserUpdate(user.id, userData);

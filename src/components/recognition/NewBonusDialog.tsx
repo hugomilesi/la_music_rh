@@ -27,7 +27,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
 }) => {
   const { employees } = useEmployees();
   const { checkPermission } = usePermissions();
-  const canManagePayroll = useMemo(() => checkPermission('canManagePayroll', false), [checkPermission]);
+  const canManagePayroll = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
   
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [bonusType, setBonusType] = useState('');

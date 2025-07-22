@@ -61,7 +61,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const { checkPermission } = usePermissions();
   
   // Verificar se o usuário tem permissão para gerenciar usuários
-  const canManageUsers = useMemo(() => checkPermission('canManageUsers', false), [checkPermission]);
+  const canManageUsers = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   
   if (!canManageUsers) {
     return (
