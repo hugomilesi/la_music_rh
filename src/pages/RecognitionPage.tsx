@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye, Filter, Loader2, Lock } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -277,8 +278,8 @@ const RecognitionPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reconhecimento</h1>
-          <p className="text-gray-600 mt-1">Gamificação e incentivos para os colaboradores</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gameficação - Incentivos e Reconhecimentos</h1>
+          <p className="text-gray-600 mt-1">Sistema de gamificação e premiação para colaboradores</p>
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
@@ -326,18 +327,26 @@ const RecognitionPage: React.FC = () => {
                 <div className="space-y-2">
                   {leader ? (
                     <>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Líder do mês:</span>
-                        <span className="font-semibold">{leader.employee_name.split(' ')[0]} {leader.employee_name.split(' ')[1]}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">{program.id === 'matriculador' ? 'Matrículas:' : 'Estrelas:'}:</span>
-                        <span className="font-bold" style={{ color: program.color }}>
-                          {program.id === 'fideliza' ? leader.fideliza_stars :
-                           program.id === 'matriculador' ? leader.matriculador_stars :
-                           leader.professor_stars} {program.id === 'matriculador' ? '📚' : '⭐'}
-                        </span>
-                      </div>
+                       <div className="flex justify-between">
+                         <span className="text-sm">Líder do mês:</span>
+                         <span className="font-semibold">{leader.employee_name.split(' ')[0]} {leader.employee_name.split(' ')[1]}</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span className="text-sm">Cargo:</span>
+                         <span className="text-sm text-gray-600">{leader.employee_role}</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span className="text-sm">Unidade:</span>
+                         <span className="text-sm text-gray-600">{parseEmployeeUnit(leader.employee_unit)}</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span className="text-sm">{program.id === 'matriculador' ? 'Matrículas:' : 'Estrelas:'}:</span>
+                         <span className="font-bold" style={{ color: program.color }}>
+                           {program.id === 'fideliza' ? leader.fideliza_stars :
+                            program.id === 'matriculador' ? leader.matriculador_stars :
+                            leader.professor_stars} {program.id === 'matriculador' ? '📚' : '⭐'}
+                         </span>
+                       </div>
                     </>
                   ) : (
                     <p className="text-sm text-gray-500">Nenhum participante elegível</p>
@@ -361,188 +370,327 @@ const RecognitionPage: React.FC = () => {
         })}
       </div>
 
-      {/* Enhanced Ranking Table */}
+      {/* Vencedores do Mês */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-600" />
-              Ranking - Março 2024
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <Select value={selectedProgramFilter} onValueChange={setSelectedProgramFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Ranking Geral</SelectItem>
-                  <SelectItem value="fideliza">Fideliza+ apenas</SelectItem>
-                  <SelectItem value="matriculador">Matriculador+ apenas</SelectItem>
-                  <SelectItem value="professor">Professor+ apenas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-600" />
+            🏆 Vencedores do Mês
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Posição</TableHead>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Cargo</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Programa</TableHead>
+                <TableHead>Estrelas/Matrículas</TableHead>
                 <TableHead>Unidade</TableHead>
-                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'fideliza') && (
-                  <TableHead>Fideliza+</TableHead>
-                )}
-                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'matriculador') && (
-                  <TableHead>Matriculador+</TableHead>
-                )}
-                {(selectedProgramFilter === 'all' || selectedProgramFilter === 'professor') && (
-                  <TableHead>Professor+</TableHead>
-                )}
-                <TableHead>Total</TableHead>
-                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employeeRanking.map((person, index) => (
-                <TableRow 
-                  key={person.employee_id} 
-                  className="cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => handleEmployeeClick(person)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
-                      {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
-                      {index === 2 && <Medal className="w-4 h-4 text-yellow-600" />}
-                      <span className="font-bold">{person.ranking_position}º</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium text-blue-600 hover:text-blue-800 transition-colors">
-                      {person.employee_name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600">{person.employee_role}</TableCell>
-                  <TableCell>{parseEmployeeUnit(person.employee_unit)}</TableCell>
-                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'fideliza') && (
+              {programs.map((program) => {
+                const leader = getLeaderForProgram(program.id);
+                if (!leader) return null;
+                
+                const score = program.id === 'fideliza' ? leader.fideliza_stars :
+                             program.id === 'matriculador' ? leader.matriculador_stars :
+                             leader.professor_stars;
+                const emoji = program.id === 'matriculador' ? '📘' : '⭐';
+                
+                return (
+                  <TableRow key={program.id}>
                     <TableCell>
-                      {isEligibleForProgram(person.employee_role, 'fideliza') ? (
-                        <Badge className="bg-blue-100 text-blue-800">
-                          {person.fideliza_stars} ⭐
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400 text-sm">N/A</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-yellow-500" />
+                        <span className="font-bold">1º</span>
+                      </div>
                     </TableCell>
-                  )}
-                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'matriculador') && (
                     <TableCell>
-                      {isEligibleForProgram(person.employee_role, 'matriculador') ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          {person.matriculador_stars} 📚
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400 text-sm">N/A</span>
-                      )}
+                      <span className="font-medium">{leader.employee_name}</span>
                     </TableCell>
-                  )}
-                  {(selectedProgramFilter === 'all' || selectedProgramFilter === 'professor') && (
                     <TableCell>
-                      {isEligibleForProgram(person.employee_role, 'professor') ? (
-                        <Badge className="bg-purple-100 text-purple-800">
-                          {person.professor_stars} ⭐
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400 text-sm">N/A</span>
-                      )}
+                      <Badge 
+                        className={`${
+                          program.id === 'fideliza' ? 'bg-blue-100 text-blue-800' :
+                          program.id === 'matriculador' ? 'bg-green-100 text-green-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {program.name}
+                      </Badge>
                     </TableCell>
-                  )}
-                  <TableCell>
-                    <span className="font-bold text-lg">{person.total_stars}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const detailedEmployee: DetailedRankingEmployee = {
-                          id: person.employee_id,
-                          name: person.employee_name,
-                          unit: parseEmployeeUnit(person.employee_unit),
-                          role: person.employee_role,
-                          stars: {
-                            fideliza: person.fideliza_stars,
-                            matriculador: person.matriculador_stars,
-                            professor: person.professor_stars
-                          },
-                          total: person.total_stars,
-                          position: person.ranking_position,
-                          achievements: [],
-                          monthlyProgress: [],
-                          metCriteria: {},
-                          joinDate: new Date().toISOString(),
-                          evaluationPeriod: 'Março 2024',
-                          eligiblePrograms: getEligiblePrograms(person.employee_role)
-                        };
-                        handleManageRanking(detailedEmployee);
-                      }}
-                    >
-                      Gerenciar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell>
+                      <span className="font-bold" style={{ color: program.color }}>
+                        {emoji} {score}
+                      </span>
+                    </TableCell>
+                    <TableCell>{parseEmployeeUnit(leader.employee_unit)}</TableCell>
+                  </TableRow>
+                );
+              }).filter(Boolean)}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Recent Achievements */}
+      {/* Rankings por Programa */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            Conquistas Recentes
+            <Trophy className="w-5 h-5 text-yellow-600" />
+            Rankings por Programa - Março 2024
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {achievements.length > 0 ? (
-              achievements.map((achievement, index) => (
-                <div key={achievement.id || index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{achievement.employees?.name || 'Funcionário'}</h3>
-                      <p className="text-sm text-gray-600">{achievement.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className="text-xs">{achievement.program_id}</Badge>
-                        <span className="text-xs text-gray-500">{new Date(achievement.achievement_date).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-yellow-600">+{achievement.stars_awarded} ⭐</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhuma conquista recente</p>
-                <p className="text-sm text-gray-400">As conquistas aparecerão aqui conforme os funcionários atingem marcos</p>
-              </div>
-            )}
-          </div>
+          <Tabs defaultValue="fideliza" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="fideliza" className="text-blue-600">🟦 Fideliza+</TabsTrigger>
+              <TabsTrigger value="matriculador" className="text-green-600">🟩 Matriculador+ LA</TabsTrigger>
+              <TabsTrigger value="professor" className="text-purple-600">🟪 Professor+ LA</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="fideliza">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Posição</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Cargo</TableHead>
+                    <TableHead>Unidade</TableHead>
+                    <TableHead>Estrelas</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employeeRanking
+                    .filter(person => isEligibleForProgram(person.employee_role, 'fideliza'))
+                    .sort((a, b) => b.fideliza_stars - a.fideliza_stars)
+                    .map((person, index) => (
+                      <TableRow 
+                        key={person.employee_id}
+                        className="cursor-pointer hover:bg-blue-50 transition-colors"
+                        onClick={() => handleEmployeeClick(person)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                            {index === 2 && <Medal className="w-4 h-4 text-yellow-600" />}
+                            <span className="font-bold">{index + 1}º</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-blue-600">
+                            {person.employee_name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{person.employee_role}</TableCell>
+                        <TableCell>{parseEmployeeUnit(person.employee_unit)}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {person.fideliza_stars} ⭐
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const detailedEmployee: DetailedRankingEmployee = {
+                                id: person.employee_id,
+                                name: person.employee_name,
+                                unit: parseEmployeeUnit(person.employee_unit),
+                                role: person.employee_role,
+                                stars: {
+                                  fideliza: person.fideliza_stars,
+                                  matriculador: person.matriculador_stars,
+                                  professor: person.professor_stars
+                                },
+                                total: person.total_stars,
+                                position: person.ranking_position,
+                                achievements: [],
+                                monthlyProgress: [],
+                                metCriteria: {},
+                                joinDate: new Date().toISOString(),
+                                evaluationPeriod: 'Março 2024',
+                                eligiblePrograms: getEligiblePrograms(person.employee_role)
+                              };
+                              handleManageRanking(detailedEmployee);
+                            }}
+                          >
+                            Gerenciar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="matriculador">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Posição</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Cargo</TableHead>
+                    <TableHead>Unidade</TableHead>
+                    <TableHead>Matrículas</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employeeRanking
+                    .filter(person => isEligibleForProgram(person.employee_role, 'matriculador'))
+                    .sort((a, b) => b.matriculador_stars - a.matriculador_stars)
+                    .map((person, index) => (
+                      <TableRow 
+                        key={person.employee_id}
+                        className="cursor-pointer hover:bg-green-50 transition-colors"
+                        onClick={() => handleEmployeeClick(person)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                            {index === 2 && <Medal className="w-4 h-4 text-yellow-600" />}
+                            <span className="font-bold">{index + 1}º</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-green-600">
+                            {person.employee_name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{person.employee_role}</TableCell>
+                        <TableCell>{parseEmployeeUnit(person.employee_unit)}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-100 text-green-800">
+                            {person.matriculador_stars} 📚
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const detailedEmployee: DetailedRankingEmployee = {
+                                id: person.employee_id,
+                                name: person.employee_name,
+                                unit: parseEmployeeUnit(person.employee_unit),
+                                role: person.employee_role,
+                                stars: {
+                                  fideliza: person.fideliza_stars,
+                                  matriculador: person.matriculador_stars,
+                                  professor: person.professor_stars
+                                },
+                                total: person.total_stars,
+                                position: person.ranking_position,
+                                achievements: [],
+                                monthlyProgress: [],
+                                metCriteria: {},
+                                joinDate: new Date().toISOString(),
+                                evaluationPeriod: 'Março 2024',
+                                eligiblePrograms: getEligiblePrograms(person.employee_role)
+                              };
+                              handleManageRanking(detailedEmployee);
+                            }}
+                          >
+                            Gerenciar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="professor">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Posição</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Cargo</TableHead>
+                    <TableHead>Unidade</TableHead>
+                    <TableHead>Estrelas</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employeeRanking
+                    .filter(person => isEligibleForProgram(person.employee_role, 'professor'))
+                    .sort((a, b) => b.professor_stars - a.professor_stars)
+                    .map((person, index) => (
+                      <TableRow 
+                        key={person.employee_id}
+                        className="cursor-pointer hover:bg-purple-50 transition-colors"
+                        onClick={() => handleEmployeeClick(person)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                            {index === 2 && <Medal className="w-4 h-4 text-yellow-600" />}
+                            <span className="font-bold">{index + 1}º</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-purple-600">
+                            {person.employee_name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">{person.employee_role}</TableCell>
+                        <TableCell>{parseEmployeeUnit(person.employee_unit)}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-purple-100 text-purple-800">
+                            {person.professor_stars} ⭐
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const detailedEmployee: DetailedRankingEmployee = {
+                                id: person.employee_id,
+                                name: person.employee_name,
+                                unit: parseEmployeeUnit(person.employee_unit),
+                                role: person.employee_role,
+                                stars: {
+                                  fideliza: person.fideliza_stars,
+                                  matriculador: person.matriculador_stars,
+                                  professor: person.professor_stars
+                                },
+                                total: person.total_stars,
+                                position: person.ranking_position,
+                                achievements: [],
+                                monthlyProgress: [],
+                                metCriteria: {},
+                                joinDate: new Date().toISOString(),
+                                evaluationPeriod: 'Março 2024',
+                                eligiblePrograms: getEligiblePrograms(person.employee_role)
+                              };
+                              handleManageRanking(detailedEmployee);
+                            }}
+                          >
+                            Gerenciar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
+
 
       {/* Criteria Modal */}
       {selectedProgram && (
