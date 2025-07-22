@@ -163,7 +163,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
           filteredRequests.map((request) => (
             <Card key={request.id}>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-lg">{request.employeeName}</h3>
@@ -201,23 +201,14 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 lg:min-w-fit">
                     {request.status === 'pendente' && (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(request.id, request.employeeName)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Excluir
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
                           onClick={() => handleApprove(request.id)}
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 sm:flex-none"
                         >
                           <Check className="w-4 h-4 mr-1" />
                           Aprovar
@@ -226,10 +217,19 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                           size="sm"
                           variant="outline"
                           onClick={() => handleReject(request.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
                         >
                           <X className="w-4 h-4 mr-1" />
                           Rejeitar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(request.id, request.employeeName)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Excluir
                         </Button>
                       </>
                     )}
@@ -239,7 +239,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                         size="sm"
                         variant="outline"
                         onClick={() => handleDelete(request.id, request.employeeName)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
                         Excluir
@@ -251,7 +251,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                       size="sm"
                       variant="outline"
                       onClick={() => onViewDetails && onViewDetails(request.id)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 sm:flex-none"
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Detalhes

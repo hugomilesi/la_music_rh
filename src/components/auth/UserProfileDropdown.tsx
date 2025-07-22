@@ -61,6 +61,10 @@ export const UserProfileDropdown: React.FC = () => {
     navigate('/perfil');
   };
 
+  const handleMyProfileClick = () => {
+    navigate('/meu-perfil');
+  };
+
   const handleSettingsClick = () => {
     navigate('/configuracoes-usuario');
   };
@@ -153,6 +157,11 @@ export const UserProfileDropdown: React.FC = () => {
           <DropdownMenuItem onClick={handleProfileClick}>
             <User className="mr-2 h-4 w-4" />
             Perfil
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem onClick={handleMyProfileClick}>
+            <User className="mr-2 h-4 w-4" />
+            Meu Perfil
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={handleSettingsClick}>

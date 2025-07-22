@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, TrendingUp, Calendar, AlertTriangle, Award, Clock } from 'lucide-react';
+import { Users, TrendingUp, Calendar, AlertTriangle, Award } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { BirthdayCard } from './BirthdayCard';
 import { AlertCard } from './AlertCard';
@@ -93,12 +93,12 @@ export const Dashboard: React.FC = () => {
         />
         
         <StatCard
-          title="Horas Trabalhadas"
-          value="2.847h"
-          subtitle="Esta semana"
-          icon={Clock}
-          color="blue"
-          onClick={() => handleStatCardClick('hours')}
+          title="Gamificação"
+          value="127"
+          subtitle="Pontos distribuídos"
+          icon={Award}
+          color="purple"
+          onClick={() => handleStatCardClick('gamification')}
         />
         
         <StatCard

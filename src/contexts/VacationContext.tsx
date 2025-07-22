@@ -139,17 +139,20 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const rejectVacationRequest = async (id: string, reason: string, rejectedBy: string) => {
     try {
-      const updatedRequest = await vacationService.rejectVacationRequest(id, reason);
+      // Reject the request first
+      await vacationService.rejectVacationRequest(id, reason);
       
+      // Then delete it automatically
+      await vacationService.deleteVacationRequest(id);
+      
+      // Remove from state
       setRequests(prev => 
-        prev.map(request => 
-          request.id === id ? updatedRequest : request
-        )
+        prev.filter(request => request.id !== id)
       );
       
       toast({
         title: "Sucesso",
-        description: "Solicitação rejeitada com sucesso!",
+        description: "Solicitação rejeitada e removida automaticamente!",
       });
     } catch (error) {
       console.error('Error rejecting vacation request:', error);

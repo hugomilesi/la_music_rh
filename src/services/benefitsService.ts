@@ -205,8 +205,14 @@ export const benefitsService = {
         : benefitData.coverage;
     }
     if (benefitData.isActive !== undefined) updateData.ativo = benefitData.isActive;
-    if (benefitData.startDate !== undefined) updateData.start_date = benefitData.startDate;
-    if (benefitData.endDate !== undefined) updateData.end_date = benefitData.endDate;
+    if (benefitData.startDate !== undefined) {
+      // Only set start_date if it's a valid date string, not empty
+      updateData.start_date = benefitData.startDate && benefitData.startDate.trim() !== '' ? benefitData.startDate : null;
+    }
+    if (benefitData.endDate !== undefined) {
+      // Only set end_date if it's a valid date string, not empty
+      updateData.end_date = benefitData.endDate && benefitData.endDate.trim() !== '' ? benefitData.endDate : null;
+    }
     
     // Handle new fields that now exist in database
     if (benefitData.provider !== undefined) updateData.provider = benefitData.provider;

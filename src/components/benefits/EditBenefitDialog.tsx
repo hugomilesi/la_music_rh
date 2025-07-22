@@ -28,7 +28,7 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
     name: benefit?.name || '',
     typeId: benefit?.type?.id || '',
     description: benefit?.description || '',
-    value: benefit?.value ? benefit.value.toString() : '',
+    value: benefit?.value !== undefined && benefit?.value !== null ? benefit.value.toString() : '',
     supplier: benefit?.provider || '',
     startDate: benefit?.startDate || '',
     endDate: benefit?.endDate || '',
@@ -44,7 +44,7 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
         name: benefit.name || '',
         typeId: benefit.type?.id || '',
         description: benefit.description || '',
-        value: benefit.value ? benefit.value.toString() : '',
+        value: benefit.value !== undefined && benefit.value !== null ? benefit.value.toString() : '',
         supplier: benefit.provider || '',
         startDate: benefit.startDate || '',
         endDate: benefit.endDate || '',
@@ -65,12 +65,12 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
       name: formData.name,
       type: selectedType,
       description: formData.description,
-      value: parseFloat(formData.value),
+      value: formData.value ? parseFloat(formData.value) : 0,
       provider: formData.supplier,
       coverage,
       documents,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate || null,
+      endDate: formData.endDate || null,
       isActive: formData.isActive
     });
 

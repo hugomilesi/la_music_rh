@@ -548,74 +548,74 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
           )
         };
 
-      case 'hours':
+      case 'gamification':
         return {
-          title: 'Horas Trabalhadas',
-          description: 'Controle de jornada e produtividade da equipe',
+          title: 'Gamificação',
+          description: 'Sistema de incentivos e reconhecimentos',
           content: (
             <div className="space-y-6">
               {/* Summary */}
               <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-600">2.847h</p>
-                    <p className="text-sm text-gray-600">Esta Semana</p>
+                    <p className="text-2xl font-bold text-purple-600">127</p>
+                    <p className="text-sm text-gray-600">Pontos Distribuídos</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-green-600">11.234h</p>
-                    <p className="text-sm text-gray-600">Este Mês</p>
+                    <p className="text-2xl font-bold text-green-600">23</p>
+                    <p className="text-sm text-gray-600">Colaboradores Ativos</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-purple-600">98.5%</p>
-                    <p className="text-sm text-gray-600">Adesão ao Ponto</p>
+                    <p className="text-2xl font-bold text-orange-600">8</p>
+                    <p className="text-sm text-gray-600">Prêmios Entregues</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* By Unit */}
+              {/* Top Performers */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Horas por Unidade (Semana)</CardTitle>
+                  <CardTitle>Top Performers do Mês</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span>Campo Grande</span>
+                      <span>Ana Silva</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={85} className="w-24 h-2" />
-                        <span className="text-sm font-medium">1.247h</span>
+                        <Progress value={95} className="w-24 h-2" />
+                        <span className="text-sm font-medium">95 pts</span>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Barra</span>
+                      <span>Carlos Santos</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={78} className="w-24 h-2" />
-                        <span className="text-sm font-medium">892h</span>
+                        <Progress value={87} className="w-24 h-2" />
+                        <span className="text-sm font-medium">87 pts</span>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Recreio</span>
+                      <span>Maria Oliveira</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={72} className="w-24 h-2" />
-                        <span className="text-sm font-medium">708h</span>
+                        <Progress value={82} className="w-24 h-2" />
+                        <span className="text-sm font-medium">82 pts</span>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Alerts */}
-              <Card className="bg-yellow-50">
+              {/* Programs */}
+              <Card className="bg-purple-50">
                 <CardContent className="p-4">
-                  <h4 className="font-medium text-yellow-900 mb-2">⚠️ Atenção</h4>
-                  <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• 3 colaboradores com horas extras excessivas</li>
-                    <li>• 2 faltas não justificadas esta semana</li>
-                    <li>• Sistema de ponto offline em 2 ocasiões</li>
+                  <h4 className="font-medium text-purple-900 mb-2">🏆 Programas Ativos</h4>
+                  <ul className="text-sm text-purple-800 space-y-1">
+                    <li>• Programa Estrela do Mês - 15 participantes</li>
+                    <li>• Desafio de Vendas - Meta: R$ 50.000</li>
+                    <li>• Reconhecimento por Feedback - 8 indicações</li>
                   </ul>
                 </CardContent>
               </Card>

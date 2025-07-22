@@ -55,13 +55,13 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
       name: formData.name,
       type: selectedType,
       description: formData.description,
-      value: parseFloat(formData.value),
+      value: formData.value ? parseFloat(formData.value) : 0,
       coverage,
       eligibilityRules,
       provider: formData.supplier,
       isActive: formData.isActive,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
+      startDate: formData.startDate || null,
+      endDate: formData.endDate || null,
       documents: documents.map(file => file.name) // Convert to string array
     });
 

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { ScheduleEvent, NewScheduleEventData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { scheduleService } from '@/services/scheduleService';
+import { evaluationService } from '@/services/evaluationService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ScheduleContextType {
@@ -25,8 +26,39 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const data = await scheduleService.getScheduleEvents();
-      setEvents(data);
+      
+      // Carregar eventos da agenda
+      const scheduleEvents = await scheduleService.getScheduleEvents();
+      
+      // Carregar avaliações e converter para eventos
+      let evaluationEvents: ScheduleEvent[] = [];
+      try {
+        const evaluations = await evaluationService.getEvaluations();
+        evaluationEvents = evaluations
+          .filter(evaluation => evaluation.meetingDate && evaluation.meetingTime)
+          .map(evaluation => ({
+            id: `eval_${evaluation.id}`,
+            title: `${evaluation.type} - ${evaluation.employee}`,
+            employeeId: evaluation.employeeId,
+            unit: evaluation.unit as Unit,
+            date: evaluation.meetingDate!,
+            startTime: evaluation.meetingTime!,
+            endTime: addOneHour(evaluation.meetingTime!),
+            type: 'avaliacao',
+            description: `${evaluation.type} com ${evaluation.employee}${evaluation.topics ? `. Tópicos: ${evaluation.topics.join(', ')}` : ''}`,
+            location: evaluation.location || 'Não informado',
+            emailAlert: false,
+            whatsappAlert: false,
+            createdAt: evaluation.date || new Date().toISOString(),
+            updatedAt: evaluation.date || new Date().toISOString()
+          }));
+      } catch (evalError) {
+        console.warn('Error loading evaluation events:', evalError);
+      }
+      
+      // Combinar eventos da agenda e avaliações
+      const allEvents = [...scheduleEvents, ...evaluationEvents];
+      setEvents(allEvents);
     } catch (error) {
       console.error('Error loading schedule events:', error);
       toast({
@@ -37,6 +69,13 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Função auxiliar para adicionar uma hora
+  const addOneHour = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const newHours = (hours + 1) % 24;
+    return `${newHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {

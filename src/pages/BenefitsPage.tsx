@@ -28,6 +28,7 @@ import { PerformanceGoalsModal } from '@/components/benefits/PerformanceGoalsMod
 import { RenewalSettingsModal } from '@/components/benefits/RenewalSettingsModal';
 import { Benefit } from '@/types/benefits';
 import { RenewalManagementModal } from '@/components/benefits/RenewalManagementModal';
+import { EmployeeBenefitsModal } from '@/components/benefits/EmployeeBenefitsModal';
 
 const BenefitsPage: React.FC = () => {
   const { 
@@ -51,6 +52,7 @@ const BenefitsPage: React.FC = () => {
   const [showPerformanceGoalsModal, setShowPerformanceGoalsModal] = useState(false);
   const [showRenewalSettingsModal, setShowRenewalSettingsModal] = useState(false);
   const [showRenewalManagementModal, setShowRenewalManagementModal] = useState(false);
+  const [showEmployeeBenefitsModal, setShowEmployeeBenefitsModal] = useState(false);
 
   const pendingRenewals = checkRenewals();
 
@@ -114,10 +116,19 @@ const BenefitsPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Benefícios</h1>
           <p className="text-gray-600">Gerencie planos e benefícios dos colaboradores</p>
         </div>
-        <Button onClick={() => setShowNewBenefitDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Benefício
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowEmployeeBenefitsModal(true)}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Ver Funcionários
+          </Button>
+          <Button onClick={() => setShowNewBenefitDialog(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Benefício
+          </Button>
+        </div>
       </div>
 
       {/* Renewal Alert */}
@@ -396,6 +407,11 @@ const BenefitsPage: React.FC = () => {
         onApproveRenewal={approveRenewal}
         onDenyRenewal={denyRenewal}
         onExtendRenewal={extendRenewal}
+      />
+
+      <EmployeeBenefitsModal
+        open={showEmployeeBenefitsModal}
+        onOpenChange={setShowEmployeeBenefitsModal}
       />
     </div>
   );

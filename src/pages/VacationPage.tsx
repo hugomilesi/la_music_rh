@@ -1,9 +1,101 @@
-// Temporarily disabled to fix build errors
-export default function VacationPage() {
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { VacationProvider, useVacation } from '@/contexts/VacationContext';
+import { VacationStats } from '@/components/vacation/VacationStats';
+import { VacationAlerts } from '@/components/vacation/VacationAlerts';
+import { VacationCalendar } from '@/components/vacation/VacationCalendar';
+import { VacationRequestsList } from '@/components/vacation/VacationRequestsList';
+import { NewVacationDialog } from '@/components/vacation/NewVacationDialog';
+import { VacationRequest } from '@/types/vacation';
+import { VacationDetailsModal } from '@/components/vacation/VacationDetailsModal';
+import { useToast } from '@/hooks/use-toast';
+
+
+const VacationPageContent = () => {
+  const {
+    vacationRequests,
+    vacationAlerts,
+    isLoading,
+    approveVacationRequest,
+    rejectVacationRequest,
+  } = useVacation();
+  const [isNewRequestDialogOpen, setIsNewRequestDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
+  const { toast } = useToast();
+
+
+  const handleApprove = async (requestId: string) => {
+    try {
+      // Assuming 'adminId' is available from auth context, hardcoding for now
+      await approveVacationRequest(requestId, 'adminId');
+      toast({ title: 'Sucesso', description: 'Solicitação de férias aprovada.' });
+      setSelectedRequest(null);
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Falha ao aprovar a solicitação.', variant: 'destructive' });
+    }
+  };
+
+  const handleReject = async (requestId: string, reason: string) => {
+    try {
+       // Assuming 'adminId' is available from auth context, hardcoding for now
+      await rejectVacationRequest(requestId, reason, 'adminId');
+      toast({ title: 'Sucesso', description: 'Solicitação de férias rejeitada.' });
+      setSelectedRequest(null);
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Falha ao rejeitar a solicitação.', variant: 'destructive' });
+    }
+  };
+
+
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Vacation (Under Maintenance)</h1>
-      <p className="text-gray-600">This page is temporarily disabled while we fix interface issues.</p>
+    <div className="p-6 space-y-6">
+      <header className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Painel de Férias</h1>
+        <Button onClick={() => setIsNewRequestDialogOpen(true)}>Solicitar Férias</Button>
+      </header>
+
+      <VacationStats />
+      <VacationAlerts alerts={vacationAlerts} onViewAlertDetails={(alertId) => {
+        const request = vacationRequests.find(r => `pending_${r.id}` === alertId);
+        if (request) setSelectedRequest(request);
+      }} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <VacationCalendar requests={vacationRequests} />
+        </div>
+        <div>
+          <VacationRequestsList
+            onViewDetails={(requestId) => {
+              const request = vacationRequests.find(r => r.id === requestId);
+              if (request) setSelectedRequest(request);
+            }}
+          />
+        </div>
+      </div>
+
+      <NewVacationDialog
+        open={isNewRequestDialogOpen}
+        onOpenChange={setIsNewRequestDialogOpen}
+      />
+
+      <VacationDetailsModal
+        isOpen={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        requestId={selectedRequest?.id || null}
+      />
     </div>
   );
-}
+};
+
+const VacationPage = () => (
+  <VacationProvider>
+    <VacationPageContent />
+  </VacationProvider>
+);
+
+export default VacationPage;

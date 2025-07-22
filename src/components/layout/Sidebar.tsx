@@ -11,7 +11,6 @@ import {
   Bell,
   BarChart3,
   UserCheck,
-  Clock,
   MessageSquare,
   Shield,
   Plane,
@@ -71,16 +70,10 @@ const menuItems = [
     description: 'Clima organizacional'
   },
   {
-    title: 'Reconhecimento',
+    title: 'Gamificação',
     icon: Award,
     href: '/reconhecimento',
-    description: 'Incentivos e gamificação'
-  },
-  {
-    title: 'Ponto',
-    icon: Clock,
-    href: '/ponto',
-    description: 'Controle de ponto'
+    description: 'Incentivos e Reconhecimentos'
   },
   {
     title: 'Notificações',

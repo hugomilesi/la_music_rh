@@ -6,6 +6,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 import { GlobalContextProvider } from './contexts/GlobalContextProvider';
+import { UnitProvider } from './contexts/UnitContext';
+import { EmployeeProvider } from './contexts/EmployeeContext';
 
 // Pages
 import Index from './pages/Index';
@@ -16,7 +18,7 @@ import DocumentsPage from './pages/DocumentsPage';
 import EvaluationsPage from './pages/EvaluationsPage';
 import VacationPage from './pages/VacationPage';
 import SchedulePage from './pages/SchedulePage';
-import TimesheetPage from './pages/TimesheetPage';
+
 import NPSPage from './pages/NPSPage';
 import RecognitionPage from './pages/RecognitionPage';
 import IncidentsPage from './pages/incidents';
@@ -27,6 +29,7 @@ import SettingsPage from './pages/SettingsPage';
 import PayrollPage from './pages/PayrollPage';
 import UserProfilePage from './pages/UserProfilePage';
 import UserSettingsPage from './pages/UserSettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import NotFound from './pages/NotFound';
 
 // Wrapper component for protected pages with global context
@@ -40,12 +43,16 @@ const ProtectedPageWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   </ProtectedRoute>
 );
 
-// Wrapper component for user pages without global context (since they don't need all the data contexts)
+// Wrapper component for user pages with minimal context (only what's needed for the header)
 const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
-    <MainLayout>
-      {children}
-    </MainLayout>
+    <UnitProvider>
+      <EmployeeProvider>
+        <MainLayout>
+          {children}
+        </MainLayout>
+      </EmployeeProvider>
+    </UnitProvider>
   </ProtectedRoute>
 );
 
@@ -68,6 +75,12 @@ function App() {
           <Route path="/configuracoes-usuario" element={
             <UserPageWrapper>
               <UserSettingsPage />
+            </UserPageWrapper>
+          } />
+          
+          <Route path="/meu-perfil" element={
+            <UserPageWrapper>
+              <ProfilePage />
             </UserPageWrapper>
           } />
           
@@ -104,11 +117,7 @@ function App() {
             </ProtectedPageWrapper>
           } />
           
-          <Route path="/ponto" element={
-            <ProtectedPageWrapper>
-              <TimesheetPage />
-            </ProtectedPageWrapper>
-          } />
+
           
           <Route path="/nps" element={
             <ProtectedPageWrapper>

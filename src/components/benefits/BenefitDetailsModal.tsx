@@ -47,6 +47,13 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const handleDownloadDocument = (docName: string) => {
+    // Implementação temporária - em produção, isso deveria fazer download do arquivo real
+    // Por enquanto, apenas mostra uma mensagem informativa
+    alert(`Funcionalidade de download será implementada para: ${docName}`);
+    // TODO: Implementar download real do documento do storage
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -199,7 +206,12 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
                     <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                       <FileText className="w-4 h-4 text-blue-600" />
                       <span className="text-sm">{doc}</span>
-                      <Button size="sm" variant="outline" className="ml-auto">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="ml-auto"
+                        onClick={() => handleDownloadDocument(doc)}
+                      >
                         Baixar
                       </Button>
                     </div>

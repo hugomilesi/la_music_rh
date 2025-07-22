@@ -2,6 +2,26 @@
 import { supabase } from '@/integrations/supabase/client';
 import { VacationRequest, VacationBalance, NewVacationRequest } from '@/types/vacation';
 
+// Helper function to translate status from database to frontend
+const translateStatus = (dbStatus: string): VacationRequest['status'] => {
+  const statusMap: Record<string, VacationRequest['status']> = {
+    'pending': 'pendente',
+    'approved': 'aprovado',
+    'rejected': 'rejeitado'
+  };
+  return statusMap[dbStatus] || dbStatus as VacationRequest['status'];
+};
+
+// Helper function to translate status from frontend to database
+const translateStatusToDb = (frontendStatus: VacationRequest['status']): string => {
+  const statusMap: Record<VacationRequest['status'], string> = {
+    'pendente': 'pending',
+    'aprovado': 'approved',
+    'rejeitado': 'rejected'
+  };
+  return statusMap[frontendStatus] || frontendStatus;
+};
+
 export const vacationService = {
   async getVacationRequests(): Promise<VacationRequest[]> {
     const { data, error } = await supabase
@@ -21,14 +41,14 @@ export const vacationService = {
       id: request.id,
       employeeId: request.employee_id,
       employeeName: request.employee?.name || 'Unknown',
-      startDate: request.start_date || request.data_inicio,
-      endDate: request.end_date || request.data_fim,
-      days: request.days_requested || request.days,
-      reason: request.notes || request.observacoes || 'Férias',
-      status: request.status as VacationRequest['status'],
-      requestDate: request.created_at ? new Date(request.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      approvedBy: request.approved_by || request.aprovador_id,
-      approvedDate: request.approved_date || request.data_aprovacao || request.updated_at?.split('T')[0],
+      startDate: request.start_date,
+      endDate: request.end_date,
+      days: request.days,
+      reason: request.reason || 'Férias',
+      status: translateStatus(request.status),
+      requestDate: request.request_date || (request.created_at ? new Date(request.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+      approvedBy: request.approved_by,
+      approvedDate: request.approved_date || request.updated_at?.split('T')[0],
       rejectionReason: request.rejection_reason || '',
       type: (request.type as VacationRequest['type']) || 'vacation'
     })) || [];
@@ -47,11 +67,11 @@ export const vacationService = {
     
     return data?.map(balance => ({
       employeeId: balance.employee_id,
-      totalDays: balance.dias_totais || balance.total_days || 30,
-      usedDays: balance.dias_gozados || balance.used_days || 0,
-      remainingDays: (balance.dias_totais || 30) - (balance.dias_gozados || 0),
-      yearlyAllowance: balance.dias_totais || balance.yearly_allowance || 30,
-      expirationDate: balance.vencimento || balance.expiration_date
+      totalDays: balance.total_days || 30,
+      usedDays: balance.used_days || 0,
+      remainingDays: balance.remaining_days || ((balance.total_days || 30) - (balance.used_days || 0)),
+      yearlyAllowance: balance.yearly_allowance || 30,
+      expirationDate: balance.expiration_date
     })) || [];
   },
 
@@ -72,12 +92,12 @@ export const vacationService = {
 
     const insertData = {
       employee_id: requestData.employeeId,
-      data_inicio: requestData.startDate,
-      data_fim: requestData.endDate,
+      start_date: requestData.startDate,
+      end_date: requestData.endDate,
       days: daysDiff,
-      observacoes: requestData.reason,
+      reason: requestData.reason,
       type: requestData.type || 'vacation',
-      status: 'pendente'
+      status: 'pending'
     };
 
     console.log('🔍 createVacationRequest: Insert data prepared:', insertData);
@@ -102,14 +122,14 @@ export const vacationService = {
       id: data.id,
       employeeId: data.employee_id,
       employeeName: data.employee?.name || 'Unknown',
-      startDate: data.start_date || data.data_inicio,
-      endDate: data.end_date || data.data_fim,
-      days: data.days_requested || data.days,
-      reason: data.notes || data.observacoes || 'Férias',
-      status: data.status as VacationRequest['status'],
-      requestDate: data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      approvedBy: data.approved_by || data.aprovador_id,
-      approvedDate: data.approved_date || data.data_aprovacao,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      days: data.days,
+      reason: data.reason || 'Férias',
+      status: translateStatus(data.status),
+      requestDate: data.request_date || (data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+      approvedBy: data.approved_by,
+      approvedDate: data.approved_date,
       rejectionReason: data.rejection_reason || '',
       type: (data.type as VacationRequest['type']) || 'vacation'
     };
@@ -118,14 +138,14 @@ export const vacationService = {
   async updateVacationRequest(id: string, updateData: Partial<VacationRequest>): Promise<VacationRequest> {
     const updateFields: any = {};
     
-    if (updateData.startDate) updateFields.data_inicio = updateData.startDate;
-    if (updateData.endDate) updateFields.data_fim = updateData.endDate;
-    if (updateData.reason) updateFields.observacoes = updateData.reason;
-    if (updateData.status) updateFields.status = updateData.status;
+    if (updateData.startDate) updateFields.start_date = updateData.startDate;
+    if (updateData.endDate) updateFields.end_date = updateData.endDate;
+    if (updateData.reason) updateFields.reason = updateData.reason;
+    if (updateData.status) updateFields.status = translateStatusToDb(updateData.status);
     if (updateData.type) updateFields.type = updateData.type;
     if (updateData.rejectionReason) updateFields.rejection_reason = updateData.rejectionReason;
-    if (updateData.approvedBy) updateFields.aprovador_id = updateData.approvedBy;
-    if (updateData.approvedDate) updateFields.data_aprovacao = updateData.approvedDate;
+    if (updateData.approvedBy) updateFields.approved_by = updateData.approvedBy;
+    if (updateData.approvedDate) updateFields.approved_date = updateData.approvedDate;
     
     // Recalculate days if dates are updated
     if (updateData.startDate && updateData.endDate) {
@@ -154,14 +174,14 @@ export const vacationService = {
       id: data.id,
       employeeId: data.employee_id,
       employeeName: data.employee?.name || 'Unknown',
-      startDate: data.start_date || data.data_inicio,
-      endDate: data.end_date || data.data_fim,
-      days: data.days_requested || data.days,
-      reason: data.notes || data.observacoes || 'Férias',
-      status: data.status as VacationRequest['status'],
-      requestDate: data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      approvedBy: data.approved_by || data.aprovador_id,
-      approvedDate: data.approved_date || data.data_aprovacao,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      days: data.days,
+      reason: data.reason || 'Férias',
+      status: translateStatus(data.status),
+      requestDate: data.request_date || (data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+      approvedBy: data.approved_by,
+      approvedDate: data.approved_date,
       rejectionReason: data.rejection_reason || '',
       type: (data.type as VacationRequest['type']) || 'vacation'
     };
@@ -181,9 +201,9 @@ export const vacationService = {
 
   async approveVacationRequest(id: string, approvedBy: string): Promise<VacationRequest> {
     const updateData = {
-      status: 'aprovado',
-      aprovador_id: approvedBy,
-      data_aprovacao: new Date().toISOString().split('T')[0]
+      status: 'approved',
+      approved_by: approvedBy,
+      approved_date: new Date().toISOString().split('T')[0]
     };
 
     const { data, error } = await supabase
@@ -205,14 +225,14 @@ export const vacationService = {
       id: data.id,
       employeeId: data.employee_id,
       employeeName: data.employee?.name || 'Unknown',
-      startDate: data.start_date || data.data_inicio,
-      endDate: data.end_date || data.data_fim,
-      days: data.days_requested || data.days,
-      reason: data.notes || data.observacoes || 'Férias',
-      status: data.status as VacationRequest['status'],
-      requestDate: data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      approvedBy: data.approved_by || data.aprovador_id,
-      approvedDate: data.approved_date || data.data_aprovacao,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      days: data.days,
+      reason: data.reason || 'Férias',
+      status: translateStatus(data.status),
+      requestDate: data.request_date || (data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+      approvedBy: data.approved_by,
+      approvedDate: data.approved_date,
       rejectionReason: data.rejection_reason || '',
       type: (data.type as VacationRequest['type']) || 'vacation'
     };
@@ -220,7 +240,7 @@ export const vacationService = {
 
   async rejectVacationRequest(id: string, rejectionReason: string): Promise<VacationRequest> {
     const updateData = {
-      status: 'rejeitado',
+      status: 'rejected',
       rejection_reason: rejectionReason
     };
 
@@ -243,14 +263,14 @@ export const vacationService = {
       id: data.id,
       employeeId: data.employee_id,
       employeeName: data.employee?.name || 'Unknown',
-      startDate: data.start_date || data.data_inicio,
-      endDate: data.end_date || data.data_fim,
-      days: data.days_requested || data.days,
-      reason: data.notes || data.observacoes || 'Férias',
-      status: data.status as VacationRequest['status'],
-      requestDate: data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-      approvedBy: data.approved_by || data.aprovador_id,
-      approvedDate: data.approved_date || data.data_aprovacao,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      days: data.days,
+      reason: data.reason || 'Férias',
+      status: translateStatus(data.status),
+      requestDate: data.request_date || (data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]),
+      approvedBy: data.approved_by,
+      approvedDate: data.approved_date,
       rejectionReason: data.rejection_reason || '',
       type: (data.type as VacationRequest['type']) || 'vacation'
     };
