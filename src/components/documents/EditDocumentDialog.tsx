@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,9 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 
   React.useEffect(() => {
     if (document) {
-      setName(document.name || '');
+      setName(document.document || '');
       setNotes(document.notes || '');
-      setExpiryDate(document.expiry_date ? new Date(document.expiry_date).toISOString().split('T')[0] : '');
+      setExpiryDate(document.expiryDate ? new Date(document.expiryDate).toISOString().split('T')[0] : '');
     }
   }, [document]);
 
@@ -43,17 +44,17 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
       if (newFile) {
         // Replace the document file
         await replaceDocument(document.id, newFile, {
-          name: name || document.name,
+          document: name || document.document,
           notes,
-          expiry_date: expiryDate || null
+          expiryDate: expiryDate || null
         });
         toast.success('Documento substituído com sucesso!');
       } else {
         // Update document metadata only
         await updateDocument(document.id, {
-          name: name || document.name,
+          document: name || document.document,
           notes,
-          expiry_date: expiryDate || null
+          expiryDate: expiryDate || null
         });
         toast.success('Documento atualizado com sucesso!');
       }
@@ -133,7 +134,7 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 
           <div className="bg-muted p-3 rounded-md">
             <p className="text-sm font-medium">Arquivo atual:</p>
-            <p className="text-sm text-muted-foreground">{document.file_name}</p>
+            <p className="text-sm text-muted-foreground">{document.fileName}</p>
             <p className="text-sm text-muted-foreground">Tipo: {document.type}</p>
           </div>
         </div>

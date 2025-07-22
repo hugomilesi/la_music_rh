@@ -33,11 +33,11 @@ interface EditIncidentDialogProps {
     id: string;
     employee?: string;
     type: string;
-    severity: 'leve' | 'moderado' | 'grave';
+    severity: 'baixa' | 'media' | 'alta' | 'critica';
     description: string;
     incidentDate: string;
     reporter?: string;
-    status: 'ativo' | 'resolvido' | 'arquivado';
+    status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
   } | null;
 }
 

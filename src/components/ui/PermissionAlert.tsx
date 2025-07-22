@@ -1,9 +1,13 @@
+
 import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Lock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface PermissionAlertProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title?: string;
   description?: string;
   action?: string;
@@ -13,6 +17,8 @@ interface PermissionAlertProps {
 }
 
 export const PermissionAlert: React.FC<PermissionAlertProps> = ({
+  open,
+  onOpenChange,
   title = 'Acesso Restrito',
   description = 'Você não tem permissão para realizar esta ação.',
   action,
@@ -41,6 +47,36 @@ export const PermissionAlert: React.FC<PermissionAlertProps> = ({
         return 'border-yellow-200 bg-yellow-50 text-yellow-800';
     }
   };
+
+  if (open !== undefined && onOpenChange) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {getIcon()}
+              {title}
+            </DialogTitle>
+            <DialogDescription>
+              {description}
+              {action && ` Para ${action}, `}
+              {showContactAdmin && 'entre em contato com um administrador do sistema.'}
+            </DialogDescription>
+          </DialogHeader>
+          {showContactAdmin && onContactAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onContactAdmin}
+              className="mt-2"
+            >
+              Solicitar Acesso
+            </Button>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Alert className={getAlertClass()}>

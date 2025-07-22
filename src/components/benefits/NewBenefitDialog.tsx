@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -63,7 +62,7 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
       isActive: formData.isActive,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      documents: documents.map(file => ({ name: file.name, url: '', type: file.type }))
+      documents: documents.map(file => file.name) // Convert to string array
     });
 
     // Reset form
