@@ -7,12 +7,13 @@ import {
   DialogTitle,
   FormControl,
   FormHelperText,
-  Grid,
   InputLabel,
   MenuItem,
   Select,
   TextField,
-  Typography
+  Typography,
+  SelectChangeEvent,
+  Box
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -35,47 +36,59 @@ interface FormErrors {
   type?: string;
   severity?: string;
   description?: string;
-  date?: string;
+  incidentDate?: string;
   reporterId?: string;
 }
 
 const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, incident }) => {
-  const { employees, loading: loadingEmployees } = useEmployees();
-  const [formData, setFormData] = useState<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'> & { id?: number }>({
-    employee: '',
+  const { employees, isLoading: loadingEmployees } = useEmployees();
+  const [formData, setFormData] = useState<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }>({
     employeeId: '',
+    employeeName: '',
     type: '',
     severity: 'baixa',
     description: '',
-    date: new Date().toISOString().split('T')[0],
-    reporter: '',
+    incidentDate: new Date().toISOString().split('T')[0],
     reporterId: '',
-    status: 'aberto'
+    reporterName: '',
+    status: 'aberto',
+    title: ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (incident) {
       setFormData({
-        ...incident
+        id: incident.id,
+        employeeId: incident.employeeId,
+        employeeName: incident.employeeName,
+        type: incident.type,
+        severity: incident.severity,
+        description: incident.description,
+        incidentDate: incident.incidentDate,
+        reporterId: incident.reporterId,
+        reporterName: incident.reporterName,
+        status: incident.status,
+        title: incident.title
       });
     } else {
       setFormData({
-        employee: '',
         employeeId: '',
+        employeeName: '',
         type: '',
         severity: 'baixa',
         description: '',
-        date: new Date().toISOString().split('T')[0],
-        reporter: '',
+        incidentDate: new Date().toISOString().split('T')[0],
         reporterId: '',
-        status: 'aberto'
+        reporterName: '',
+        status: 'aberto',
+        title: ''
       });
     }
     setErrors({});
   }, [incident, open]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>) => {
     const { name, value } = e.target;
     if (name) {
       setFormData(prev => ({
@@ -97,7 +110,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         if (selectedEmployee) {
           setFormData(prev => ({
             ...prev,
-            employee: selectedEmployee.name
+            employeeName: selectedEmployee.name
           }));
         }
       }
@@ -108,7 +121,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         if (selectedReporter) {
           setFormData(prev => ({
             ...prev,
-            reporter: selectedReporter.name
+            reporterName: selectedReporter.name
           }));
         }
       }
@@ -119,14 +132,14 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     if (date) {
       setFormData(prev => ({
         ...prev,
-        date: date.toISOString().split('T')[0]
+        incidentDate: date.toISOString().split('T')[0]
       }));
       
       // Limpar erro do campo quando ele for alterado
-      if (errors.date) {
+      if (errors.incidentDate) {
         setErrors(prev => ({
           ...prev,
-          date: undefined
+          incidentDate: undefined
         }));
       }
     }
@@ -151,8 +164,8 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
       newErrors.description = 'Descrição é obrigatória';
     }
     
-    if (!formData.date) {
-      newErrors.date = 'Data é obrigatória';
+    if (!formData.incidentDate) {
+      newErrors.incidentDate = 'Data é obrigatória';
     }
     
     if (!formData.reporterId) {
@@ -177,8 +190,13 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
       
       <DialogContent>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-          <Grid container spacing={3} sx={{ mt: 0 }}>
-            <Grid xs={12} md={6}>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+            gap: 3, 
+            mt: 2 
+          }}>
+            <Box>
               <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                 Funcionário *
               </Typography>
@@ -188,7 +206,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                   setFormData(prev => ({
                     ...prev,
                     employeeId,
-                    employee: employeeName
+                    employeeName: employeeName
                   }));
                   if (errors.employeeId) {
                     setErrors(prev => ({
@@ -201,24 +219,24 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                 error={errors.employeeId}
                 disabled={loadingEmployees}
               />
-            </Grid>
+            </Box>
             
-            <Grid xs={12} md={6}>
+            <Box>
               <DatePicker
                 label="Data do Incidente"
-                value={formData.date ? new Date(formData.date) : null}
+                value={formData.incidentDate ? new Date(formData.incidentDate) : null}
                 onChange={handleDateChange}
                 slotProps={{
                   textField: {
                     fullWidth: true,
-                    error: !!errors.date,
-                    helperText: errors.date
+                    error: !!errors.incidentDate,
+                    helperText: errors.incidentDate
                   }
                 }}
               />
-            </Grid>
+            </Box>
             
-            <Grid xs={12} md={6}>
+            <Box>
               <FormControl fullWidth error={!!errors.type}>
                 <InputLabel id="type-label">Tipo de Incidente</InputLabel>
                 <Select
@@ -236,9 +254,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                 </Select>
                 {errors.type && <FormHelperText>{errors.type}</FormHelperText>}
               </FormControl>
-            </Grid>
+            </Box>
             
-            <Grid xs={12} md={6}>
+            <Box>
               <FormControl fullWidth error={!!errors.severity}>
                 <InputLabel id="severity-label">Gravidade</InputLabel>
                 <Select
@@ -255,9 +273,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                 </Select>
                 {errors.severity && <FormHelperText>{errors.severity}</FormHelperText>}
               </FormControl>
-            </Grid>
+            </Box>
             
-            <Grid size={12}>
+            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
               <TextField
                 name="description"
                 label="Descrição"
@@ -269,9 +287,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                 error={!!errors.description}
                 helperText={errors.description}
               />
-            </Grid>
+            </Box>
             
-            <Grid xs={12} md={6}>
+            <Box>
               <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                 Reportado por *
               </Typography>
@@ -281,7 +299,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                   setFormData(prev => ({
                     ...prev,
                     reporterId,
-                    reporter: reporterName
+                    reporterName: reporterName
                   }));
                   if (errors.reporterId) {
                     setErrors(prev => ({
@@ -294,10 +312,10 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                 error={errors.reporterId}
                 disabled={loadingEmployees}
               />
-            </Grid>
+            </Box>
             
             {incident && (
-              <Grid xs={12} md={6}>
+              <Box>
                 <FormControl fullWidth>
                   <InputLabel id="status-label">Status</InputLabel>
                   <Select
@@ -313,9 +331,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                     <MenuItem value="cancelado">Cancelado</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
-          </Grid>
+          </Box>
         </LocalizationProvider>
       </DialogContent>
       
@@ -332,3 +350,6 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
 };
 
 export default IncidentDialog;
+
+// NOTA: O EmployeeContextType no arquivo src/contexts/EmployeeContext.tsx 
+// já possui a propriedade 'isLoading: boolean' que está sendo usada corretamente neste arquivo.
