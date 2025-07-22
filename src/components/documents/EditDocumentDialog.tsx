@@ -43,7 +43,9 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
     try {
       if (newFile) {
         // Replace the document file
-        await replaceDocument(document.id, newFile, {
+        await replaceDocument(document.id, newFile);
+        // Update document metadata after replacing file
+        await updateDocument(document.id, {
           document: name || document.document,
           notes,
           expiryDate: expiryDate || null

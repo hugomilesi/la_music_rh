@@ -139,3 +139,5 @@ export const useIncidents = () => {
   }
   return context;
 };
+
+export type { Incident, IncidentFilter, IncidentStats };

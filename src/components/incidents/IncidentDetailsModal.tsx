@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, User, AlertTriangle, FileText, Edit } from 'lucide-react';
-import { Incident } from '@/contexts/IncidentsContext';
+import type { Incident } from '@/contexts/IncidentsContext';
 
 interface IncidentDetailsModalProps {
   open: boolean;
@@ -66,7 +66,7 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({
                 <User className="w-4 h-4" />
                 <span>Colaborador</span>
               </div>
-              <p className="font-medium">{incident.employee}</p>
+              <p className="font-medium">{incident.employeeName}</p>
             </div>
             
             <div className="space-y-2">
@@ -106,7 +106,7 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({
                 <Calendar className="w-4 h-4" />
                 <span>Data</span>
               </div>
-              <p className="font-medium">{new Date(incident.date).toLocaleDateString('pt-BR')}</p>
+              <p className="font-medium">{new Date(incident.incidentDate).toLocaleDateString('pt-BR')}</p>
             </div>
             
             <div className="space-y-2">
@@ -114,7 +114,7 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({
                 <User className="w-4 h-4" />
                 <span>Responsável pelo Registro</span>
               </div>
-              <p className="font-medium">{incident.reporter}</p>
+              <p className="font-medium">{incident.reporterName}</p>
             </div>
           </div>
 

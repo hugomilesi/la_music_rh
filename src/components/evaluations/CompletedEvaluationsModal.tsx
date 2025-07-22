@@ -24,7 +24,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
   onOpenChange,
   evaluations
 }) => {
-  const { canManageEvaluations } = usePermissions();
+  const { permissions } = usePermissions();
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name'>('date');
 
   const getSortedEvaluations = () => {
@@ -60,7 +60,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
   const sortedEvaluations = getSortedEvaluations();
 
   // Verificação de permissão
-  if (!canManageEvaluations) {
+  if (!permissions.canManageEvaluations) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">

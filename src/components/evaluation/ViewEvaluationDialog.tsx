@@ -193,14 +193,14 @@ const ViewEvaluationDialog: React.FC<ViewEvaluationDialogProps> = ({
                 </div>
               )}
 
-              {/* Metas/Objetivos */}
-              {evaluation.goals && evaluation.goals.length > 0 && (
+              {/* Tópicos */}
+              {evaluation.topics && evaluation.topics.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Metas e Objetivos</label>
+                  <label className="text-sm font-medium text-gray-500">Tópicos Discutidos</label>
                   <div className="mt-1 space-y-2">
-                    {evaluation.goals.map((goal, index) => (
+                    {evaluation.topics.map((topic, index) => (
                       <div key={index} className="p-2 bg-blue-50 rounded-md">
-                        <p className="text-sm text-blue-800">{goal}</p>
+                        <p className="text-sm text-blue-800">{topic}</p>
                       </div>
                     ))}
                   </div>
