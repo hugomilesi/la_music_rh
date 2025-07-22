@@ -6,4 +6,5 @@ export interface UserPermissions {
   canManageSettings: boolean;
   canManageUsers: boolean;
   canManageEvaluations: boolean;
+  canExportData: boolean;
 }

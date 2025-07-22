@@ -36,7 +36,7 @@ export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
     setIsLoading(true);
     try {
       // Chamar a função real de exclusão
-      await deleteSystemUser(user.id);
+      await deleteSystemUser(String(user.id));
       
       onUserDelete(user.id);
       

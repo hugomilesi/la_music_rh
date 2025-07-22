@@ -9,7 +9,8 @@ const mockPermissions: UserPermissions = {
   canViewReports: true,
   canManageSettings: true,
   canManageUsers: true,
-  canManageEvaluations: true
+  canManageEvaluations: true,
+  canExportData: true
 };
 
 export const usePermissions = () => {
@@ -33,6 +34,7 @@ export const usePermissions = () => {
     canManageSettings: permissions.canManageSettings,
     canManageUsers: permissions.canManageUsers,
     canManageEvaluations: permissions.canManageEvaluations,
+    canExportData: permissions.canExportData,
     isAdmin: permissions.canManageUsers,
     isSuperUser: permissions.canManageUsers && permissions.canManageSettings
   };

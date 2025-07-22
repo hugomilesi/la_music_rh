@@ -75,6 +75,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
   const [deletingUser, setDeletingUser] = useState<SystemUser | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
@@ -221,12 +222,15 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 </select>
               </div>
 
-              <AddUserDialog onUserAdd={handleAddUser}>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Usuário
-                </Button>
-              </AddUserDialog>
+              <AddUserDialog 
+                open={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+                onUserAdd={handleAddUser}
+              />
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Usuário
+              </Button>
             </div>
 
             {/* Tabela de Usuários */}

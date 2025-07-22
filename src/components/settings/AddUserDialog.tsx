@@ -1,5 +1,6 @@
 
 import React, { useMemo } from 'react';
+import { CreateSystemUserData } from '@/types/systemUser';
 import { useForm } from 'react-hook-form';
 import {
   Dialog,
@@ -28,6 +29,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUserAdd: (userData: CreateSystemUserData) => void;
+  children?: React.ReactNode;
 }
 
 interface UserFormData {
@@ -50,7 +53,9 @@ interface UserFormData {
 
 export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onUserAdd,
+  children
 }) => {
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
