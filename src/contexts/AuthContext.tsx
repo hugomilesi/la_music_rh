@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -224,8 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, [isSigningOut]);
-
-  // signUp function removed - users are now created only by administrators
 
   const signIn = async (email: string, password: string) => {
     console.log('Attempting to sign in with email:', email);
