@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Users, TrendingUp, Award, AlertTriangle, Calendar, Clock, UserPlus, FileText, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { Unit } from '@/types/unit';
+import { Unit } from '@/types/employee';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface KPIModalProps {

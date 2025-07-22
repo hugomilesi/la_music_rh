@@ -26,8 +26,8 @@ import { Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Employee } from '@/types/employee';
-import { Unit, UNITS } from '@/types/unit';
+import { Employee, Unit } from '@/types/employee';
+import { UNITS } from '@/types/unit';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),

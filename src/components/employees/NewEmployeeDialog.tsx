@@ -24,8 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
-import { NewEmployeeData } from '@/types/employee';
-import { Unit, UNITS } from '@/types/unit';
+import { NewEmployeeData, Unit } from '@/types/employee';
+import { UNITS } from '@/types/unit';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),

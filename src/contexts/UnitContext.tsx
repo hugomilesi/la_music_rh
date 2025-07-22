@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Unit } from '@/types/unit';
+import { Unit } from '@/types/employee';
 
 interface UnitContextType {
   selectedUnits: Unit[];
