@@ -1,25 +1,22 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Save, X, Lock } from 'lucide-react';
-import { RecognitionProgram, RecognitionCriterion } from '@/types/recognition';
+import { Plus, Trash2, Lock } from 'lucide-react';
+import { RecognitionProgram, Criterion } from '@/types/recognition';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface EditCriteriaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   program: RecognitionProgram;
-  onSave: (updatedProgram: RecognitionProgram) => void;
+  onSave: (program: RecognitionProgram) => void;
 }
 
 export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
@@ -28,78 +25,69 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
   program,
   onSave
 }) => {
-  const { canManageEvaluations } = usePermissions();
-  const [editedProgram, setEditedProgram] = useState<RecognitionProgram>({ ...program });
-  const [editingCriterion, setEditingCriterion] = useState<RecognitionCriterion | null>(null);
+  const { checkPermission } = usePermissions();
+  const canManageEvaluations = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
+  
+  const [editedProgram, setEditedProgram] = useState<RecognitionProgram>(program);
+  const [newCriterionTitle, setNewCriterionTitle] = useState('');
+  const [newCriterionDescription, setNewCriterionDescription] = useState('');
+  const [newCriterionWeight, setNewCriterionWeight] = useState(1);
+  const [newCriterionType, setNewCriterionType] = useState<'checkbox' | 'observation' | 'stars'>('checkbox');
+  const [newCriterionIsRequired, setNewCriterionIsRequired] = useState(false);
+  const [newCriterionMaxStars, setNewCriterionMaxStars] = useState(5);
 
-  const addNewCriterion = () => {
-    const newCriterion: RecognitionCriterion = {
-      id: `criterion-${Date.now()}`,
-      title: 'Novo Critério',
-      description: 'Descrição do critério',
-      type: 'checkbox',
-      weight: 5,
-      isRequired: false
+  const handleAddCriterion = () => {
+    if (!newCriterionTitle || !newCriterionDescription) return;
+
+    const newCriterion: Criterion = {
+      id: Date.now().toString(),
+      title: newCriterionTitle,
+      description: newCriterionDescription,
+      weight: newCriterionWeight,
+      type: newCriterionType,
+      isRequired: newCriterionIsRequired,
+      maxStars: newCriterionType === 'stars' ? newCriterionMaxStars : newCriterionWeight
     };
-    setEditingCriterion(newCriterion);
+
+    setEditedProgram(prev => ({
+      ...prev,
+      criteria: [...prev.criteria, newCriterion],
+      totalPossibleStars: prev.totalPossibleStars + newCriterion.weight
+    }));
+
+    setNewCriterionTitle('');
+    setNewCriterionDescription('');
+    setNewCriterionWeight(1);
+    setNewCriterionType('checkbox');
+    setNewCriterionIsRequired(false);
+    setNewCriterionMaxStars(5);
   };
 
-  const editCriterion = (criterion: RecognitionCriterion) => {
-    setEditingCriterion({ ...criterion });
-  };
+  const handleRemoveCriterion = (id: string) => {
+    const removedCriterion = editedProgram.criteria.find(c => c.id === id);
+    if (!removedCriterion) return;
 
-  const saveCriterion = () => {
-    if (!editingCriterion) return;
-
-    const existingIndex = editedProgram.criteria.findIndex(c => c.id === editingCriterion.id);
-    
-    if (existingIndex >= 0) {
-      // Editar critério existente
-      const newCriteria = [...editedProgram.criteria];
-      newCriteria[existingIndex] = editingCriterion;
-      setEditedProgram({ ...editedProgram, criteria: newCriteria });
-    } else {
-      // Adicionar novo critério
-      setEditedProgram({
-        ...editedProgram,
-        criteria: [...editedProgram.criteria, editingCriterion]
-      });
-    }
-
-    setEditingCriterion(null);
-    updateTotalStars();
-  };
-
-  const deleteCriterion = (criterionId: string) => {
-    setEditedProgram({
-      ...editedProgram,
-      criteria: editedProgram.criteria.filter(c => c.id !== criterionId)
-    });
-    updateTotalStars();
-  };
-
-  const updateTotalStars = () => {
-    const total = editedProgram.criteria.reduce((sum, criterion) => sum + criterion.weight, 0);
-    setEditedProgram(prev => ({ ...prev, totalPossibleStars: total }));
+    setEditedProgram(prev => ({
+      ...prev,
+      criteria: prev.criteria.filter(c => c.id !== id),
+      totalPossibleStars: prev.totalPossibleStars - removedCriterion.weight
+    }));
   };
 
   const handleSave = () => {
-    const total = editedProgram.criteria.reduce((sum, criterion) => sum + criterion.weight, 0);
-    const finalProgram = { ...editedProgram, totalPossibleStars: total };
-    onSave(finalProgram);
+    onSave(editedProgram);
     onOpenChange(false);
   };
 
-  const getColorClasses = (color: string) => {
-    switch (color) {
-      case 'blue': return 'border-l-blue-500 bg-blue-50';
-      case 'green': return 'border-l-green-500 bg-green-50';
-      case 'purple': return 'border-l-purple-500 bg-purple-50';
-      default: return 'border-l-gray-500 bg-gray-50';
-    }
+  const handleInputChange = (criterionId: string, field: string, value: any) => {
+    setEditedProgram(prev => ({
+      ...prev,
+      criteria: prev.criteria.map(c =>
+        c.id === criterionId ? { ...c, [field]: value } : c
+      )
+    }));
   };
 
-  // Verificação de permissão
   if (!canManageEvaluations) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,225 +115,145 @@ export const EditCriteriaModal: React.FC<EditCriteriaModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Editar Critérios - {program.name}
-          </DialogTitle>
+          <DialogTitle>Editar Critérios - {editedProgram.name}</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Lista de Critérios */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Critérios Atuais</h3>
-              <Button onClick={addNewCriterion} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar
-              </Button>
-            </div>
-
-            <ScrollArea className="h-[60vh]">
-              <div className="space-y-3">
-                {editedProgram.criteria.map((criterion) => (
-                  <Card key={criterion.id} className="border border-gray-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium flex items-center gap-2">
-                            {criterion.title}
-                            {criterion.isRequired && (
-                              <Badge variant="destructive" className="text-xs">
-                                Obrigatório
-                              </Badge>
-                            )}
-                          </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {criterion.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge className="bg-yellow-100 text-yellow-800">
-                              {criterion.weight} ⭐
-                            </Badge>
-                            <Badge variant="outline">
-                              {criterion.type}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 ml-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => editCriterion(criterion)}
-                          >
-                            Editar
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteCriterion(criterion.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-
-            <Card className={`border-l-4 ${getColorClasses(program.color)}`}>
-              <CardContent className="p-4">
+        <div className="flex gap-6 h-[70vh]">
+          {/* Criteria List */}
+          <div className="flex-1">
+            <Card className="h-full">
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold">Total de Estrelas Possíveis</h4>
-                    <p className="text-sm text-gray-600">
-                      Soma de todos os critérios
-                    </p>
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {editedProgram.criteria.reduce((sum, c) => sum + c.weight, 0)} ⭐
-                  </div>
+                  <CardTitle>Critérios Atuais</CardTitle>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Título</TableHead>
+                        <TableHead>Peso</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {editedProgram.criteria.map((criterion) => (
+                        <TableRow key={criterion.id}>
+                          <TableCell className="font-medium">{criterion.title}</TableCell>
+                          <TableCell>{criterion.weight} ⭐</TableCell>
+                          <TableCell>{criterion.type}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveCriterion(criterion.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {editedProgram.criteria.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Nenhum critério adicionado</p>
+                    </div>
+                  )}
+                </ScrollArea>
               </CardContent>
             </Card>
           </div>
 
-          {/* Editor de Critério */}
-          <div className="space-y-4">
-            {editingCriterion ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {editedProgram.criteria.find(c => c.id === editingCriterion.id) ? 'Editar' : 'Novo'} Critério
-                  </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingCriterion(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+          {/* Form */}
+          <div className="w-96">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Novo Critério</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Título</Label>
+                  <Input
+                    type="text"
+                    value={newCriterionTitle}
+                    onChange={(e) => setNewCriterionTitle(e.target.value)}
+                    placeholder="Título do critério..."
+                  />
                 </div>
 
-                <ScrollArea className="h-[60vh]">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="title">Título</Label>
-                      <Input
-                        id="title"
-                        value={editingCriterion.title}
-                        onChange={(e) =>
-                          setEditingCriterion({ ...editingCriterion, title: e.target.value })
-                        }
-                      />
-                    </div>
+                <div>
+                  <Label className="text-sm font-medium">Descrição</Label>
+                  <Textarea
+                    placeholder="Descrição do critério..."
+                    value={newCriterionDescription}
+                    onChange={(e) => setNewCriterionDescription(e.target.value)}
+                    rows={4}
+                  />
+                </div>
 
-                    <div>
-                      <Label htmlFor="description">Descrição</Label>
-                      <Textarea
-                        id="description"
-                        value={editingCriterion.description}
-                        onChange={(e) =>
-                          setEditingCriterion({ ...editingCriterion, description: e.target.value })
-                        }
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="type">Tipo</Label>
-                      <Select
-                        value={editingCriterion.type}
-                        onValueChange={(value: 'checkbox' | 'observation' | 'stars') =>
-                          setEditingCriterion({ ...editingCriterion, type: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="checkbox">Checkbox</SelectItem>
-                          <SelectItem value="observation">Observação</SelectItem>
-                          <SelectItem value="stars">Estrelas</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="weight">Peso (Estrelas)</Label>
-                      <Input
-                        id="weight"
-                        type="number"
-                        value={editingCriterion.weight}
-                        onChange={(e) =>
-                          setEditingCriterion({
-                            ...editingCriterion,
-                            weight: parseInt(e.target.value) || 0
-                          })
-                        }
-                        min={1}
-                        max={50}
-                      />
-                    </div>
-
-                    {editingCriterion.type === 'stars' && (
-                      <div>
-                        <Label htmlFor="maxStars">Máximo de Estrelas</Label>
-                        <Input
-                          id="maxStars"
-                          type="number"
-                          value={editingCriterion.maxStars || editingCriterion.weight}
-                          onChange={(e) =>
-                            setEditingCriterion({
-                              ...editingCriterion,
-                              maxStars: parseInt(e.target.value) || editingCriterion.weight
-                            })
-                          }
-                          min={1}
-                          max={editingCriterion.weight}
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="required"
-                        checked={editingCriterion.isRequired || false}
-                        onCheckedChange={(checked) =>
-                          setEditingCriterion({ ...editingCriterion, isRequired: checked })
-                        }
-                      />
-                      <Label htmlFor="required">Critério obrigatório</Label>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex gap-3">
-                      <Button onClick={saveCriterion} className="flex-1">
-                        <Save className="w-4 h-4 mr-2" />
-                        Salvar Critério
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingCriterion(null)}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Peso (Estrelas)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={newCriterionWeight}
+                      onChange={(e) => setNewCriterionWeight(parseInt(e.target.value) || 1)}
+                    />
                   </div>
-                </ScrollArea>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-[60vh] text-gray-500">
-                <div className="text-center">
-                  <p>Selecione um critério para editar</p>
-                  <p className="text-sm mt-1">ou adicione um novo critério</p>
+
+                  <div>
+                    <Label className="text-sm font-medium">Tipo</Label>
+                    <Select value={newCriterionType} onValueChange={(value) => setNewCriterionType(value as 'checkbox' | 'observation' | 'stars')}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checkbox">Checkbox</SelectItem>
+                        <SelectItem value="observation">Observação</SelectItem>
+                        <SelectItem value="stars">Estrelas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            )}
+
+                {newCriterionType === 'stars' && (
+                  <div>
+                    <Label className="text-sm font-medium">Max Estrelas</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={newCriterionMaxStars}
+                      onChange={(e) => setNewCriterionMaxStars(parseInt(e.target.value) || 5)}
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isRequired"
+                    checked={newCriterionIsRequired}
+                    onCheckedChange={(checked) => setNewCriterionIsRequired(checked as boolean)}
+                  />
+                  <Label htmlFor="isRequired" className="text-sm font-normal">
+                    Obrigatório
+                  </Label>
+                </div>
+
+                <Button onClick={handleAddCriterion} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Critério
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
 

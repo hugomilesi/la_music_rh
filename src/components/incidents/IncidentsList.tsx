@@ -94,7 +94,8 @@ const IncidentsList: React.FC = () => {
   const fetchIncidents = async () => {
     setLoading(true);
     try {
-      const data = await incidentService.getFiltered(filter);
+      // Corrigindo a chamada para passar um objeto vazio ao invés de string
+      const data = await incidentService.getFiltered(filter === 'all' ? {} : { status: filter });
       setIncidents(data);
     } catch (error) {
       console.error('Erro ao buscar incidentes:', error);

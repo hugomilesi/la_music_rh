@@ -1,182 +1,340 @@
 
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { CreateUserForm } from './CreateUserForm';
-import { UserCredentialsModal } from './UserCredentialsModal';
-import { CreateSystemUserData } from '@/types/systemUser';
-import { createUserSchema, CreateUserFormData } from '@/types/userFormSchemas';
-import { createUserWithAutoPassword } from '@/services/userManagementService';
-import { usePermissions } from '@/hooks/usePermissions';
+import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
+import { Switch } from '@/components/ui/switch';
 import { Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface AddUserDialogProps {
-  children: React.ReactNode;
-  onUserAdd: (user: CreateSystemUserData) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const AddUserDialog: React.FC<AddUserDialogProps> = ({ children, onUserAdd }) => {
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(false);
-  const [userCredentials, setUserCredentials] = useState<any>(null);
-  const { toast } = useToast();
-  const { canCreateUsers } = usePermissions();
-
-  const form = useForm<CreateUserFormData>({
-    resolver: zodResolver(createUserSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      role: 'usuario',
-      position: '',
-      department: '',
-      phone: '',
-      permissions: [],
-      status: 'active'
-    }
-  });
-
-  const onSubmit = async (data: CreateUserFormData) => {
-    // Verificar permissões antes de prosseguir
-    if (!canCreateUsers) {
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      // Criar usuário com senha automática
-      const result = await createUserWithAutoPassword(data);
-      
-      if (result.success && result.user) {
-        // Convert form data to CreateSystemUserData for compatibility
-        const userData: CreateSystemUserData = {
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          department: data.department,
-          phone: data.phone,
-          permissions: data.permissions,
-          status: data.status
-        };
-        
-        onUserAdd(userData);
-        
-        // Exibir credenciais
-        setUserCredentials({
-          name: result.user.name,
-          email: result.user.email,
-          password: result.user.password,
-          position: result.user.position,
-          department: result.user.department
-        });
-        
-        form.reset();
-        setOpen(false);
-        setShowCredentials(true);
-        
-        toast({
-          title: "Usuário criado com sucesso",
-          description: `${data.name} foi adicionado ao sistema`
-        });
-      } else {
-        throw new Error(result.error || 'Erro desconhecido');
-      }
-    } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      toast({
-        title: "Erro ao criar usuário",
-        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+interface UserFormData {
+  name: string;
+  email: string;
+  role: 'admin' | 'professor' | 'coordenador' | 'usuario';
+  department: string;
+  phone: string;
+  position: string;
+  status: 'active' | 'inactive';
+  permissions: {
+    canManageEmployees: boolean;
+    canManagePayroll: boolean;
+    canViewReports: boolean;
+    canManageSettings: boolean;
+    canManageUsers: boolean;
+    canManageEvaluations: boolean;
   };
+}
 
-  // Verificação de permissão
-  if (!canCreateUsers) {
+export const AddUserDialog: React.FC<AddUserDialogProps> = ({
+  open,
+  onOpenChange
+}) => {
+  const { toast } = useToast();
+  const { checkPermission } = usePermissions();
+  
+  // Verificar se o usuário tem permissão para gerenciar usuários
+  const canManageUsers = useMemo(() => checkPermission('canManageUsers', false), [checkPermission]);
+  
+  if (!canManageUsers) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          {children}
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-red-500" />
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
               Acesso Negado
             </DialogTitle>
             <DialogDescription>
-              Você não tem permissão para criar novos usuários.
+              Você não tem permissão para adicionar novos usuários ao sistema.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Fechar
-            </Button>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
+  
+  const form = useForm<UserFormData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'usuario',
+      department: '',
+      phone: '',
+      position: '',
+      status: 'active',
+      permissions: {
+        canManageEmployees: false,
+        canManagePayroll: false,
+        canViewReports: false,
+        canManageSettings: false,
+        canManageUsers: false,
+        canManageEvaluations: false
+      }
+    }
+  });
+
+  const onSubmit = (data: UserFormData) => {
+    console.log('Criando usuário:', {
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      department: data.department,
+      phone: data.phone,
+      permissions: data.permissions,
+      status: data.status
+    });
+    
+    toast({
+      title: "Usuário criado",
+      description: "O novo usuário foi criado com sucesso.",
+    });
+    
+    form.reset();
+    onOpenChange(false);
+  };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          {children}
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
-            <DialogDescription>
-              Preencha as informações para criar um novo colaborador no sistema. Uma senha será gerada automaticamente.
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do novo usuário e configure suas permissões.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Digite o nome completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="usuario@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <CreateUserForm form={form} />
-            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cargo</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={[
+                          { value: 'admin', label: 'Administrador' },
+                          { value: 'professor', label: 'Professor' },
+                          { value: 'coordenador', label: 'Coordenador' },
+                          { value: 'usuario', label: 'Usuário' },
+                        ]}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione o cargo"
+                        searchPlaceholder="Buscar cargo..."
+                        emptyText="Nenhum cargo encontrado."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Pedagógico, Vendas" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Posição</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Professor Senior" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Permissions Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Permissões</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="permissions.canManageEmployees"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Gerenciar Funcionários</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Adicionar, editar e remover funcionários
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="permissions.canManagePayroll"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Gerenciar Folha</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Acesso à folha de pagamento
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="permissions.canViewReports"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Ver Relatórios</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Visualizar relatórios e estatísticas
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="permissions.canManageEvaluations"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Gerenciar Avaliações</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Criar e editar critérios de avaliação
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Criando...' : 'Criar Colaborador'}
+              <Button type="submit">
+                Criar Usuário
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Modal de Credenciais */}
-      {userCredentials && (
-        <UserCredentialsModal
-          isOpen={showCredentials}
-          onClose={() => {
-            setShowCredentials(false);
-            setUserCredentials(null);
-          }}
-          userCredentials={userCredentials}
-        />
-      )}
-    </>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };

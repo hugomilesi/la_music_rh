@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,9 @@ export const CriteriaModal: React.FC<CriteriaModalProps> = ({
   onSaveEvaluation,
   onSaveProgram
 }) => {
-  const { canManageEvaluations } = usePermissions();
+  const { checkPermission } = usePermissions();
+  const canManageEvaluations = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
+  
   const [currentProgram, setCurrentProgram] = useState<RecognitionProgram>(program);
   const [evaluations, setEvaluations] = useState<CriterionEvaluation[]>(
     currentProgram.criteria.map(criterion => ({

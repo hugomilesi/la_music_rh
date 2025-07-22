@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +37,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
   }, [] as { name: string; value: number }[]);
 
   const monthlyData = incidents.reduce((acc, incident) => {
-    const month = new Date(incident.date).toLocaleDateString('pt-BR', { month: 'short' });
+    const month = new Date(incident.incidentDate).toLocaleDateString('pt-BR', { month: 'short' });
     const existing = acc.find(item => item.month === month);
     if (existing) {
       existing.incidents += 1;
