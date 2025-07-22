@@ -178,88 +178,87 @@ const IncidentsStats: React.FC = () => {
         Estatísticas de Incidentes
       </Typography>
       
-      <Grid container spacing={3}>
-        {/* Status Cards */}
-        <Grid component="div" item xs={12} md={6}>
-          <StatsCard
-            title="Incidentes Abertos"
-            value={stats.abertos}
-            total={stats.total}
-            icon={<Error color="error" />}
-            color="error"
-            trend="up"
-            percentage={12}
-          />
-        </Grid>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+          gap: 3,
+          mb: 3
+        }}
+      >
+        <StatsCard
+          title="Incidentes Abertos"
+          value={stats.abertos}
+          total={stats.total}
+          icon={<Error color="error" />}
+          color="error"
+          trend="up"
+          percentage={12}
+        />
         
-        <Grid component="div" item xs={12} md={6}>
-          <StatsCard
-            title="Em Andamento"
-            value={stats.emAndamento}
-            total={stats.total}
-            icon={<Schedule color="warning" />}
-            color="warning"
-            trend="neutral"
-          />
-        </Grid>
+        <StatsCard
+          title="Em Andamento"
+          value={stats.emAndamento}
+          total={stats.total}
+          icon={<Schedule color="warning" />}
+          color="warning"
+          trend="neutral"
+        />
 
-        <Grid component="div" item xs={12} md={6}>
-          <StatsCard
-            title="Resolvidos"
-            value={stats.resolvidos}
-            total={stats.total}
-            icon={<CheckCircle color="success" />}
-            color="success"
-            trend="up"
-            percentage={8}
-          />
-        </Grid>
+        <StatsCard
+          title="Resolvidos"
+          value={stats.resolvidos}
+          total={stats.total}
+          icon={<CheckCircle color="success" />}
+          color="success"
+          trend="up"
+          percentage={8}
+        />
 
-        <Grid component="div" item xs={12} md={6}>
-          <StatsCard
-            title="Total de Incidentes"
-            value={stats.total}
-            icon={<Warning color="info" />}
-            color="info"
-            trend="up"
-            percentage={5}
-          />
-        </Grid>
+        <StatsCard
+          title="Total de Incidentes"
+          value={stats.total}
+          icon={<Warning color="info" />}
+          color="info"
+          trend="up"
+          percentage={5}
+        />
+      </Box>
 
-        {/* Severity Distribution */}
-        <Grid component="div" item xs={12}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Distribuição por Severidade
-              </Typography>
-              
-              <Grid container spacing={2}>
-                {[
-                  { label: 'Crítica', value: stats.criticos, color: 'error' as const },
-                  { label: 'Alta', value: stats.altos, color: 'warning' as const },
-                  { label: 'Média', value: stats.medios, color: 'info' as const },
-                  { label: 'Baixa', value: stats.baixos, color: 'success' as const },
-                ].map((severity) => (
-                  <Grid component="div" item xs={6} md={3} key={severity.label}>
-                    <Box textAlign="center">
-                      <Typography variant="h4" color={`${severity.color}.main`}>
-                        {severity.value}
-                      </Typography>
-                      <Chip
-                        label={severity.label}
-                        color={severity.color}
-                        size="small"
-                        sx={{ mt: 1 }}
-                      />
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Card elevation={2}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Distribuição por Severidade
+          </Typography>
+          
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+              gap: 2
+            }}
+          >
+            {[
+              { label: 'Crítica', value: stats.criticos, color: 'error' as const },
+              { label: 'Alta', value: stats.altos, color: 'warning' as const },
+              { label: 'Média', value: stats.medios, color: 'info' as const },
+              { label: 'Baixa', value: stats.baixos, color: 'success' as const },
+            ].map((severity) => (
+              <Box key={severity.label} textAlign="center">
+                <Typography variant="h4" color={`${severity.color}.main`}>
+                  {severity.value}
+                </Typography>
+                <Chip
+                  label={severity.label}
+                  color={severity.color}
+                  size="small"
+                  sx={{ mt: 1 }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

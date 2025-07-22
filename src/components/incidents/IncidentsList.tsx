@@ -233,9 +233,19 @@ const IncidentsList: React.FC = () => {
           onAction={handleAddIncident}
         />
       ) : (
-        <Grid container spacing={3}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+              lg: 'repeat(3, 1fr)'
+            },
+            gap: 3
+          }}
+        >
           {incidents.map((incident) => (
-            <Grid component="div" item xs={12} md={6} lg={4} key={incident.id}>
+            <Box key={incident.id}>
               <Card 
                 elevation={2} 
                 sx={{
@@ -295,9 +305,9 @@ const IncidentsList: React.FC = () => {
                   </Stack>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
 
       {/* Menu de ações */}
