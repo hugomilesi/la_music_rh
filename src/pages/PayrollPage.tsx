@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { PayrollSheetSelector } from '@/components/payroll/PayrollSheetSelector';
+import { PayrollSheetActions } from '@/components/payroll/PayrollSheetActions';
+import { NewPayrollDialog } from '@/components/payroll/NewPayrollDialog';
+import { EditPayrollDialog } from '@/components/payroll/EditPayrollDialog';
 import { PayrollTable } from '@/components/payroll/PayrollTable';
 import { PayrollAllocationTable } from '@/components/payroll/PayrollAllocationTable';
 import { PayrollFilters } from '@/components/payroll/PayrollFilters';
@@ -11,50 +13,70 @@ import { PayrollTotals } from '@/components/payroll/PayrollTotals';
 import { payrollService } from '@/services/payrollService';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Download, FileText, FileSpreadsheet, Plus } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import type { Payroll, PayrollEntry, Unit, PayrollFilters as PayrollFiltersType } from '@/types/payroll';
 
 export default function PayrollPage() {
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
   
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [payroll, setPayroll] = useState<Payroll | null>(null);
+  const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [filters, setFilters] = useState<PayrollFiltersType>({});
   const [loading, setLoading] = useState(true);
+  const [newPayrollOpen, setNewPayrollOpen] = useState(false);
+  const [editPayrollOpen, setEditPayrollOpen] = useState(false);
 
   // Check permissions
   const canAccess = checkPermission('canAccessSettings', false);
 
   useEffect(() => {
     if (canAccess) {
-      loadData();
+      loadPayrolls();
       loadUnits();
     }
-  }, [currentMonth, currentYear, canAccess]);
+  }, [canAccess]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (selectedPayroll) {
+      loadPayrollEntries();
+    }
+  }, [selectedPayroll, filters]);
+
+  const loadPayrolls = async () => {
+    try {
+      const data = await payrollService.getPayrolls();
+      setPayrolls(data);
+      
+      // Auto-select the most recent payroll
+      if (data.length > 0 && !selectedPayroll) {
+        setSelectedPayroll(data[0]);
+      }
+    } catch (error) {
+      console.error('Error loading payrolls:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar folhas de pagamento',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const loadPayrollEntries = async () => {
+    if (!selectedPayroll) return;
+
     try {
       setLoading(true);
-      
-      // Load or create payroll
-      let currentPayroll = await payrollService.getPayroll(currentMonth, currentYear);
-      if (!currentPayroll) {
-        currentPayroll = await payrollService.createPayroll(currentMonth, currentYear);
-        await payrollService.createPayrollEntries(currentPayroll.id);
-      }
-      
-      setPayroll(currentPayroll);
-      
-      // Load payroll entries
-      const entries = await payrollService.getPayrollEntries(currentMonth, currentYear, filters);
+      const entries = await payrollService.getPayrollEntries(
+        selectedPayroll.month, 
+        selectedPayroll.year, 
+        filters
+      );
       setPayrollEntries(entries);
-      
     } catch (error) {
-      console.error('Error loading payroll data:', error);
+      console.error('Error loading payroll entries:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados da folha de pagamento',
@@ -74,12 +96,25 @@ export default function PayrollPage() {
     }
   };
 
-  const handleCreatePayroll = async () => {
+  const handleCreatePayroll = async (data: {
+    month: number;
+    year: number;
+    duplicateFromMonth?: number;
+    duplicateFromYear?: number;
+  }) => {
     try {
-      const newPayroll = await payrollService.createPayroll(currentMonth, currentYear);
-      await payrollService.createPayrollEntries(newPayroll.id);
-      setPayroll(newPayroll);
-      await loadData();
+      const duplicateFrom = data.duplicateFromMonth && data.duplicateFromYear 
+        ? { month: data.duplicateFromMonth, year: data.duplicateFromYear }
+        : undefined;
+
+      const newPayroll = await payrollService.createPayroll(
+        data.month, 
+        data.year, 
+        duplicateFrom
+      );
+      
+      await loadPayrolls();
+      setSelectedPayroll(newPayroll);
       
       toast({
         title: 'Sucesso',
@@ -90,6 +125,93 @@ export default function PayrollPage() {
       toast({
         title: 'Erro',
         description: 'Erro ao criar folha de pagamento',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDuplicatePayroll = async () => {
+    if (!selectedPayroll) return;
+
+    try {
+      const newMonth = selectedPayroll.month === 12 ? 1 : selectedPayroll.month + 1;
+      const newYear = selectedPayroll.month === 12 ? selectedPayroll.year + 1 : selectedPayroll.year;
+
+      const newPayroll = await payrollService.createPayroll(
+        newMonth,
+        newYear,
+        { month: selectedPayroll.month, year: selectedPayroll.year }
+      );
+      
+      await loadPayrolls();
+      setSelectedPayroll(newPayroll);
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Folha de pagamento duplicada com sucesso',
+      });
+    } catch (error) {
+      console.error('Error duplicating payroll:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao duplicar folha de pagamento',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleUpdatePayroll = async (updates: Partial<Payroll>) => {
+    if (!selectedPayroll) return;
+
+    try {
+      await payrollService.updatePayrollStatus(selectedPayroll.id, updates.status!);
+      
+      // Update local state
+      const updatedPayroll = { ...selectedPayroll, ...updates };
+      setSelectedPayroll(updatedPayroll);
+      setPayrolls(payrolls.map(p => p.id === updatedPayroll.id ? updatedPayroll : p));
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Folha de pagamento atualizada com sucesso',
+      });
+    } catch (error) {
+      console.error('Error updating payroll:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar folha de pagamento',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeletePayroll = async () => {
+    if (!selectedPayroll) return;
+
+    if (selectedPayroll.status !== 'draft') {
+      toast({
+        title: 'Erro',
+        description: 'Apenas folhas em rascunho podem ser excluídas',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await payrollService.deletePayroll(selectedPayroll.id);
+      await loadPayrolls();
+      setSelectedPayroll(null);
+      setPayrollEntries([]);
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Folha de pagamento excluída com sucesso',
+      });
+    } catch (error) {
+      console.error('Error deleting payroll:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao excluir folha de pagamento',
         variant: 'destructive'
       });
     }
@@ -124,16 +246,17 @@ export default function PayrollPage() {
 
   const handleFiltersChange = (newFilters: PayrollFiltersType) => {
     setFilters(newFilters);
-    loadData();
   };
 
   const handleExportExcel = async () => {
+    if (!selectedPayroll) return;
+
     try {
-      const blob = await payrollService.exportToExcel(currentMonth, currentYear);
+      const blob = await payrollService.exportToExcel(selectedPayroll.month, selectedPayroll.year);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `folha-pagamento-${currentMonth}-${currentYear}.xlsx`;
+      a.download = `folha-pagamento-${selectedPayroll.month}-${selectedPayroll.year}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -147,12 +270,14 @@ export default function PayrollPage() {
   };
 
   const handleExportPDF = async () => {
+    if (!selectedPayroll) return;
+
     try {
-      const blob = await payrollService.exportToPDF(currentMonth, currentYear);
+      const blob = await payrollService.exportToPDF(selectedPayroll.month, selectedPayroll.year);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `folha-pagamento-${currentMonth}-${currentYear}.pdf`;
+      a.download = `folha-pagamento-${selectedPayroll.month}-${selectedPayroll.year}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -171,6 +296,7 @@ export default function PayrollPage() {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
+              <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-lg font-semibold mb-2">Acesso Negado</h2>
               <p className="text-muted-foreground">
                 Você não tem permissão para acessar a folha de pagamento.
@@ -182,159 +308,116 @@ export default function PayrollPage() {
     );
   }
 
-  const getMonthName = (month: number) => {
-    const months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-    return months[month - 1];
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">💸 Folha de Pagamento</h1>
-          <p className="text-muted-foreground">
-            Gerencie e visualize a folha de pagamento mensal
-          </p>
+      <div>
+        <h1 className="text-3xl font-bold">💸 Folha de Pagamento</h1>
+        <p className="text-muted-foreground">
+          Gerencie e visualize as folhas de pagamento mensais
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar - Payroll Selector */}
+        <div className="lg:col-span-1">
+          <PayrollSheetSelector
+            payrolls={payrolls}
+            selectedPayroll={selectedPayroll}
+            onSelectPayroll={setSelectedPayroll}
+            onNewPayroll={() => setNewPayrollOpen(true)}
+            loading={loading}
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Select
-            value={currentMonth.toString()}
-            onValueChange={(value) => setCurrentMonth(parseInt(value))}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {getMonthName(i + 1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {selectedPayroll ? (
+            <>
+              {/* Payroll Actions */}
+              <PayrollSheetActions
+                payroll={selectedPayroll}
+                onEdit={() => setEditPayrollOpen(true)}
+                onDuplicate={handleDuplicatePayroll}
+                onDelete={handleDeletePayroll}
+                onExportPDF={handleExportPDF}
+                onExportExcel={handleExportExcel}
+              />
 
-          <Select
-            value={currentYear.toString()}
-            onValueChange={(value) => setCurrentYear(parseInt(value))}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 5 }, (_, i) => {
-                const year = new Date().getFullYear() - 2 + i;
-                return (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+              {/* Filters */}
+              <PayrollFilters
+                units={units}
+                onFiltersChange={handleFiltersChange}
+              />
+
+              {/* Main Payroll Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tabela Principal</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PayrollTable
+                    entries={payrollEntries}
+                    units={units}
+                    onEntryUpdate={handleEntryUpdate}
+                    loading={loading}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Allocation Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tabela de Rateio</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PayrollAllocationTable
+                    entries={payrollEntries}
+                    units={units}
+                    onAllocationUpdate={loadPayrollEntries}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Totals */}
+              <PayrollTotals
+                entries={payrollEntries}
+                units={units}
+              />
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-12">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">
+                    Selecione uma folha de pagamento
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Escolha uma folha na barra lateral ou crie uma nova
+                  </p>
+                  <Button onClick={() => setNewPayrollOpen(true)}>
+                    Criar Nova Folha
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Status and Actions */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-lg">
-                {getMonthName(currentMonth)} de {currentYear}
-              </CardTitle>
-              {payroll && (
-                <Badge variant={
-                  payroll.status === 'draft' ? 'secondary' :
-                  payroll.status === 'approved' ? 'default' : 'destructive'
-                }>
-                  {payroll.status === 'draft' ? 'Rascunho' :
-                   payroll.status === 'approved' ? 'Aprovado' : 'Pago'}
-                </Badge>
-              )}
-            </div>
+      {/* Dialogs */}
+      <NewPayrollDialog
+        open={newPayrollOpen}
+        onOpenChange={setNewPayrollOpen}
+        onCreatePayroll={handleCreatePayroll}
+      />
 
-            <div className="flex gap-2">
-              {!payroll ? (
-                <Button onClick={handleCreatePayroll} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Gerar Folha para {getMonthName(currentMonth)}/{currentYear}
-                </Button>
-              ) : (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleExportPDF}
-                    disabled={payrollEntries.length === 0}
-                    className="gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Exportar PDF
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleExportExcel}
-                    disabled={payrollEntries.length === 0}
-                    className="gap-2"
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Exportar Excel
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {payroll && (
-        <>
-          {/* Filters */}
-          <PayrollFilters
-            units={units}
-            onFiltersChange={handleFiltersChange}
-          />
-
-          {/* Main Payroll Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tabela Principal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PayrollTable
-                entries={payrollEntries}
-                units={units}
-                onEntryUpdate={handleEntryUpdate}
-                loading={loading}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Allocation Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tabela de Rateio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PayrollAllocationTable
-                entries={payrollEntries}
-                units={units}
-                onAllocationUpdate={loadData}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Totals */}
-          <PayrollTotals
-            entries={payrollEntries}
-            units={units}
-          />
-        </>
-      )}
+      <EditPayrollDialog
+        open={editPayrollOpen}
+        onOpenChange={setEditPayrollOpen}
+        payroll={selectedPayroll}
+        onUpdatePayroll={handleUpdatePayroll}
+      />
     </div>
   );
 }

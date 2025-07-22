@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Payroll, PayrollEntry, Unit, PayrollAllocation, PayrollFilters } from '@/types/payroll';
 
@@ -26,7 +27,7 @@ export const payrollService = {
     return data;
   },
 
-  async createPayroll(month: number, year: number): Promise<Payroll> {
+  async createPayroll(month: number, year: number, duplicateFrom?: { month: number; year: number }): Promise<Payroll> {
     const { data, error } = await supabase
       .from('payrolls')
       .insert({ month, year })
@@ -34,6 +35,14 @@ export const payrollService = {
       .single();
 
     if (error) throw error;
+
+    // Create payroll entries
+    if (duplicateFrom) {
+      await this.duplicatePayrollEntries(data.id, duplicateFrom);
+    } else {
+      await this.createPayrollEntries(data.id);
+    }
+
     return data;
   },
 
@@ -41,6 +50,24 @@ export const payrollService = {
     const { error } = await supabase
       .from('payrolls')
       .update({ status })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async deletePayroll(id: string): Promise<void> {
+    // First delete related entries
+    const { error: entriesError } = await supabase
+      .from('folha_pagamento')
+      .delete()
+      .eq('payroll_id', id);
+
+    if (entriesError) throw entriesError;
+
+    // Then delete the payroll
+    const { error } = await supabase
+      .from('payrolls')
+      .delete()
       .eq('id', id);
 
     if (error) throw error;
@@ -110,6 +137,8 @@ export const payrollService = {
       payroll_id: payrollId,
       colaborador_id: employee.id,
       funcao: employee.position,
+      mes: new Date().getMonth() + 1,
+      ano: new Date().getFullYear(),
       salario_base: 0,
       bonus: 0,
       comissao: 0,
@@ -128,6 +157,46 @@ export const payrollService = {
       .insert(entries);
 
     if (error) throw error;
+  },
+
+  async duplicatePayrollEntries(newPayrollId: string, duplicateFrom: { month: number; year: number }): Promise<void> {
+    // Get entries from source payroll
+    const { data: sourceEntries, error: sourceError } = await supabase
+      .from('folha_pagamento')
+      .select('*')
+      .eq('mes', duplicateFrom.month)
+      .eq('ano', duplicateFrom.year);
+
+    if (sourceError) throw sourceError;
+
+    if (sourceEntries && sourceEntries.length > 0) {
+      // Create new entries based on source
+      const newEntries = sourceEntries.map(entry => ({
+        payroll_id: newPayrollId,
+        colaborador_id: entry.colaborador_id,
+        funcao: entry.funcao,
+        classificacao: entry.classificacao,
+        mes: new Date().getMonth() + 1,
+        ano: new Date().getFullYear(),
+        salario_base: entry.salario_base,
+        bonus: 0, // Reset variable amounts
+        comissao: 0,
+        reembolso: 0,
+        passagem: entry.passagem, // Keep fixed amounts
+        inss: entry.inss,
+        lojinha: 0,
+        bistro: 0,
+        adiantamento: 0,
+        outros_descontos: 0,
+        status: 'rascunho'
+      }));
+
+      const { error } = await supabase
+        .from('folha_pagamento')
+        .insert(newEntries);
+
+      if (error) throw error;
+    }
   },
 
   // Units
