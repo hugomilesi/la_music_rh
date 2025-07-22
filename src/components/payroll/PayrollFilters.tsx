@@ -47,14 +47,14 @@ export function PayrollFilters({ units, onFiltersChange }: PayrollFiltersProps) 
             <div className="space-y-2">
               <Label htmlFor="unit-filter">Unidade</Label>
               <Select
-                value={filters.unit || ''}
-                onValueChange={(value) => handleFilterChange('unit', value)}
+                value={filters.unit || 'all'}
+                onValueChange={(value) => handleFilterChange('unit', value === 'all' ? '' : value)}
               >
                 <SelectTrigger id="unit-filter">
                   <SelectValue placeholder="Todas as unidades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as unidades</SelectItem>
+                  <SelectItem value="all">Todas as unidades</SelectItem>
                   {units.map(unit => (
                     <SelectItem key={unit.id} value={unit.id}>
                       {unit.nome}
@@ -68,14 +68,14 @@ export function PayrollFilters({ units, onFiltersChange }: PayrollFiltersProps) 
             <div className="space-y-2">
               <Label htmlFor="classification-filter">Classificação</Label>
               <Select
-                value={filters.classification || ''}
-                onValueChange={(value) => handleFilterChange('classification', value)}
+                value={filters.classification || 'all'}
+                onValueChange={(value) => handleFilterChange('classification', value === 'all' ? '' : value)}
               >
                 <SelectTrigger id="classification-filter">
                   <SelectValue placeholder="Todas as classificações" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as classificações</SelectItem>
+                  <SelectItem value="all">Todas as classificações</SelectItem>
                   {classifications.map(classification => (
                     <SelectItem key={classification} value={classification}>
                       {classification}
