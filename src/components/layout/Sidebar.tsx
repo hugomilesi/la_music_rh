@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Shield,
   Plane,
-  Heart
+  Heart,
+  DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,12 @@ const menuItems = [
     icon: MessageSquare,
     href: '/whatsapp',
     description: 'Integração WhatsApp'
+  },
+  {
+    title: 'Folha de Pagamento',
+    icon: DollarSign,
+    href: '/folha-pagamento',
+    description: 'Gestão da folha de pagamento'
   },
   {
     title: 'Configurações',

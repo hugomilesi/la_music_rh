@@ -24,6 +24,7 @@ import BenefitsPage from './pages/BenefitsPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import PayrollPage from './pages/PayrollPage';
 import UserProfilePage from './pages/UserProfilePage';
 import UserSettingsPage from './pages/UserSettingsPage';
 import NotFound from './pages/NotFound';
@@ -148,6 +149,12 @@ function App() {
           <Route path="/configuracoes" element={
             <ProtectedPageWrapper>
               <SettingsPage />
+            </ProtectedPageWrapper>
+          } />
+          
+          <Route path="/folha-pagamento" element={
+            <ProtectedPageWrapper>
+              <PayrollPage />
             </ProtectedPageWrapper>
           } />
           

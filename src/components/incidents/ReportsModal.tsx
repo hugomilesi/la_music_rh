@@ -109,8 +109,8 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
                 <div className="text-center">
                   <p className="text-2xl font-bold text-orange-600">
                     {incidents.filter(i => i.severity === 'critica').length}
-              </div>
-              <p className="text-sm text-gray-600">Críticas</p>
+                  </p>
+                  <p className="text-sm text-gray-600">Críticas</p>
                 </div>
               </CardContent>
             </Card>
