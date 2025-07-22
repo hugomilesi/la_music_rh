@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -82,13 +83,13 @@ const IncidentsList: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentIncident, setCurrentIncident] = useState<Incident | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [incidentToDelete, setIncidentToDelete] = useState<number | null>(null);
+  const [incidentToDelete, setIncidentToDelete] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: number, status: 'em_andamento' | 'resolvido' | 'cancelado'} | null>(null);
+  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: string, status: 'em_andamento' | 'resolvido' | 'cancelado'} | null>(null);
   
   // Menu de ações
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
 
   const fetchIncidents = async () => {
     setLoading(true);
@@ -118,7 +119,7 @@ const IncidentsList: React.FC = () => {
     };
   }, []); // Empty dependency array to prevent re-subscription
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, incidentId: number) => {
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, incidentId: string) => {
     setAnchorEl(event.currentTarget);
     setSelectedIncidentId(incidentId);
   };
@@ -139,13 +140,13 @@ const IncidentsList: React.FC = () => {
     handleCloseMenu();
   };
 
-  const handleDeleteIncident = (id: number) => {
+  const handleDeleteIncident = (id: string) => {
     setIncidentToDelete(id);
     setConfirmDialogOpen(true);
     handleCloseMenu();
   };
 
-  const handleUpdateStatus = (id: number, status: 'em_andamento' | 'resolvido' | 'cancelado') => {
+  const handleUpdateStatus = (id: string, status: 'em_andamento' | 'resolvido' | 'cancelado') => {
     setIncidentToUpdateStatus({ id, status });
     setStatusDialogOpen(true);
     handleCloseMenu();
@@ -234,7 +235,7 @@ const IncidentsList: React.FC = () => {
       ) : (
         <Grid container spacing={3}>
           {incidents.map((incident) => (
-            <Grid xs={12} md={6} lg={4} key={incident.id}>
+            <Grid item xs={12} md={6} lg={4} key={incident.id}>
               <Card 
                 elevation={2} 
                 sx={{
@@ -260,7 +261,7 @@ const IncidentsList: React.FC = () => {
                         {incident.type}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {format(new Date(incident.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {format(new Date(incident.incidentDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </Typography>
                     </Box>
                     
@@ -285,10 +286,10 @@ const IncidentsList: React.FC = () => {
                     
                     <Box>
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Funcionário:</strong> {incident.employee}
+                        <strong>Funcionário:</strong> {incident.employeeName}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Reportado por:</strong> {incident.reporter}
+                        <strong>Reportado por:</strong> {incident.reporterName}
                       </Typography>
                     </Box>
                   </Stack>

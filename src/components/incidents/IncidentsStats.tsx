@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -66,12 +67,12 @@ const IncidentsStats: React.FC = () => {
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
     const thisMonthIncidents = incidents.filter(incident => {
-      const incidentDate = new Date(incident.date);
+      const incidentDate = new Date(incident.incidentDate);
       return incidentDate.getMonth() === currentMonth && incidentDate.getFullYear() === currentYear;
     });
 
     const lastMonthIncidents = incidents.filter(incident => {
-      const incidentDate = new Date(incident.date);
+      const incidentDate = new Date(incident.incidentDate);
       return incidentDate.getMonth() === lastMonth && incidentDate.getFullYear() === lastMonthYear;
     });
 
@@ -130,7 +131,7 @@ const IncidentsStats: React.FC = () => {
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} md={3}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ p: 2, height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
@@ -146,7 +147,7 @@ const IncidentsStats: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} md={3}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ p: 2, height: '100%', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
@@ -174,7 +175,7 @@ const IncidentsStats: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} md={3}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ p: 2, height: '100%', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
@@ -190,7 +191,7 @@ const IncidentsStats: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid xs={12} md={3}>
+        <Grid item xs={12} md={3}>
           <Card sx={{ p: 2, height: '100%', background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', color: '#333' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
@@ -219,7 +220,7 @@ const IncidentsStats: React.FC = () => {
             const color = getSeverityColor(severity);
             
             return (
-              <Grid xs={12} md={4} key={severity}>
+              <Grid item xs={12} md={4} key={severity}>
                 <Box sx={{ mb: 2 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                     <Typography variant="body1" sx={{ fontWeight: 500, textTransform: 'capitalize' }}>

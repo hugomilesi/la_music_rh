@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -66,7 +67,7 @@ export const IncidentListModal: React.FC<IncidentListModalProps> = ({
             <TableBody>
               {incidents.map((incident) => (
                 <TableRow key={incident.id}>
-                  <TableCell className="font-medium">{incident.employee}</TableCell>
+                  <TableCell className="font-medium">{incident.employeeName}</TableCell>
                   <TableCell>{incident.type}</TableCell>
                   <TableCell>
                     <Badge className={getSeverityBadge(incident.severity)}>
@@ -74,7 +75,7 @@ export const IncidentListModal: React.FC<IncidentListModalProps> = ({
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">{incident.description}</TableCell>
-                  <TableCell>{new Date(incident.date).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{new Date(incident.incidentDate).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell>
                     <Badge className={getStatusBadge(incident.status)}>
                       {incident.status}
