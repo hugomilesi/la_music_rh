@@ -17,7 +17,6 @@ interface NewIncidentDialogProps {
 }
 
 interface IncidentFormData {
-  title: string;
   employeeId: string;
   type: string;
   severity: 'baixa' | 'media' | 'alta' | 'critica';
@@ -36,7 +35,6 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
-      title: '',
       employeeId: '',
       type: '',
       severity: 'baixa',
@@ -48,7 +46,6 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
 
   const onSubmit = (data: IncidentFormData) => {
     const incidentData = {
-      title: data.title,
       employeeId: data.employeeId,
       employeeName: employees.find(emp => emp.id === data.employeeId)?.name || '',
       type: data.type,
@@ -80,19 +77,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título da Ocorrência</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Ex: Atraso no horário de entrada" required />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             
             <div className="grid grid-cols-2 gap-4">
               <FormField

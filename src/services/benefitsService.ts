@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Benefit, BenefitType, EmployeeBenefit } from '@/types/benefits';
+import { benefitDocumentService, BenefitDocumentUpload } from './benefitDocumentService';
 
 export const benefitsService = {
   // Benefit Types
@@ -411,6 +412,23 @@ export const benefitsService = {
 
     console.log('✅ UUID validation passed. Proceeding with enrollment:', { employeeId, benefitId, dependents });
     
+    // Check if enrollment already exists
+    const { data: existingEnrollment, error: checkError } = await supabase
+      .from('employee_benefits')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('benefit_id', benefitId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing enrollment:', checkError);
+      throw checkError;
+    }
+
+    if (existingEnrollment) {
+      throw new Error('Funcionário já está inscrito neste benefício');
+    }
+    
     // First create the enrollment
     const { data: enrollment, error: enrollmentError } = await supabase
       .from('employee_benefits')
@@ -428,6 +446,9 @@ export const benefitsService = {
 
     if (enrollmentError) {
       console.error('Error creating enrollment:', enrollmentError);
+      if (enrollmentError.code === '23505') {
+        throw new Error('Funcionário já está inscrito neste benefício');
+      }
       throw enrollmentError;
     }
 
@@ -682,6 +703,54 @@ export const benefitsService = {
       };
     } catch (error) {
       console.error('Error calculating benefit statistics:', error);
+      throw error;
+    }
+  },
+
+  // Document management methods
+  async uploadBenefitDocument(uploadData: BenefitDocumentUpload) {
+    try {
+      console.log('🔄 Uploading benefit document:', uploadData.document_name);
+      return await benefitDocumentService.uploadDocument(uploadData);
+    } catch (error) {
+      console.error('❌ Error uploading benefit document:', error);
+      throw error;
+    }
+  },
+
+  async getBenefitDocuments(employeeBenefitId: string) {
+    try {
+      return await benefitDocumentService.getDocumentsByBenefitId(employeeBenefitId);
+    } catch (error) {
+      console.error('❌ Error fetching benefit documents:', error);
+      throw error;
+    }
+  },
+
+  async downloadBenefitDocument(documentId: string) {
+    try {
+      return await benefitDocumentService.downloadDocument(documentId);
+    } catch (error) {
+      console.error('❌ Error downloading benefit document:', error);
+      throw error;
+    }
+  },
+
+  async deleteBenefitDocument(documentId: string) {
+    try {
+      await benefitDocumentService.deleteDocument(documentId);
+      console.log('✅ Benefit document deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting benefit document:', error);
+      throw error;
+    }
+  },
+
+  async updateBenefitDocument(documentId: string, updates: any) {
+    try {
+      return await benefitDocumentService.updateDocument(documentId, updates);
+    } catch (error) {
+      console.error('❌ Error updating benefit document:', error);
       throw error;
     }
   },

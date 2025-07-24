@@ -5,6 +5,7 @@ import { Unit } from '@/types/unit';
 
 export const employeeService = {
   async getEmployees(): Promise<Employee[]> {
+    // Get all employees - we'll handle auth checking in the frontend if needed
     const { data, error } = await supabase
       .from('employees')
       .select('*')

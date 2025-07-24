@@ -51,8 +51,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     incidentDate: new Date().toISOString().split('T')[0],
     reporterId: '',
     reporterName: '',
-    status: 'aberto',
-    title: ''
+    status: 'aberto'
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -68,8 +67,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         incidentDate: incident.incidentDate,
         reporterId: incident.reporterId,
         reporterName: incident.reporterName,
-        status: incident.status,
-        title: incident.title
+        status: incident.status
       });
     } else {
       setFormData({
@@ -81,8 +79,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         incidentDate: new Date().toISOString().split('T')[0],
         reporterId: '',
         reporterName: '',
-        status: 'aberto',
-        title: ''
+        status: 'aberto'
       });
     }
     setErrors({});

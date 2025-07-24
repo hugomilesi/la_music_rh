@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DocumentService } from '@/services/documentService';
+import { documentService } from '@/services/documentService';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Download, List, TestTube, X } from 'lucide-react';
@@ -26,7 +26,7 @@ export const DocumentTest: React.FC<DocumentTestProps> = ({ onClose }) => {
     addResult('Testando conexão com Supabase...');
     
     try {
-      const success = await DocumentService.testConnection();
+      const success = await documentService.testConnection();
       if (success) {
         addResult('✅ Conexão com Supabase funcionando');
         toast({ title: 'Sucesso', description: 'Conexão testada com sucesso' });
@@ -60,13 +60,19 @@ export const DocumentTest: React.FC<DocumentTestProps> = ({ onClose }) => {
     addResult(`Testando upload do arquivo: ${file.name}`);
     
     try {
-      const result = await DocumentService.uploadTestDocument(file, employee.id, 'Teste');
+      const result = await documentService.uploadDocument({
+        employee_id: employee.id,
+        document_name: 'Teste',
+        document_type: 'teste',
+        file: file,
+        uploaded_by: 'sistema'
+      });
       addResult(`✅ Upload realizado com sucesso. ID: ${result.id}`);
       toast({ title: 'Sucesso', description: 'Upload testado com sucesso' });
       
       // Test download immediately
       addResult('Testando download...');
-      const downloadUrl = await DocumentService.testDownload(result.file_path);
+      const downloadUrl = await documentService.downloadDocument(result.id);
       addResult(`✅ Download URL gerada: ${downloadUrl.substring(0, 50)}...`);
       
     } catch (error) {
@@ -82,11 +88,11 @@ export const DocumentTest: React.FC<DocumentTestProps> = ({ onClose }) => {
     addResult('Listando arquivos no storage...');
     
     try {
-      const files = await DocumentService.listStorageFiles();
-      addResult(`✅ Encontrados ${files.length} arquivos no storage`);
-      files.forEach((file, index) => {
-        addResult(`  ${index + 1}. ${file.name} (${file.metadata?.size || 'N/A'} bytes)`);
-      });
+      const files = await documentService.getAllDocuments();
+      addResult(`✅ Encontrados ${files.length} documentos no banco`);
+        files.forEach((file, index) => {
+          addResult(`  ${index + 1}. ${file.document_name} (${file.file_size || 'N/A'} bytes)`);
+        });
     } catch (error) {
       addResult(`❌ Erro ao listar arquivos: ${error}`);
     } finally {

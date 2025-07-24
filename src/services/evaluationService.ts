@@ -8,7 +8,7 @@ export const evaluationService = {
       .from('evaluations')
       .select(`
         *,
-        employee:employees!evaluations_employee_id_fkey(name, position, units),
+        employee:employees!evaluations_employee_id_fkey(name, position),
         evaluator:employees!evaluations_evaluator_id_fkey(name)
       `)
       .order('date', { ascending: false });
@@ -20,25 +20,11 @@ export const evaluationService = {
     
     // Transform the data to match the frontend interface
     return data?.map(evaluation => {
-      // Parse units from JSON string if it exists
-      let units = [];
-      if (evaluation.employee?.units) {
-        try {
-          units = typeof evaluation.employee.units === 'string' 
-            ? JSON.parse(evaluation.employee.units) 
-            : evaluation.employee.units;
-        } catch (e) {
-          console.warn('Error parsing units:', e);
-          units = [];
-        }
-      }
-      
       return {
         ...evaluation,
         employeeId: evaluation.employee_id,
         employee: evaluation.employee?.name || 'Unknown',
         role: evaluation.employee?.position || 'Unknown',
-        unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
         evaluator: evaluation.evaluator?.name,
         type: this.mapEvaluationType(evaluation.type),
         status: this.mapEvaluationStatus(evaluation.status),
@@ -56,7 +42,6 @@ export const evaluationService = {
       type: this.mapEvaluationTypeToDb(evaluationData.type),
       status: 'pendente', // Set default status as required field
       period: evaluationData.period,
-      unit: evaluationData.unit,
       comments: evaluationData.comments,
       meeting_date: evaluationData.meetingDate,
       meeting_time: evaluationData.meetingTime,
@@ -71,7 +56,7 @@ export const evaluationService = {
       .insert([dbData])
       .select(`
         *,
-        employee:employees!evaluations_employee_id_fkey(name, position, units),
+        employee:employees!evaluations_employee_id_fkey(name, position),
         evaluator:employees!evaluations_evaluator_id_fkey(name)
       `)
       .single();
@@ -81,25 +66,11 @@ export const evaluationService = {
       throw error;
     }
     
-    // Parse units from JSON string if it exists
-    let units = [];
-    if (data.employee?.units) {
-      try {
-        units = typeof data.employee.units === 'string' 
-          ? JSON.parse(data.employee.units) 
-          : data.employee.units;
-      } catch (e) {
-        console.warn('Error parsing units:', e);
-        units = [];
-      }
-    }
-    
     return {
       ...data,
       employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
-      unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
       evaluator: data.evaluator?.name,
       type: this.mapEvaluationType(data.type),
       status: this.mapEvaluationStatus(data.status),
@@ -149,7 +120,7 @@ export const evaluationService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!evaluations_employee_id_fkey(name, position, units),
+        employee:employees!evaluations_employee_id_fkey(name, position),
         evaluator:employees!evaluations_evaluator_id_fkey(name)
       `)
       .single();
@@ -159,25 +130,11 @@ export const evaluationService = {
       throw error;
     }
     
-    // Parse units from JSON string if it exists
-    let units = [];
-    if (data.employee?.units) {
-      try {
-        units = typeof data.employee.units === 'string' 
-          ? JSON.parse(data.employee.units) 
-          : data.employee.units;
-      } catch (e) {
-        console.warn('Error parsing units:', e);
-        units = [];
-      }
-    }
-    
     return {
       ...data,
       employeeId: data.employee_id,
       employee: data.employee?.name || 'Unknown',
       role: data.employee?.position || 'Unknown',
-      unit: Array.isArray(units) && units.length > 0 ? units[0] : 'campo-grande',
       evaluator: data.evaluator?.name,
       type: this.mapEvaluationType(data.type),
       status: this.mapEvaluationStatus(data.status),

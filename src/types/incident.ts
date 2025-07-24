@@ -12,7 +12,6 @@ export interface Incident {
   reporterId: string;
   reporterName: string;
   status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
-  title: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -30,7 +29,6 @@ export interface NewIncidentData {
   reporterId: string;
   reporterName?: string;
   status?: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
-  title: string;
 }
 
 /**

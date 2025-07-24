@@ -44,7 +44,7 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
       addEvent({
         title: `Coffee Connection - ${evaluation.employee}`,
         employeeId: evaluation.employeeId,
-        unit: evaluation.unit as any, // Will need proper unit mapping
+        // unit property removed since it doesn't exist in database
         date: evaluation.meetingDate,
         startTime: evaluation.meetingTime,
         endTime: addOneHour(evaluation.meetingTime),
@@ -135,7 +135,7 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
                         )}
                       </div>
                       
-                      <p className="text-sm text-gray-600 mb-1">{evaluation.role} - {evaluation.unit}</p>
+                      <p className="text-sm text-gray-600 mb-1">{evaluation.role}</p>
                       
                       {evaluation.meetingDate && evaluation.meetingTime && (
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">

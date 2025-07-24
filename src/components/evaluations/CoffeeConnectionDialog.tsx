@@ -30,7 +30,6 @@ import { Coffee, X, Plus } from 'lucide-react';
 
 const formSchema = z.object({
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.string().optional(),
   meetingDate: z.string().min(1, 'Data é obrigatória'),
   meetingTime: z.string().min(1, 'Horário é obrigatório'),
   location: z.string().min(1, 'Local é obrigatório'),
@@ -62,7 +61,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: '',
-      unit: '',
       meetingDate: '',
       meetingTime: '',
       location: '',
@@ -94,7 +92,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         employeeId: data.employeeId,
         type: 'Coffee Connection',
         period: new Date().getFullYear().toString(),
-        unit: data.unit || '',
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,
         location: data.location,
@@ -161,27 +158,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unidade (Opcional)</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="">Selecione uma unidade</option>
-                        <option value="Campo Grande">Campo Grande</option>
-                        <option value="Recreio">Recreio</option>
-                        <option value="Barra">Barra</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <FormField
                 control={form.control}

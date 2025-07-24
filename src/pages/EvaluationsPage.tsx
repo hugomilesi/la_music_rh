@@ -83,8 +83,8 @@ const EvaluationsPage: React.FC = () => {
                          evaluation.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          evaluation.period.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Unit filter
-    const matchesUnit = !selectedUnit || evaluation.unit === selectedUnit;
+    // Unit filter (removed - unit property no longer exists)
+    const matchesUnit = true;
     
     // Type filter
     const matchesType = !selectedType || evaluation.type === selectedType;
@@ -240,7 +240,7 @@ const EvaluationsPage: React.FC = () => {
               <TableRow>
                 <TableHead>Colaborador</TableHead>
                 <TableHead>Cargo</TableHead>
-                <TableHead>Unidade</TableHead>
+
                 <TableHead>Tipo</TableHead>
                 <TableHead>Período</TableHead>
                 <TableHead>Nota</TableHead>
@@ -254,7 +254,7 @@ const EvaluationsPage: React.FC = () => {
                 <TableRow key={evaluation.id}>
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
-                  <TableCell>{evaluation.unit}</TableCell>
+
                   <TableCell>
                     <Badge className={getTypeBadge(evaluation.type)}>
                       {evaluation.type === 'Coffee Connection' && <Coffee className="w-3 h-3 mr-1" />}

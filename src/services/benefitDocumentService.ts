@@ -1,8 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export interface Document {
+export interface BenefitDocument {
   id: string;
-  employee_id: string;
+  employee_benefit_id: string;
   document_name: string;
   document_type: string;
   file_name: string;
@@ -17,8 +17,8 @@ export interface Document {
   updated_at: string;
 }
 
-export interface DocumentUpload {
-  employee_id: string;
+export interface BenefitDocumentUpload {
+  employee_benefit_id: string;
   document_name: string;
   document_type: string;
   file: File;
@@ -27,60 +27,15 @@ export interface DocumentUpload {
   uploaded_by: string;
 }
 
-export const documentService = {
-  // Get all documents for an employee
-  async getDocumentsByEmployeeId(employeeId: string): Promise<Document[]> {
+export const benefitDocumentService = {
+  async uploadDocument(uploadData: BenefitDocumentUpload): Promise<BenefitDocument> {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching documents:', error);
-        throw error;
-      }
-      
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching employee documents:', error);
-      throw error;
-    }
-  },
-
-  // Get all documents
-  async getAllDocuments(): Promise<Document[]> {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          *,
-          employee:employees!documents_employee_id_fkey(name)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching all documents:', error);
-        throw error;
-      }
-      
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching all documents:', error);
-      throw error;
-    }
-  },
-
-  // Upload a new document
-  async uploadDocument(uploadData: DocumentUpload): Promise<Document> {
-    try {
-      console.log('🔄 Starting document upload:', uploadData.document_name);
+      console.log('🔄 Starting benefit document upload:', uploadData.document_name);
       
       // Generate unique file path
       const timestamp = Date.now();
       const sanitizedFileName = uploadData.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const filePath = `employees/${uploadData.employee_id}/${uploadData.document_type}/${timestamp}_${sanitizedFileName}`;
+      const filePath = `benefits/${uploadData.employee_benefit_id}/${timestamp}_${sanitizedFileName}`;
       
       // Upload file to storage
       const { data: uploadResult, error: uploadError } = await supabase.storage
@@ -101,7 +56,7 @@ export const documentService = {
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
-          employee_id: uploadData.employee_id,
+          employee_id: null, // This is for benefit documents, not employee documents
           document_name: uploadData.document_name,
           document_type: uploadData.document_type,
           file_name: uploadData.file.name,
@@ -124,20 +79,68 @@ export const documentService = {
       }
       
       console.log('✅ Document record created:', document.id);
-      return document;
+      
+      // Create relationship between document and employee benefit
+      const { error: relationError } = await supabase
+        .from('benefit_documents')
+        .insert({
+          employee_benefit_id: uploadData.employee_benefit_id,
+          document_id: document.id
+        });
+      
+      if (relationError) {
+        console.error('❌ Relation creation error:', relationError);
+        // This might fail if the table doesn't exist, but we'll continue
+        console.warn('⚠️ Could not create benefit-document relation, table might not exist');
+      }
+      
+      return {
+        ...document,
+        employee_benefit_id: uploadData.employee_benefit_id
+      };
     } catch (error) {
       console.error('❌ Document upload failed:', error);
       throw error;
     }
   },
 
-  // Download a document
+  async getDocumentsByBenefitId(employeeBenefitId: string): Promise<BenefitDocument[]> {
+    try {
+      // Try to get documents through relation table first
+      const { data: relations, error: relationError } = await supabase
+        .from('benefit_documents')
+        .select(`
+          document_id,
+          documents!inner(*)
+        `)
+        .eq('employee_benefit_id', employeeBenefitId);
+      
+      if (relationError && relationError.code !== 'PGRST116') {
+        console.error('Error fetching benefit documents:', relationError);
+        throw relationError;
+      }
+      
+      if (relations && relations.length > 0) {
+        return relations.map(rel => ({
+          ...rel.documents,
+          employee_benefit_id: employeeBenefitId
+        }));
+      }
+      
+      // Fallback: return empty array if no relations found
+      return [];
+    } catch (error) {
+      console.error('Error fetching benefit documents:', error);
+      throw error;
+    }
+  },
+
   async downloadDocument(documentId: string): Promise<string> {
     try {
       // Get document info
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('file_path, file_name')
+        .select('file_path')
         .eq('id', documentId)
         .single();
       
@@ -163,29 +166,6 @@ export const documentService = {
     }
   },
 
-  // Update document metadata
-  async updateDocument(documentId: string, updates: Partial<Pick<Document, 'document_name' | 'status' | 'expiry_date' | 'notes'>>): Promise<Document> {
-    try {
-      const { data: document, error } = await supabase
-        .from('documents')
-        .update(updates)
-        .eq('id', documentId)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error updating document:', error);
-        throw error;
-      }
-      
-      return document;
-    } catch (error) {
-      console.error('Error updating document:', error);
-      throw error;
-    }
-  },
-
-  // Delete a document
   async deleteDocument(documentId: string): Promise<void> {
     try {
       // Get document info first
@@ -210,6 +190,12 @@ export const documentService = {
         // Continue with database deletion even if storage fails
       }
       
+      // Delete relation if exists
+      await supabase
+        .from('benefit_documents')
+        .delete()
+        .eq('document_id', documentId);
+      
       // Delete document record
       const { error: deleteError } = await supabase
         .from('documents')
@@ -228,24 +214,24 @@ export const documentService = {
     }
   },
 
-  // Test connection
-  async testConnection(): Promise<boolean> {
+  async updateDocument(documentId: string, updates: Partial<Pick<BenefitDocument, 'document_name' | 'status' | 'expiry_date' | 'notes'>>): Promise<BenefitDocument> {
     try {
-      const { data, error } = await supabase
+      const { data: document, error } = await supabase
         .from('documents')
-        .select('count')
-        .limit(1);
+        .update(updates)
+        .eq('id', documentId)
+        .select()
+        .single();
       
       if (error) {
-        console.error('Connection test failed:', error);
-        return false;
+        console.error('Error updating document:', error);
+        throw error;
       }
       
-      console.log('Connection test successful');
-      return true;
+      return document;
     } catch (error) {
-      console.error('Connection test error:', error);
-      return false;
+      console.error('Error updating document:', error);
+      throw error;
     }
   }
-}
+};

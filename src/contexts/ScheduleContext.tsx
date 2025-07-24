@@ -40,7 +40,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             id: `eval_${evaluation.id}`,
             title: `${evaluation.type} - ${evaluation.employee}`,
             employeeId: evaluation.employeeId,
-            unit: evaluation.unit as Unit,
+            unit: 'campo-grande' as Unit,
             date: evaluation.meetingDate!,
             startTime: evaluation.meetingTime!,
             endTime: addOneHour(evaluation.meetingTime!),

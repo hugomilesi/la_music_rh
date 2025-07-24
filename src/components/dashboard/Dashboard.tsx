@@ -17,14 +17,21 @@ import {
   Disc
 } from 'lucide-react';
 import { StatCard } from './StatCard';
+import { StatCardSkeleton } from './StatCardSkeleton';
 import { BirthdayCard } from './BirthdayCard';
 import { AlertCard } from './AlertCard';
 import { VacationAlerts } from '../vacation/VacationAlerts';
 import { KPIModal } from './KPIModal';
+import { useDashboardData, useDashboardAlerts, useUnitSummary } from '@/hooks/useDashboardData';
 
 export const Dashboard: React.FC = () => {
   const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Hooks personalizados para dados do dashboard
+  const metrics = useDashboardData();
+  const alerts = useDashboardAlerts();
+  const unitSummary = useUnitSummary(metrics.unitDistribution, metrics.isLoading);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,6 +54,8 @@ export const Dashboard: React.FC = () => {
     if (hour < 18) return 'Boa tarde';
     return 'Boa noite';
   };
+
+
 
   return (
     <div className="space-y-8 relative">
@@ -116,80 +125,96 @@ export const Dashboard: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <StatCard
-            title="Colaboradores Ativos"
-            value="127"
-            subtitle="Campo Grande: 45 | Recreio: 42 | Barra: 40"
-            icon={Users}
-            trend={{ value: 8, isPositive: true }}
-            color="blue"
-            onClick={() => handleStatCardClick('employees')}
-          />
-          
-          <StatCard
-            title="Turnover Mensal"
-            value="3.2%"
-            subtitle="Meta: < 5%"
-            icon={TrendingUp}
-            trend={{ value: -0.8, isPositive: true }}
-            color="green"
-            onClick={() => handleStatCardClick('turnover')}
-          />
-          
-          <StatCard
-            title="NPS Interno"
-            value="85"
-            subtitle="Satisfação da equipe"
-            icon={Star}
-            trend={{ value: 5, isPositive: true }}
-            color="yellow"
-            onClick={() => handleStatCardClick('nps')}
-          />
-          
-          <StatCard
-            title="Alertas Pendentes"
-            value="8"
-            subtitle="Requerem atenção imediata"
-            icon={AlertTriangle}
-            color="red"
-            onClick={() => handleStatCardClick('alerts')}
-          />
-          
-          <StatCard
-            title="Admissões (30 dias)"
-            value="12"
-            subtitle="Novos colaboradores"
-            icon={Music}
-            color="green"
-            onClick={() => handleStatCardClick('admissions')}
-          />
-          
-          <StatCard
-            title="Avaliações Pendentes"
-            value="15"
-            subtitle="Aguardando revisão"
-            icon={Mic}
-            color="orange"
-            onClick={() => handleStatCardClick('evaluations')}
-          />
-          
-          <StatCard
-            title="Gamificação"
-            value="89"
-            subtitle="Pontos distribuídos"
-            icon={Award}
-            color="purple"
-            onClick={() => handleStatCardClick('gamification')}
-          />
-          
-          <StatCard
-            title="Ocorrências"
-            value="3"
-            subtitle="Registradas este mês"
-            icon={Piano}
-            color="indigo"
-            onClick={() => handleStatCardClick('incidents')}
-          />
+          {metrics.isLoading ? (
+            <>
+              <StatCardSkeleton className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-green-50 to-emerald-100 border-green-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-yellow-50 to-amber-100 border-yellow-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-red-50 to-pink-100 border-red-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-green-50 to-emerald-100 border-green-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-orange-50 to-red-100 border-orange-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-purple-50 to-violet-100 border-purple-200" />
+              <StatCardSkeleton className="bg-gradient-to-br from-indigo-50 to-blue-100 border-indigo-200" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Colaboradores Ativos"
+                value={metrics.activeEmployees.toString()}
+                subtitle={unitSummary}
+                icon={Users}
+                trend={{ value: 8, isPositive: true }}
+                color="blue"
+                onClick={() => handleStatCardClick('employees')}
+              />
+              
+              <StatCard
+                title="Turnover Mensal"
+                value={`${metrics.turnoverRate}%`}
+                subtitle="Meta: < 5%"
+                icon={TrendingUp}
+                trend={{ value: -0.8, isPositive: true }}
+                color="green"
+                onClick={() => handleStatCardClick('turnover')}
+              />
+              
+              <StatCard
+                title="NPS Interno"
+                value={metrics.currentNPS.toString()}
+                subtitle="Satisfação da equipe"
+                icon={Star}
+                trend={{ value: metrics.npsChange, 
+                  isPositive: metrics.npsChange >= 0 }}
+                color="yellow"
+                onClick={() => handleStatCardClick('nps')}
+              />
+              
+              <StatCard
+                title="Alertas Pendentes"
+                value={metrics.pendingIncidents.toString()}
+                subtitle="Requerem atenção imediata"
+                icon={AlertTriangle}
+                color="red"
+                onClick={() => handleStatCardClick('alerts')}
+              />
+              
+              <StatCard
+                title="Admissões (30 dias)"
+                value={metrics.recentAdmissions.toString()}
+                subtitle="Novos colaboradores"
+                icon={Music}
+                color="green"
+                onClick={() => handleStatCardClick('admissions')}
+              />
+              
+              <StatCard
+                title="Avaliações Pendentes"
+                value="15"
+                subtitle="Aguardando revisão"
+                icon={Mic}
+                color="orange"
+                onClick={() => handleStatCardClick('evaluations')}
+              />
+              
+              <StatCard
+                title="Gamificação"
+                value="89"
+                subtitle="Pontos distribuídos"
+                icon={Award}
+                color="purple"
+                onClick={() => handleStatCardClick('gamification')}
+              />
+              
+              <StatCard
+                title="Ocorrências"
+                value={metrics.totalIncidents.toString()}
+                subtitle="Registradas este mês"
+                icon={Piano}
+                color="indigo"
+                onClick={() => handleStatCardClick('incidents')}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -217,18 +242,18 @@ export const Dashboard: React.FC = () => {
               </div>
               <p className="text-pink-100 mb-4">Celebre com nossa equipe!</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">Maria Silva - Hoje</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">João Santos - Amanhã</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">Ana Costa - 25/01</span>
-                </div>
+                {alerts.birthdays.slice(0, 3).map((birthday, index) => (
+                  <div key={birthday.id} className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">{birthday.name} - {birthday.when}</span>
+                  </div>
+                ))}
+                {alerts.birthdays.length === 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">Nenhum aniversário próximo</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -246,18 +271,24 @@ export const Dashboard: React.FC = () => {
               </div>
               <p className="text-red-100 mb-4">Requer atenção imediata</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">3 documentos vencidos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">2 avaliações em atraso</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">1 incidente pendente</span>
-                </div>
+                {alerts.incidents.slice(0, 3).map((incident) => (
+                  <div key={incident.id} className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">{incident.description}</span>
+                  </div>
+                ))}
+                {alerts.incidents.length === 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">Nenhum alerta pendente</span>
+                  </div>
+                )}
+                {alerts.incidents.length > 3 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">+{alerts.incidents.length - 3} outros alertas</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -275,18 +306,18 @@ export const Dashboard: React.FC = () => {
               </div>
               <p className="text-blue-100 mb-4">Programação de ausências</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">5 solicitações pendentes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">Carlos sai em 3 dias</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span className="text-sm">Luana retorna segunda</span>
-                </div>
+                {alerts.vacations.slice(0, 3).map((vacation, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">{vacation.description}</span>
+                  </div>
+                ))}
+                {alerts.vacations.length === 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm">Nenhuma programação de férias</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

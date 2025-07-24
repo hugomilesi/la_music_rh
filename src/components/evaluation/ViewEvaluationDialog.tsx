@@ -118,13 +118,7 @@ const ViewEvaluationDialog: React.FC<ViewEvaluationDialogProps> = ({
                     {evaluation.role}
                   </p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Unidade</label>
-                  <p className="text-base flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    {evaluation.unit}
-                  </p>
-                </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Data</label>
                   <p className="text-base flex items-center gap-2">

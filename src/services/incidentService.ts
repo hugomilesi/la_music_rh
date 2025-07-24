@@ -29,7 +29,6 @@ export const incidentService = {
         reporterId: incident.reporter_id,
         reporterName: incident.reporter?.name || '',
         status: incident.status,
-        title: incident.title || '',
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
@@ -95,7 +94,6 @@ export const incidentService = {
         reporterId: incident.reporter_id,
         reporterName: incident.reporter?.name || '',
         status: incident.status,
-        title: incident.title || '',
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
@@ -117,8 +115,7 @@ export const incidentService = {
         description: incident.description,
         incident_date: incident.incidentDate,
         reporter_id: incident.reporterId,
-        status: incident.status || 'aberto',
-        title: incident.title
+        status: incident.status || 'aberto'
       };
 
       const { data, error } = await supabase
@@ -144,7 +141,6 @@ export const incidentService = {
         reporterId: data.reporter_id,
         reporterName: data.reporter?.name || '',
         status: data.status,
-        title: data.title || '',
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
@@ -168,7 +164,6 @@ export const incidentService = {
       if (incident.employeeId !== undefined) updateData.employee_id = incident.employeeId;
       if (incident.reporterId !== undefined) updateData.reporter_id = incident.reporterId;
       if (incident.status !== undefined) updateData.status = incident.status;
-      if (incident.title !== undefined) updateData.title = incident.title;
 
       const { data, error } = await supabase
         .from('incidents')
@@ -194,7 +189,6 @@ export const incidentService = {
         reporterId: data.reporter_id,
         reporterName: data.reporter?.name || '',
         status: data.status,
-        title: data.title || '',
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };

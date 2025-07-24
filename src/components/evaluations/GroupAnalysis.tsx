@@ -5,8 +5,8 @@ import { Evaluation } from '@/types/evaluation';
 
 interface GroupAnalysisProps {
   evaluations: Evaluation[];
-  groupBy: 'unit' | 'type' | 'period';
-  onGroupByChange: (groupBy: 'unit' | 'type' | 'period') => void;
+  groupBy: 'type' | 'period';
+  onGroupByChange: (groupBy: 'type' | 'period') => void;
 }
 
 export const GroupAnalysis: React.FC<GroupAnalysisProps> = ({ evaluations, groupBy, onGroupByChange }) => {
@@ -18,9 +18,6 @@ export const GroupAnalysis: React.FC<GroupAnalysisProps> = ({ evaluations, group
     completedEvaluations.forEach(evaluation => {
       let key: string;
       switch (groupBy) {
-        case 'unit':
-          key = evaluation.unit;
-          break;
         case 'type':
           key = evaluation.type;
           break;
@@ -28,7 +25,7 @@ export const GroupAnalysis: React.FC<GroupAnalysisProps> = ({ evaluations, group
           key = evaluation.period;
           break;
         default:
-          key = evaluation.unit;
+          key = evaluation.type;
       }
       
       if (!grouped[key]) {
@@ -68,9 +65,8 @@ export const GroupAnalysis: React.FC<GroupAnalysisProps> = ({ evaluations, group
         <select 
           className="px-3 py-2 border border-gray-200 rounded-md text-sm"
           value={groupBy}
-          onChange={(e) => onGroupByChange(e.target.value as 'unit' | 'type' | 'period')}
+          onChange={(e) => onGroupByChange(e.target.value as 'type' | 'period')}
         >
-          <option value="unit">Por Unidade</option>
           <option value="type">Por Tipo</option>
           <option value="period">Por Período</option>
         </select>

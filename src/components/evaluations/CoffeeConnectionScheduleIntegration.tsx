@@ -24,26 +24,10 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
         const endDate = new Date(startDate);
         endDate.setHours(startDate.getHours() + 1); // 1 hour duration
 
-        // Map unit string to Unit enum
-        let unit = Unit.CAMPO_GRANDE; // Default
-        if (connection.unit) {
-          switch (connection.unit) {
-            case 'Campo Grande':
-              unit = Unit.CAMPO_GRANDE;
-              break;
-            case 'Recreio':
-              unit = Unit.RECREIO;
-              break;
-            case 'Barra':
-              unit = Unit.BARRA;
-              break;
-          }
-        }
-
         const newEvent = {
           title: `Coffee Connection - ${connection.employee}`,
           employeeId: connection.employeeId,
-          unit: unit,
+          unit: Unit.CAMPO_GRANDE, // Default unit
           date: connection.meetingDate,
           startTime: connection.meetingTime,
           endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,

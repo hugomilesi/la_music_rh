@@ -147,7 +147,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
                           {evaluation.type}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600">{evaluation.role} - {evaluation.unit}</p>
+                      <p className="text-sm text-gray-600">{evaluation.role}</p>
                       <p className="text-sm text-gray-500">Período: {evaluation.period}</p>
                       {evaluation.comments && (
                         <p className="text-sm text-gray-600 mt-1 italic">"{evaluation.comments}"</p>

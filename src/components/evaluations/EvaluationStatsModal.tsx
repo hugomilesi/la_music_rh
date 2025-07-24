@@ -160,7 +160,7 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
                             {evaluation.type}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">{evaluation.role} - {evaluation.unit}</p>
+                        <p className="text-sm text-gray-600">{evaluation.role}</p>
                         <p className="text-sm text-gray-500">{evaluation.period}</p>
                       </div>
                       <div className="flex items-center gap-3">

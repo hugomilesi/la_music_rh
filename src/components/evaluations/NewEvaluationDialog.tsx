@@ -31,7 +31,6 @@ const formSchema = z.object({
     errorMap: () => ({ message: 'Tipo de avaliação é obrigatório' })
   }),
   period: z.string().min(1, 'Período é obrigatório'),
-  unit: z.string().optional(),
   evaluatorId: z.string().optional(),
   comments: z.string().optional(),
 });
@@ -57,7 +56,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
       employeeId: '',
       type: 'Avaliação 360°',
       period: '2024-T1',
-      unit: '',
       evaluatorId: '',
       comments: '',
     },
@@ -71,7 +69,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
         employeeId: data.employeeId,
         type: data.type,
         period: data.period,
-        unit: data.unit || undefined,
         evaluatorId: data.evaluatorId || undefined,
         comments: data.comments || undefined,
       };
@@ -168,27 +165,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unidade (Opcional)</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="">Selecione uma unidade</option>
-                        <option value="campo-grande">Campo Grande</option>
-                        <option value="recreio">Recreio</option>
-                        <option value="barra">Barra</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               {selectedType !== 'Coffee Connection' && (
                 <FormField
