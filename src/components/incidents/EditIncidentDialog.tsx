@@ -64,27 +64,6 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   // Verificar se o usuário tem permissão para gerenciar colaboradores
   const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   
-  if (!canManageEmployees) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Lock className="w-5 h-5" />
-              Acesso Negado
-            </DialogTitle>
-            <DialogDescription>
-              Você não tem permissão para editar ocorrências de colaboradores.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-  
   const form = useForm<IncidentFormData>({
     defaultValues: {
       employeeId: incident?.employee || '',
@@ -110,6 +89,27 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
       });
     }
   }, [incident, form]);
+  
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para editar ocorrências de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const onSubmit = (data: IncidentFormData) => {
     if (!incident) return;
@@ -124,7 +124,20 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
     onOpenChange(false);
   };
 
-  if (!incident) return null;
+  if (!incident) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Ocorrência</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>Nenhuma ocorrência selecionada.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

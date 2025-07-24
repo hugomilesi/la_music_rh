@@ -49,11 +49,12 @@ export const PeriodFilterModal: React.FC<PeriodFilterModalProps> = ({
         endDate = now.toISOString().split('T')[0];
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         break;
-      case 'quarter':
+      case 'quarter': {
         const quarterStart = Math.floor(currentMonth / 3) * 3;
         startDate = new Date(currentYear, quarterStart, 1).toISOString().split('T')[0];
         endDate = new Date(currentYear, quarterStart + 3, 0).toISOString().split('T')[0];
         break;
+      }
       case 'last90':
         endDate = now.toISOString().split('T')[0];
         startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];

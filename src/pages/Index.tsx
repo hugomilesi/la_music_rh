@@ -11,7 +11,14 @@ import {
   Shield, 
   Heart,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Music,
+  Piano,
+  Mic,
+  Volume2,
+  Play,
+  Star,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,43 +39,70 @@ const Index = () => {
   const features = [
     {
       icon: Users,
-      title: 'Gestão de Colaboradores',
-      description: 'Cadastro completo, organização por unidades e acompanhamento da equipe.'
+      title: 'Gestão de Professores & Alunos',
+      description: 'Cadastro completo com instrumentos, níveis e histórico musical da equipe.',
+      color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Calendar,
-      title: 'Controle de Férias',
-      description: 'Gestão inteligente de férias com alertas e aprovações automáticas.'
+      title: 'Agenda Musical',
+      description: 'Calendário de aulas, ensaios e apresentações com cores temáticas.',
+      color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: TrendingUp,
-      title: 'Avaliações & NPS',
-      description: 'Feedbacks contínuos e medição do clima organizacional.'
+      title: 'Avaliações Musicais',
+      description: 'Acompanhe o progresso musical dos alunos com relatórios visuais.',
+      color: 'from-green-500 to-emerald-500'
     },
     {
       icon: Award,
-      title: 'Reconhecimento',
-      description: 'Sistema de gamificação e incentivos para motivar a equipe.'
+      title: 'Reconhecimento Musical',
+      description: 'Sistema de conquistas e incentivos para motivar alunos e professores.',
+      color: 'from-yellow-500 to-orange-500'
     },
     {
-      icon: Shield,
-      title: 'Ocorrências',
-      description: 'Registro e acompanhamento de incidentes disciplinares.'
+      icon: Music,
+      title: 'Biblioteca Musical',
+      description: 'Organização de partituras, métodos e materiais didáticos.',
+      color: 'from-indigo-500 to-purple-500'
     },
     {
       icon: Heart,
-      title: 'Benefícios',
-      description: 'Gestão completa de planos de saúde e benefícios corporativos.'
+      title: 'Benefícios da Equipe',
+      description: 'Gestão completa de benefícios para funcionários da escola.',
+      color: 'from-red-500 to-pink-500'
     }
   ];
 
   const benefits = [
-    'Interface intuitiva e moderna',
-    'Relatórios e dashboards em tempo real',
-    'Integração com WhatsApp',
-    'Controle de acesso e permissões',
-    'Backup automático na nuvem',
-    'Suporte técnico especializado'
+    'Interface musical intuitiva e moderna',
+    'Dashboards com métricas musicais em tempo real',
+    'Integração com WhatsApp para comunicação',
+    'Controle de acesso por níveis musicais',
+    'Backup automático de partituras na nuvem',
+    'Suporte especializado para escolas de música'
+  ];
+
+  const testimonials = [
+    {
+      name: 'Maria Silva',
+      role: 'Diretora - Conservatório Musical',
+      content: 'Revolucionou nossa gestão! Agora conseguimos acompanhar o progresso de cada aluno de forma visual e intuitiva.',
+      rating: 5
+    },
+    {
+      name: 'João Santos',
+      role: 'Professor de Piano',
+      content: 'A agenda musical facilitou muito meu trabalho. Posso ver todas as aulas e ensaios em um só lugar.',
+      rating: 5
+    },
+    {
+      name: 'Ana Costa',
+      role: 'Coordenadora Pedagógica',
+      content: 'Os relatórios de progresso são fantásticos. Os pais adoram acompanhar a evolução musical dos filhos.',
+      rating: 5
+    }
   ];
 
   if (loading) {
@@ -83,18 +117,27 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden">
+      {/* Animated Musical Notes Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 text-6xl text-white/10 animate-bounce" style={{animationDelay: '0s', animationDuration: '3s'}}>♪</div>
+        <div className="absolute top-40 right-20 text-4xl text-white/10 animate-bounce" style={{animationDelay: '1s', animationDuration: '4s'}}>♫</div>
+        <div className="absolute top-60 left-1/4 text-5xl text-white/10 animate-bounce" style={{animationDelay: '2s', animationDuration: '3.5s'}}>♬</div>
+        <div className="absolute bottom-40 right-1/3 text-7xl text-white/10 animate-bounce" style={{animationDelay: '0.5s', animationDuration: '4.5s'}}>♩</div>
+        <div className="absolute bottom-60 left-1/2 text-4xl text-white/10 animate-bounce" style={{animationDelay: '1.5s', animationDuration: '3s'}}>♪</div>
+        <div className="absolute top-1/3 right-10 text-6xl text-white/10 animate-bounce" style={{animationDelay: '2.5s', animationDuration: '4s'}}>♫</div>
+      </div>
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-black/20 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover:shadow-lg">
-                <span className="text-white font-bold text-lg">LA</span>
+              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-yellow-500/25">
+                <Music className="text-white w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">LA Music RH</h1>
-                <p className="text-sm text-gray-600">Gestão de Pessoas</p>
+                <h1 className="text-xl font-bold text-white">LA Music RH</h1>
+                <p className="text-sm text-yellow-200">Gestão Musical Inteligente</p>
               </div>
             </div>
             
@@ -102,13 +145,13 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 onClick={() => navigate('/auth')}
-                className="hidden sm:inline-flex transform transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-gray-50 border-gray-300"
+                className="hidden sm:inline-flex transform transition-all duration-300 hover:scale-105 hover:shadow-md bg-transparent border-white/30 text-white hover:bg-white/10"
               >
                 Entrar
               </Button>
               <Button 
                 onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-semibold transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-500/25"
               >
                 Começar Agora
                 <ArrowRight className="ml-2 w-4 h-4" />
@@ -119,54 +162,88 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8">
-            Gerencie sua equipe com
-            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"> inteligência</span>
+      <section className="py-32 px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <div className="mb-8 flex justify-center">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 backdrop-blur-sm border border-yellow-400/30 rounded-full px-6 py-2">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-yellow-200 text-sm font-medium">Sistema de Gestão Musical Revolucionário</span>
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+            </div>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight">
+            Transforme sua
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> escola de música</span>
+            <br />com tecnologia
           </h1>
           
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Sistema completo de gestão de pessoas para escolas de música. 
-            Simplifique processos, aumente a produtividade e melhore o clima organizacional.
+          <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
+            Sistema completo de gestão para escolas de música que simplifica processos, 
+            acompanha o progresso musical dos alunos e melhora o clima organizacional com uma interface visual estonteante.
           </p>
           
-          <div className="flex justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Button 
               size="lg"
               onClick={() => navigate('/auth')}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-xl px-12 py-6 rounded-xl transform transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/25 active:scale-95"
+              className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-xl px-12 py-6 rounded-xl transform transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-yellow-500/25 active:scale-95 group"
             >
+              <Play className="mr-2 w-6 h-6 group-hover:scale-110 transition-transform" />
               Começar Agora
-              <ArrowRight className="ml-2 w-6 h-6" />
+              <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            
+            <Button 
+              variant="outline"
+              size="lg"
+              className="bg-transparent border-white/30 text-white hover:bg-white/10 text-lg px-8 py-6 rounded-xl transform transition-all duration-300 hover:scale-105"
+            >
+              <Volume2 className="mr-2 w-5 h-5" />
+              Ver Demonstração
             </Button>
           </div>
+          
+          {/* Floating Musical Elements */}
+          <div className="relative">
+            <div className="absolute -top-20 -left-20 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center animate-pulse">
+              <Piano className="w-8 h-8 text-white" />
+            </div>
+            <div className="absolute -top-10 -right-16 w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center animate-pulse" style={{animationDelay: '1s'}}>
+              <Mic className="w-6 h-6 text-white" />
+            </div>
+          </div>
         </div>
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20"></div>
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/50">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black/20 to-black/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Funcionalidades Completas
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Funcionalidades
+              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> Musicais</span>
             </h2>
-            <p className="text-xl text-gray-600">
-              Tudo que você precisa para gerenciar sua equipe em um só lugar
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Tudo que sua escola de música precisa para gerenciar alunos, professores e atividades musicais em um só lugar
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 cursor-pointer group">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gradient-to-r group-hover:from-purple-200 group-hover:to-blue-200 transition-all duration-300">
-                    <feature.icon className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+              <Card key={index} className="hover:shadow-2xl transition-all duration-500 border-0 bg-white/10 backdrop-blur-md transform hover:scale-105 hover:-translate-y-4 cursor-pointer group relative overflow-hidden">
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                <CardHeader className="relative z-10">
+                  <div className={`w-14 h-14 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
+                    <feature.icon className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-300" />
                   </div>
-                  <CardTitle className="text-xl group-hover:text-purple-700 transition-colors duration-300">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl text-white group-hover:text-yellow-300 transition-colors duration-300">{feature.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-gray-600 text-base">
+                <CardContent className="relative z-10">
+                  <CardDescription className="text-gray-300 text-base group-hover:text-gray-200 transition-colors duration-300">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -181,24 +258,27 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-                Por que escolher o LA Music RH?
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
+                Por que escolher o
+                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> LA Music RH?</span>
               </h2>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3 group transform transition-all duration-300 hover:translate-x-2">
-                    <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="text-lg text-gray-700 group-hover:text-gray-900 transition-colors duration-300">{benefit}</span>
+                  <div key={index} className="flex items-center gap-4 group transform transition-all duration-300 hover:translate-x-2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-lg text-gray-300 group-hover:text-white transition-colors duration-300">{benefit}</span>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-8">
+              <div className="mt-10">
                 <Button 
                   size="lg"
                   onClick={() => navigate('/auth')}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-500/25"
                 >
                   Começar Agora
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -207,15 +287,25 @@ const Index = () => {
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl p-8 transform rotate-3 transition-all duration-500 hover:rotate-1 hover:scale-105">
-                <div className="bg-white rounded-xl p-6 transform -rotate-3 shadow-xl transition-all duration-500 hover:shadow-2xl">
+              <div className="bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-2xl p-8 transform rotate-3 transition-all duration-500 hover:rotate-1 hover:scale-105 backdrop-blur-sm border border-yellow-400/30">
+                <div className="bg-black/40 backdrop-blur-md rounded-xl p-6 transform -rotate-3 shadow-2xl transition-all duration-500 hover:shadow-yellow-500/20">
                   <div className="space-y-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-                    <div className="h-32 bg-gradient-to-r from-purple-100 to-blue-100 rounded"></div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <Music className="w-6 h-6 text-yellow-400" />
+                      <span className="text-white font-semibold">Dashboard Musical</span>
+                    </div>
+                    <div className="h-4 bg-gradient-to-r from-yellow-400/30 to-orange-500/30 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gradient-to-r from-purple-400/30 to-pink-500/30 rounded w-3/4 animate-pulse"></div>
+                    <div className="h-32 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-lg border border-white/10 flex items-center justify-center">
+                      <Piano className="w-12 h-12 text-white/50" />
+                    </div>
                     <div className="flex gap-2">
-                      <div className="h-8 bg-purple-200 rounded flex-1"></div>
-                      <div className="h-8 bg-blue-200 rounded flex-1"></div>
+                      <div className="h-8 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded flex-1 flex items-center justify-center">
+                        <span className="text-xs text-white/70">Alunos</span>
+                      </div>
+                      <div className="h-8 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded flex-1 flex items-center justify-center">
+                        <span className="text-xs text-white/70">Aulas</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -224,47 +314,136 @@ const Index = () => {
           </div>
         </div>
       </section>
+      
+      {/* Testimonials Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black/40 to-black/60">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              O que dizem nossos
+              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> clientes</span>
+            </h2>
+            <p className="text-xl text-gray-300">Escolas de música que transformaram sua gestão</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="bg-white/10 backdrop-blur-md border-0 hover:bg-white/15 transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-6">
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-300 mb-6 italic">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-black font-bold text-sm">{testimonial.name.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">{testimonial.name}</p>
+                      <p className="text-gray-400 text-sm">{testimonial.role}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-8">
-            Pronto para transformar a gestão da sua equipe?
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-yellow-400 to-orange-500 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 text-6xl text-black/10 animate-bounce" style={{animationDelay: '0s'}}>♪</div>
+          <div className="absolute bottom-10 right-10 text-8xl text-black/10 animate-bounce" style={{animationDelay: '1s'}}>♫</div>
+          <div className="absolute top-1/2 left-1/4 text-4xl text-black/10 animate-bounce" style={{animationDelay: '2s'}}>♬</div>
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-4xl md:text-6xl font-bold text-black mb-8">
+            Pronto para revolucionar sua
+            <span className="text-white"> escola de música?</span>
           </h2>
           
-          <p className="text-xl text-purple-100 mb-12">
-            Junte-se a centenas de empresas que já otimizaram seus processos de RH
+          <p className="text-xl text-black/80 mb-12 max-w-2xl mx-auto">
+            Junte-se a centenas de escolas de música que já transformaram sua gestão com nossa plataforma
           </p>
           
-          <Button 
-            size="lg"
-            onClick={() => navigate('/auth')}
-            className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-4 transform transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
-          >
-            Começar Agora
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg"
+              onClick={() => navigate('/auth')}
+              className="bg-black text-white hover:bg-gray-800 text-lg px-10 py-6 transform transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 font-bold"
+            >
+              <Play className="mr-2 w-5 h-5" />
+              Começar Agora
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            
+            <Button 
+              variant="outline"
+              size="lg"
+              className="bg-transparent border-black/30 text-black hover:bg-black/10 text-lg px-8 py-6 transform transition-all duration-300 hover:scale-105"
+            >
+              <Volume2 className="mr-2 w-5 h-5" />
+              Agendar Demo
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-3 mb-4 md:mb-0 group">
-              <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <span className="text-white font-bold text-sm">LA</span>
+      <footer className="bg-black text-white py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-gray-900 to-gray-800"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                  <Music className="text-black w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">LA Music RH</h3>
+                  <p className="text-gray-400">Gestão Musical Inteligente</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold">LA Music RH</h3>
-                <p className="text-sm text-gray-400">Gestão de Pessoas</p>
-              </div>
+              <p className="text-gray-300 max-w-md">
+                Transformando a gestão de escolas de música com tecnologia inovadora e design intuitivo.
+              </p>
             </div>
             
-            <div className="text-center md:text-right">
-              <p className="text-gray-400">
-                © 2024 LA Music RH. Todos os direitos reservados.
-              </p>
+            <div>
+              <h4 className="font-semibold mb-4 text-yellow-400">Funcionalidades</h4>
+              <ul className="space-y-2 text-gray-300">
+                <li>Gestão de Alunos</li>
+                <li>Agenda Musical</li>
+                <li>Avaliações</li>
+                <li>Biblioteca Musical</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold mb-4 text-yellow-400">Suporte</h4>
+              <ul className="space-y-2 text-gray-300">
+                <li>Central de Ajuda</li>
+                <li>Documentação</li>
+                <li>Contato</li>
+                <li>Treinamentos</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 mb-4 md:mb-0">
+              © 2024 LA Music RH. Todos os direitos reservados.
+            </p>
+            
+            <div className="flex items-center gap-4">
+              <span className="text-gray-400 text-sm">Feito com</span>
+              <Heart className="w-4 h-4 text-red-500" />
+              <span className="text-gray-400 text-sm">para escolas de música</span>
             </div>
           </div>
         </div>

@@ -27,6 +27,23 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
   // Verificar se o usuário tem permissão para visualizar colaboradores
   const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
 
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredEmployees([]);
+      return;
+    }
+
+    const filtered = employees.filter(employee =>
+      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.units.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    setFilteredEmployees(filtered);
+  }, [searchTerm, employees]);
+
   if (!canViewEmployees) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -47,23 +64,6 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
       </Dialog>
     );
   }
-
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredEmployees([]);
-      return;
-    }
-
-    const filtered = employees.filter(employee =>
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.units.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    setFilteredEmployees(filtered);
-  }, [searchTerm, employees]);
 
   const getUnitDisplayName = (unit: Unit) => {
     const unitNames = {

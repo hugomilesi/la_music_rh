@@ -19,7 +19,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
 
   const getModalContent = () => {
     switch (type) {
-      case 'sent':
+      case 'sent': {
         const sentToday = notifications.filter(n => {
           const today = new Date().toDateString();
           return n.status === 'enviado' && new Date(n.sentAt || '').toDateString() === today;
@@ -31,8 +31,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
           count: stats.sentToday,
           notifications: sentToday
         };
+      }
 
-      case 'scheduled':
+      case 'scheduled': {
         const scheduled = notifications.filter(n => n.status === 'programado');
         
         return {
@@ -41,8 +42,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
           count: stats.scheduled,
           notifications: scheduled
         };
+      }
 
-      case 'drafts':
+      case 'drafts': {
         const drafts = notifications.filter(n => n.status === 'rascunho');
         
         return {
@@ -51,8 +53,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
           count: stats.drafts,
           notifications: drafts
         };
+      }
 
-      case 'openRate':
+      case 'openRate': {
         const delivered = notifications.filter(n => n.status === 'entregue' || n.status === 'lido');
         
         return {
@@ -61,6 +64,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
           count: `${stats.openRate}%`,
           notifications: delivered
         };
+      }
     }
   };
 

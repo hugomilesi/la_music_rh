@@ -56,9 +56,38 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
   
+  // Move useForm to top level - before any conditional returns
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      position: '',
+      department: '',
+      start_date: '',
+      units: [],
+    },
+  });
+  
   // Verificar se o usuário tem permissão para gerenciar colaboradores
   const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
-  
+
+  // Update form when employee changes - must be before any conditional returns
+  useEffect(() => {
+    if (employee) {
+      form.reset({
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position,
+        department: employee.department,
+        start_date: employee.start_date,
+        units: employee.units,
+      });
+    }
+  }, [employee, form]);
+
   if (!canManageEmployees) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,34 +108,6 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
       </Dialog>
     );
   }
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      position: '',
-      department: '',
-      start_date: '',
-      units: [],
-    },
-  });
-
-  // Update form when employee changes
-  useEffect(() => {
-    if (employee) {
-      form.reset({
-        name: employee.name,
-        email: employee.email,
-        phone: employee.phone,
-        position: employee.position,
-        department: employee.department,
-        start_date: employee.start_date,
-        units: employee.units,
-      });
-    }
-  }, [employee, form]);
 
   const onSubmit = async (data: FormData) => {
     if (!employee) return;
@@ -129,7 +130,20 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
     }
   };
 
-  if (!employee) return null;
+  if (!employee) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Colaborador</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p>Nenhum colaborador selecionado.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

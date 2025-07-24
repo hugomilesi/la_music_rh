@@ -60,6 +60,27 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
   
+  // Move useForm to top level - before any conditional returns
+  const form = useForm<UserFormData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'usuario',
+      department: '',
+      phone: '',
+      position: '',
+      status: 'active',
+      permissions: {
+        canManageEmployees: false,
+        canManagePayroll: false,
+        canViewReports: false,
+        canManageSettings: false,
+        canManageUsers: false,
+        canManageEvaluations: false
+      }
+    }
+  });
+  
   // Verificar se o usuário tem permissão para gerenciar usuários
   const canManageUsers = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
   
@@ -83,26 +104,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
       </Dialog>
     );
   }
-  
-  const form = useForm<UserFormData>({
-    defaultValues: {
-      name: '',
-      email: '',
-      role: 'usuario',
-      department: '',
-      phone: '',
-      position: '',
-      status: 'active',
-      permissions: {
-        canManageEmployees: false,
-        canManagePayroll: false,
-        canViewReports: false,
-        canManageSettings: false,
-        canManageUsers: false,
-        canManageEvaluations: false
-      }
-    }
-  });
 
   const onSubmit = (data: UserFormData) => {
     console.log('Criando usuário:', {
