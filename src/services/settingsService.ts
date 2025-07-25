@@ -3,17 +3,19 @@ import { SystemUser, RoleData, SystemStats } from '@/types/settings';
 import { updateSystemUserAsAdmin } from './adminService';
 
 /**
- * Fetch all system users from profiles table
+ * Fetch all system users from profiles table with email from auth.users
  */
 export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
   try {
-    const { data, error } = await supabase
+    // First get profiles data
+    const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select(`
         id,
         full_name,
         role,
         department,
+        position,
         phone,
         status,
         preferences,
@@ -22,25 +24,50 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
       `)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching system users:', error);
-      throw error;
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      throw profilesError;
     }
 
-    // Transform database data to SystemUser format
-    return data.map((profile: any) => ({
-      id: profile.id,
-      name: profile.full_name || 'Nome não informado',
-      email: '', // Email is stored in auth.users, would need a join or separate query
-      role: profile.role || 'usuario',
-      position: profile.position || 'Não informado',
-      department: profile.department || 'Não informado',
-      phone: profile.phone || 'Não informado',
-      status: profile.status || 'active',
-      lastAccess: 'Não disponível', // Would need to track this separately
-      createdAt: new Date(profile.created_at).toLocaleDateString('pt-BR'),
-      permissions: getPermissionsFromRole(profile.role, profile.preferences)
-    }));
+    // Get emails from auth.users for each profile
+    const usersWithEmails = await Promise.all(
+      profilesData.map(async (profile: any) => {
+        try {
+          const { data: authData, error: authError } = await supabase.auth.admin.getUserById(profile.id);
+          
+          return {
+            id: profile.id,
+            name: profile.full_name || 'Nome não informado',
+            email: authData?.user?.email || 'Email não disponível',
+            role: profile.role || 'usuario',
+            position: profile.position || 'Não informado',
+            department: profile.department || 'Não informado',
+            phone: profile.phone || 'Não informado',
+            status: profile.status || 'active',
+            lastAccess: 'Não disponível', // Would need to track this separately
+            createdAt: new Date(profile.created_at).toLocaleDateString('pt-BR'),
+            permissions: getPermissionsFromRole(profile.role, profile.preferences)
+          };
+        } catch (error) {
+          console.error(`Error fetching email for user ${profile.id}:`, error);
+          return {
+            id: profile.id,
+            name: profile.full_name || 'Nome não informado',
+            email: 'Email não disponível',
+            role: profile.role || 'usuario',
+            position: profile.position || 'Não informado',
+            department: profile.department || 'Não informado',
+            phone: profile.phone || 'Não informado',
+            status: profile.status || 'active',
+            lastAccess: 'Não disponível',
+            createdAt: new Date(profile.created_at).toLocaleDateString('pt-BR'),
+            permissions: getPermissionsFromRole(profile.role, profile.preferences)
+          };
+        }
+      })
+    );
+
+    return usersWithEmails;
   } catch (error) {
     console.error('Error in fetchSystemUsers:', error);
     throw error;

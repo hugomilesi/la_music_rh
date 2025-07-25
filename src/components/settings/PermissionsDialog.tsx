@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Shield, Users, Settings, FileText, Calendar, Award, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Loader2 } from 'lucide-react';
 
 interface Permission {
   id: string;
@@ -30,7 +31,8 @@ interface Permission {
   };
 }
 
-const mockPermissions: Permission[] = [
+// Default permissions structure
+const defaultPermissions: Permission[] = [
   {
     id: 'employees',
     module: 'Colaboradores',
@@ -73,9 +75,35 @@ interface PermissionsDialogProps {
 }
 
 export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }) => {
-  const [permissions, setPermissions] = useState<Permission[]>(mockPermissions);
+  const [permissions, setPermissions] = useState<Permission[]>(defaultPermissions);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { permissions: userPermissions } = usePermissions();
+
+  // Load permissions from database on component mount
+  useEffect(() => {
+    loadPermissions();
+  }, []);
+
+  const loadPermissions = async () => {
+    setIsLoading(true);
+    try {
+      // For now, we'll use the default permissions structure
+      // In a real implementation, you would fetch from the database
+      // const permissionsData = await fetchPermissionsFromDatabase();
+      setPermissions(defaultPermissions);
+    } catch (error) {
+      console.error('Error loading permissions:', error);
+      toast({
+        title: "Erro ao carregar permissões",
+        description: "Não foi possível carregar as permissões. Usando configuração padrão.",
+        variant: "destructive"
+      });
+      setPermissions(defaultPermissions);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Verificar se o usuário tem permissão para acessar configurações
   if (!userPermissions.canAccessSettings) {
@@ -122,20 +150,28 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
   };
 
   const handleSavePermissions = async () => {
+    setIsLoading(true);
     try {
-      // Aqui você pode implementar a lógica para salvar as permissões no backend
-      // Por enquanto, vamos apenas mostrar uma mensagem de sucesso
+      // In a real implementation, you would save to the database
+      // await savePermissionsToDatabase(permissions);
+      
+      // For now, we'll simulate a successful save
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       toast({
         title: "Permissões salvas",
         description: "As alterações de permissões foram salvas com sucesso!",
         variant: "default"
       });
     } catch (error) {
+      console.error('Error saving permissions:', error);
       toast({
         title: "Erro ao salvar",
         description: "Ocorreu um erro ao salvar as permissões. Tente novamente.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -185,52 +221,67 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {permissions.map((permission) => {
-                  const IconComponent = permission.icon;
-                  return (
-                    <TableRow key={permission.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="w-4 h-4" />
-                          <span className="font-medium">{permission.module}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{permission.description}</TableCell>
-                      <TableCell className="text-center">
-                        <Switch
-                          checked={permission.roles.admin}
-                          onCheckedChange={(value) => 
-                            handlePermissionChange(permission.id, 'admin', value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch
-                          checked={permission.roles.coordenador}
-                          onCheckedChange={(value) => 
-                            handlePermissionChange(permission.id, 'coordenador', value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch
-                          checked={permission.roles.professor}
-                          onCheckedChange={(value) => 
-                            handlePermissionChange(permission.id, 'professor', value)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch
-                          checked={permission.roles.usuario}
-                          onCheckedChange={(value) => 
-                            handlePermissionChange(permission.id, 'usuario', value)
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Carregando permissões...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  permissions.map((permission) => {
+                    const IconComponent = permission.icon;
+                    return (
+                      <TableRow key={permission.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="w-4 h-4" />
+                            <span className="font-medium">{permission.module}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{permission.description}</TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={permission.roles.admin}
+                            onCheckedChange={(value) => 
+                              handlePermissionChange(permission.id, 'admin', value)
+                            }
+                            disabled={isLoading}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={permission.roles.coordenador}
+                            onCheckedChange={(value) => 
+                              handlePermissionChange(permission.id, 'coordenador', value)
+                            }
+                            disabled={isLoading}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={permission.roles.professor}
+                            onCheckedChange={(value) => 
+                              handlePermissionChange(permission.id, 'professor', value)
+                            }
+                            disabled={isLoading}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={permission.roles.usuario}
+                            onCheckedChange={(value) => 
+                              handlePermissionChange(permission.id, 'usuario', value)
+                            }
+                            disabled={isLoading}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
@@ -251,6 +302,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
                   description: "Todas as permissões foram concedidas ao Administrador"
                 });
               }}
+              disabled={isLoading}
             >
               Conceder Tudo ao Admin
             </Button>
@@ -268,6 +320,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
                   description: "Todas as permissões foram removidas do Usuário"
                 });
               }}
+              disabled={isLoading}
             >
               Remover Tudo do Usuário
             </Button>
@@ -275,7 +328,10 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSavePermissions}>Salvar Alterações</Button>
+          <Button onClick={handleSavePermissions} disabled={isLoading}>
+            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Salvar Alterações
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

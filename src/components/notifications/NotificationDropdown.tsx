@@ -11,105 +11,101 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { NotificationDetailsModal } from './NotificationDetailsModal';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { Notification } from '@/types/notification';
 
 interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: 'warning' | 'info' | 'urgent' | 'success';
+  type: 'warning' | 'urgent' | 'info' | 'success' | 'lembrete' | 'aniversario' | 'aviso' | 'comunicado' | 'personalizada';
   time: string;
   read: boolean;
 }
 
-const mockNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'Documentos Vencidos',
-    message: '7 colaboradores com documentos vencidos',
-    type: 'warning',
-    time: '2h atrás',
-    read: false
-  },
-  {
-    id: '2',
-    title: 'Avaliações em Andamento',
-    message: '15 avaliações em processo de revisão',
-    type: 'info',
-    time: '4h atrás',
-    read: false
-  },
-  {
-    id: '3',
-    title: 'Aniversário Hoje',
-    message: 'Ana Silva está fazendo aniversário',
-    type: 'success',
-    time: '6h atrás',
-    read: true
-  },
-  {
-    id: '4',
-    title: 'Reunião Urgente',
-    message: 'Reunião pedagógica marcada para hoje às 14h',
-    type: 'urgent',
-    time: '1 dia atrás',
-    read: false
-  }
-];
-
 export const NotificationDropdown: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(mockNotifications);
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const { notifications, updateNotification } = useNotifications();
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  // Convert notifications to display format and filter recent ones
+  const displayNotifications = notifications
+    .slice(0, 10) // Show only last 10 notifications
+    .map(notification => ({
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      time: getTimeAgo(notification.createdAt),
+      type: notification.type,
+      read: notification.status === 'lido'
+    }));
+  
+  const unreadCount = notifications.filter(n => n.status !== 'lido').length;
 
   const getIcon = (type: NotificationItem['type']) => {
     switch (type) {
       case 'warning':
+      case 'aviso':
         return <AlertTriangle className="w-4 h-4 text-orange-500" />;
       case 'urgent':
         return <AlertTriangle className="w-4 h-4 text-red-500" />;
       case 'info':
+      case 'comunicado':
         return <Calendar className="w-4 h-4 text-blue-500" />;
       case 'success':
+      case 'aniversario':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'lembrete':
+        return <Clock className="w-4 h-4 text-blue-500" />;
+      case 'personalizada':
+        return <FileText className="w-4 h-4 text-purple-500" />;
       default:
         return <Bell className="w-4 h-4" />;
     }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await updateNotification(id, { status: 'lido' });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      const unreadNotifications = notifications.filter(n => n.status !== 'lido');
+      await Promise.all(
+        unreadNotifications.map(notification => 
+          updateNotification(notification.id, { status: 'lido' })
+        )
+      );
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const handleNotificationClick = (notification: NotificationItem) => {
-    // Convert to full notification format for the details modal
-    const fullNotification = {
-      id: notification.id,
-      title: notification.title,
-      message: notification.message,
-      type: 'lembrete' as const,
-      recipients: ['1'],
-      recipientNames: ['Sistema'],
-      channel: 'email' as const,
-      status: 'enviado' as const,
-      createdAt: new Date(Date.now() - parseInt(notification.time.split('h')[0]) * 60 * 60 * 1000).toISOString(),
-      createdBy: 'Sistema',
-      sentAt: new Date(Date.now() - parseInt(notification.time.split('h')[0]) * 60 * 60 * 1000).toISOString(),
-    };
+  const getTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}min`;
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h`;
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}d`;
+    }
+  };
 
-    setSelectedNotification(fullNotification);
-    setDetailsModalOpen(true);
-    markAsRead(notification.id);
+  const handleNotificationClick = (displayNotification: any) => {
+    const fullNotification = notifications.find(n => n.id === displayNotification.id);
+    if (fullNotification) {
+      setSelectedNotification(fullNotification);
+      setDetailsModalOpen(true);
+      markAsRead(displayNotification.id);
+    }
   };
 
   return (
@@ -146,7 +142,7 @@ export const NotificationDropdown: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {notifications.map((notification) => (
+              {displayNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -183,7 +179,7 @@ export const NotificationDropdown: React.FC = () => {
               ))}
             </div>
 
-            {notifications.length === 0 && (
+            {displayNotifications.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p>Nenhuma notificação</p>

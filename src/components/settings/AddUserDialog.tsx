@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CreateSystemUserData } from '@/types/systemUser';
 import { useForm } from 'react-hook-form';
 import {
@@ -22,9 +22,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
+import { createUserWithAutoPassword } from '@/services/userManagementService';
+import { CreateUserFormData } from '@/types/userFormSchemas';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -59,6 +61,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
+  const [isLoading, setIsLoading] = useState(false);
   
   // Move useForm to top level - before any conditional returns
   const form = useForm<UserFormData>({
@@ -105,24 +108,58 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     );
   }
 
-  const onSubmit = (data: UserFormData) => {
-    console.log('Criando usuário:', {
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      department: data.department,
-      phone: data.phone,
-      permissions: data.permissions,
-      status: data.status
-    });
+  const onSubmit = async (data: UserFormData) => {
+    setIsLoading(true);
     
-    toast({
-      title: "Usuário criado",
-      description: "O novo usuário foi criado com sucesso.",
-    });
-    
-    form.reset();
-    onOpenChange(false);
+    try {
+      const userData: CreateUserFormData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        position: data.position,
+        department: data.department,
+        role: data.role,
+        status: data.status
+      };
+      
+      const result = await createUserWithAutoPassword(userData);
+      
+      if (result.success && result.user) {
+        toast({
+          title: "Usuário criado com sucesso!",
+          description: `Usuário ${result.user.name} foi criado. Senha temporária: ${result.user.password}`,
+        });
+        
+        // Call the parent callback to refresh the user list
+        onUserAdd({
+          name: result.user.name,
+          email: result.user.email,
+          role: data.role,
+          department: data.department,
+          position: data.position,
+          phone: data.phone,
+          status: data.status
+        });
+        
+        form.reset();
+        onOpenChange(false);
+      } else {
+        toast({
+          title: "Erro ao criar usuário",
+          description: result.error || "Ocorreu um erro inesperado.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -331,11 +368,18 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                Criar Usuário
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar Usuário'
+                )}
               </Button>
             </DialogFooter>
           </form>

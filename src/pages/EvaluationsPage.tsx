@@ -227,11 +227,7 @@ export function EvaluationsPage() {
       </div>
 
       {/* Compact Statistics */}
-      <CompactStatsCards 
-        evaluations={evaluations}
-        onStatsClick={() => setShowStatsModal(true)}
-        onCoffeeStatsClick={() => setShowCoffeeStatsModal(true)}
-      />
+      <CompactStatsCards />
 
       {/* Coffee Connection Manager */}
       <CoffeeConnectionManager
@@ -274,7 +270,6 @@ export function EvaluationsPage() {
                 <TableHead>Período</TableHead>
                 <TableHead>Nota</TableHead>
                 <TableHead>Status</TableHead>
-
                 <TableHead>Data</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -301,9 +296,13 @@ export function EvaluationsPage() {
                       {evaluation.status}
                     </Badge>
                   </TableCell>
-
                   <TableCell>
-                    {evaluation.meetingDate ? new Date(evaluation.meetingDate).toLocaleDateString('pt-BR') : '-'}
+                    {evaluation.status === 'Concluída' && evaluation.date 
+                      ? new Date(evaluation.date).toLocaleDateString('pt-BR')
+                      : evaluation.meetingDate 
+                        ? new Date(evaluation.meetingDate).toLocaleDateString('pt-BR') 
+                        : '-'
+                    }
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -347,10 +346,6 @@ export function EvaluationsPage() {
       <NewEvaluationDialog 
         open={showNewDialog} 
         onOpenChange={setShowNewDialog}
-        onEvaluationCreated={(newEvaluation) => {
-          setEvaluations(prev => [...prev, newEvaluation]);
-          setShowNewDialog(false);
-        }}
       />
       
       {selectedEvaluation && (

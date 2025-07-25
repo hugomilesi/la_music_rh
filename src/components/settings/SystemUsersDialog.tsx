@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,51 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search, Filter, Lock } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, Lock, Loader2 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { SystemUser, CreateSystemUserData, UpdateSystemUserData, SystemUserFilters } from '@/types/systemUser';
 import { AddUserDialog } from './AddUserDialog';
 import { EditUserDialog } from './EditUserDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
+import { fetchSystemUsers, deleteSystemUser, updateSystemUser } from '@/services/settingsService';
+import { useToast } from '@/hooks/use-toast';
 
-const mockUsers: SystemUser[] = [
-  {
-    id: 1,
-    name: 'Admin Geral',
-    email: 'admin@lamusic.com',
-    role: 'admin',
-    department: 'Administração',
-    phone: '(11) 99999-9999',
-    status: 'active',
-    lastAccess: '2024-03-21 10:30',
-    createdAt: '2024-01-15',
-    permissions: ['employees', 'documents', 'schedule', 'evaluations', 'settings', 'reports']
-  },
-  {
-    id: 2,
-    name: 'Aline Cristina Pessanha Faria',
-    email: 'aline.faria@lamusic.com',
-    role: 'coordenador',
-    department: 'Coordenação',
-    phone: '(11) 98888-8888',
-    status: 'active',
-    lastAccess: '2024-03-21 09:15',
-    createdAt: '2024-01-20',
-    permissions: ['employees', 'documents', 'schedule', 'evaluations']
-  },
-  {
-    id: 3,
-    name: 'Felipe Elias Carvalho',
-    email: 'felipe.carvalho@lamusic.com',
-    role: 'professor',
-    department: 'Educação Musical',
-    phone: '(11) 97777-7777',
-    status: 'active',
-    lastAccess: '2024-03-20 16:45',
-    createdAt: '2024-02-01',
-    permissions: ['documents', 'schedule']
-  }
-];
+
 
 interface SystemUsersDialogProps {
   children: React.ReactNode;
@@ -64,7 +29,9 @@ interface SystemUsersDialogProps {
 
 export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }) => {
   const { canAccessSettings } = usePermissions();
-  const [users, setUsers] = useState<SystemUser[]>(mockUsers);
+  const { toast } = useToast();
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SystemUserFilters>({
     searchQuery: '',
     role: '',
@@ -77,9 +44,30 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
+  // Load users data on component mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    try {
+      const usersData = await fetchSystemUsers();
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast({
+        title: "Erro ao carregar usuários",
+        description: "Não foi possível carregar a lista de usuários.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-                         user.email.toLowerCase().includes(filters.searchQuery.toLowerCase());
+    const matchesSearch = user.name.toLowerCase().includes(filters.searchQuery.toLowerCase());
     const matchesRole = !filters.role || user.role === filters.role;
     const matchesDepartment = !filters.department || user.department === filters.department;
     const matchesStatus = !filters.status || user.status === filters.status;
@@ -87,35 +75,47 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
     return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
   });
 
-  const handleAddUser = (userData: CreateSystemUserData) => {
-    const newUser: SystemUser = {
-      id: Date.now(),
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      department: userData.department,
-      phone: userData.phone,
-      status: userData.status,
-      lastAccess: 'Nunca acessou',
-      createdAt: new Date().toISOString().split('T')[0],
-      permissions: userData.permissions
-    };
-
-    setUsers([...users, newUser]);
+  const handleAddUser = async (userData: CreateSystemUserData) => {
+    // Reload users after adding
+    await loadUsers();
   };
 
-  const handleUpdateUser = (id: number, userData: UpdateSystemUserData) => {
-    setUsers(users.map(user => 
-      user.id === id 
-        ? { ...user, ...userData }
-        : user
-    ));
-    setEditingUser(null);
+  const handleUpdateUser = async (id: number, userData: UpdateSystemUserData) => {
+    try {
+      await updateSystemUser(String(id), userData);
+      await loadUsers();
+      setEditingUser(null);
+      toast({
+        title: "Usuário atualizado",
+        description: "Os dados do usuário foram atualizados com sucesso."
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Erro ao atualizar usuário",
+        description: "Não foi possível atualizar os dados do usuário.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteUser = (id: number) => {
-    setUsers(users.filter(user => user.id !== id));
-    setDeletingUser(null);
+  const handleDeleteUser = async (id: number) => {
+    try {
+      await deleteSystemUser(String(id));
+      await loadUsers();
+      setDeletingUser(null);
+      toast({
+        title: "Usuário excluído",
+        description: "O usuário foi excluído com sucesso."
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Erro ao excluir usuário",
+        description: "Não foi possível excluir o usuário.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditClick = (user: SystemUser) => {
@@ -239,7 +239,6 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Perfil</TableHead>
                     <TableHead>Setor</TableHead>
                     <TableHead>Status</TableHead>
@@ -248,50 +247,62 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge className={getRoleBadge(user.role)}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.department || '-'}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusBadge(user.status)}>
-                          {user.status === 'active' ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.lastAccess}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditClick(user)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteClick(user)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Carregando usuários...</span>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Nenhum usuário encontrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>
+                          <Badge className={getRoleBadge(user.role)}>
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{user.department || '-'}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusBadge(user.status)}>
+                            {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{user.lastAccess}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditClick(user)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteClick(user)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
 
-              {filteredUsers.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  Nenhum usuário encontrado com os filtros aplicados
-                </div>
-              )}
+
             </div>
 
             {/* Estatísticas */}

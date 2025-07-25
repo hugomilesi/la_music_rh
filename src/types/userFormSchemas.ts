@@ -13,7 +13,6 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
   role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),

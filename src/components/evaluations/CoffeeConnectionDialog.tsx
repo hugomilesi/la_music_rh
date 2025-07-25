@@ -101,7 +101,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
     try {
       const evaluationData: NewEvaluationData = {
         employeeId: data.employeeId,
-        type: 'coffee_connection',
+        type: 'Coffee Connection',
         period: new Date().getFullYear().toString(),
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,

@@ -73,7 +73,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
         comments: data.comments || undefined,
       };
       
-      addEvaluation(evaluationData);
+      await addEvaluation(evaluationData);
       toast({
         title: 'Avaliação criada',
         description: 'A nova avaliação foi criada com sucesso.',
@@ -81,6 +81,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
+      console.error('Error in onSubmit:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a avaliação.',

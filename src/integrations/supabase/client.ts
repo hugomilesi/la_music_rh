@@ -9,11 +9,42 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    flowType: 'pkce'
   },
   global: {
     headers: {
       'X-Client-Info': 'supabase-js-web'
+    },
+    fetch: (url, options = {}) => {
+      // Create timeout signal if not provided
+      let timeoutSignal = options.signal;
+      if (!timeoutSignal) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        timeoutSignal = controller.signal;
+      }
+      
+      return fetch(url, {
+        ...options,
+        signal: timeoutSignal
+      }).catch(error => {
+        // Handle network errors gracefully
+        if (error.name === 'AbortError') {
+          console.log('Request timed out:', url);
+        } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          console.log('Network error:', url);
+        }
+        throw error;
+      })
+    }
+  },
+  db: {
+    schema: 'public'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
     }
   }
 })

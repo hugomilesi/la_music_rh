@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { UpdateUserFormData } from '@/types/userFormSchemas';
+import { fetchRoles, RoleWithDepartment } from '@/services/rolesService';
 
 interface EditUserFormProps {
   form: UseFormReturn<UpdateUserFormData>;
@@ -23,6 +24,23 @@ const departments = [
 
 export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
   const { register, formState: { errors }, watch, setValue } = form;
+  const [roles, setRoles] = useState<RoleWithDepartment[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+
+  useEffect(() => {
+    const loadRoles = async () => {
+      try {
+        const rolesData = await fetchRoles();
+        setRoles(rolesData);
+      } catch (error) {
+        console.error('Erro ao carregar cargos:', error);
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    loadRoles();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -45,27 +63,22 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
           </div>
 
           <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register('email')}
-              placeholder="usuario@lamusic.com"
-              className={errors.email ? 'border-red-500' : ''}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div>
             <Label htmlFor="position">Cargo *</Label>
-            <Input
+            <select
               id="position"
               {...register('position')}
-              placeholder="Digite o cargo"
-              className={errors.position ? 'border-red-500' : ''}
-            />
+              className={`w-full h-10 px-3 rounded-md border border-input bg-background ${
+                errors.position ? 'border-red-500' : ''
+              }`}
+              disabled={loadingRoles}
+            >
+              <option value="">Selecione um cargo</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name} - {role.department?.name}
+                </option>
+              ))}
+            </select>
             {errors.position && (
               <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
             )}

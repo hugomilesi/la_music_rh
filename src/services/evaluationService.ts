@@ -29,8 +29,7 @@ export const evaluationService = {
     
     if (error) {
       console.error('Error fetching evaluations:', error);
-      // Return mock data when Supabase is not available
-      return this.getMockEvaluations();
+      throw error;
     }
     
     // Transform the data to match the frontend interface
@@ -57,34 +56,30 @@ export const evaluationService = {
       };
     }) || [];
     
-    // If no data from Supabase, return mock data
-    if (transformedData.length === 0) {
-      return this.getMockEvaluations();
-    }
-    
     return transformedData;
   },
 
   async createEvaluation(evaluationData: NewEvaluationData): Promise<Evaluation> {
+    // Map frontend data to database format
     const dbData = {
       employee_id: evaluationData.employeeId,
-      evaluator_id: evaluationData.evaluatorId || evaluationData.employeeId, // Use employee as evaluator if no evaluator provided
-      date: new Date().toISOString().split('T')[0], // Set current date as required field
+      evaluator_id: evaluationData.evaluatorId || evaluationData.employeeId,
       type: this.mapEvaluationTypeToDb(evaluationData.type),
-      status: 'in_progress', // Set default status as required field
       period: evaluationData.period,
-      comments: evaluationData.comments,
-      meeting_date: evaluationData.meetingDate,
-      meeting_time: evaluationData.meetingTime,
-      location: evaluationData.location,
-      topics: evaluationData.topics,
-      follow_up_actions: evaluationData.followUpActions,
-      confidential: evaluationData.confidential
+      status: 'em_andamento',
+      score: 0,
+      comments: evaluationData.comments || null,
+      location: evaluationData.location || null,
+      topics: evaluationData.topics || null,
+      meeting_date: evaluationData.meetingDate || null,
+      meeting_time: evaluationData.meetingTime || null,
+      follow_up_actions: evaluationData.followUpActions || null,
+      confidential: evaluationData.confidential || false
     };
 
     const { data, error } = await supabase
       .from('evaluations')
-      .insert([dbData])
+      .insert(dbData)
       .select(`
         id,
         employee_id,
@@ -105,12 +100,13 @@ export const evaluationService = {
         evaluator:employees!evaluations_evaluator_id_fkey(name)
       `)
       .single();
-    
+
     if (error) {
       console.error('Error creating evaluation:', error);
       throw error;
     }
-    
+
+    // Transform the response to match frontend interface
     return {
       id: data.id,
       employeeId: data.employee_id,
@@ -173,7 +169,7 @@ export const evaluationService = {
   
   // Automatically set status to completed and update date when score is provided
   if (isScoreUpdate) {
-    dbUpdates.status = 'completed';
+    dbUpdates.status = 'concluida';
     dbUpdates.date = new Date().toISOString().split('T')[0];
   }
     
@@ -202,12 +198,6 @@ export const evaluationService = {
     
     if (error) {
       console.error('Error updating evaluation:', error);
-      // For mock data, simulate the update
-      const mockEvaluations = this.getMockEvaluations();
-      const mockEvaluation = mockEvaluations.find(evaluation => evaluation.id === id);
-      if (mockEvaluation) {
-        return { ...mockEvaluation, ...updates };
-      }
       throw error;
     }
 
@@ -281,105 +271,19 @@ export const evaluationService = {
 
   mapEvaluationStatus(dbStatus: string): Evaluation['status'] {
     const statusMap: Record<string, Evaluation['status']> = {
-      'in_progress': 'Em Andamento',
-      'completed': 'Concluída'
+      'em_andamento': 'Em Andamento',
+      'concluida': 'Concluída'
     };
     return statusMap[dbStatus] || 'Em Andamento';
   },
 
   mapEvaluationStatusToDb(frontendStatus: Evaluation['status']): string {
     const statusMap: Record<Evaluation['status'], string> = {
-      'Em Andamento': 'in_progress',
-      'Concluída': 'completed'
+      'Em Andamento': 'em_andamento',
+      'Concluída': 'concluida'
     };
-    return statusMap[frontendStatus] || 'in_progress';
+    return statusMap[frontendStatus] || 'em_andamento';
   },
 
-  // Mock data for testing when Supabase is not available
-  getMockEvaluations(): Evaluation[] {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    return [
-      {
-        id: 'mock-1',
-        employeeId: 'emp-1',
-        employee: 'Ana Silva',
-        role: 'Desenvolvedora Frontend',
-        type: 'Coffee Connection',
-        period: '2024',
-        score: 0,
-        status: 'Em Andamento',
-        date: today.toISOString().split('T')[0],
-        meetingDate: tomorrow.toISOString().split('T')[0],
-        meetingTime: '14:00',
-        location: 'Sala de Reuniões 1',
-        topics: ['Desenvolvimento de carreira', 'Feedback sobre projetos'],
-        comments: 'Coffee Connection agendado para discussão sobre crescimento profissional'
-      },
-      {
-        id: 'mock-2',
-        employeeId: 'emp-2',
-        employee: 'João Santos',
-        role: 'Designer UX/UI',
-        type: 'Coffee Connection',
-        period: '2024',
-        score: 0,
-        status: 'Em Andamento',
-        date: today.toISOString().split('T')[0],
-        meetingDate: nextWeek.toISOString().split('T')[0],
-        meetingTime: '10:30',
-        location: 'Café da empresa',
-        topics: ['Processos de design', 'Colaboração com equipe'],
-        comments: 'Sessão para alinhar expectativas e melhorar processos'
-      },
-      {
-        id: 'mock-3',
-        employeeId: 'emp-3',
-        employee: 'Maria Costa',
-        role: 'Gerente de Projetos',
-        type: 'Coffee Connection',
-        period: '2024',
-        score: 4.5,
-        status: 'Em Andamento',
-        date: new Date(today.getTime() - 86400000).toISOString().split('T')[0], // yesterday
-        meetingDate: new Date(today.getTime() + 172800000).toISOString().split('T')[0], // day after tomorrow
-        meetingTime: '16:00',
-        location: 'Escritório - Mesa de reunião',
-        topics: ['Liderança', 'Gestão de equipe', 'Metas trimestrais'],
-        comments: 'Coffee Connection aprovado - discussão sobre liderança'
-      },
-      {
-        id: 'mock-4',
-        employeeId: 'emp-4',
-        employee: 'Pedro Oliveira',
-        role: 'Desenvolvedor Backend',
-        type: 'Avaliação 360°',
-        period: '2024',
-        score: 4.2,
-        status: 'Concluída',
-        date: new Date(today.getTime() - 172800000).toISOString().split('T')[0], // 2 days ago
-        comments: 'Avaliação 360° concluída com sucesso'
-      },
-      {
-        id: 'mock-5',
-        employeeId: 'emp-5',
-        employee: 'Carla Ferreira',
-        role: 'Analista de Marketing',
-        type: 'Coffee Connection',
-        period: '2024',
-        score: 4.8,
-        status: 'Concluída',
-        date: new Date(today.getTime() - 259200000).toISOString().split('T')[0], // 3 days ago
-        meetingDate: new Date(today.getTime() - 86400000).toISOString().split('T')[0], // yesterday
-        meetingTime: '11:00',
-        location: 'Sala de criatividade',
-        topics: ['Estratégias de marketing', 'Campanhas digitais'],
-        comments: 'Coffee Connection concluído - excelente discussão sobre estratégias'
-      }
-    ];
-  }
+
 };

@@ -39,7 +39,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
       name: '',
-      email: '',
       role: 'usuario',
       position: '',
       department: '',
@@ -52,7 +51,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
     if (user) {
       form.reset({
         name: user.name,
-        email: user.email,
         role: user.role,
         position: user.position || '',
         department: user.department || '',
@@ -73,7 +71,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
       // Convert form data to UpdateSystemUserData
       const userData: UpdateSystemUserData = {
         name: data.name,
-        email: data.email,
+        email: user.email, // Keep existing email
         role: data.role,
         position: data.position,
         department: data.department,

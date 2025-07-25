@@ -303,7 +303,7 @@ const SchedulePage: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="relative">
+                      <div className="relative overflow-hidden">
                         {/* Time slots */}
                         {timeSlots.map(hour => (
                           <TimeSlot

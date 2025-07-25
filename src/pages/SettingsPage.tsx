@@ -76,8 +76,7 @@ const SettingsPage: React.FC = () => {
 
   const handleAddUser = async (userData: CreateSystemUserData) => {
     try {
-      // This would need to be implemented in userManagementService
-      // For now, just reload the data
+      // Reload the data to get the updated user list
       await loadAllData();
     } catch (error) {
       console.error('Error adding user:', error);
@@ -481,22 +480,42 @@ const SettingsPage: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total de Colaboradores:</span>
-                <span className="font-medium">156 pessoas</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `${systemStats.totalEmployees} pessoas`
+                  )}
+                </span>
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Espaço Utilizado:</span>
-                <span className="font-medium">2.4 GB</span>
+                <span className="text-sm text-gray-600">Usuários do Sistema:</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `${systemStats.totalUsers} usuários`
+                  )}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Último Backup:</span>
-                <span className="font-medium">21/03/2024 02:00</span>
+                <span className="font-medium">
+                  {isLoading ? 'Carregando...' : systemStats.lastBackup}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Unidades Ativas:</span>
-                <span className="font-medium">8 unidades</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `${systemStats.activeUnits} unidades`
+                  )}
+                </span>
               </div>
             </div>
           </div>

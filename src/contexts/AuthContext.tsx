@@ -94,30 +94,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        // Handle specific error codes gracefully
-        if (error.code === 'PGRST116') {
-          // No rows returned - user profile doesn't exist yet
-          console.log('Profile not found for user:', userId);
-          setProfile(null);
-          return;
-        }
-        
-        // Log other errors but don't throw
-        console.error('Error fetching profile:', error);
+      // Check if we have a valid session before making the request
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession || !currentSession.access_token) {
+        console.log('No valid session or access token, skipping profile fetch');
         return;
       }
 
-      setProfile(data as Profile | null);
+      // Add a timeout to the request to avoid hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .abortSignal(controller.signal)
+          .single();
+
+        clearTimeout(timeoutId);
+
+        if (error) {
+          // Handle specific error codes gracefully
+          if (error.code === 'PGRST116') {
+            // No rows returned - user profile doesn't exist yet
+            console.log('Profile not found for user:', userId);
+            setProfile(null);
+            return;
+          }
+          
+          // Handle authentication errors
+          if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+            console.log('Authentication error fetching profile, user may need to re-login');
+            return;
+          }
+          
+          // Log other errors but don't throw
+          console.log('Error fetching profile (non-critical):', error.message);
+          return;
+        }
+
+        setProfile(data as Profile | null);
+      } catch (requestError) {
+        clearTimeout(timeoutId);
+        throw requestError;
+      }
     } catch (error) {
       // Handle network errors and other exceptions
-      console.error('Network or unexpected error fetching profile:', error);
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.log('Network connectivity issue, profile fetch skipped');
+      } else if (error.name === 'AbortError') {
+        console.log('Profile fetch timed out, skipping');
+      } else {
+        console.log('Profile fetch failed (non-critical):', error instanceof Error ? error.message : 'Unknown error');
+      }
       // Don't set profile to null on network errors to avoid clearing existing data
     }
   };
