@@ -12,14 +12,14 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm">
+    <header className="glass-subtle border-b border-white/10 shadow-hr-soft sticky top-0 z-40 backdrop-blur-md">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleSidebar}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-gray-600 hover:text-gray-900 hover-lift rounded-xl transition-all duration-300"
           >
             <Menu className="w-5 h-5" />
           </Button>
@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         <div className="flex items-center gap-3">
           <NotificationDropdown />
           
-          <div className="border-l pl-3">
+          <div className="border-l border-gray-200/30 pl-3">
             <UserProfileDropdown />
           </div>
         </div>

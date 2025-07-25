@@ -128,7 +128,7 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
           </TableHeader>
           <TableBody>
             {groupedDocuments.map((group) => (
-              <React.Fragment key={group.employeeId}>
+              <div key={group.employeeId}>
                 <TableRow 
                   className="cursor-pointer hover:bg-gray-50 border-b-2" 
                   onClick={() => toggleEmployee(group.employeeId)}
@@ -267,8 +267,8 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
                     </TableCell>
                   </TableRow>
                 ))}
-              </React.Fragment>
-            ))}}
+              </div>
+            ))}
           </TableBody>
         </Table>
         

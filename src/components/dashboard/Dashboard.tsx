@@ -5,16 +5,16 @@ import {
   Calendar, 
   AlertTriangle, 
   Award, 
-  Music, 
-  Piano, 
-  Mic, 
-  Volume2, 
+  Shield, 
+  Heart, 
+  Clock, 
   Star, 
   Sparkles, 
   Play,
-  Headphones,
-  Radio,
-  Disc
+  Building,
+  Target,
+  CheckCircle,
+  Mail
 } from 'lucide-react';
 import { StatCard } from './StatCard';
 import { StatCardSkeleton } from './StatCardSkeleton';
@@ -22,11 +22,13 @@ import { BirthdayCard } from './BirthdayCard';
 import { AlertCard } from './AlertCard';
 import { VacationAlerts } from '../vacation/VacationAlerts';
 import { KPIModal } from './KPIModal';
+import { EmailTestDialog } from '../email/EmailTestDialog';
 import { useDashboardData, useDashboardAlerts, useUnitSummary } from '@/hooks/useDashboardData';
 
 export const Dashboard: React.FC = () => {
   const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isEmailTestOpen, setIsEmailTestOpen] = useState(false);
   
   // Hooks personalizados para dados do dashboard
   const metrics = useDashboardData();
@@ -59,37 +61,37 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 relative">
-      {/* Animated Background Elements */}
+      {/* Subtle Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-20 left-10 text-6xl text-yellow-400/5 animate-bounce" style={{animationDelay: '0s', animationDuration: '4s'}}>♪</div>
-        <div className="absolute top-40 right-20 text-4xl text-orange-400/5 animate-bounce" style={{animationDelay: '1s', animationDuration: '5s'}}>♫</div>
-        <div className="absolute bottom-40 left-1/4 text-5xl text-purple-400/5 animate-bounce" style={{animationDelay: '2s', animationDuration: '3.5s'}}>♬</div>
-        <div className="absolute bottom-20 right-1/3 text-7xl text-pink-400/5 animate-bounce" style={{animationDelay: '0.5s', animationDuration: '4.5s'}}>♩</div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-400/5 rounded-full animate-float" style={{animationDelay: '0s'}}></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-purple-400/5 rounded-full animate-float" style={{animationDelay: '2s'}}></div>
+        <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-indigo-400/5 rounded-full animate-float" style={{animationDelay: '4s'}}></div>
+        <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-pink-400/5 rounded-full animate-float" style={{animationDelay: '1s'}}></div>
       </div>
 
       {/* Header Section */}
       <div className="relative z-10">
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 left-4 text-4xl animate-pulse">♪</div>
-            <div className="absolute top-8 right-8 text-3xl animate-pulse" style={{animationDelay: '1s'}}>♫</div>
-            <div className="absolute bottom-4 left-1/3 text-5xl animate-pulse" style={{animationDelay: '2s'}}>♬</div>
+        <div className="gradient-hr-primary glass-subtle rounded-2xl p-8 text-white relative overflow-hidden border border-white/20 shadow-hr-strong">
+          {/* Subtle Background Pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-4 left-4 w-8 h-8 bg-white rounded-full animate-pulse"></div>
+            <div className="absolute top-8 right-8 w-6 h-6 bg-white rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+            <div className="absolute bottom-4 left-1/3 w-10 h-10 bg-white rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
           </div>
           
           <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center animate-pulse-glow">
-                <Music className="w-8 h-8 text-black" />
+              <div className="w-16 h-16 glass-gradient rounded-xl flex items-center justify-center hover-glow">
+                <Users className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold mb-2">
-                  {getGreeting()}, Maestro! 🎵
+                  {getGreeting()}, Gestor! 👥
                 </h1>
-                <p className="text-purple-100 text-lg">
-                  Bem-vindo ao seu painel musical - LA Music RH
+                <p className="text-white/90 text-lg">
+                  Bem-vindo ao seu painel de RH - LA Music RH
                 </p>
-                <p className="text-purple-200 text-sm mt-1">
+                <p className="text-white/80 text-sm mt-1">
                   {currentTime.toLocaleDateString('pt-BR', { 
                     weekday: 'long', 
                     year: 'numeric', 
@@ -101,12 +103,12 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4 mt-6 md:mt-0">
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Todas as unidades musicais</span>
+              <div className="glass-subtle rounded-full px-4 py-2 border border-white/30">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse inline-block mr-2"></div>
+                <span className="text-sm font-medium">Todas as unidades</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <Play className="w-4 h-4" />
+              <div className="glass-subtle rounded-full px-4 py-2 border border-white/30">
+                <Clock className="w-4 h-4 inline mr-2" />
                 <span className="text-sm font-medium">{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
             </div>
@@ -118,10 +120,10 @@ export const Dashboard: React.FC = () => {
       <div className="relative z-10">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-yellow-500" />
-            Métricas Musicais
+            <Sparkles className="w-6 h-6 text-blue-500" />
+            Métricas de RH
           </h2>
-          <p className="text-gray-600">Acompanhe o desempenho da sua escola de música em tempo real</p>
+          <p className="text-gray-600">Acompanhe o desempenho da gestão de pessoas em tempo real</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -182,7 +184,7 @@ export const Dashboard: React.FC = () => {
                 title="Admissões (30 dias)"
                 value={metrics.recentAdmissions.toString()}
                 subtitle="Novos colaboradores"
-                icon={Music}
+                icon={CheckCircle}
                 color="green"
                 onClick={() => handleStatCardClick('admissions')}
               />
@@ -191,7 +193,7 @@ export const Dashboard: React.FC = () => {
                 title="Avaliações em Andamento"
                 value="15"
                 subtitle="Em processo de avaliação"
-                icon={Mic}
+                icon={Target}
                 color="orange"
                 onClick={() => handleStatCardClick('evaluations')}
               />
@@ -209,7 +211,7 @@ export const Dashboard: React.FC = () => {
                 title="Ocorrências"
                 value={metrics.totalIncidents.toString()}
                 subtitle="Registradas este mês"
-                icon={Piano}
+                icon={Shield}
                 color="indigo"
                 onClick={() => handleStatCardClick('incidents')}
               />
@@ -218,29 +220,29 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Musical Interactive Cards */}
+      {/* HR Interactive Cards */}
       <div className="relative z-10">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-            <Volume2 className="w-6 h-6 text-purple-500" />
-            Atividades Musicais
+            <Heart className="w-6 h-6 text-purple-500" />
+            Atividades de RH
           </h2>
-          <p className="text-gray-600">Informações importantes e eventos da escola</p>
+          <p className="text-gray-600">Informações importantes e eventos da equipe</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Aniversários */}
-          <div className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl p-6 text-white relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors"></div>
+          <div className="gradient-hr-warm glass-subtle rounded-xl p-6 text-white relative overflow-hidden group hover-lift transition-all duration-300 border border-white/20 shadow-hr-soft">
+            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors"></div>
             <div className="absolute top-2 right-2 text-2xl opacity-20">🎂</div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="glass-gradient rounded-lg p-2">
                   <Users className="w-5 h-5" />
                 </div>
                 <h3 className="font-semibold text-lg">Aniversários</h3>
               </div>
-              <p className="text-pink-100 mb-4">Celebre com nossa equipe!</p>
+              <p className="text-white/90 mb-4">Celebre com nossa equipe!</p>
               <div className="space-y-2">
                 {alerts.birthdays.slice(0, 3).map((birthday, index) => (
                   <div key={birthday.id} className="flex items-center gap-2">
@@ -259,17 +261,17 @@ export const Dashboard: React.FC = () => {
           </div>
           
           {/* Alertas Importantes */}
-          <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-xl p-6 text-white relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors"></div>
+          <div className="gradient-hr-danger glass-subtle rounded-xl p-6 text-white relative overflow-hidden group hover-lift transition-all duration-300 border border-white/20 shadow-hr-soft">
+            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors"></div>
             <div className="absolute top-2 right-2 text-2xl opacity-20">⚠️</div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="glass-gradient rounded-lg p-2">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <h3 className="font-semibold text-lg">Alertas Importantes</h3>
               </div>
-              <p className="text-red-100 mb-4">Requer atenção imediata</p>
+              <p className="text-white/90 mb-4">Requer atenção imediata</p>
               <div className="space-y-2">
                 {alerts.incidents.slice(0, 3).map((incident) => (
                   <div key={incident.id} className="flex items-center gap-2">
@@ -294,17 +296,17 @@ export const Dashboard: React.FC = () => {
           </div>
           
           {/* Alertas de Férias */}
-          <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-6 text-white relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors"></div>
+          <div className="gradient-hr-cool glass-subtle rounded-xl p-6 text-white relative overflow-hidden group hover-lift transition-all duration-300 border border-white/20 shadow-hr-soft">
+            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors"></div>
             <div className="absolute top-2 right-2 text-2xl opacity-20">🏖️</div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="glass-gradient rounded-lg p-2">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <h3 className="font-semibold text-lg">Alertas de Férias</h3>
               </div>
-              <p className="text-blue-100 mb-4">Programação de ausências</p>
+              <p className="text-white/90 mb-4">Programação de ausências</p>
               <div className="space-y-2">
                 {alerts.vacations.slice(0, 3).map((vacation, index) => (
                   <div key={index} className="flex items-center gap-2">
@@ -330,6 +332,22 @@ export const Dashboard: React.FC = () => {
         onClose={closeModal}
         type={selectedKPI as any}
       />
+
+      {/* Email Test Dialog */}
+      <EmailTestDialog
+        isOpen={isEmailTestOpen}
+        onClose={() => setIsEmailTestOpen(false)}
+      />
+
+      {/* Floating Email Test Button */}
+      <button
+        onClick={() => setIsEmailTestOpen(true)}
+        className="fixed bottom-6 right-6 z-50 gradient-hr-primary glass-subtle rounded-full p-4 text-white shadow-hr-strong hover-lift transition-all duration-300 border border-white/20 group"
+        title="Testar Envio de Email"
+      >
+        <Mail className="w-6 h-6 group-hover:scale-110 transition-transform" />
+        <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+      </button>
     </div>
   );
 };

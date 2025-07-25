@@ -156,19 +156,21 @@ export function EvaluationsPage() {
           case 'today':
             matchesDateRange = meetingDate.toDateString() === now.toDateString();
             break;
-          case 'week':
+          case 'week': {
             const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
             const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
             matchesDateRange = meetingDate >= weekStart && meetingDate <= weekEnd;
             break;
+          }
           case 'month':
             matchesDateRange = meetingDate.getMonth() === now.getMonth() && meetingDate.getFullYear() === now.getFullYear();
             break;
-          case 'quarter':
+          case 'quarter': {
             const quarter = Math.floor(now.getMonth() / 3);
             const evalQuarter = Math.floor(meetingDate.getMonth() / 3);
             matchesDateRange = evalQuarter === quarter && meetingDate.getFullYear() === now.getFullYear();
             break;
+          }
         }
       }
       

@@ -16,14 +16,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen gradient-hr-cool flex">
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       
-      <div className="flex-1 flex flex-col min-w-0">
+      <div 
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-16' : 'ml-64'
+        }`}
+      >
         <Header onToggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 p-6">
-          {children}
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
       

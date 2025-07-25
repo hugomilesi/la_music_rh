@@ -9,8 +9,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { useEmailService } from '@/hooks/useEmailService';
 import { Document } from '@/types/document';
-import { Mail, Send, FileText, User } from 'lucide-react';
+import { Mail, Send, FileText, User, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SendToAccountantDialogProps {
   open: boolean;
@@ -32,12 +34,14 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
   const [documentsToSend, setDocumentsToSend] = useState<string[]>(
     selectedDocuments.map(doc => doc.id)
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const { sendDocumentEmail, isLoading, error, success } = useEmailService();
 
   // Filter documents based on selected employee
-  const availableDocuments = selectedEmployee === 'all' 
-    ? filteredDocuments 
-    : filteredDocuments.filter(doc => doc.employeeId === selectedEmployee);
+  const availableDocuments = React.useMemo(() => {
+    return selectedEmployee === 'all' 
+      ? filteredDocuments 
+      : filteredDocuments.filter(doc => doc.employeeId === selectedEmployee);
+  }, [selectedEmployee, filteredDocuments]);
 
   // Update documents when employee selection changes
   React.useEffect(() => {
@@ -55,21 +59,51 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
   };
 
   const handleSend = async () => {
-    setIsLoading(true);
-    
-    // Simulate sending email
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log('Enviando documentos para:', email);
-    console.log('Assunto:', subject);
-    console.log('Mensagem:', message);
-    console.log('Documentos:', documentsToSend);
-    
-    setIsLoading(false);
-    onOpenChange(false);
-    
-    // Here you would integrate with an email service
-    alert('Documentos enviados com sucesso!');
+    if (!email || !subject || !message) {
+      toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (documentsToSend.length === 0) {
+      toast.error('Selecione pelo menos um documento para enviar.');
+      return;
+    }
+
+    try {
+      // Get selected documents with their details
+      const selectedDocs = availableDocuments.filter(doc => documentsToSend.includes(doc.id));
+      
+      // Create document list for email
+      const documentsList = selectedDocs.map(doc => ({
+        name: `${doc.document} - ${doc.employee}`,
+        url: doc.filePath || '#' // You might need to generate proper URLs for documents
+      }));
+
+      // Send email with documents
+      const result = await sendDocumentEmail({
+        to: [email],
+        employeeName: selectedEmployee === 'all' ? 'Todos os colaboradores' : employees.find(emp => emp.id === selectedEmployee)?.name || 'Colaborador',
+        documentType: 'Documentos para Análise Contábil',
+        message: `${message}\n\nDocumentos inclusos:\n${selectedDocs.map(doc => `• ${doc.document} - ${doc.employee}`).join('\n')}`,
+      });
+
+      if (result.success) {
+        toast.success(`Documentos enviados com sucesso para ${email}!`);
+        onOpenChange(false);
+        
+        // Reset form
+        setEmail('gprado0167@gmail.com');
+        setSubject('Documentos para Análise');
+        setMessage('Segue em anexo os documentos solicitados para análise.');
+        setSelectedEmployee('all');
+        setDocumentsToSend(selectedDocuments.map(doc => doc.id));
+      } else {
+        toast.error(result.error || 'Erro ao enviar documentos.');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar documentos:', err);
+      toast.error('Erro inesperado ao enviar documentos.');
+    }
   };
 
   const selectedDocs = availableDocuments.filter(doc => documentsToSend.includes(doc.id));
@@ -189,15 +223,34 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancelar
           </Button>
           <Button 
             onClick={handleSend} 
-            disabled={documentsToSend.length === 0 || isLoading}
+            disabled={isLoading || documentsToSend.length === 0 || !email || !subject || !message}
           >
-            <Send className="w-4 h-4 mr-2" />
-            {isLoading ? 'Enviando...' : `Enviar ${documentsToSend.length} Documento(s)`}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Enviando...
+              </>
+            ) : success ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Enviado!
+              </>
+            ) : error ? (
+              <>
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Tentar Novamente
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                {`Enviar ${documentsToSend.length} Documento(s)`}
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

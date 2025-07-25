@@ -39,71 +39,52 @@ const Index = () => {
   const features = [
     {
       icon: Users,
-      title: 'Gestão de Professores & Alunos',
-      description: 'Cadastro completo com instrumentos, níveis e histórico musical da equipe.',
+      title: 'Gestão de Colaboradores',
+      description: 'Cadastro completo com perfis, informações de contato e histórico profissional.',
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Calendar,
-      title: 'Agenda Musical',
-      description: 'Calendário de aulas, ensaios e apresentações com cores temáticas.',
+      title: 'Gestão de Escalas',
+      description: 'Controle de férias, folgas e horários de trabalho com calendário inteligente.',
       color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: TrendingUp,
-      title: 'Avaliações Musicais',
-      description: 'Acompanhe o progresso musical dos alunos com relatórios visuais.',
+      title: 'Avaliação de Desempenho',
+      description: 'Ferramentas para avaliações de performance e NPS com relatórios visuais.',
       color: 'from-green-500 to-emerald-500'
     },
     {
       icon: Award,
-      title: 'Reconhecimento Musical',
-      description: 'Sistema de conquistas e incentivos para motivar alunos e professores.',
+      title: 'Reconhecimento & Gamificação',
+      description: 'Sistema de conquistas e programas de reconhecimento para motivar a equipe.',
       color: 'from-yellow-500 to-orange-500'
     },
     {
-      icon: Music,
-      title: 'Biblioteca Musical',
-      description: 'Organização de partituras, métodos e materiais didáticos.',
+      icon: Shield,
+      title: 'Canal de Incidentes',
+      description: 'Gestão de ocorrências e registros disciplinares de forma organizada.',
       color: 'from-indigo-500 to-purple-500'
     },
     {
       icon: Heart,
-      title: 'Benefícios da Equipe',
-      description: 'Gestão completa de benefícios para funcionários da escola.',
+      title: 'Administração de Benefícios',
+      description: 'Gerenciamento completo de planos de saúde, vales e benefícios corporativos.',
       color: 'from-red-500 to-pink-500'
     }
   ];
 
   const benefits = [
-    'Interface musical intuitiva e moderna',
-    'Dashboards com métricas musicais em tempo real',
-    'Integração com WhatsApp para comunicação',
-    'Controle de acesso por níveis musicais',
-    'Backup automático de partituras na nuvem',
-    'Suporte especializado para escolas de música'
+    'Interface intuitiva e moderna para RH',
+    'Dashboards com métricas de pessoas em tempo real',
+    'Integração com WhatsApp para comunicação corporativa',
+    'Controle de acesso por níveis hierárquicos',
+    'Backup automático de dados na nuvem',
+    'Suporte especializado para gestão de pessoas'
   ];
 
-  const testimonials = [
-    {
-      name: 'Maria Silva',
-      role: 'Diretora - Conservatório Musical',
-      content: 'Revolucionou nossa gestão! Agora conseguimos acompanhar o progresso de cada aluno de forma visual e intuitiva.',
-      rating: 5
-    },
-    {
-      name: 'João Santos',
-      role: 'Professor de Piano',
-      content: 'A agenda musical facilitou muito meu trabalho. Posso ver todas as aulas e ensaios em um só lugar.',
-      rating: 5
-    },
-    {
-      name: 'Ana Costa',
-      role: 'Coordenadora Pedagógica',
-      content: 'Os relatórios de progresso são fantásticos. Os pais adoram acompanhar a evolução musical dos filhos.',
-      rating: 5
-    }
-  ];
+  // Removido testimonials para uso interno
 
   if (loading) {
     return (
@@ -132,12 +113,12 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-yellow-500/25">
-                <Music className="text-white w-6 h-6" />
+              <div className="w-12 h-12 glass-gradient rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover-glow">
+                <Users className="text-white w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">LA Music RH</h1>
-                <p className="text-sm text-yellow-200">Gestão Musical Inteligente</p>
+                <p className="text-sm text-white/80">Gestão de Pessoas Inteligente</p>
               </div>
             </div>
             
@@ -165,22 +146,22 @@ const Index = () => {
       <section className="py-32 px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <div className="mb-8 flex justify-center">
-            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 backdrop-blur-sm border border-yellow-400/30 rounded-full px-6 py-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-yellow-200 text-sm font-medium">Sistema de Gestão Musical Revolucionário</span>
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+            <div className="glass-subtle border border-white/30 rounded-full px-6 py-2">
+              <Sparkles className="w-4 h-4 text-white inline mr-2" />
+              <span className="text-white/90 text-sm font-medium">Sistema de Gestão de RH Revolucionário</span>
+              <Sparkles className="w-4 h-4 text-white inline ml-2" />
             </div>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight">
             Transforme sua
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> escola de música</span>
+            <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> gestão de pessoas</span>
             <br />com tecnologia
           </h1>
           
           <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Sistema completo de gestão para escolas de música que simplifica processos, 
-            acompanha o progresso musical dos alunos e melhora o clima organizacional com uma interface visual estonteante.
+            Sistema completo de gestão de recursos humanos que simplifica processos, 
+            acompanha o desempenho dos colaboradores e melhora o clima organizacional com uma interface visual moderna.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
@@ -260,7 +241,7 @@ const Index = () => {
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
                 Por que escolher o
-                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> LA Music RH?</span>
+                <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> LA Music RH?</span>
               </h2>
               
               <div className="space-y-6">
@@ -278,7 +259,7 @@ const Index = () => {
                 <Button 
                   size="lg"
                   onClick={() => navigate('/auth')}
-                  className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-500/25"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25"
                 >
                   Começar Agora
                   <ArrowRight className="ml-2 w-5 h-5" />
@@ -287,24 +268,24 @@ const Index = () => {
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-2xl p-8 transform rotate-3 transition-all duration-500 hover:rotate-1 hover:scale-105 backdrop-blur-sm border border-yellow-400/30">
-                <div className="bg-black/40 backdrop-blur-md rounded-xl p-6 transform -rotate-3 shadow-2xl transition-all duration-500 hover:shadow-yellow-500/20">
+              <div className="glass-subtle rounded-2xl p-8 transform rotate-3 transition-all duration-500 hover:rotate-1 hover:scale-105 border border-white/20">
+                <div className="glass-dark rounded-xl p-6 transform -rotate-3 shadow-hr-strong transition-all duration-500 hover:shadow-blue-500/20">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 mb-4">
-                      <Music className="w-6 h-6 text-yellow-400" />
-                      <span className="text-white font-semibold">Dashboard Musical</span>
+                      <Users className="w-6 h-6 text-blue-400" />
+                      <span className="text-white font-semibold">Dashboard RH</span>
                     </div>
-                    <div className="h-4 bg-gradient-to-r from-yellow-400/30 to-orange-500/30 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gradient-to-r from-blue-400/30 to-purple-500/30 rounded animate-pulse"></div>
                     <div className="h-4 bg-gradient-to-r from-purple-400/30 to-pink-500/30 rounded w-3/4 animate-pulse"></div>
                     <div className="h-32 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-lg border border-white/10 flex items-center justify-center">
-                      <Piano className="w-12 h-12 text-white/50" />
+                      <TrendingUp className="w-12 h-12 text-white/50" />
                     </div>
                     <div className="flex gap-2">
                       <div className="h-8 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded flex-1 flex items-center justify-center">
-                        <span className="text-xs text-white/70">Alunos</span>
+                        <span className="text-xs text-white/70">Colaboradores</span>
                       </div>
                       <div className="h-8 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded flex-1 flex items-center justify-center">
-                        <span className="text-xs text-white/70">Aulas</span>
+                        <span className="text-xs text-white/70">Avaliações</span>
                       </div>
                     </div>
                   </div>
@@ -315,42 +296,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Testimonials Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black/40 to-black/60">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              O que dizem nossos
-              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"> clientes</span>
-            </h2>
-            <p className="text-xl text-gray-300">Escolas de música que transformaram sua gestão</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-md border-0 hover:bg-white/15 transition-all duration-300 transform hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-300 mb-6 italic">"{testimonial.content}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-black font-bold text-sm">{testimonial.name.charAt(0)}</span>
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold">{testimonial.name}</p>
-                      <p className="text-gray-400 text-sm">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-yellow-400 to-orange-500 relative overflow-hidden">
@@ -363,11 +309,11 @@ const Index = () => {
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold text-black mb-8">
             Pronto para revolucionar sua
-            <span className="text-white"> escola de música?</span>
+            <span className="text-white"> gestão de pessoas?</span>
           </h2>
           
           <p className="text-xl text-black/80 mb-12 max-w-2xl mx-auto">
-            Junte-se a centenas de escolas de música que já transformaram sua gestão com nossa plataforma
+            Simplifique seus processos de RH e melhore a experiência dos seus colaboradores
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -387,7 +333,7 @@ const Index = () => {
               className="bg-transparent border-black/30 text-black hover:bg-black/10 text-lg px-8 py-6 transform transition-all duration-300 hover:scale-105"
             >
               <Volume2 className="mr-2 w-5 h-5" />
-              Agendar Demo
+              Ver Demonstração
             </Button>
           </div>
         </div>
@@ -401,31 +347,31 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
-                  <Music className="text-black w-6 h-6" />
+                <div className="w-12 h-12 glass-gradient rounded-xl flex items-center justify-center">
+                  <Users className="text-white w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">LA Music RH</h3>
-                  <p className="text-gray-400">Gestão Musical Inteligente</p>
+                  <p className="text-gray-400">Gestão de Pessoas Inteligente</p>
                 </div>
               </div>
               <p className="text-gray-300 max-w-md">
-                Transformando a gestão de escolas de música com tecnologia inovadora e design intuitivo.
+                Transformando a gestão de recursos humanos com tecnologia inovadora e design intuitivo.
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4 text-yellow-400">Funcionalidades</h4>
+              <h4 className="font-semibold mb-4 text-blue-400">Funcionalidades</h4>
               <ul className="space-y-2 text-gray-300">
-                <li>Gestão de Alunos</li>
-                <li>Agenda Musical</li>
-                <li>Avaliações</li>
-                <li>Biblioteca Musical</li>
+                <li>Gestão de Colaboradores</li>
+                <li>Controle de Escalas</li>
+                <li>Avaliações de Desempenho</li>
+                <li>Administração de Benefícios</li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4 text-yellow-400">Suporte</h4>
+              <h4 className="font-semibold mb-4 text-blue-400">Suporte</h4>
               <ul className="space-y-2 text-gray-300">
                 <li>Central de Ajuda</li>
                 <li>Documentação</li>
@@ -443,7 +389,7 @@ const Index = () => {
             <div className="flex items-center gap-4">
               <span className="text-gray-400 text-sm">Feito com</span>
               <Heart className="w-4 h-4 text-red-500" />
-              <span className="text-gray-400 text-sm">para escolas de música</span>
+              <span className="text-gray-400 text-sm">para gestão de pessoas</span>
             </div>
           </div>
         </div>

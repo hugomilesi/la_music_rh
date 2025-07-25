@@ -116,18 +116,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
   return (
     <div className={cn(
-      "bg-gradient-to-b from-purple-900 to-purple-800 text-white transition-all duration-300 shadow-xl",
+      "glass-dark gradient-hr-primary text-white transition-all duration-300 shadow-hr-strong fixed left-0 top-0 h-full z-50 overflow-y-auto",
       collapsed ? "w-16" : "w-64"
     )}>
       <div className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 glass-gradient rounded-xl flex items-center justify-center hover-glow transition-all duration-300">
             <span className="text-white font-bold text-sm">LA</span>
           </div>
           {!collapsed && (
             <div>
               <h1 className="text-lg font-bold">LA Music RH</h1>
-              <p className="text-xs text-purple-200">Gestão de Pessoas</p>
+              <p className="text-xs text-white/70">Gestão de Pessoas</p>
             </div>
           )}
         </div>
@@ -144,10 +144,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                 <button
                   onClick={() => handleNavigation(item.href)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 group text-left",
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group text-left hover-lift",
                     isActive 
-                      ? "bg-white/20 text-white" 
-                      : "text-purple-200 hover:bg-white/10 hover:text-white"
+                      ? "glass-strong text-white shadow-hr-glow" 
+                      : "text-white/80 hover:glass-subtle hover:text-white hover:shadow-hr-soft"
                   )}
                   title={collapsed ? item.title : undefined}
                 >
@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                   {!collapsed && (
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium">{item.title}</span>
-                      <p className="text-xs text-purple-200 truncate">{item.description}</p>
+                      <p className="text-xs text-white/60 truncate group-hover:text-white/80 transition-colors">{item.description}</p>
                     </div>
                   )}
                 </button>
