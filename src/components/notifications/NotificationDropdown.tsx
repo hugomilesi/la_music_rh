@@ -32,8 +32,8 @@ const mockNotifications: NotificationItem[] = [
   },
   {
     id: '2',
-    title: 'Avaliações Pendentes',
-    message: '15 avaliações próximas do vencimento',
+    title: 'Avaliações em Andamento',
+    message: '15 avaliações em processo de revisão',
     type: 'info',
     time: '4h atrás',
     read: false

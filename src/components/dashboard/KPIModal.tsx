@@ -1096,20 +1096,20 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
       case 'alerts': {
         // Use real alerts data from context
         const realAlerts = incidents || [];
-        const localVacationAlerts = vacationRequests.filter(v => v.status === 'Pendente') || [];
+        const localVacationAlerts = vacationRequests.filter(v => v.status === 'pendente') || [];
         const scheduleAlerts = scheduleEvents.filter(e => e.type === 'conflict') || [];
         const pendingEvaluations = evaluations.filter(e => e.status === 'pending');
         
         // Transform real data into alert format
         const alertsData = [
           { 
-            type: '🚨 Ocorrências Pendentes', 
+            type: '🚨 Ocorrências Ativas', 
             count: realAlerts.filter(i => i.status === 'pending').length, 
             color: 'red', 
             priority: 'high',
             items: realAlerts.filter(i => i.status === 'pending').slice(0, 3).map(incident => ({
               name: incident.description || `Ocorrência #${incident.id}`,
-              status: incident.type || 'Pendente',
+              status: incident.type || 'Ativo',
               date: incident.date || new Date().toISOString().split('T')[0]
             }))
           },
@@ -1120,7 +1120,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
             priority: 'medium',
             items: localVacationAlerts.slice(0, 3).map(vacation => ({
               name: `Férias - ${vacation.employee_name || 'Colaborador'}`,
-              status: vacation.status || 'Pendente',
+              status: vacation.status || 'pendente',
               date: vacation.start_date || new Date().toISOString().split('T')[0]
             }))
           },
@@ -1136,13 +1136,13 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
             }))
           },
           { 
-            type: '📋 Avaliações Pendentes', 
+            type: '📋 Avaliações Em Andamento', 
             count: pendingEvaluations.length, 
             color: 'blue', 
             priority: 'medium',
             items: pendingEvaluations.slice(0, 3).map(evaluation => ({
               name: `Avaliação - ${evaluation.employee_name || 'Colaborador'}`,
-              status: evaluation.status || 'Pendente',
+              status: evaluation.status || 'Em Andamento',
               date: evaluation.due_date || new Date().toISOString().split('T')[0]
             }))
           }
@@ -1692,7 +1692,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                       <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
                         <FileText className="w-5 h-5 text-orange-600" />
                         <span className="text-sm">Finalizar Docs</span>
-                        <span className="text-xs text-gray-500">1 pendente</span>
+                        <span className="text-xs text-gray-500">1 em andamento</span>
                       </Button>
                       <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
                         <Coffee className="w-5 h-5 text-blue-600" />
@@ -1920,21 +1920,21 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
           employee: evaluation.employee_name || 'Colaborador',
           type: evaluation.type || '🎼 Avaliação Musical',
           dueDate: evaluation.due_date || new Date().toISOString().split('T')[0],
-          status: evaluation.status === 'pending' ? 'Pendente' : 
+          status: evaluation.status === 'in_progress' ? 'Em Andamento' : 
                   evaluation.status === 'completed' ? 'Concluída' : 'Agendado',
           priority: 'medium',
           department: 'Geral',
           lastScore: evaluation.final_score || 0,
           progress: evaluation.status === 'completed' ? 100 : 
-                   evaluation.status === 'pending' ? Math.floor(Math.random() * 50) + 25 : 75
+                   evaluation.status === 'in_progress' ? Math.floor(Math.random() * 50) + 25 : 75
         }));
 
         const evaluationsTrend = [
-          { month: 'Ago', completed: 18, pending: 3, overdue: 1 },
-          { month: 'Set', completed: 22, pending: 4, overdue: 0 },
-          { month: 'Out', completed: 20, pending: 5, overdue: 2 },
-          { month: 'Nov', completed: 25, pending: 3, overdue: 1 },
-          { month: 'Dez', completed: 19, pending: 6, overdue: 0 }
+          { month: 'Ago', completed: 18, inProgress: 3, overdue: 1 },
+          { month: 'Set', completed: 22, inProgress: 4, overdue: 0 },
+          { month: 'Out', completed: 20, inProgress: 5, overdue: 2 },
+          { month: 'Nov', completed: 25, inProgress: 3, overdue: 1 },
+          { month: 'Dez', completed: 19, inProgress: 6, overdue: 0 }
         ];
 
         const evaluationsByType = [
@@ -1945,11 +1945,11 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
 
         const evaluationsByDepartment = [
-          { department: 'Piano', completed: 12, pending: 3, avgScore: 4.8 },
-          { department: 'Violão', completed: 8, pending: 2, avgScore: 4.5 },
-          { department: 'Canto', completed: 10, pending: 4, avgScore: 4.9 },
-          { department: 'Bateria', completed: 6, pending: 2, avgScore: 4.2 },
-          { department: 'Teclado', completed: 5, pending: 1, avgScore: 4.6 }
+          { department: 'Piano', completed: 12, inProgress: 3, avgScore: 4.8 },
+          { department: 'Violão', completed: 8, inProgress: 2, avgScore: 4.5 },
+          { department: 'Canto', completed: 10, inProgress: 4, avgScore: 4.9 },
+          { department: 'Bateria', completed: 6, inProgress: 2, avgScore: 4.2 },
+          { department: 'Teclado', completed: 5, inProgress: 1, avgScore: 4.6 }
         ];
 
         return {
@@ -1972,7 +1972,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-2xl font-bold text-orange-600">{pendingEvaluations}</p>
-                          <p className="text-sm text-orange-700">🎵 Pendentes</p>
+                          <p className="text-sm text-orange-700">🎵 Em Andamento</p>
                         </div>
                         <Calendar className="w-8 h-8 text-orange-500" />
                       </div>
@@ -2051,7 +2051,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                                 variant="outline"
                                 className={
                                   evaluation.status === 'Concluída' ? 'text-green-600 border-green-300' :
-                                  evaluation.status === 'Pendente' ? 'text-orange-600 border-orange-300' :
+                                  evaluation.status === 'Em Andamento' ? 'text-orange-600 border-orange-300' :
                                   'text-blue-600 border-blue-300'
                                 }
                               >
@@ -2091,7 +2091,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                         <YAxis />
                         <Tooltip />
                         <Bar dataKey="completed" stackId="a" fill={CHART_COLORS.success} name="Concluídas" />
-                        <Bar dataKey="pending" stackId="a" fill={CHART_COLORS.warning} name="Pendentes" />
+                        <Bar dataKey="inProgress" stackId="a" fill={CHART_COLORS.warning} name="Em Andamento" />
                         <Line type="monotone" dataKey="overdue" stroke={CHART_COLORS.danger} strokeWidth={3} name="Atrasadas" />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -2294,9 +2294,9 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
       
       case 'incidents': {
         const totalIncidents = incidents.length;
-        const openIncidents = incidents.filter(i => i.status === 'open').length;
+        const openIncidents = incidents.filter(i => i.status === 'ativo').length;
         const resolvedIncidents = incidents.filter(i => i.status === 'resolved').length;
-        const criticalIncidents = incidents.filter(i => i.severity === 'high').length;
+        const criticalIncidents = incidents.filter(i => i.severity === 'grave').length;
         
         const incidentsByType = [
           { type: 'Equipamento', count: 8, color: CHART_COLORS.danger },
@@ -2306,10 +2306,10 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
         
         const incidentsTrend = [
-          { month: 'Out', total: 15, resolved: 12, pending: 3 },
-          { month: 'Nov', total: 18, resolved: 16, pending: 2 },
-          { month: 'Dez', total: 12, resolved: 10, pending: 2 },
-          { month: 'Jan', total: totalIncidents, resolved: resolvedIncidents, pending: openIncidents }
+          { month: 'Out', total: 15, resolved: 12, open: 3 },
+          { month: 'Nov', total: 18, resolved: 16, open: 2 },
+          { month: 'Dez', total: 12, resolved: 10, open: 2 },
+          { month: 'Jan', total: totalIncidents, resolved: resolvedIncidents, open: openIncidents }
         ];
         
         return {
@@ -2344,7 +2344,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-2xl font-bold text-orange-600">{openIncidents}</p>
-                          <p className="text-sm text-orange-700">⏳ Abertos</p>
+                          <p className="text-sm text-orange-700">⏳ Ativos</p>
                         </div>
                         <Clock className="w-8 h-8 text-orange-500" />
                       </div>
@@ -2400,7 +2400,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                         <YAxis />
                         <Tooltip />
                         <Bar dataKey="resolved" fill={CHART_COLORS.success} name="Resolvidos" />
-                        <Bar dataKey="pending" fill={CHART_COLORS.warning} name="Pendentes" />
+                        <Bar dataKey="open" fill={CHART_COLORS.warning} name="Ativos" />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>

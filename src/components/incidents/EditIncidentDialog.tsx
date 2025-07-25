@@ -33,22 +33,22 @@ interface EditIncidentDialogProps {
     id: string;
     employee?: string;
     type: string;
-    severity: 'baixa' | 'media' | 'alta' | 'critica';
+    severity: 'leve' | 'moderado' | 'grave';
     description: string;
     incidentDate: string;
     reporter?: string;
-    status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
+    status: 'ativo' | 'resolvido' | 'arquivado';
   } | null;
 }
 
 interface IncidentFormData {
   employeeId: string;
   type: string;
-  severity: 'baixa' | 'media' | 'alta' | 'critica';
+  severity: 'leve' | 'moderado' | 'grave';
   description: string;
   incidentDate: string;
   reporterId: string;
-  status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
+  status: 'ativo' | 'resolvido' | 'arquivado';
 }
 
 export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
@@ -68,11 +68,11 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
     defaultValues: {
       employeeId: incident?.employee || '',
       type: incident?.type || '',
-      severity: incident?.severity || 'baixa',
+      severity: incident?.severity || 'leve',
       description: incident?.description || '',
       incidentDate: incident?.incidentDate || '',
       reporterId: incident?.reporter || '',
-      status: incident?.status || 'aberto'
+      status: incident?.status || 'ativo'
     }
   });
 
@@ -204,10 +204,9 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Gravidade</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="baixa">Baixa</option>
-                        <option value="media">Média</option>
-                        <option value="alta">Alta</option>
-                        <option value="critica">Crítica</option>
+                        <option value="leve">Leve</option>
+                        <option value="moderado">Moderado</option>
+                        <option value="grave">Grave</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -223,10 +222,9 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Status</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="aberto">Aberto</option>
-                        <option value="em_andamento">Em Andamento</option>
+                        <option value="ativo">Ativo</option>
                         <option value="resolvido">Resolvido</option>
-                        <option value="cancelado">Cancelado</option>
+                        <option value="arquivado">Arquivado</option>
                       </select>
                     </FormControl>
                     <FormMessage />

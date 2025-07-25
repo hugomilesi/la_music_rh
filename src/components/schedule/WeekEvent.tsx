@@ -15,7 +15,8 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
       'avaliacao': 'bg-purple-100 border-purple-300 text-purple-800',
       'reuniao': 'bg-green-100 border-green-300 text-green-800',
       'folga': 'bg-gray-100 border-gray-300 text-gray-800',
-      'outro': 'bg-orange-100 border-orange-300 text-orange-800'
+      'outro': 'bg-orange-100 border-orange-300 text-orange-800',
+      'coffee-connection': 'bg-amber-100 border-amber-300 text-amber-800'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 border-gray-300 text-gray-800';
   };

@@ -46,12 +46,12 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     employeeId: '',
     employeeName: '',
     type: '',
-    severity: 'baixa',
+    severity: 'leve',
     description: '',
     incidentDate: new Date().toISOString().split('T')[0],
     reporterId: '',
     reporterName: '',
-    status: 'aberto'
+    status: 'ativo'
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -74,12 +74,12 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         employeeId: '',
         employeeName: '',
         type: '',
-        severity: 'baixa',
+        severity: 'leve',
         description: '',
         incidentDate: new Date().toISOString().split('T')[0],
         reporterId: '',
         reporterName: '',
-        status: 'aberto'
+        status: 'ativo'
       });
     }
     setErrors({});
@@ -263,10 +263,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                   onChange={handleChange}
                   label="Gravidade"
                 >
-                  <MenuItem value="baixa">Baixa</MenuItem>
-                  <MenuItem value="media">Média</MenuItem>
-                  <MenuItem value="alta">Alta</MenuItem>
-                  <MenuItem value="critica">Crítica</MenuItem>
+                  <MenuItem value="leve">Leve</MenuItem>
+                  <MenuItem value="moderado">Moderado</MenuItem>
+                  <MenuItem value="grave">Grave</MenuItem>
                 </Select>
                 {errors.severity && <FormHelperText>{errors.severity}</FormHelperText>}
               </FormControl>
@@ -322,10 +321,9 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                     onChange={handleChange}
                     label="Status"
                   >
-                    <MenuItem value="aberto">Aberto</MenuItem>
-                    <MenuItem value="em_andamento">Em Andamento</MenuItem>
+                    <MenuItem value="ativo">Ativo</MenuItem>
                     <MenuItem value="resolvido">Resolvido</MenuItem>
-                    <MenuItem value="cancelado">Cancelado</MenuItem>
+                    <MenuItem value="arquivado">Arquivado</MenuItem>
                   </Select>
                 </FormControl>
               </Box>

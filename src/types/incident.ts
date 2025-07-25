@@ -6,12 +6,12 @@ export interface Incident {
   employeeId: string;
   employeeName: string;
   type: string;
-  severity: 'baixa' | 'media' | 'alta' | 'critica';
+  severity: 'leve' | 'moderado' | 'grave';
   description: string;
   incidentDate: string;
   reporterId: string;
   reporterName: string;
-  status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
+  status: 'ativo' | 'resolvido' | 'arquivado';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -23,12 +23,12 @@ export interface NewIncidentData {
   employeeId: string;
   employeeName?: string;
   type: string;
-  severity: 'baixa' | 'media' | 'alta' | 'critica';
+  severity: 'leve' | 'moderado' | 'grave';
   description: string;
   incidentDate: string;
   reporterId: string;
   reporterName?: string;
-  status?: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
+  status?: 'ativo' | 'resolvido' | 'arquivado';
 }
 
 /**

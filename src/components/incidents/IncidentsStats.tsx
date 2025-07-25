@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Schedule,
   Error,
+  Archive,
 } from '@mui/icons-material';
 import { incidentService } from '../../services/incidentService';
 import { Incident } from '../../types/incident';
@@ -138,27 +139,23 @@ const IncidentsStats: React.FC = () => {
 
   const getStats = () => {
     const total = incidents.length;
-    const abertos = incidents.filter(i => i.status === 'aberto').length;
-    const emAndamento = incidents.filter(i => i.status === 'em_andamento').length;
+    const ativos = incidents.filter(i => i.status === 'ativo').length;
     const resolvidos = incidents.filter(i => i.status === 'resolvido').length;
-    const cancelados = incidents.filter(i => i.status === 'cancelado').length;
+    const arquivados = incidents.filter(i => i.status === 'arquivado').length;
     
     // Severidade
-    const criticos = incidents.filter(i => i.severity === 'critica').length;
-    const altos = incidents.filter(i => i.severity === 'alta').length;
-    const medios = incidents.filter(i => i.severity === 'media').length;
-    const baixos = incidents.filter(i => i.severity === 'baixa').length;
+    const graves = incidents.filter(i => i.severity === 'grave').length;
+    const moderados = incidents.filter(i => i.severity === 'moderado').length;
+    const leves = incidents.filter(i => i.severity === 'leve').length;
 
     return {
       total,
-      abertos,
-      emAndamento,
+      ativos,
       resolvidos,
-      cancelados,
-      criticos,
-      altos,
-      medios,
-      baixos,
+      arquivados,
+      graves,
+      moderados,
+      leves,
     };
   };
 
@@ -187,8 +184,8 @@ const IncidentsStats: React.FC = () => {
         }}
       >
         <StatsCard
-          title="Incidentes Abertos"
-          value={stats.abertos}
+          title="Incidentes Ativos"
+          value={stats.ativos}
           total={stats.total}
           icon={<Error color="error" />}
           color="error"
@@ -197,11 +194,11 @@ const IncidentsStats: React.FC = () => {
         />
         
         <StatsCard
-          title="Em Andamento"
-          value={stats.emAndamento}
+          title="Arquivados"
+          value={stats.arquivados}
           total={stats.total}
-          icon={<Schedule color="warning" />}
-          color="warning"
+          icon={<Archive color="default" />}
+          color="default"
           trend="neutral"
         />
 
@@ -239,10 +236,9 @@ const IncidentsStats: React.FC = () => {
             }}
           >
             {[
-              { label: 'Crítica', value: stats.criticos, color: 'error' as const },
-              { label: 'Alta', value: stats.altos, color: 'warning' as const },
-              { label: 'Média', value: stats.medios, color: 'info' as const },
-              { label: 'Baixa', value: stats.baixos, color: 'success' as const },
+              { label: 'Grave', value: stats.graves, color: 'error' as const },
+              { label: 'Moderado', value: stats.moderados, color: 'warning' as const },
+              { label: 'Leve', value: stats.leves, color: 'success' as const },
             ].map((severity) => (
               <Box key={severity.label} textAlign="center">
                 <Typography variant="h4" color={`${severity.color}.main`}>

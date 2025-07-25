@@ -115,7 +115,7 @@ export const incidentService = {
         description: incident.description,
         incident_date: incident.incidentDate,
         reporter_id: incident.reporterId,
-        status: incident.status || 'aberto'
+        status: incident.status || 'ativo'
       };
 
       const { data, error } = await supabase
@@ -251,8 +251,8 @@ export const incidentService = {
         // Count by status
         stats.byStatus[incident.status] = (stats.byStatus[incident.status] || 0) + 1;
         
-        // Count active (aberto + em_andamento) and resolved
-        if (incident.status === 'aberto' || incident.status === 'em_andamento') {
+        // Count active and resolved
+        if (incident.status === 'ativo') {
           stats.active = (stats.active || 0) + 1;
         } else if (incident.status === 'resolvido') {
           stats.resolved = (stats.resolved || 0) + 1;

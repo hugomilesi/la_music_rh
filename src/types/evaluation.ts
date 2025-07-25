@@ -7,7 +7,7 @@ export interface Evaluation {
   type: 'Avaliação 360°' | 'Auto Avaliação' | 'Avaliação do Gestor' | 'Coffee Connection';
   period: string;
   score: number;
-  status: 'Concluída' | 'Pendente' | 'Em Andamento';
+  status: 'Concluída' | 'Em Andamento';
   date: string;
   evaluatorId?: string;
   evaluator?: string;

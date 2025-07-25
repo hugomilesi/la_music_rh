@@ -16,7 +16,7 @@ import { SendToAccountantDialog } from '@/components/documents/SendToAccountantD
 import { EditChecklistDialog } from '@/components/documents/EditChecklistDialog';
 import { EmployeeDocumentsModal } from '@/components/documents/EmployeeDocumentsModal';
 import { GroupedDocumentsTable } from '@/components/documents/GroupedDocumentsTable';
-import { DocumentTest } from '@/components/DocumentTest';
+
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
@@ -38,7 +38,7 @@ const DocumentsPage: React.FC = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
   const [selectedDocumentsForAccountant, setSelectedDocumentsForAccountant] = useState<Document[]>([]);
-  const [showDocumentTest, setShowDocumentTest] = useState(true);
+
 
   const handleExport = (format: 'pdf' | 'excel') => {
     exportDocuments(format);
@@ -267,10 +267,7 @@ const DocumentsPage: React.FC = () => {
         />
       </div>
 
-      {/* Document Test Component */}
-      {showDocumentTest && (
-        <DocumentTest onClose={() => setShowDocumentTest(false)} />
-      )}
+
 
       {/* Document Checklist */}
       <Card>

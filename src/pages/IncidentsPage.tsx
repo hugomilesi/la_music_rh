@@ -62,20 +62,18 @@ const IncidentsPage: React.FC = () => {
 
   const getSeverityBadge = (severity: string) => {
     const severityColors = {
-      'baixa': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'media': 'bg-orange-100 text-orange-800 border-orange-300',
-      'alta': 'bg-red-100 text-red-800 border-red-300',
-      'critica': 'bg-red-200 text-red-900 border-red-400'
+      'leve': 'bg-green-100 text-green-800 border-green-300',
+      'moderado': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'grave': 'bg-red-100 text-red-800 border-red-300'
     };
     return severityColors[severity as keyof typeof severityColors] || 'bg-gray-100 text-gray-800 border-gray-300';
   };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      'aberto': 'bg-red-100 text-red-800 border-red-300',
-      'em_andamento': 'bg-blue-100 text-blue-800 border-blue-300',
+      'ativo': 'bg-blue-100 text-blue-800 border-blue-300',
       'resolvido': 'bg-green-100 text-green-800 border-green-300',
-      'cancelado': 'bg-gray-100 text-gray-800 border-gray-300'
+      'arquivado': 'bg-gray-100 text-gray-800 border-gray-300'
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-300';
   };
@@ -100,8 +98,8 @@ const IncidentsPage: React.FC = () => {
         new Date(incident.incidentDate).toLocaleDateString('pt-BR'),
         incident.employeeName || '',
         incident.type,
-        incident.severity === 'baixa' ? 'Baixa' : incident.severity === 'media' ? 'Média' : 'Alta',
-        incident.status === 'aberto' ? 'Aberto' : incident.status === 'em_andamento' ? 'Em Andamento' : 'Resolvido',
+        incident.severity === 'leve' ? 'Leve' : incident.severity === 'moderado' ? 'Moderado' : 'Grave',
+        incident.status === 'ativo' ? 'Ativo' : incident.status === 'resolvido' ? 'Resolvido' : 'Arquivado',
         `"${incident.description.replace(/"/g, '""')}"`,
         incident.reporter || ''
       ].join(','))
@@ -121,7 +119,7 @@ const IncidentsPage: React.FC = () => {
     toast.success('Relatório exportado com sucesso.');
   };
 
-  const handleUpdateStatus = async (id: string, status: 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado') => {
+  const handleUpdateStatus = async (id: string, status: 'ativo' | 'resolvido' | 'arquivado') => {
     try {
       await updateIncident(id, { status });
       toast.success('Status atualizado com sucesso!');
@@ -153,7 +151,7 @@ const IncidentsPage: React.FC = () => {
     // Apply card filter if selected
     let matchesCardFilter = true;
     if (selectedCardFilter === 'active') {
-      matchesCardFilter = incident.status === 'aberto' || incident.status === 'em_andamento';
+      matchesCardFilter = incident.status === 'ativo';
     } else if (selectedCardFilter === 'resolved') {
       matchesCardFilter = incident.status === 'resolvido';
     } else if (selectedCardFilter === 'thisMonth') {
@@ -332,10 +330,9 @@ const IncidentsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as gravidades</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="critica">Crítica</SelectItem>
+                <SelectItem value="leve">Leve</SelectItem>
+                <SelectItem value="moderado">Moderado</SelectItem>
+                <SelectItem value="grave">Grave</SelectItem>
               </SelectContent>
             </Select>
             
@@ -345,10 +342,9 @@ const IncidentsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="aberto">Aberto</SelectItem>
-                <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
                 <SelectItem value="resolvido">Resolvido</SelectItem>
-                <SelectItem value="cancelado">Cancelado</SelectItem>
+                <SelectItem value="arquivado">Arquivado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -420,22 +416,16 @@ const IncidentsPage: React.FC = () => {
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            {incident.status === 'aberto' && (
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'em_andamento')}>
-                                <Clock className="w-4 h-4 mr-2" />
-                                Marcar Em Andamento
-                              </DropdownMenuItem>
-                            )}
-                            {(incident.status === 'aberto' || incident.status === 'em_andamento') && (
+                            {incident.status === 'ativo' && (
                               <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'resolvido')}>
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
                                 Marcar como Resolvido
                               </DropdownMenuItem>
                             )}
-                            {incident.status !== 'cancelado' && incident.status !== 'resolvido' && (
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'cancelado')}>
+                            {incident.status !== 'arquivado' && (
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'arquivado')}>
                                 <Archive className="w-4 h-4 mr-2" />
-                                Cancelar
+                                Arquivar
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem 

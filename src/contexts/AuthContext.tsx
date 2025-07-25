@@ -88,20 +88,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Validate userId before making the request
+      if (!userId || typeof userId !== 'string') {
+        console.warn('Invalid userId provided to fetchProfile:', userId);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        // Handle specific error codes gracefully
+        if (error.code === 'PGRST116') {
+          // No rows returned - user profile doesn't exist yet
+          console.log('Profile not found for user:', userId);
+          setProfile(null);
+          return;
+        }
+        
+        // Log other errors but don't throw
         console.error('Error fetching profile:', error);
         return;
       }
 
       setProfile(data as Profile | null);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Handle network errors and other exceptions
+      console.error('Network or unexpected error fetching profile:', error);
+      // Don't set profile to null on network errors to avoid clearing existing data
     }
   };
 

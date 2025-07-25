@@ -201,61 +201,68 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2 lg:min-w-fit">
+                  <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:justify-end lg:max-w-xs">
                     {request.status === 'pendente' && (
                       <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleApprove(request.id)}
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 sm:flex-none"
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Aprovar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleReject(request.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Rejeitar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(request.id, request.employeeName)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Excluir
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleApprove(request.id)}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReject(request.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(request.id, request.employeeName)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onViewDetails && onViewDetails(request.id)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </>
                     )}
 
                     {(request.status === 'aprovado' || request.status === 'rejeitado') && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(request.id, request.employeeName)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Excluir
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(request.id, request.employeeName)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onViewDetails && onViewDetails(request.id)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )}
-
-                    {/* View Details Button */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onViewDetails && onViewDetails(request.id)}
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 sm:flex-none"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Detalhes
-                    </Button>
                   </div>
                 </div>
               </CardContent>

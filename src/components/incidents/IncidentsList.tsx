@@ -36,40 +36,36 @@ import LoadingState from '../common/LoadingState';
 
 const getSeverityColor = (severity: string) => {
   switch (severity) {
-    case 'baixa': return 'info';
-    case 'media': return 'warning';
-    case 'alta': return 'error';
-    case 'critica': return 'error';
+    case 'leve': return 'info';
+    case 'moderado': return 'warning';
+    case 'grave': return 'error';
     default: return 'default';
   }
 };
 
 const getSeverityBorderColor = (severity: string, theme: any) => {
   switch (severity) {
-    case 'baixa': return theme.palette.info.main;
-    case 'media': return theme.palette.warning.main;
-    case 'alta': return theme.palette.error.main;
-    case 'critica': return theme.palette.error.dark;
+    case 'leve': return theme.palette.info.main;
+    case 'moderado': return theme.palette.warning.main;
+    case 'grave': return theme.palette.error.main;
     default: return theme.palette.grey[400];
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'aberto': return 'error';
-    case 'em_andamento': return 'warning';
+    case 'ativo': return 'error';
     case 'resolvido': return 'success';
-    case 'cancelado': return 'default';
+    case 'arquivado': return 'default';
     default: return 'default';
   }
 };
 
-const getStatusText = (status: string) => {
+const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'aberto': return 'Aberto';
-    case 'em_andamento': return 'Em Andamento';
+    case 'ativo': return 'Ativo';
     case 'resolvido': return 'Resolvido';
-    case 'cancelado': return 'Cancelado';
+    case 'arquivado': return 'Arquivado';
     default: return status;
   }
 };
@@ -84,7 +80,7 @@ const IncidentsList: React.FC = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [incidentToDelete, setIncidentToDelete] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: string, status: 'em_andamento' | 'resolvido' | 'cancelado'} | null>(null);
+  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: string, status: 'ativo' | 'resolvido' | 'arquivado'} | null>(null);
   
   // Menu de ações
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -146,7 +142,7 @@ const IncidentsList: React.FC = () => {
     handleCloseMenu();
   };
 
-  const handleUpdateStatus = (id: string, status: 'em_andamento' | 'resolvido' | 'cancelado') => {
+  const handleUpdateStatus = (id: string, status: 'ativo' | 'resolvido' | 'arquivado') => {
     setIncidentToUpdateStatus({ id, status });
     setStatusDialogOpen(true);
     handleCloseMenu();
@@ -219,7 +215,7 @@ const IncidentsList: React.FC = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={filter} onChange={handleFilterChange} aria-label="filtros de incidentes">
           <Tab label="Todos" value="all" />
-          <Tab label="Abertos" value="active" />
+          <Tab label="Ativos" value="active" />
           <Tab label="Resolvidos" value="resolved" />
           <Tab label="Este Mês" value="thisMonth" />
         </Tabs>
@@ -228,7 +224,7 @@ const IncidentsList: React.FC = () => {
       {incidents.length === 0 ? (
         <EmptyState 
           message="Nenhum incidente encontrado"
-          description={`Não há incidentes ${filter === 'active' ? 'abertos' : filter === 'resolved' ? 'resolvidos' : filter === 'thisMonth' ? 'neste mês' : ''} para exibir.`}
+          description={`Não há incidentes ${filter === 'active' ? 'ativos' : filter === 'resolved' ? 'resolvidos' : filter === 'thisMonth' ? 'neste mês' : ''} para exibir.`}
           actionText="Adicionar Incidente"
           onAction={handleAddIncident}
         />
@@ -282,7 +278,7 @@ const IncidentsList: React.FC = () => {
                         color={getSeverityColor(incident.severity)} 
                       />
                       <Chip 
-                        label={getStatusText(incident.status)} 
+                        label={getStatusLabel(incident.status)} 
                         size="small" 
                         color={getStatusColor(incident.status)} 
                       />
@@ -324,24 +320,24 @@ const IncidentsList: React.FC = () => {
           Editar
         </MenuItem>
         
-        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'aberto' && (
-          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'em_andamento')}>
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'ativo' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'ativo')}>
             <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
-            Marcar Em Andamento
+            Marcar como Ativo
           </MenuItem>
         )}
         
-        {selectedIncidentId && (incidents.find(i => i.id === selectedIncidentId)?.status === 'aberto' || incidents.find(i => i.id === selectedIncidentId)?.status === 'em_andamento') && (
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'ativo' && (
           <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'resolvido')}>
             <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
             Marcar como Resolvido
           </MenuItem>
         )}
         
-        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'cancelado' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolvido' && (
-          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'cancelado')}>
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'arquivado' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolvido' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'arquivado')}>
             <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
-            Cancelar
+            Arquivar
           </MenuItem>
         )}
         
@@ -372,7 +368,7 @@ const IncidentsList: React.FC = () => {
       <ConfirmDialog
         open={statusDialogOpen}
         title={`${incidentToUpdateStatus?.status === 'resolvido' ? 'Resolver' : 'Arquivar'} Incidente`}
-        content={`Tem certeza que deseja marcar este incidente como ${incidentToUpdateStatus?.status === 'resolvido' ? 'resolvido' : incidentToUpdateStatus?.status === 'em_andamento' ? 'em andamento' : 'cancelado'}?`}
+        content={`Tem certeza que deseja marcar este incidente como ${incidentToUpdateStatus?.status === 'resolvido' ? 'resolvido' : incidentToUpdateStatus?.status === 'ativo' ? 'ativo' : 'arquivado'}?`}
         onConfirm={confirmStatusUpdate}
         onCancel={() => setStatusDialogOpen(false)}
       />

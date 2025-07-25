@@ -19,17 +19,19 @@ interface EditEvaluationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   evaluation: Evaluation | null;
+  onEvaluationUpdated?: (updatedEvaluation: Evaluation) => void;
 }
 
 export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
   open,
   onOpenChange,
-  evaluation
+  evaluation,
+  onEvaluationUpdated
 }) => {
   const { updateEvaluation } = useEvaluations();
   const [formData, setFormData] = useState({
     score: 0,
-    status: 'Pendente' as 'Concluída' | 'Pendente' | 'Em Andamento',
+    status: 'Em Andamento' as 'Concluída' | 'Em Andamento',
     followUpActions: '',
     topics: [] as string[],
     meetingDate: '',
@@ -53,16 +55,33 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
     }
   }, [evaluation]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evaluation) return;
 
-    updateEvaluation(evaluation.id, {
-      ...formData,
-      topics: formData.topics.filter(topic => topic.trim() !== '')
-    });
+    try {
+      await updateEvaluation(evaluation.id, {
+        ...formData,
+        topics: formData.topics.filter(topic => topic.trim() !== '')
+      });
 
-    onOpenChange(false);
+      // Create updated evaluation object for parent component
+      const updatedEvaluation = {
+        ...evaluation,
+        ...formData,
+        topics: formData.topics.filter(topic => topic.trim() !== '')
+      };
+
+      // Notify parent component if callback is provided
+      if (onEvaluationUpdated) {
+        onEvaluationUpdated(updatedEvaluation);
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error updating evaluation:', error);
+      // Error handling is already done in the context
+    }
   };
 
   const handleTopicChange = (index: number, value: string) => {
@@ -116,9 +135,8 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
                 id="status"
                 className="w-full px-3 py-2 border border-gray-200 rounded-md"
                 value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Concluída' | 'Pendente' | 'Em Andamento' }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Concluída' | 'Em Andamento' }))}
               >
-                <option value="Pendente">Pendente</option>
                 <option value="Em Andamento">Em Andamento</option>
                 <option value="Concluída">Concluída</option>
               </select>

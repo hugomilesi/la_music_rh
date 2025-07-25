@@ -15,6 +15,8 @@ export interface Benefit {
   startDate: string;
   endDate?: string;
   documents: string[];
+  // File objects for document uploads (used during updates)
+  documentFiles?: File[];
   // Universal features - now available for all benefits
   performanceGoals?: PerformanceGoal[];
   renewalSettings?: RenewalSettings;

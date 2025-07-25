@@ -27,13 +27,12 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
   const { addEvent } = useSchedule();
   const [viewMode, setViewMode] = useState<'scheduled' | 'completed'>('scheduled');
 
-  const scheduledSessions = evaluations.filter(e => e.status === 'Pendente');
+  const scheduledSessions = evaluations.filter(e => e.status === 'Em Andamento');
   const completedSessions = evaluations.filter(e => e.status === 'Concluída');
 
   const getStatusBadge = (status: string) => {
     const variants = {
       'Concluída': 'bg-green-100 text-green-800',
-      'Pendente': 'bg-yellow-100 text-yellow-800',
       'Em Andamento': 'bg-blue-100 text-blue-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
@@ -193,16 +192,6 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
                         <Button variant="ghost" size="sm">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        {viewMode === 'scheduled' && evaluation.meetingDate && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleAddToSchedule(evaluation)}
-                          >
-                            <Calendar className="w-4 h-4 mr-1" />
-                            Agenda
-                          </Button>
-                        )}
                       </div>
                     </div>
                   </div>

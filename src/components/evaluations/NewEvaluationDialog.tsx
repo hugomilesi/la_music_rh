@@ -27,7 +27,7 @@ import { NewEvaluationData } from '@/types/evaluation';
 
 const formSchema = z.object({
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  type: z.enum(['Avaliação 360°', 'Auto Avaliação', 'Avaliação do Gestor', 'Coffee Connection'], {
+  type: z.enum(['Avaliação 360°', 'Auto Avaliação', 'Avaliação do Gestor'], {
     errorMap: () => ({ message: 'Tipo de avaliação é obrigatório' })
   }),
   period: z.string().min(1, 'Período é obrigatório'),
@@ -140,7 +140,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
                         <option value="Avaliação 360°">Avaliação 360°</option>
                         <option value="Auto Avaliação">Auto Avaliação</option>
                         <option value="Avaliação do Gestor">Avaliação do Gestor</option>
-                        <option value="Coffee Connection">Coffee Connection</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -156,7 +155,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
                     <FormLabel>Período</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={selectedType === 'Coffee Connection' ? 'Ex: 2024' : 'Ex: 2024-T1'} 
+                        placeholder="Ex: 2024-T1" 
                         {...field} 
                       />
                     </FormControl>
@@ -167,40 +166,32 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
 
 
 
-              {selectedType !== 'Coffee Connection' && (
-                <FormField
-                  control={form.control}
-                  name="evaluatorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Avaliador (Opcional)</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <option value="">Selecione um avaliador</option>
-                          {employees.map((employee) => (
-                            <option key={employee.id} value={employee.id}>
-                              {employee.name} - {employee.position}
-                            </option>
-                          ))}
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="evaluatorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avaliador (Opcional)</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Selecione um avaliador</option>
+                        {employees.map((employee) => (
+                          <option key={employee.id} value={employee.id}>
+                            {employee.name} - {employee.position}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {selectedType === 'Coffee Connection' && (
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  Para Coffee Connection, use o botão "Agendar Sessão" no card específico para configurar data, horário e tópicos.
-                </p>
-              </div>
-            )}
+
 
             <FormField
               control={form.control}

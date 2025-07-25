@@ -38,7 +38,8 @@ const DayEventsDialog: React.FC<DayEventsDialogProps> = ({
       'avaliacao': 'bg-purple-100 text-purple-800',
       'reuniao': 'bg-green-100 text-green-800',
       'folga': 'bg-gray-100 text-gray-800',
-      'outro': 'bg-orange-100 text-orange-800'
+      'outro': 'bg-orange-100 text-orange-800',
+      'coffee-connection': 'bg-amber-100 text-amber-800'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -49,7 +50,8 @@ const DayEventsDialog: React.FC<DayEventsDialogProps> = ({
       'avaliacao': 'Avaliação',
       'reuniao': 'Reunião',
       'folga': 'Folga',
-      'outro': 'Outro'
+      'outro': 'Outro',
+      'coffee-connection': 'Coffee Connection'
     };
     return labels[type as keyof typeof labels] || 'Evento';
   };

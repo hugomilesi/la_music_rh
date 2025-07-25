@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,10 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
 }) => {
   const { getDocumentsByEmployee, downloadDocument, exportDocumentsByEmployee, viewDocument, deleteDocument } = useDocuments();
   const { checkPermission } = usePermissions();
+  const [employeeDocuments, setEmployeeDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
@@ -56,12 +59,34 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
     );
   }
 
+  useEffect(() => {
+    if (employeeId) {
+      setLoading(true);
+      setError(null);
+      
+      getDocumentsByEmployee(employeeId)
+        .then((docs) => {
+          setEmployeeDocuments(Array.isArray(docs) ? docs : []);
+        })
+        .catch((err) => {
+          console.error('Error fetching employee documents:', err);
+          setError('Erro ao carregar documentos do funcionário');
+          setEmployeeDocuments([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [employeeId, getDocumentsByEmployee]);
+
   if (!employeeId) return null;
 
-  const employeeDocuments = getDocumentsByEmployee(employeeId);
-  const filteredDocuments = employeeDocuments.filter(doc =>
-    doc.document.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDocuments = Array.isArray(employeeDocuments) 
+     ? employeeDocuments.filter(doc =>
+         doc.document.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         doc.type.toLowerCase().includes(searchTerm.toLowerCase())
+       )
+     : [];
 
   const getStatusBadge = (status: string) => {
     const variants = {

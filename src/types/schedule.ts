@@ -5,7 +5,7 @@ export interface EventFormData {
   title: string;
   employeeId: string;
   unit: Unit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   date: string;
   startTime: string;
   endTime: string;
@@ -19,7 +19,7 @@ export interface NewScheduleEventData {
   title: string;
   employeeId: string;
   unit: Unit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   date: string;
   startTime: string;
   endTime: string;
@@ -36,7 +36,7 @@ export interface ScheduleEvent {
   employeeId: string; // alias for compatibility
   employee: string; // employee name
   unit: Unit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   event_date: string;
   date: string; // alias for compatibility
   start_time: string;

@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus, MapPin, User } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
@@ -60,7 +61,8 @@ const SchedulePage: React.FC = () => {
       'avaliacao': 'bg-purple-100 text-purple-800',
       'reuniao': 'bg-green-100 text-green-800',
       'folga': 'bg-gray-100 text-gray-800',
-      'outro': 'bg-orange-100 text-orange-800'
+      'outro': 'bg-orange-100 text-orange-800',
+      'coffee-connection': 'bg-amber-100 text-amber-800'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -71,7 +73,8 @@ const SchedulePage: React.FC = () => {
       'avaliacao': 'Avaliação',
       'reuniao': 'Reunião',
       'folga': 'Folga',
-      'outro': 'Outro'
+      'outro': 'Outro',
+      'coffee-connection': 'Coffee Connection'
     };
     return labels[type as keyof typeof labels] || 'Evento';
   };
@@ -144,7 +147,8 @@ const SchedulePage: React.FC = () => {
   const timeSlots = Array.from({ length: 14 }, (_, i) => 8 + i);
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
@@ -374,30 +378,76 @@ const SchedulePage: React.FC = () => {
                           {dayEvents.slice(0, 2).map(event => {
                             const unitInfo = getUnitInfo(event.unit);
                             return (
-                              <div
-                                key={event.id}
-                                className={`text-xs p-1 rounded ${getEventTypeColor(event.type)} border-l-2 relative group`}
-                                style={{ borderLeftColor: unitInfo.color.replace('bg-', '#') }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEventClick(event);
-                                }}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1 flex-1 min-w-0">
-                                    <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
-                                    <span className="truncate">{event.title}</span>
+                              <Tooltip key={event.id}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={`text-xs p-1 rounded ${getEventTypeColor(event.type)} border-l-2 relative group cursor-pointer hover:opacity-80 transition-opacity`}
+                                    style={{ borderLeftColor: unitInfo.color.replace('bg-', '#') }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEventClick(event);
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                                        <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
+                                        <span className="truncate">{event.title}</span>
+                                      </div>
+                                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <EventQuickActions
+                                          event={event}
+                                          onView={handleEventClick}
+                                          onEdit={() => handleEditEvent(event.id)}
+                                          onDuplicate={handleDuplicateEvent}
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <EventQuickActions
-                                      event={event}
-                                      onView={handleEventClick}
-                                      onEdit={() => handleEditEvent(event.id)}
-                                      onDuplicate={handleDuplicateEvent}
-                                    />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <div className="space-y-2 p-2">
+                                    <div className="flex items-center gap-2 font-semibold">
+                                      <User className="w-4 h-4" />
+                                      {event.employee}
+                                    </div>
+                                    <div className="space-y-1 text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>Tipo: {getEventTypeLabel(event.type)}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="w-3 h-3" />
+                                        <span>Horário: {event.startTime} - {event.endTime}</span>
+                                      </div>
+                                      {event.location && (
+                                        <div className="flex items-center gap-2">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>Local: {event.location}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-3 h-3 rounded-full ${unitInfo.color}`}></div>
+                                        <span>Unidade: {unitInfo.name}</span>
+                                      </div>
+                                      {event.description && (
+                                        <div className="mt-2 pt-2 border-t border-gray-200">
+                                          <p className="text-xs text-gray-600">{event.description}</p>
+                                        </div>
+                                      )}
+                                      {(event.emailAlert || event.whatsappAlert) && (
+                                        <div className="flex gap-1 mt-2">
+                                          {event.emailAlert && (
+                                            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📧 Email</span>
+                                          )}
+                                          {event.whatsappAlert && (
+                                            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📱 WhatsApp</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
+                                </TooltipContent>
+                              </Tooltip>
                             );
                           })}
                           {dayEvents.length > 2 && (
@@ -530,7 +580,8 @@ const SchedulePage: React.FC = () => {
         isOpen={showNewEventDialog}
         onClose={closeNewEventDialog}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 

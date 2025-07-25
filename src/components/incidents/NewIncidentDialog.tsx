@@ -19,7 +19,7 @@ interface NewIncidentDialogProps {
 interface IncidentFormData {
   employeeId: string;
   type: string;
-  severity: 'baixa' | 'media' | 'alta' | 'critica';
+  severity: 'leve' | 'moderado' | 'grave';
   description: string;
   incidentDate: string;
   reporterId: string;
@@ -37,7 +37,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
     defaultValues: {
       employeeId: '',
       type: '',
-      severity: 'baixa',
+      severity: 'leve',
       description: '',
       incidentDate: new Date().toISOString().split('T')[0],
       reporterId: 'eea4767c-7c68-4667-b783-cba2b30c9fcf' // Default reporter ID
@@ -54,7 +54,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
       incidentDate: data.incidentDate,
       reporterId: data.reporterId,
       reporterName: employees.find(emp => emp.id === data.reporterId)?.name || '',
-      status: 'aberto' as const
+      status: 'ativo' as const
     };
     
     addIncident(incidentData);
@@ -135,10 +135,9 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
                     <FormLabel>Gravidade</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="baixa">Baixa</option>
-                        <option value="media">Média</option>
-                        <option value="alta">Alta</option>
-                        <option value="critica">Crítica</option>
+                        <option value="leve">Leve</option>
+                        <option value="moderado">Moderado</option>
+                        <option value="grave">Grave</option>
                       </select>
                     </FormControl>
                     <FormMessage />

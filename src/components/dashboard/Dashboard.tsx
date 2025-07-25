@@ -188,9 +188,9 @@ export const Dashboard: React.FC = () => {
               />
               
               <StatCard
-                title="Avaliações Pendentes"
+                title="Avaliações em Andamento"
                 value="15"
-                subtitle="Aguardando revisão"
+                subtitle="Em processo de avaliação"
                 icon={Mic}
                 color="orange"
                 onClick={() => handleStatCardClick('evaluations')}

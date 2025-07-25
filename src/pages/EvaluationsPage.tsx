@@ -1,48 +1,119 @@
-
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Filter, Search, Eye, Edit, Calendar, Coffee, Trash2, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useEvaluations } from '@/contexts/EvaluationContext';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Eye, Edit, Trash2, Coffee, Home, ChevronRight, Star, RefreshCw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Evaluation } from '@/types/evaluation';
+import { evaluationService } from '@/services/evaluationService';
+import CoffeeConnectionManager from '@/components/evaluations/CoffeeConnectionManager';
+import { CompactStatsCards } from '@/components/evaluations/CompactStatsCards';
+import { SmartFilters } from '@/components/evaluations/SmartFilters';
 import { NewEvaluationDialog } from '@/components/evaluations/NewEvaluationDialog';
-import { CoffeeConnectionCard } from '@/components/evaluations/CoffeeConnectionCard';
-import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
-import { InteractiveStatsCards } from '@/components/evaluations/InteractiveStatsCards';
-import { CoffeeConnectionScheduleIntegration } from '@/components/evaluations/CoffeeConnectionScheduleIntegration';
 import { EditEvaluationDialog } from '@/components/evaluations/EditEvaluationDialog';
 import ViewEvaluationDialog from '@/components/evaluation/ViewEvaluationDialog';
-import { Evaluation } from '@/types/evaluation';
+import { RateEvaluationDialog } from '@/components/evaluations/RateEvaluationDialog';
+import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
 
-const EvaluationsPage: React.FC = () => {
+export function EvaluationsPage() {
+  const [evaluations, setEvaluations] = React.useState<Evaluation[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedEmployee, setSelectedEmployee] = React.useState('');
+  const [selectedUnit, setSelectedUnit] = React.useState('');
+  const [selectedType, setSelectedType] = React.useState('');
+  const [selectedStatus, setSelectedStatus] = React.useState('');
+  const [selectedLocation, setSelectedLocation] = React.useState('');
+  const [selectedDateRange, setSelectedDateRange] = React.useState('');
+  const [showNewDialog, setShowNewDialog] = React.useState(false);
+  const [showEditDialog, setShowEditDialog] = React.useState(false);
+  const [showViewDialog, setShowViewDialog] = React.useState(false);
+  const [showRateDialog, setShowRateDialog] = React.useState(false);
+  const [showCoffeeDialog, setShowCoffeeDialog] = React.useState(false);
+
+  const [selectedEvaluation, setSelectedEvaluation] = React.useState<Evaluation | null>(null);
+  const [showStatsModal, setShowStatsModal] = React.useState(false);
+  const [showCoffeeStatsModal, setShowCoffeeStatsModal] = React.useState(false);
+
   console.log('EvaluationsPage: Component rendering...');
-  
-  const navigate = useNavigate();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
-  
-  const { evaluations, deleteEvaluation } = useEvaluations();
-  console.log('EvaluationsPage: Retrieved evaluations:', evaluations);
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUnit, setSelectedUnit] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState('');
-  const [isNewEvaluationDialogOpen, setIsNewEvaluationDialogOpen] = useState(false);
-  const [isCoffeeConnectionDialogOpen, setIsCoffeeConnectionDialogOpen] = useState(false);
-  const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
-  const [viewingEvaluation, setViewingEvaluation] = useState<Evaluation | null>(null);
+
+  // Load evaluations function
+  const loadEvaluations = async () => {
+    try {
+      setLoading(true);
+      const data = await evaluationService.getEvaluations();
+      console.log('EvaluationsPage: Retrieved evaluations:', data);
+      setEvaluations(data);
+    } catch (error) {
+      console.error('Error loading evaluations:', error);
+      toast({
+        title: "Erro ao carregar avaliações",
+        description: "Não foi possível carregar as avaliações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load evaluations on component mount
+  React.useEffect(() => {
+    loadEvaluations();
+  }, []);
+
+  // Handle evaluation deletion
+  const handleDeleteEvaluation = async (id: string) => {
+    try {
+      await evaluationService.deleteEvaluation(id);
+      setEvaluations(prev => prev.filter(e => e.id !== id));
+      toast({
+        title: "Avaliação removida",
+        description: "A avaliação foi removida com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error deleting evaluation:', error);
+      toast({
+        title: "Erro ao remover avaliação",
+        description: "Ocorreu um erro ao tentar remover a avaliação. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle evaluation update (only update local state, service call already done)
+  const handleUpdateEvaluation = (updatedEvaluation: Evaluation) => {
+    setEvaluations(prev => prev.map(e => e.id === updatedEvaluation.id ? updatedEvaluation : e));
+  };
+
+  // Handle schedule new coffee connection
+  const handleScheduleNew = () => {
+    setShowCoffeeDialog(true);
+  };
+
+  // Handle view evaluation from coffee manager
+  const handleViewEvaluation = (evaluation: Evaluation) => {
+    setSelectedEvaluation(evaluation);
+    setShowViewDialog(true);
+  };
+
+  // Handle edit evaluation from coffee manager
+  const handleEditEvaluation = (evaluation: Evaluation) => {
+    setSelectedEvaluation(evaluation);
+    setShowEditDialog(true);
+  };
+
+  // Handle rate evaluation
+  const handleRateEvaluation = (evaluation: Evaluation) => {
+    setSelectedEvaluation(evaluation);
+    setShowRateDialog(true);
+  };
+
+
 
   const getStatusBadge = (status: string) => {
     const variants = {
       'Concluída': 'bg-green-100 text-green-800',
-      'Pendente': 'bg-yellow-100 text-yellow-800',
       'Em Andamento': 'bg-blue-100 text-blue-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
@@ -61,173 +132,132 @@ const EvaluationsPage: React.FC = () => {
     return 'text-red-600';
   };
 
-  const handleDeleteEvaluation = async (evaluation: Evaluation) => {
-    const confirmed = window.confirm(
-      `Tem certeza que deseja remover a avaliação de ${evaluation.employee}?\n\nEsta ação não pode ser desfeita.`
-    );
-    
-    if (confirmed) {
-      try {
-        await deleteEvaluation(evaluation.id);
-      } catch (error) {
-        console.error('Erro ao deletar avaliação:', error);
-        alert('Erro ao remover a avaliação. Tente novamente.');
+  // Filter evaluations based on search criteria
+  const filteredEvaluations = React.useMemo(() => {
+    return evaluations.filter(evaluation => {
+      const matchesSearch = !searchTerm || 
+        evaluation.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evaluation.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evaluation.period.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesEmployee = !selectedEmployee || evaluation.employee === selectedEmployee;
+      const matchesUnit = !selectedUnit || evaluation.unit === selectedUnit;
+      const matchesType = !selectedType || evaluation.type === selectedType;
+      const matchesStatus = !selectedStatus || evaluation.status === selectedStatus;
+      const matchesLocation = !selectedLocation || evaluation.location === selectedLocation;
+      
+      // Date range filtering for Coffee Connections
+      let matchesDateRange = true;
+      if (selectedDateRange && evaluation.meetingDate) {
+        const meetingDate = new Date(evaluation.meetingDate);
+        const now = new Date();
+        
+        switch (selectedDateRange) {
+          case 'today':
+            matchesDateRange = meetingDate.toDateString() === now.toDateString();
+            break;
+          case 'week':
+            const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+            const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+            matchesDateRange = meetingDate >= weekStart && meetingDate <= weekEnd;
+            break;
+          case 'month':
+            matchesDateRange = meetingDate.getMonth() === now.getMonth() && meetingDate.getFullYear() === now.getFullYear();
+            break;
+          case 'quarter':
+            const quarter = Math.floor(now.getMonth() / 3);
+            const evalQuarter = Math.floor(meetingDate.getMonth() / 3);
+            matchesDateRange = evalQuarter === quarter && meetingDate.getFullYear() === now.getFullYear();
+            break;
+        }
       }
-    }
-  };
-
-  // Filter evaluations based on search and filter criteria
-  const filteredEvaluations = evaluations.filter((evaluation) => {
-    // Search filter
-    const matchesSearch = evaluation.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         evaluation.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         evaluation.period.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Unit filter (removed - unit property no longer exists)
-    const matchesUnit = true;
-    
-    // Type filter
-    const matchesType = !selectedType || evaluation.type === selectedType;
-    
-    // Status filter
-    const matchesStatus = !selectedStatus || evaluation.status === selectedStatus;
-    
-    // Employee filter
-    const matchesEmployee = !selectedEmployee || evaluation.employee === selectedEmployee;
-    
-    return matchesSearch && matchesUnit && matchesType && matchesStatus && matchesEmployee;
-  });
+      
+      return matchesSearch && matchesEmployee && matchesUnit && matchesType && matchesStatus && matchesLocation && matchesDateRange;
+    });
+  }, [evaluations, searchTerm, selectedEmployee, selectedUnit, selectedType, selectedStatus, selectedLocation, selectedDateRange]);
 
   console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length, 'filtered:', filteredEvaluations.length);
 
-  if (!canManageEmployees) {
+  if (loading) {
     return (
-      <Dialog open={true} onOpenChange={() => navigate(-1)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-red-500" />
-              Acesso Negado
-            </DialogTitle>
-            <DialogDescription>
-              Você não tem permissão para visualizar avaliações e informações de colaboradores.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-500 mb-6">
-              Entre em contato com o administrador para solicitar acesso.
-            </p>
-            <Button onClick={() => navigate(-1)} className="w-full">
-              Voltar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando avaliações...</p>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <div className="flex items-center space-x-2 text-sm text-gray-600">
+        <Home className="w-4 h-4" />
+        <ChevronRight className="w-4 h-4" />
+        <span className="font-medium text-gray-900">Avaliações</span>
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Avaliações</h1>
-          <p className="text-gray-600 mt-1">Gestão de feedbacks e avaliações de desempenho</p>
+          <h1 className="text-3xl font-bold tracking-tight">Avaliações</h1>
+          <p className="text-muted-foreground">
+            Gerencie avaliações de desempenho e Coffee Connections
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button variant="outline" size="sm">
-            <Calendar className="w-4 h-4 mr-2" />
-            Ciclo 2024-T1
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={loadEvaluations}
+            className="flex items-center gap-2"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
           </Button>
-          <Button size="sm" onClick={() => setIsNewEvaluationDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button 
+            onClick={() => setShowNewDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
             Nova Avaliação
           </Button>
         </div>
       </div>
 
-      {/* Coffee Connection Card */}
-      <CoffeeConnectionCard onScheduleNew={() => setIsCoffeeConnectionDialogOpen(true)} />
+      {/* Compact Statistics */}
+      <CompactStatsCards 
+        evaluations={evaluations}
+        onStatsClick={() => setShowStatsModal(true)}
+        onCoffeeStatsClick={() => setShowCoffeeStatsModal(true)}
+      />
 
-      {/* Interactive Stats Cards */}
-      <InteractiveStatsCards />
+      {/* Coffee Connection Manager */}
+      <CoffeeConnectionManager
+          onViewEvaluation={handleViewEvaluation}
+          onEditEvaluation={handleEditEvaluation}
+          onScheduleNew={handleScheduleNew}
+        />
 
-      {/* Coffee Connection Schedule Integration */}
-      <CoffeeConnectionScheduleIntegration />
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por colaborador..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-              >
-                <option value="">Todos os Colaboradores</option>
-                {Array.from(new Set(evaluations.map(e => e.employee))).map((employee) => (
-                  <option key={employee} value={employee}>
-                    {employee}
-                  </option>
-                ))}
-              </select>
-
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedUnit}
-                onChange={(e) => setSelectedUnit(e.target.value)}
-              >
-                <option value="">Todas as Unidades</option>
-                <option value="Campo Grande">Campo Grande</option>
-                <option value="Recreio">Recreio</option>
-                <option value="Barra">Barra</option>
-              </select>
-
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <option value="">Todos os Tipos</option>
-                <option value="Avaliação 360°">Avaliação 360°</option>
-                <option value="Auto Avaliação">Auto Avaliação</option>
-                <option value="Avaliação do Gestor">Avaliação do Gestor</option>
-                <option value="Coffee Connection">Coffee Connection</option>
-              </select>
-
-              <select 
-                className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                <option value="">Todos os Status</option>
-                <option value="Concluída">Concluída</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Em Andamento">Em Andamento</option>
-              </select>
-
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Smart Filters */}
+      <SmartFilters
+        evaluations={evaluations}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedEmployee={selectedEmployee}
+        onEmployeeChange={setSelectedEmployee}
+        selectedUnit={selectedUnit}
+        onUnitChange={setSelectedUnit}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedLocation={selectedLocation}
+        onLocationChange={setSelectedLocation}
+        selectedDateRange={selectedDateRange}
+        onDateRangeChange={setSelectedDateRange}
+      />
 
       {/* Evaluations Table */}
       <Card>
@@ -240,11 +270,11 @@ const EvaluationsPage: React.FC = () => {
               <TableRow>
                 <TableHead>Colaborador</TableHead>
                 <TableHead>Cargo</TableHead>
-
                 <TableHead>Tipo</TableHead>
                 <TableHead>Período</TableHead>
                 <TableHead>Nota</TableHead>
                 <TableHead>Status</TableHead>
+
                 <TableHead>Data</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -254,7 +284,6 @@ const EvaluationsPage: React.FC = () => {
                 <TableRow key={evaluation.id}>
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
-
                   <TableCell>
                     <Badge className={getTypeBadge(evaluation.type)}>
                       {evaluation.type === 'Coffee Connection' && <Coffee className="w-3 h-3 mr-1" />}
@@ -263,44 +292,47 @@ const EvaluationsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>{evaluation.period}</TableCell>
                   <TableCell>
-                    {evaluation.type === 'Coffee Connection' && evaluation.status === 'Pendente' ? (
-                      <span className="text-gray-500">-</span>
-                    ) : (
-                      <span className={`font-bold ${getScoreColor(evaluation.score || 0)}`}>
-                        {(evaluation.score || 0).toFixed(1)}
-                      </span>
-                    )}
+                    <span className={getScoreColor(evaluation.score || 0)}>
+                      {evaluation.score ? evaluation.score.toFixed(1) : '-'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusBadge(evaluation.status)}>
                       {evaluation.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(evaluation.date).toLocaleDateString('pt-BR')}</TableCell>
+
+                  <TableCell>
+                    {evaluation.meetingDate ? new Date(evaluation.meetingDate).toLocaleDateString('pt-BR') : '-'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        onClick={() => setViewingEvaluation(evaluation)}
-                        title="Visualizar detalhes"
+                        onClick={() => {
+                          setSelectedEvaluation(evaluation);
+                          setShowViewDialog(true);
+                        }}
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      {evaluation.status !== 'Concluída' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRateEvaluation(evaluation)}
+                          title="Dar nota e concluir avaliação"
+                        >
+                          <Star className="h-4 w-4 text-yellow-500" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        onClick={() => setEditingEvaluation(evaluation)}
+                        onClick={() => handleDeleteEvaluation(evaluation.id)}
                       >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDeleteEvaluation(evaluation)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -312,29 +344,47 @@ const EvaluationsPage: React.FC = () => {
       </Card>
 
       {/* Dialogs */}
-      <NewEvaluationDialog
-        open={isNewEvaluationDialogOpen}
-        onOpenChange={setIsNewEvaluationDialogOpen}
+      <NewEvaluationDialog 
+        open={showNewDialog} 
+        onOpenChange={setShowNewDialog}
+        onEvaluationCreated={(newEvaluation) => {
+          setEvaluations(prev => [...prev, newEvaluation]);
+          setShowNewDialog(false);
+        }}
       />
       
-      <CoffeeConnectionDialog
-        open={isCoffeeConnectionDialogOpen}
-        onOpenChange={setIsCoffeeConnectionDialogOpen}
-      />
-
-      <EditEvaluationDialog
-        open={!!editingEvaluation}
-        onOpenChange={(open) => !open && setEditingEvaluation(null)}
-        evaluation={editingEvaluation}
-      />
-
-      <ViewEvaluationDialog
-        open={!!viewingEvaluation}
-        onOpenChange={(open) => !open && setViewingEvaluation(null)}
-        evaluation={viewingEvaluation}
-      />
-    </div>
-  );
-};
+      {selectedEvaluation && (
+        <>
+          <EditEvaluationDialog 
+            open={showEditDialog} 
+            onOpenChange={setShowEditDialog}
+            evaluation={selectedEvaluation}
+            onEvaluationUpdated={handleUpdateEvaluation}
+          />
+          
+          <ViewEvaluationDialog 
+            open={showViewDialog} 
+            onOpenChange={setShowViewDialog}
+            evaluation={selectedEvaluation}
+          />
+          
+          <RateEvaluationDialog 
+            open={showRateDialog} 
+            onOpenChange={setShowRateDialog}
+            evaluation={selectedEvaluation}
+            onEvaluationRated={handleUpdateEvaluation}
+          />
+        </>
+      )}
+      
+      {/* Coffee Connection Dialog */}
+       <CoffeeConnectionDialog 
+         open={showCoffeeDialog} 
+         onOpenChange={setShowCoffeeDialog}
+         onSuccess={loadEvaluations}
+       />
+     </div>
+   );
+}
 
 export default EvaluationsPage;

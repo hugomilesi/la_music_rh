@@ -44,18 +44,29 @@ type FormData = z.infer<typeof formSchema>;
 interface CoffeeConnectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
   open,
   onOpenChange,
+  onSuccess,
 }) => {
   const { addEvaluation, isLoading } = useEvaluations();
   const { employees } = useEmployees();
   const { toast } = useToast();
   const [selectedTopics, setSelectedTopics] = React.useState<string[]>([]);
   const [customTopic, setCustomTopic] = React.useState('');
-  const [suggestedTopics, setSuggestedTopics] = React.useState<string[]>([]);
+  const [suggestedTopics] = React.useState<string[]>([
+    'Desenvolvimento de carreira',
+    'Satisfação no trabalho',
+    'Desafios atuais',
+    'Objetivos pessoais',
+    'Feedback sobre liderança',
+    'Ambiente de trabalho',
+    'Ideias de melhoria',
+    'Reconhecimento'
+  ]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -90,7 +101,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
     try {
       const evaluationData: NewEvaluationData = {
         employeeId: data.employeeId,
-        type: 'Coffee Connection',
+        type: 'coffee_connection',
         period: new Date().getFullYear().toString(),
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,
@@ -101,7 +112,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         comments: data.comments,
       };
       
-      addEvaluation(evaluationData);
+      await addEvaluation(evaluationData);
       toast({
         title: 'Coffee Connection agendado',
         description: 'A sessão foi agendada e notificações serão enviadas.',
@@ -109,6 +120,11 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
       form.reset();
       setSelectedTopics([]);
       onOpenChange(false);
+      
+      // Call the success callback to refresh the page
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       toast({
         title: 'Erro',
@@ -206,19 +222,17 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
             <div>
               <FormLabel>Tópicos para Discussão</FormLabel>
               <div className="mt-2 space-y-3">
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {suggestedTopics.map((topic) => (
-                    <Badge
-                      key={topic}
-                      variant={selectedTopics.includes(topic) ? "default" : "outline"}
-                      className="cursor-pointer hover:bg-amber-100 hover:text-amber-800"
-                      onClick={() => handleTopicToggle(topic)}
-                    >
-                      {topic}
-                      {selectedTopics.includes(topic) && (
-                        <X className="w-3 h-3 ml-1" />
-                      )}
-                    </Badge>
+                    <label key={topic} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTopics.includes(topic)}
+                        onChange={() => handleTopicToggle(topic)}
+                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                      />
+                      <span className="text-sm text-gray-700">{topic}</span>
+                    </label>
                   ))}
                 </div>
                 
@@ -234,14 +248,33 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={handleAddCustomTopic}
+                    disabled={!customTopic.trim()}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
                 
                 {selectedTopics.length > 0 && (
-                  <div className="text-sm text-gray-600">
-                    Tópicos selecionados: {selectedTopics.join(', ')}
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600 mb-2">Tópicos selecionados:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedTopics.map((topic, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="text-xs bg-amber-100 text-amber-800"
+                        >
+                          {topic}
+                          <button
+                            type="button"
+                            onClick={() => handleTopicToggle(topic)}
+                            className="ml-1 hover:text-amber-900"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -316,7 +349,8 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="bg-amber-600 hover:bg-amber-700"
+                style={{ backgroundColor: '#B45309' }}
+                className="hover:opacity-90 text-white"
               >
                 {isLoading ? 'Agendando...' : 'Agendar Coffee Connection'}
               </Button>

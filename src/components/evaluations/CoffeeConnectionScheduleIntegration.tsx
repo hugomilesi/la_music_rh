@@ -3,20 +3,38 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Coffee, Clock, MapPin } from 'lucide-react';
+import { Calendar, Coffee, Clock, MapPin, Check } from 'lucide-react';
 import { useEvaluations } from '@/contexts/EvaluationContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { Unit } from '@/types/unit';
+import { useToast } from '@/hooks/use-toast';
 
 export const CoffeeConnectionScheduleIntegration: React.FC = () => {
-  const { getCoffeeConnectionSchedule } = useEvaluations();
+  const { evaluations, updateEvaluation } = useEvaluations();
   const { addEvent } = useSchedule();
+  const { toast } = useToast();
   
-  const scheduledConnections = getCoffeeConnectionSchedule();
+  // Filtrar apenas Coffee Connections com status 'Em Andamento'
+  const scheduledConnections = evaluations
+    .filter(evaluation => evaluation.type === 'Coffee Connection' && evaluation.status === 'Em Andamento')
+    .map(evaluation => ({
+      id: evaluation.id,
+      title: `Coffee Connection - ${evaluation.employee}`,
+      employee: evaluation.employee,
+      employeeId: evaluation.employeeId,
+      meetingDate: evaluation.meetingDate,
+      meetingTime: evaluation.meetingTime,
+      location: evaluation.location,
+      topics: evaluation.topics
+    }));
 
-  const addToCalendar = async (connection: any) => {
+  const approveAndAddToCalendar = async (connection: any) => {
     if (connection.meetingDate && connection.meetingTime) {
       try {
+        // 1. Aprovar a avaliação (mudar status para 'Em Andamento')
+        await updateEvaluation(connection.id, { status: 'Em Andamento' });
+        
+        // 2. Adicionar ao calendário
         const [hours, minutes] = connection.meetingTime.split(':');
         const startDate = new Date(connection.meetingDate);
         startDate.setHours(parseInt(hours), parseInt(minutes));
@@ -39,9 +57,20 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
         };
 
         await addEvent(newEvent);
-        console.log('Coffee Connection adicionado ao calendário:', newEvent);
+        
+        toast({
+          title: "Sucesso",
+          description: `Coffee Connection aprovado e adicionado ao calendário para ${connection.employee}`,
+        });
+        
+        console.log('Coffee Connection aprovado e adicionado ao calendário:', newEvent);
       } catch (error) {
-        console.error('Erro ao adicionar Coffee Connection ao calendário:', error);
+        console.error('Erro ao aprovar e adicionar Coffee Connection ao calendário:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao aprovar e adicionar Coffee Connection ao calendário",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -100,10 +129,11 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => addToCalendar(connection)}
+                  onClick={() => approveAndAddToCalendar(connection)}
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                 >
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Adicionar à Agenda
+                  <Check className="w-4 h-4 mr-1" />
+                  Aprovar e Agendar
                 </Button>
               </div>
             ))}

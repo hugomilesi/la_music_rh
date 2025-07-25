@@ -135,10 +135,9 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
                 onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
               >
                 <option value="all">Todas as Gravidades</option>
-                <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
-                <option value="alta">Alta</option>
-                <option value="critica">Crítica</option>
+                <option value="leve">Leve</option>
+                <option value="moderado">Moderado</option>
+                <option value="grave">Grave</option>
               </select>
             </div>
 
@@ -151,10 +150,9 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               >
                 <option value="all">Todos os Status</option>
-                <option value="aberto">Abertas</option>
-                <option value="em_andamento">Em Andamento</option>
-                <option value="resolvido">Resolvidas</option>
-                <option value="cancelado">Canceladas</option>
+                <option value="ativo">Ativo</option>
+                <option value="resolvido">Resolvido</option>
+                <option value="arquivado">Arquivado</option>
               </select>
             </div>
           </div>

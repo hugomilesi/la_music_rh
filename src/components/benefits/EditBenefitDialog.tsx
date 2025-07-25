@@ -37,6 +37,7 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
   const [coverage, setCoverage] = useState<string[]>(Array.isArray(benefit?.coverage) ? benefit.coverage : []);
   const [newCoverage, setNewCoverage] = useState('');
   const [documents, setDocuments] = useState<string[]>(Array.isArray(benefit?.documents) ? benefit.documents : []);
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (benefit) {
@@ -68,7 +69,8 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
       value: formData.value ? parseFloat(formData.value) : 0,
       provider: formData.supplier,
       coverage,
-      documents,
+      documents: documentFiles.length > 0 ? documentFiles.map(f => f.name) : documents,
+      documentFiles, // Pass the actual File objects for upload
       startDate: formData.startDate || null,
       endDate: formData.endDate || null,
       isActive: formData.isActive
@@ -91,13 +93,20 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const fileNames = Array.from(files).map(file => file.name);
+      const newFiles = Array.from(files);
+      const fileNames = newFiles.map(file => file.name);
       setDocuments(prev => [...prev, ...fileNames]);
+      setDocumentFiles(prev => [...prev, ...newFiles]);
     }
   };
 
   const removeDocument = (docName: string) => {
+    const docIndex = documents.indexOf(docName);
     setDocuments(documents.filter(doc => doc !== docName));
+    // Also remove the corresponding file if it exists
+    if (docIndex >= 0 && docIndex < documentFiles.length) {
+      setDocumentFiles(documentFiles.filter((_, index) => index !== docIndex));
+    }
   };
 
   return (

@@ -27,8 +27,6 @@ const ViewEvaluationDialog: React.FC<ViewEvaluationDialogProps> = ({
     switch (status) {
       case 'Concluída':
         return 'bg-green-100 text-green-800 hover:bg-green-100';
-      case 'Pendente':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
       case 'Em Andamento':
         return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
       default:
@@ -162,18 +160,14 @@ const ViewEvaluationDialog: React.FC<ViewEvaluationDialogProps> = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Nota</label>
-                  {evaluation.type === 'Coffee Connection' && evaluation.status === 'Pendente' ? (
-                    <p className="text-gray-500">Aguardando realização</p>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className={`text-2xl font-bold ${getScoreColor(evaluation.score || 0)}`}>
-                        {(evaluation.score || 0).toFixed(1)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {renderStars(evaluation.score || 0)}
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${getScoreColor(evaluation.score || 0)}`}>
+                      {(evaluation.score || 0).toFixed(1)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {renderStars(evaluation.score || 0)}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 

@@ -28,7 +28,6 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
   const getStatusBadge = (status: string) => {
     const variants = {
       'Concluída': 'bg-green-100 text-green-800',
-      'Pendente': 'bg-yellow-100 text-yellow-800',
       'Em Andamento': 'bg-blue-100 text-blue-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
@@ -50,7 +49,6 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
   const stats = {
     total: filteredEvaluations.length,
     completed: filteredEvaluations.filter(e => e.status === 'Concluída').length,
-    pending: filteredEvaluations.filter(e => e.status === 'Pendente').length,
     inProgress: filteredEvaluations.filter(e => e.status === 'Em Andamento').length,
     byType: {
       '360': filteredEvaluations.filter(e => e.type === 'Avaliação 360°').length,
@@ -86,7 +84,7 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
           </div>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
@@ -99,12 +97,7 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
                 <p className="text-sm text-gray-600">Concluídas</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-                <p className="text-sm text-gray-600">Pendentes</p>
-              </CardContent>
-            </Card>
+
             <Card>
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
@@ -169,13 +162,9 @@ export const EvaluationStatsModal: React.FC<EvaluationStatsModalProps> = ({
                         </Badge>
                         <div className="text-right">
                           <p className="font-bold">
-                            {evaluation.type === 'Coffee Connection' && evaluation.status === 'Pendente' ? (
-                              <span className="text-gray-500">-</span>
-                            ) : (
-                              <span className={evaluation.score >= 4.5 ? 'text-green-600' : evaluation.score >= 3.5 ? 'text-yellow-600' : 'text-red-600'}>
-                                {evaluation.score.toFixed(1)}
-                              </span>
-                            )}
+                            <span className={evaluation.score >= 4.5 ? 'text-green-600' : evaluation.score >= 3.5 ? 'text-yellow-600' : 'text-red-600'}>
+                              {evaluation.score ? evaluation.score.toFixed(1) : '-'}
+                            </span>
                           </p>
                           <p className="text-xs text-gray-500">{new Date(evaluation.date).toLocaleDateString('pt-BR')}</p>
                         </div>

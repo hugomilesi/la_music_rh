@@ -35,7 +35,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const evaluations = await evaluationService.getEvaluations();
         evaluationEvents = evaluations
-          .filter(evaluation => evaluation.meetingDate && evaluation.meetingTime)
+          .filter(evaluation => evaluation.meetingDate && evaluation.meetingTime && evaluation.status !== 'pending')
           .map(evaluation => ({
             id: `eval_${evaluation.id}`,
             title: `${evaluation.type} - ${evaluation.employee}`,
@@ -44,13 +44,15 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             date: evaluation.meetingDate!,
             startTime: evaluation.meetingTime!,
             endTime: addOneHour(evaluation.meetingTime!),
-            type: 'avaliacao',
-            description: `${evaluation.type} com ${evaluation.employee}${evaluation.topics ? `. Tópicos: ${evaluation.topics.join(', ')}` : ''}`,
+            type: evaluation.type === 'Coffee Connection' ? 'coffee-connection' : 'avaliacao',
+            description: `${evaluation.type} com ${evaluation.employee}${evaluation.topics ? `. Tópicos: ${evaluation.topics.join(', ')}` : ''}${evaluation.status === 'Concluída' && evaluation.score ? `. Nota: ${evaluation.score}` : ''}`,
             location: evaluation.location || 'Não informado',
             emailAlert: false,
             whatsappAlert: false,
             createdAt: evaluation.date || new Date().toISOString(),
-            updatedAt: evaluation.date || new Date().toISOString()
+            updatedAt: evaluation.date || new Date().toISOString(),
+            status: evaluation.status,
+            score: evaluation.score
           }));
       } catch (evalError) {
         console.warn('Error loading evaluation events:', evalError);
