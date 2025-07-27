@@ -80,9 +80,9 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
     await loadUsers();
   };
 
-  const handleUpdateUser = async (id: number, userData: UpdateSystemUserData) => {
+  const handleUpdateUser = async (id: string, userData: UpdateSystemUserData) => {
     try {
-      await updateSystemUser(String(id), userData);
+      await updateSystemUser(id, userData);
       await loadUsers();
       setEditingUser(null);
       toast({
@@ -99,9 +99,11 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
     }
   };
 
-  const handleDeleteUser = async (id: number) => {
+  const handleDeleteUser = async (user: SystemUser) => {
     try {
-      await deleteSystemUser(String(id));
+      // Use auth_user_id if available, otherwise use the id as string
+      const userIdToDelete = user.auth_user_id || String(user.id);
+      await deleteSystemUser(userIdToDelete);
       await loadUsers();
       setDeletingUser(null);
       toast({

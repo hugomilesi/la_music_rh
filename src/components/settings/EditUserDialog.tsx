@@ -22,7 +22,7 @@ interface EditUserDialogProps {
   user: SystemUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUserUpdate: (id: number, user: UpdateSystemUserData) => void;
+  onUserUpdate: (id: string, user: UpdateSystemUserData) => void;
 }
 
 export const EditUserDialog: React.FC<EditUserDialogProps> = ({
@@ -80,7 +80,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         permissions: []
       };
       
-      onUserUpdate(user.id, userData);
+      onUserUpdate(user.auth_user_id || String(user.id), userData);
       
       toast({
         title: "Usuário atualizado com sucesso",

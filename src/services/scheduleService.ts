@@ -9,7 +9,7 @@ export const scheduleService = {
       .from('schedule_events')
       .select(`
         *,
-        employee:employees!schedule_events_employee_id_fkey(name)
+        users(full_name)
       `)
       .order('event_date', { ascending: false });
     
@@ -23,7 +23,7 @@ export const scheduleService = {
       title: event.title,
       employee_id: event.employee_id,
       employeeId: event.employee_id, // alias
-      employee: event.employee?.name || 'Unknown',
+      employee: event.users?.full_name || 'Unknown',
       unit: event.unit as Unit,
       date: event.event_date, // alias
       event_date: event.event_date,
@@ -63,7 +63,7 @@ export const scheduleService = {
       }])
       .select(`
         *,
-        employee:employees!schedule_events_employee_id_fkey(name)
+        users(full_name)
       `)
       .single();
     
@@ -77,7 +77,7 @@ export const scheduleService = {
       title: data.title,
       employee_id: data.employee_id,
       employeeId: data.employee_id, // alias
-      employee: data.employee?.name || 'Unknown',
+      employee: data.users?.full_name || 'Unknown',
       unit: data.unit as Unit,
       date: data.event_date, // alias
       event_date: data.event_date,
@@ -118,7 +118,7 @@ export const scheduleService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!schedule_events_employee_id_fkey(name)
+        users(full_name)
       `)
       .single();
     
@@ -132,7 +132,7 @@ export const scheduleService = {
       title: data.title,
       employee_id: data.employee_id,
       employeeId: data.employee_id, // alias
-      employee: data.employee?.name || 'Unknown',
+      employee: data.users?.full_name || 'Unknown',
       unit: data.unit as Unit,
       date: data.event_date, // alias
       event_date: data.event_date,
@@ -171,7 +171,7 @@ export const scheduleService = {
       .from('schedule_events')
       .select(`
         *,
-        employee:employees!schedule_events_employee_id_fkey(name)
+        users(full_name)
       `)
       .in('unit', units)
       .order('event_date', { ascending: false });
@@ -186,7 +186,7 @@ export const scheduleService = {
       title: event.title,
       employee_id: event.employee_id,
       employeeId: event.employee_id, // alias
-      employee: event.employee?.name || 'Unknown',
+      employee: event.users?.full_name || 'Unknown',
       unit: event.unit as Unit,
       date: event.event_date, // alias
       event_date: event.event_date,

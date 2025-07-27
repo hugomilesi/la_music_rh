@@ -126,9 +126,9 @@ export const payrollService = {
   async createPayrollEntries(payrollId: string): Promise<void> {
     // Get all active employees
     const { data: employees, error: employeesError } = await supabase
-      .from('employees')
-      .select('id, name, position')
-      .eq('status', 'active');
+      .from('users')
+      .select('id, full_name, position')
+      .eq('status', 'ativo');
 
     if (employeesError) throw employeesError;
 

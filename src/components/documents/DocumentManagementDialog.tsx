@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Document, DocumentStatus } from '@/types/document';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { Download, Trash2, Edit, FileText, Calendar, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 interface DocumentManagementDialogProps {
   document: Document | null;
@@ -173,7 +175,7 @@ export const DocumentManagementDialog: React.FC<DocumentManagementDialogProps> =
                   id="expiryDate"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={formatDateToLocal(new Date())}
                 />
               </div>
 

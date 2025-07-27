@@ -107,9 +107,9 @@ Deno.serve(async (req: Request) => {
 
     // Check if current user has admin permissions
     const { data: currentUserProfile, error: profileError } = await supabaseAdmin
-      .from('profiles')
+      .from('users')
       .select('role, preferences')
-      .eq('id', user.id)
+      .eq('auth_user_id', user.id)
       .single();
 
     if (profileError) {
@@ -183,11 +183,11 @@ Deno.serve(async (req: Request) => {
       updated_at: new Date().toISOString()
     };
 
-    // Update the user profile using admin client
+    // Update the user in the unified users table using admin client
     const { data, error: updateError } = await supabaseAdmin
-      .from('profiles')
+      .from('users')
       .update(updateData)
-      .eq('id', userId)
+      .eq('auth_user_id', userId)
       .select();
 
     if (updateError) {

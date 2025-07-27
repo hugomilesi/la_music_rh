@@ -28,7 +28,8 @@ export async function deleteEmployee(employeeId: string): Promise<{ success: boo
       };
     }
     
-    if (dbResult && dbResult.length > 0) {
+    // As funções RPC retornam TABLE, então dbResult é um array
+    if (dbResult && Array.isArray(dbResult) && dbResult.length > 0) {
       const result = dbResult[0];
       return {
         success: result.success,
@@ -71,23 +72,12 @@ export async function updateEmployee(employeeId: string, updateData: Partial<Cre
       };
     }
     
-    if (dbResult && dbResult.length > 0) {
+    // As funções RPC retornam TABLE, então dbResult é um array
+    if (dbResult && Array.isArray(dbResult) && dbResult.length > 0) {
       const result = dbResult[0];
       
-      // Atualizar perfil se necessário
-      if (updateData.role) {
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: employeeId,
-            full_name: updateData.name,
-            role: updateData.role,
-            department: updateData.department,
-            position: updateData.position,
-            phone: updateData.phone,
-            preferences: updateData.role === 'admin' ? { super_user: true } : {}
-          });
-      }
+      // Note: Role updates should now be handled through the secure
+      // role_permissions table and update_role_permissions RPC function
       
       return {
         success: result.success,
@@ -134,6 +124,22 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
       };
     }
     
+    // Debug: Log current user and profile info
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const { data: currentProfile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', currentUser?.id)
+      .single();
+    
+    console.log('Debug - Current user info:', {
+      userId: currentUser?.id,
+      userEmail: currentUser?.email,
+      profileRole: currentProfile?.role,
+      profilePreferences: currentProfile?.preferences,
+      profileStatus: currentProfile?.status
+    });
+    
     // Call the Edge Function to create user
     const { data, error } = await supabase.functions.invoke('create-user', {
       body: {
@@ -156,6 +162,14 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     }
 
     if (!data.success) {
+      // Check if it's an email already exists error
+      if (data.code === 'email_exists' || data.error?.includes('Email já cadastrado no sistema')) {
+        return {
+          success: false,
+          error: 'Email já cadastrado no sistema'
+        };
+      }
+      
       return {
         success: false,
         error: data.error || 'Erro desconhecido ao criar usuário'
@@ -183,59 +197,6 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
   }
 }
 
-export async function updateUserPermissions(userId: string, permissions: string[]): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        preferences: { permissions: permissions },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-    
-    return !error;
-  } catch (error) {
-    console.error('Erro ao atualizar permissões:', error);
-    return false;
-  }
-}
-
-export async function promoteToAdmin(userId: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        role: 'admin',
-        preferences: { super_user: true },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-    
-    return !error;
-  } catch (error) {
-    console.error('Erro ao promover usuário:', error);
-    return false;
-  }
-}
-
-export async function checkUserPermissions(userId: string): Promise<{ isAdmin: boolean; permissions: string[] }> {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role, preferences')
-      .eq('id', userId)
-      .single();
-    
-    if (error || !data) {
-      return { isAdmin: false, permissions: [] };
-    }
-    
-    return {
-      isAdmin: data.role === 'admin',
-      permissions: data.preferences?.permissions || []
-    };
-  } catch (error) {
-    console.error('Erro ao verificar permissões:', error);
-    return { isAdmin: false, permissions: [] };
-  }
-}
+// Removed insecure permission and role update functions
+// These operations should now be handled through the secure
+// role_permissions table and update_role_permissions RPC function

@@ -23,6 +23,7 @@ import { ptBR } from 'date-fns/locale';
 import { Incident, INCIDENT_TYPES } from '../../types/incident';
 import { useEmployees } from '../../contexts/EmployeeContext';
 import { EmployeeSelector } from './EmployeeSelector';
+import { formatDateToLocal, getTodayLocal } from '../../utils/dateUtils';
 
 interface IncidentDialogProps {
   open: boolean;
@@ -48,7 +49,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     type: '',
     severity: 'leve',
     description: '',
-    incidentDate: new Date().toISOString().split('T')[0],
+    incidentDate: getTodayLocal(),
     reporterId: '',
     reporterName: '',
     status: 'ativo'
@@ -76,7 +77,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         type: '',
         severity: 'leve',
         description: '',
-        incidentDate: new Date().toISOString().split('T')[0],
+        incidentDate: getTodayLocal(),
         reporterId: '',
         reporterName: '',
         status: 'ativo'
@@ -129,7 +130,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     if (date) {
       setFormData(prev => ({
         ...prev,
-        incidentDate: date.toISOString().split('T')[0]
+        incidentDate: formatDateToLocal(date)
       }));
       
       // Limpar erro do campo quando ele for alterado

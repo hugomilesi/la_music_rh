@@ -23,8 +23,8 @@ export const benefitsService = {
       id: type.id,
       name: type.name,
       category: type.category,
-      icon: type.icon,
-      color: type.color
+      icon: benefitsService.getCategoryIcon(type.category),
+      color: benefitsService.getCategoryColor(type.category)
     }));
     
     console.log('✅ getBenefitTypes: Mapped benefit types:', mappedData);
@@ -33,18 +33,23 @@ export const benefitsService = {
 
   // Benefits
   async getBenefits(): Promise<Benefit[]> {
+    console.log('🔍 getBenefits: Starting to fetch benefits...');
+    
     const { data, error } = await supabase
       .from('benefits')
       .select(`
         *,
-        type:benefit_types!benefits_type_id_fkey(*)
+        benefit_types(*)
       `)
       .order('nome');
 
     if (error) {
-      console.error('Error fetching benefits:', error);
+      console.error('❌ getBenefits: Error fetching benefits:', error);
       throw error;
     }
+    
+    console.log('✅ getBenefits: Raw data from Supabase:', data);
+    console.log('✅ getBenefits: Number of benefits found:', data?.length || 0);
 
     // Map benefits and load documents for each
     const benefitsWithDocuments = await Promise.all(
@@ -66,12 +71,12 @@ export const benefitsService = {
         return {
           id: benefit.id,
           name: benefit.nome,
-          type: benefit.type ? {
-            id: benefit.type.id,
-            name: benefit.type.name,
-            category: benefit.type.category,
-            icon: benefit.type.icon,
-            color: benefit.type.color
+          type: benefit.benefit_types ? {
+            id: benefit.benefit_types.id,
+            name: benefit.benefit_types.name,
+            category: benefit.benefit_types.category,
+            icon: benefitsService.getCategoryIcon(benefit.benefit_types.category),
+            color: benefitsService.getCategoryColor(benefit.benefit_types.category)
           } : {
             id: '',
             name: 'Tipo não encontrado',
@@ -104,6 +109,9 @@ export const benefitsService = {
         };
       })
     );
+    
+    console.log('✅ getBenefits: Final mapped benefits:', benefitsWithDocuments);
+    console.log('✅ getBenefits: Returning', benefitsWithDocuments.length, 'benefits');
 
     return benefitsWithDocuments;
   },
@@ -143,7 +151,7 @@ export const benefitsService = {
       })
       .select(`
         *,
-        type:benefit_types!benefits_type_id_fkey(*)
+        benefit_types(*)
       `)
       .single();
 
@@ -155,12 +163,12 @@ export const benefitsService = {
     return {
       id: data.id,
       name: data.nome,
-      type: data.type ? {
-        id: data.type.id,
-        name: data.type.name,
-        category: data.type.category,
-        icon: data.type.icon,
-        color: data.type.color
+      type: data.benefit_types ? {
+        id: data.benefit_types.id,
+        name: data.benefit_types.name,
+        category: data.benefit_types.category,
+        icon: benefitsService.getCategoryIcon(data.benefit_types.category),
+        color: benefitsService.getCategoryColor(data.benefit_types.category)
       } : {
         id: '',
         name: 'Tipo não encontrado',
@@ -246,7 +254,7 @@ export const benefitsService = {
       .eq('id', id)
       .select(`
         *,
-        type:benefit_types!benefits_type_id_fkey(*)
+        benefit_types(*)
       `)
       .single();
 
@@ -303,12 +311,12 @@ export const benefitsService = {
     return {
       id: data.id,
       name: data.nome,
-      type: data.type ? {
-        id: data.type.id,
-        name: data.type.name,
-        category: data.type.category,
-        icon: data.type.icon,
-        color: data.type.color
+      type: data.benefit_types ? {
+        id: data.benefit_types.id,
+        name: data.benefit_types.name,
+        category: data.benefit_types.category,
+        icon: benefitsService.getCategoryIcon(data.benefit_types.category),
+        color: benefitsService.getCategoryColor(data.benefit_types.category)
       } : {
         id: '',
         name: 'Tipo não encontrado',
@@ -358,26 +366,46 @@ export const benefitsService = {
     console.log('🔍 getEmployeeBenefits called - fetching employee benefits data');
     
     try {
-      const { data, error } = await supabase
+      // First get employee benefits with user and benefit info
+      const { data: employeeBenefitsData, error } = await supabase
         .from('employee_benefits')
         .select(`
           *,
-          employee:employees!employee_benefits_employee_id_fkey(name),
-          benefit:benefits!employee_benefits_benefit_id_fkey(nome),
-          dependents:benefit_dependents(*)
+          users(full_name),
+          benefits(nome)
         `)
-        .order('data_inicio', { ascending: false });
+        .order('enrollment_date', { ascending: false });
       
       if (error) {
         console.error('🚨 Error in getEmployeeBenefits query:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw error;
       }
+      
+      // Then get all dependents for these employee benefits
+      const employeeBenefitIds = employeeBenefitsData.map(eb => eb.id);
+      const { data: dependentsData, error: dependentsError } = await supabase
+        .from('benefit_dependents')
+        .select('*')
+        .in('employee_benefit_id', employeeBenefitIds);
+      
+      if (dependentsError) {
+        console.error('🚨 Error fetching dependents:', dependentsError);
+        // Don't throw, just log and continue without dependents
+      }
+      
+      // Group dependents by employee_benefit_id
+      const dependentsByEmployeeBenefit = (dependentsData || []).reduce((acc, dep) => {
+        if (!acc[dep.employee_benefit_id]) {
+          acc[dep.employee_benefit_id] = [];
+        }
+        acc[dep.employee_benefit_id].push(dep);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      const data = employeeBenefitsData.map(eb => ({
+        ...eb,
+        benefit_dependents: dependentsByEmployeeBenefit[eb.id] || []
+      }));
       
       console.log('✅ getEmployeeBenefits query successful, processing data...');
        console.log('Raw data received:', data);
@@ -385,12 +413,12 @@ export const benefitsService = {
        return data.map(eb => ({
       id: eb.id,
       employeeId: eb.employee_id,
-      employeeName: eb.employee?.name || 'Funcionário não encontrado',
+      employeeName: eb.users?.full_name || 'Funcionário não encontrado',
       benefitId: eb.benefit_id,
-      benefitName: eb.benefit?.nome || 'Benefício não encontrado',
-      enrollmentDate: eb.data_inicio,
+      benefitName: eb.benefits?.nome || 'Benefício não encontrado',
+      enrollmentDate: eb.enrollment_date,
       // Status is determined by dates: active if no end date or future end date
-      dependents: eb.dependents?.map((dep: any) => ({
+      dependents: eb.benefit_dependents?.map((dep: any) => ({
         id: dep.id,
         name: dep.name,
         relationship: dep.relationship,
@@ -400,8 +428,8 @@ export const benefitsService = {
       })) || [],
       documents: [], // Will be implemented later if needed
       lastUpdate: eb.updated_at,
-      nextRenewalDate: eb.next_renewal_date || eb.data_fim,
-      renewalStatus: eb.renewal_status || 'pending'
+      nextRenewalDate: eb.termination_date,
+      renewalStatus: eb.status || 'active'
     }));
     } catch (error) {
       console.error('🚨 Unexpected error in getEmployeeBenefits:', error);
@@ -499,12 +527,13 @@ export const benefitsService = {
       .insert({
         employee_id: employeeId,
         benefit_id: benefitId,
-        data_inicio: new Date().toISOString().split('T')[0]
+        enrollment_date: new Date().toISOString().split('T')[0],
+        status: 'active'
       })
       .select(`
         *,
-        employee:employees!employee_benefits_employee_id_fkey(name),
-        benefit:benefits!employee_benefits_benefit_id_fkey(nome)
+        users(full_name),
+        benefits(nome)
       `)
       .single();
 
@@ -540,15 +569,15 @@ export const benefitsService = {
     return {
       id: enrollment.id,
       employeeId: enrollment.employee_id,
-      employeeName: enrollment.employee?.name || 'Funcionário não encontrado',
+      employeeName: enrollment.users?.full_name || 'Funcionário não encontrado',
       benefitId: enrollment.benefit_id,
-      benefitName: enrollment.benefit?.nome || 'Benefício não encontrado',
-      enrollmentDate: enrollment.data_inicio,
+      benefitName: enrollment.benefits?.nome || 'Benefício não encontrado',
+      enrollmentDate: enrollment.enrollment_date,
       // Status determined by dates
       dependents: dependents || [],
       documents: [],
       lastUpdate: enrollment.updated_at,
-      nextRenewalDate: enrollment.next_renewal_date || enrollment.data_fim,
+      nextRenewalDate: enrollment.termination_date,
       renewalStatus: 'pending'
     };
   },
@@ -576,8 +605,8 @@ export const benefitsService = {
         .from('employee_benefits')
         .select(`
           *,
-          employee:employees!employee_benefits_employee_id_fkey(name),
-          benefit:benefits!employee_benefits_benefit_id_fkey(nome),
+          users(full_name),
+        benefits(nome),
           dependents:benefit_dependents(*)
         `)
         .eq('id', id)
@@ -591,9 +620,9 @@ export const benefitsService = {
       return {
         id: current.id,
         employeeId: current.employee_id,
-        employeeName: current.employee?.name || 'Funcionário não encontrado',
+        employeeName: current.users?.full_name || 'Funcionário não encontrado',
         benefitId: current.benefit_id,
-        benefitName: current.benefit?.nome || 'Benefício não encontrado',
+        benefitName: current.benefits?.nome || 'Benefício não encontrado',
         enrollmentDate: current.data_inicio,
         dependents: current.dependents?.map((dep: any) => ({
           id: dep.id,
@@ -616,8 +645,8 @@ export const benefitsService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!employee_benefits_employee_id_fkey(name),
-        benefit:benefits!employee_benefits_benefit_id_fkey(nome),
+        users(full_name),
+        benefits(nome),
         dependents:benefit_dependents(*)
       `)
       .single();
@@ -634,9 +663,9 @@ export const benefitsService = {
     return {
       id: updated.id,
       employeeId: updated.employee_id,
-      employeeName: updated.employee?.name || 'Funcionário não encontrado',
+      employeeName: updated.users?.full_name || 'Funcionário não encontrado',
       benefitId: updated.benefit_id,
-      benefitName: updated.benefit?.nome || 'Benefício não encontrado',
+      benefitName: updated.benefits?.nome || 'Benefício não encontrado',
       enrollmentDate: updated.data_inicio,
       // Status determined by dates
       dependents: updated.dependents?.map((dep: any) => ({
@@ -684,10 +713,10 @@ export const benefitsService = {
         .from('employee_benefits')
         .select(`
           benefit_id,
-          data_inicio,
-          data_fim,
-          valor_personalizado,
-          benefit:benefits!employee_benefits_benefit_id_fkey(valor)
+          enrollment_date,
+          termination_date,
+          premium_amount,
+          benefits(valor)
         `);
 
       if (employeeBenefitsError) {
@@ -702,15 +731,15 @@ export const benefitsService = {
       // Consider active enrollments as those without end date or with future end date
       const currentDate = new Date();
       const activeEnrollments = employeeBenefits.filter(eb => 
-        !eb.data_fim || new Date(eb.data_fim) > currentDate
+        !eb.termination_date || new Date(eb.termination_date) > currentDate
       );
       
       const totalEnrollments = activeEnrollments.length;
       const pendingApprovals = 0; // Since we don't have status column, assume no pending approvals
       
-      // Calculate total cost from employee benefits (use valor_personalizado or benefit valor)
+      // Calculate total cost from employee benefits (use premium_amount or benefit valor)
       const totalCost = activeEnrollments.reduce((sum, eb) => {
-        const cost = eb.valor_personalizado || eb.benefit?.valor || 0;
+        const cost = eb.premium_amount || eb.benefits?.valor || 0;
         return sum + cost;
       }, 0);
 
@@ -737,7 +766,7 @@ export const benefitsService = {
         const enrollments = benefitActiveEnrollments.length;
         
         const benefitTotalCost = benefitActiveEnrollments.reduce((sum, eb) => {
-          const cost = eb.valor_personalizado || eb.benefit?.valor || benefit.valor || 0;
+          const cost = eb.premium_amount || eb.benefits?.valor || benefit.valor || 0;
           return sum + cost;
         }, 0);
 
@@ -817,6 +846,35 @@ export const benefitsService = {
       console.error('❌ Error updating benefit document:', error);
       throw error;
     }
+  },
+
+  // Helper methods for category icons and colors
+  getCategoryIcon(category: string): string {
+    const iconMap: Record<string, string> = {
+      'health': 'heart',
+      'dental': 'smile',
+      'food': 'utensils',
+      'transport': 'car',
+      'education': 'graduation-cap',
+      'life': 'shield',
+      'performance': 'trophy',
+      'other': 'help-circle'
+    };
+    return iconMap[category] || 'help-circle';
+  },
+
+  getCategoryColor(category: string): string {
+    const colorMap: Record<string, string> = {
+      'health': '#ef4444',
+      'dental': '#06b6d4',
+      'food': '#f59e0b',
+      'transport': '#8b5cf6',
+      'education': '#10b981',
+      'life': '#3b82f6',
+      'performance': '#f97316',
+      'other': '#6b7280'
+    };
+    return colorMap[category] || '#6b7280';
   },
 
   // Subscription for real-time updates

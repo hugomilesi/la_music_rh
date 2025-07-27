@@ -16,10 +16,10 @@ export async function testRecognitionIntegration() {
   
   try {
     // Teste 1: Conexão com banco
-    console.log('📊 Testando conexão com banco...');
-    const { data: connectionTest, error: connectionError } = await supabase
-      .from('employees')
-      .select('count')
+    console.log('🔌 Testando conexão com banco...');
+    const { data: testData, error: connectionError } = await supabase
+      .from('users')
+      .select('id')
       .limit(1);
     
     if (connectionError) {
@@ -167,7 +167,7 @@ export async function testSpecificData() {
   
   try {
     // Verificar estrutura das tabelas
-    const tables = ['employees', 'recognition_programs', 'employee_evaluations', 'employee_achievements'];
+    const tables = ['users', 'recognition_programs', 'employee_evaluations', 'employee_achievements'];
     
     for (const table of tables) {
       console.log(`\n📋 Testando tabela: ${table}`);
@@ -189,7 +189,7 @@ export async function testSpecificData() {
     // Verificar integridade dos dados
     console.log('\n🔗 Verificando integridade dos dados...');
     
-    // Verificar se todos os employee_ids no ranking existem na tabela employees
+    // Verificar se todos os employee_ids no ranking existem na tabela users
     const { data: evaluations } = await supabase
       .from('employee_evaluations')
       .select('employee_id')
@@ -198,13 +198,13 @@ export async function testSpecificData() {
     if (evaluations && evaluations.length > 0) {
       for (const evaluation of evaluations) {
         const { data: employee } = await supabase
-          .from('employees')
+          .from('users')
           .select('id')
           .eq('id', evaluation.employee_id)
           .single();
         
         if (!employee) {
-          console.log(`⚠️ Funcionário ${evaluation.employee_id} não encontrado na tabela employees`);
+          console.log(`⚠️ Funcionário ${evaluation.employee_id} não encontrado na tabela users`);
         }
       }
     }

@@ -39,7 +39,7 @@ export const updateUserAsAdmin = async (userId: string, updates: UpdateUserData)
     console.log('Sending direct API request to update user:', updateData);
 
     // Make a direct API call to Supabase REST API
-    const response = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/users?auth_user_id=eq.${userId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -75,9 +75,9 @@ export const checkAdminPrivileges = async (): Promise<boolean> => {
     }
 
     const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('role, preferences')
-      .eq('id', user.id)
+      .from('users')
+      .select('role')
+      .eq('auth_user_id', user.id)
       .single();
 
     if (error) {
@@ -85,11 +85,21 @@ export const checkAdminPrivileges = async (): Promise<boolean> => {
       return false;
     }
 
-    const isAdmin = profile.role === 'admin' || 
-                   profile.role === 'super_admin' || 
-                   (profile.preferences && profile.preferences.super_user === true);
+    // Check permissions from role_permissions table
+    const { data: rolePermissions, error: permError } = await supabase
+      .from('role_permissions')
+      .select('permissions')
+      .eq('role', profile.role)
+      .single();
 
-    return isAdmin;
+    if (permError) {
+      console.error('Error checking role permissions:', permError);
+      return false;
+    }
+
+    // User has admin privileges if they can manage everything or access settings
+    const permissions = rolePermissions?.permissions || [];
+    return permissions.includes('canManageEverything') || permissions.includes('canAccessSettings');
   } catch (error) {
     console.error('Error in checkAdminPrivileges:', error);
     return false;

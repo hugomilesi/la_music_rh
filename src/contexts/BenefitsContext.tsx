@@ -139,6 +139,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      
       const [benefitsData, benefitTypesData, employeeBenefitsData] = await Promise.all([
         benefitsService.getBenefits(),
         benefitsService.getBenefitTypes(),

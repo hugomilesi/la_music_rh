@@ -59,19 +59,19 @@ BEGIN
         RAISE NOTICE 'Coluna responsavel_id renomeada para employee_id';
     END IF;
 
-    -- Verificar se a foreign key para employees existe e recriar se necessário
+    -- Verificar se a foreign key para users existe e recriar se necessário
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
         WHERE tc.table_name = 'incidents'
         AND tc.constraint_type = 'FOREIGN KEY'
         AND kcu.column_name = 'employee_id'
-        AND kcu.referenced_table_name = 'employees'
+        AND kcu.referenced_table_name = 'users'
     ) THEN
         -- Adicionar foreign key constraint se não existir
         ALTER TABLE public.incidents 
         ADD CONSTRAINT incidents_employee_id_fkey 
-        FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE;
+        FOREIGN KEY (employee_id) REFERENCES public.users(auth_user_id) ON DELETE CASCADE;
         RAISE NOTICE 'Foreign key constraint adicionada para employee_id';
     END IF;
 
@@ -82,12 +82,12 @@ BEGIN
         WHERE tc.table_name = 'incidents'
         AND tc.constraint_type = 'FOREIGN KEY'
         AND kcu.column_name = 'reporter_id'
-        AND kcu.referenced_table_name = 'employees'
+        AND kcu.referenced_table_name = 'users'
     ) THEN
         -- Adicionar foreign key constraint se não existir
         ALTER TABLE public.incidents 
         ADD CONSTRAINT incidents_reporter_id_fkey 
-        FOREIGN KEY (reporter_id) REFERENCES public.employees(id);
+        FOREIGN KEY (reporter_id) REFERENCES public.users(auth_user_id);
         RAISE NOTICE 'Foreign key constraint adicionada para reporter_id';
     END IF;
 

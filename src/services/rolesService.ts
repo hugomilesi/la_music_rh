@@ -136,7 +136,7 @@ export const deleteRole = async (id: string): Promise<void> => {
 
   // Check if role name is being used by employees
   const { data: employees, error: checkError } = await supabase
-    .from('employees')
+    .from('users')
     .select('id')
     .eq('position', role.name)
     .limit(1);
@@ -177,7 +177,7 @@ export const fetchRolesByDepartment = async (departmentId: string): Promise<Role
 // Count employees by role
 export const countEmployeesByRole = async (roleName: string): Promise<number> => {
   const { count, error } = await supabase
-    .from('employees')
+    .from('users')
     .select('*', { count: 'exact', head: true })
     .eq('position', roleName);
 

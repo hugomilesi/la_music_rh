@@ -126,7 +126,7 @@ export class RecognitionService {
       .from('employee_achievements')
       .select(`
         *,
-        employees!employee_achievements_employee_id_fkey(name)
+        users(full_name)
       `)
       .order('achievement_date', { ascending: false })
       .limit(10)
@@ -190,9 +190,12 @@ export class RecognitionService {
     programFilter: string = 'all',
     evaluationPeriodFilter?: string
   ): Promise<EmployeeRanking[]> {
+    // Convert 'all' to null for the UUID parameter
+    const programFilterUuid = programFilter === 'all' ? null : programFilter;
+    
     const { data, error } = await supabase
       .rpc('get_employee_ranking', {
-        program_filter: programFilter,
+        program_filter: programFilterUuid,
         evaluation_period_filter: evaluationPeriodFilter
       })
 

@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export interface UserPermissions {
   canManageEmployees: boolean;
@@ -20,48 +21,105 @@ export interface UserPermissions {
 export const usePermissions = () => {
   const { profile, user } = useAuth();
   const { toast } = useToast();
+  const [rolePermissions, setRolePermissions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const isAdmin = useMemo(() => {
-    if (!user || !profile) {
-      return false;
-    }
-    
-    // Verificação específica para usuários administrativos
-    if (user.id === '32349eb8-daae-4c8f-849c-18af9552c000' || user.email === 'madorgas295@gmail.com') {
-      return true
-    }
-    
-    return profile.role === 'admin' || profile.role === 'super_admin';
-  }, [user, profile])
+  // Buscar permissões do banco de dados quando o perfil for carregado
+  useEffect(() => {
+    const fetchRolePermissions = async () => {
+      if (!profile?.role) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('role_permissions')
+          .select('permissions')
+          .eq('role', profile.role)
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar permissões:', error);
+          setRolePermissions([]);
+        } else {
+          setRolePermissions(data?.permissions || []);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar permissões:', error);
+        setRolePermissions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRolePermissions();
+  }, [profile?.role]);
 
   const isSuperUser = useMemo(() => {
-    if (!user || !profile) return false
-    
-    // Verificação específica para usuários administrativos
-    if (user.id === '32349eb8-daae-4c8f-849c-18af9552c000' || user.email === 'madorgas295@gmail.com') {
-      return true
-    }
-    
-    // Todo admin deve ser um super user
-    return profile.role === 'admin' || profile.role === 'super_admin';
-  }, [user, profile])
-  
-  const hasAdminAccess = isAdmin || isSuperUser;
+    if (!user || !profile) return false;
+    return rolePermissions.includes('canManageEverything');
+  }, [user, profile, rolePermissions]);
 
-  const permissions: UserPermissions = {
-    canManageEmployees: hasAdminAccess,
-    canManageDocuments: hasAdminAccess,
-    canManageSchedule: hasAdminAccess,
-    canManageEvaluations: hasAdminAccess,
-    canAccessSettings: hasAdminAccess,
-    canViewReports: hasAdminAccess,
-    canDeleteEmployees: hasAdminAccess,
-    canCreateUsers: hasAdminAccess,
-    canPromoteUsers: hasAdminAccess,
-    canExportData: hasAdminAccess,
-    isAdmin: isAdmin,
-    isSuperUser: isSuperUser
-  };
+  const isAdmin = useMemo(() => {
+    if (!user || !profile) return false;
+    return rolePermissions.includes('canAccessSettings') || isSuperUser;
+  }, [user, profile, rolePermissions, isSuperUser]);
+
+  // Construir objeto de permissões baseado nas permissões do banco
+  const permissions: UserPermissions = useMemo(() => {
+    if (loading) {
+      // Retornar permissões vazias enquanto carrega
+      return {
+        canManageEmployees: false,
+        canManageDocuments: false,
+        canManageSchedule: false,
+        canManageEvaluations: false,
+        canAccessSettings: false,
+        canViewReports: false,
+        canDeleteEmployees: false,
+        canCreateUsers: false,
+        canPromoteUsers: false,
+        canExportData: false,
+        isAdmin: false,
+        isSuperUser: false
+      };
+    }
+
+    // Se for super_admin com canManageEverything, dar todas as permissões
+    if (isSuperUser && rolePermissions.includes('canManageEverything')) {
+      return {
+        canManageEmployees: true,
+        canManageDocuments: true,
+        canManageSchedule: true,
+        canManageEvaluations: true,
+        canAccessSettings: true,
+        canViewReports: true,
+        canDeleteEmployees: true,
+        canCreateUsers: true,
+        canPromoteUsers: true,
+        canExportData: true,
+        isAdmin: true,
+        isSuperUser: true
+      };
+    }
+
+    // Caso contrário, verificar cada permissão individualmente
+    return {
+      canManageEmployees: rolePermissions.includes('canManageEmployees'),
+      canManageDocuments: rolePermissions.includes('canManageDocuments'),
+      canManageSchedule: rolePermissions.includes('canManageSchedule'),
+      canManageEvaluations: rolePermissions.includes('canManageEvaluations'),
+      canAccessSettings: rolePermissions.includes('canAccessSettings'),
+      canViewReports: rolePermissions.includes('canViewReports'),
+      canDeleteEmployees: rolePermissions.includes('canDeleteEmployees'),
+      canCreateUsers: rolePermissions.includes('canCreateUsers'),
+      canPromoteUsers: rolePermissions.includes('canPromoteUsers'),
+      canExportData: rolePermissions.includes('canExportData'),
+      isAdmin: isAdmin,
+      isSuperUser: isSuperUser
+    };
+  }, [rolePermissions, isAdmin, isSuperUser, loading]);
   
 
 
@@ -106,10 +164,11 @@ export const usePermissions = () => {
     requirePermission,
     getPermissionLevel,
     userProfile: profile,
-    canAccessSettings: hasAdminAccess,
-    canCreateUsers: hasAdminAccess,
+    canAccessSettings: permissions.canAccessSettings,
+    canCreateUsers: permissions.canCreateUsers,
     isAdmin,
-    isSuperUser
+    isSuperUser,
+    loading
   };
 };
 

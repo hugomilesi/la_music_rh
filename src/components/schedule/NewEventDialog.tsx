@@ -22,6 +22,7 @@ import { NewScheduleEventData, EventFormData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -66,7 +67,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       title: '',
       employeeId: '',
       unit: Unit.CAMPO_GRANDE,
-      date: preselectedDate ? preselectedDate.toISOString().split('T')[0] : '',
+      date: preselectedDate ? formatDateToLocal(preselectedDate) : '',
       startTime: '',
       endTime: '',
       type: 'plantao',
@@ -98,7 +99,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 
   React.useEffect(() => {
     if (preselectedDate) {
-      const dateString = preselectedDate.toISOString().split('T')[0];
+      const dateString = formatDateToLocal(preselectedDate);
       form.setValue('date', dateString);
     }
   }, [preselectedDate, form]);

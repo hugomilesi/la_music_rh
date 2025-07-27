@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useToast } from '@/hooks/use-toast';
 import { useEmployees } from '@/hooks/useEmployees';
+import { formatDateToLocal, getTodayLocal } from '@/utils/dateUtils';
 
 interface NewIncidentDialogProps {
   open: boolean;
@@ -39,7 +40,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
       type: '',
       severity: 'leve',
       description: '',
-      incidentDate: new Date().toISOString().split('T')[0],
+      incidentDate: getTodayLocal(),
       reporterId: 'eea4767c-7c68-4667-b783-cba2b30c9fcf' // Default reporter ID
     }
   });

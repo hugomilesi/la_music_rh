@@ -1,9 +1,9 @@
 
 -- Tabela de funcionários (já existe, mas vamos verificar se está completa)
--- A tabela employees já existe, vamos adicionar campos que podem estar faltando
+-- A tabela users já existe, vamos adicionar campos que podem estar faltando
 
 -- Tabela de documentos (já existe, mas vamos verificar relacionamentos)
--- Adicionar foreign key para employees se não existir
+-- Adicionar foreign key para users se não existir
 DO $$ 
 BEGIN
     IF NOT EXISTS (
@@ -13,15 +13,15 @@ BEGIN
     ) THEN
         ALTER TABLE documents 
         ADD CONSTRAINT documents_employee_id_fkey 
-        FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE;
+        FOREIGN KEY (employee_id) REFERENCES users(auth_user_id) ON DELETE CASCADE;
     END IF;
 END $$;
 
 -- Tabela de avaliações
 CREATE TABLE IF NOT EXISTS evaluations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-    evaluator_id UUID REFERENCES employees(id),
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE,
+    evaluator_id UUID REFERENCES users(auth_user_id),
     type TEXT NOT NULL CHECK (type IN ('avaliacao_360', 'auto_avaliacao', 'avaliacao_gestor', 'coffee_connection')),
     period TEXT NOT NULL,
     score DECIMAL(3,2) DEFAULT 0,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS evaluations (
 -- Tabela de férias
 CREATE TABLE IF NOT EXISTS vacation_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     days INTEGER NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS vacation_requests (
     type TEXT NOT NULL DEFAULT 'vacation' CHECK (type IN ('vacation', 'medical', 'personal', 'maternity', 'paternity')),
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     request_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    approved_by UUID REFERENCES employees(id),
+    approved_by UUID REFERENCES users(auth_user_id),
     approved_date DATE,
     rejection_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS vacation_requests (
 -- Tabela de saldo de férias
 CREATE TABLE IF NOT EXISTS vacation_balances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE UNIQUE,
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE UNIQUE,
     total_days INTEGER NOT NULL DEFAULT 30,
     used_days INTEGER NOT NULL DEFAULT 0,
     remaining_days INTEGER NOT NULL DEFAULT 30,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS vacation_balances (
 CREATE TABLE IF NOT EXISTS schedule_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE,
     unit TEXT NOT NULL,
     event_date DATE NOT NULL,
     start_time TIME NOT NULL,
@@ -90,12 +90,12 @@ CREATE TABLE IF NOT EXISTS schedule_events (
 -- Tabela de incidentes
 CREATE TABLE IF NOT EXISTS incidents (
     id SERIAL PRIMARY KEY,
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE,
     type TEXT NOT NULL,
     severity TEXT NOT NULL CHECK (severity IN ('leve', 'moderado', 'grave')),
     description TEXT NOT NULL,
     incident_date DATE NOT NULL,
-    reporter_id UUID REFERENCES employees(id),
+    reporter_id UUID REFERENCES users(auth_user_id),
     status TEXT NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'resolvido', 'arquivado')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS nps_surveys (
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed')),
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    target_employees UUID[],
+    target_users UUID[],
     target_departments TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS nps_surveys (
 CREATE TABLE IF NOT EXISTS nps_responses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     survey_id UUID NOT NULL REFERENCES nps_surveys(id) ON DELETE CASCADE,
-    employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(auth_user_id) ON DELETE CASCADE,
     score INTEGER NOT NULL CHECK (score >= 0 AND score <= 10),
     comment TEXT,
     category TEXT NOT NULL,
@@ -167,7 +167,7 @@ BEGIN
         SELECT table_name FROM information_schema.columns 
         WHERE column_name = 'updated_at' 
         AND table_schema = 'public'
-        AND table_name NOT IN ('employees', 'documents') -- Estas já podem ter triggers
+        AND table_name NOT IN ('users', 'documents') -- Estas já podem ter triggers
     LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS set_timestamp ON %I', t);
         EXECUTE format('CREATE TRIGGER set_timestamp 
@@ -198,5 +198,5 @@ CREATE POLICY "Allow all operations" ON notifications FOR ALL USING (true);
 
 -- Inserir dados iniciais de exemplo (baseados nos contextos existentes)
 INSERT INTO vacation_balances (employee_id, total_days, used_days, remaining_days)
-SELECT id, 30, 0, 30 FROM employees
+SELECT auth_user_id, 30, 0, 30 FROM users
 ON CONFLICT (employee_id) DO NOTHING;

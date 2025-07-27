@@ -1,4 +1,4 @@
--- Migração para adicionar a relação entre schedule_events e employees
+-- Migração para adicionar a relação entre schedule_events e users
 
 -- Verificar se a tabela schedule_events existe
 DO $$ 
@@ -23,18 +23,18 @@ BEGIN
                 WHERE tc.constraint_type = 'FOREIGN KEY' 
                 AND tc.table_schema = 'public' 
                 AND tc.table_name = 'schedule_events' 
-                AND ccu.table_name = 'employees'
-                AND ccu.column_name = 'id'
+                AND ccu.table_name = 'users'
+                AND ccu.column_name = 'auth_user_id'
             ) THEN
                 -- Adicionar a foreign key
                 ALTER TABLE public.schedule_events 
                 ADD CONSTRAINT schedule_events_employee_id_fkey 
                 FOREIGN KEY (employee_id) 
-                REFERENCES public.employees(id);
+                REFERENCES public.users(auth_user_id);
                 
-                RAISE NOTICE 'Foreign key entre schedule_events e employees adicionada';
+                RAISE NOTICE 'Foreign key entre schedule_events e users adicionada';
             ELSE
-                RAISE NOTICE 'Foreign key entre schedule_events e employees já existe';
+                RAISE NOTICE 'Foreign key entre schedule_events e users já existe';
             END IF;
         ELSE
             RAISE NOTICE 'Coluna employee_id não encontrada na tabela schedule_events';
@@ -50,5 +50,5 @@ COMMENT ON TABLE public.schedule_events IS 'Eventos de agenda dos funcionários'
 -- Notificar sobre a atualização do esquema
 DO $$ 
 BEGIN
-    RAISE NOTICE 'Relação entre schedule_events e employees atualizada com sucesso';
+    RAISE NOTICE 'Relação entre schedule_events e users atualizada com sucesso';
 END $$;

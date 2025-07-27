@@ -37,27 +37,6 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
   const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
-  
-  if (!canManageEmployees) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <Lock className="w-5 h-5" />
-              Acesso Negado
-            </DialogTitle>
-            <DialogDescription>
-              Você não tem permissão para visualizar documentos de colaboradores.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   useEffect(() => {
     if (employeeId) {
@@ -116,6 +95,28 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
       onSendToAccountant(filteredDocuments);
     }
   };
+
+  // Se não tem permissão, mostrar modal de acesso negado
+  if (!canManageEmployees) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Lock className="w-5 h-5" />
+              Acesso Negado
+            </DialogTitle>
+            <DialogDescription>
+              Você não tem permissão para visualizar documentos de colaboradores.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>

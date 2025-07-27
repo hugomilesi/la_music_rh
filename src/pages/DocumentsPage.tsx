@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3, Lock } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { DocumentUploadDialog } from '@/components/documents/DocumentUploadDialog';
@@ -23,8 +24,25 @@ import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { checkPermission } = usePermissions();
+  const { checkPermission, getPermissionLevel } = usePermissions();
+  const { profile } = useAuth();
   const canManageEmployees = checkPermission('canManageEmployees', false);
+  const canManageDocuments = checkPermission('canManageDocuments', false);
+  const canAccessSettings = checkPermission('canAccessSettings', false);
+  const userPermissionLevel = getPermissionLevel();
+  
+  // Determine user access level based on profile
+  const getUserAccessLevel = () => {
+    if (!profile) return 'user';
+    
+    // Use permission-based access control instead of hardcoded roles
+    if (canManageEmployees && canAccessSettings) return 'admin';
+    if (canManageEmployees) return 'collaborator';
+    if (canManageDocuments) return 'professor';
+    return 'user';
+  };
+  
+  const userAccessLevel = getUserAccessLevel();
   
   const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
   const { employees } = useEmployees();
@@ -38,6 +56,29 @@ const DocumentsPage: React.FC = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
   const [selectedDocumentsForAccountant, setSelectedDocumentsForAccountant] = useState<Document[]>([]);
+  
+  // Filter documents based on user access level
+  const getVisibleDocuments = () => {
+    if (!profile) return [];
+    
+    switch (userAccessLevel) {
+      case 'admin':
+        // Admins can see all documents
+        return filteredDocuments;
+      case 'collaborator':
+        // Collaborators can see all documents (HR access)
+        return filteredDocuments;
+      case 'professor':
+        // Professors can only see their own documents
+        return filteredDocuments.filter(doc => doc.employeeId === profile.id);
+      case 'user':
+      default:
+        // Regular users can only see their own documents
+        return filteredDocuments.filter(doc => doc.employeeId === profile.id);
+    }
+  };
+  
+  const visibleDocuments = getVisibleDocuments();
 
 
   const handleExport = (format: 'pdf' | 'excel') => {
@@ -61,12 +102,12 @@ const DocumentsPage: React.FC = () => {
     setSendToAccountantDialogOpen(true);
   };
 
-  // Calculate dynamic stats based on filtered documents
+  // Calculate dynamic stats based on visible documents
   const dynamicStats = {
-    total: filteredDocuments.length,
-    valid: filteredDocuments.filter(doc => doc.status === 'válido').length,
-    expiring: filteredDocuments.filter(doc => doc.status === 'vencendo').length,
-    expired: filteredDocuments.filter(doc => doc.status === 'vencido').length
+    total: visibleDocuments.length,
+    valid: visibleDocuments.filter(doc => doc.status === 'válido').length,
+    expiring: visibleDocuments.filter(doc => doc.status === 'vencendo').length,
+    expired: visibleDocuments.filter(doc => doc.status === 'vencido').length
   };
 
   if (!canManageEmployees) {
@@ -262,6 +303,8 @@ const DocumentsPage: React.FC = () => {
         </div>
         
         <GroupedDocumentsTable 
+          documents={visibleDocuments}
+          employees={employees}
           onEmployeeClick={handleEmployeeClick}
           onSendToAccountant={handleSendToAccountant}
         />

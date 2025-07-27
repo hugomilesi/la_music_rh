@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, MoreHorizontal, Check, X, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { VacationRequest } from '@/types/vacation';
@@ -32,8 +32,6 @@ interface VacationRequestsListProps {
 export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onViewDetails, onEditRequest }) => {
   const { 
     vacationRequests, 
-    approveVacationRequest, 
-    rejectVacationRequest,
     deleteVacationRequest,
     updateVacationRequest 
   } = useVacation();
@@ -88,24 +86,7 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
     return <Badge variant="secondary">{typeLabels[type]}</Badge>;
   };
 
-  const handleApprove = (id: string) => {
-    if (!user?.id) {
-      alert('Usuário não autenticado');
-      return;
-    }
-    approveVacationRequest(id, user.id);
-  };
 
-  const handleReject = (id: string) => {
-    if (!user?.id) {
-      alert('Usuário não autenticado');
-      return;
-    }
-    const reason = prompt('Motivo da rejeição:');
-    if (reason) {
-      rejectVacationRequest(id, reason, user.id);
-    }
-  };
 
   const handleDelete = (id: string, employeeName: string) => {
     if (confirm(`Tem certeza que deseja excluir a solicitação de férias de ${employeeName}?`)) {
@@ -202,67 +183,34 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
                   </div>
 
                   <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:justify-end lg:max-w-xs">
-                    {request.status === 'pendente' && (
-                      <>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApprove(request.id)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-1 lg:flex-none lg:min-w-[40px]"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(request.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(request.id, request.employeeName)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onViewDetails && onViewDetails(request.id)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 lg:flex-none lg:min-w-[40px]"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
-
-                    {(request.status === 'aprovado' || request.status === 'rejeitado') && (
-                      <div className="flex gap-2">
+                    <div className="flex gap-2">
+                      {onEditRequest && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(request.id, request.employeeName)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onViewDetails && onViewDetails(request.id)}
+                          onClick={() => onEditRequest(request)}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 lg:flex-none lg:min-w-[40px]"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </Button>
-                      </div>
-                    )}
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(request.id, request.employeeName)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onViewDetails && onViewDetails(request.id)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex-1 lg:flex-none lg:min-w-[40px]"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

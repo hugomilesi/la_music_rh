@@ -75,14 +75,14 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   // Helper function to map service document to UI document
-  const mapServiceDocumentToUIDocument = (serviceDoc: ServiceDocument & { employee?: { name: string } }): Document => {
+  const mapServiceDocumentToUIDocument = (serviceDoc: ServiceDocument & { employee?: { full_name: string } }): Document => {
     // Ensure we have a valid UUID for the document ID
     const documentId = typeof serviceDoc.id === 'string' ? serviceDoc.id : String(serviceDoc.id);
     
     return {
       id: documentId,
       employeeId: serviceDoc.employee_id,
-      employee: serviceDoc.employee?.name || 'Nome não encontrado',
+      employee: serviceDoc.employee?.full_name || 'Nome não encontrado',
       document: serviceDoc.document_name,
       type: serviceDoc.document_type as Document['type'],
       uploadDate: serviceDoc.created_at,

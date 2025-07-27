@@ -1,6 +1,7 @@
 
 export interface SystemUser {
   id: number;
+  auth_user_id?: string;
   name: string;
   email: string;
   role: 'admin' | 'coordenador' | 'professor' | 'usuario';
@@ -11,6 +12,7 @@ export interface SystemUser {
   lastAccess: string;
   createdAt: string;
   permissions: string[];
+  hasProfile?: boolean;
 }
 
 export interface CreateSystemUserData {

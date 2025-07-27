@@ -17,56 +17,87 @@ import { Shield, Users, Settings, FileText, Calendar, Award, Lock } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-interface Permission {
-  id: string;
+interface RolePermissions {
+  role: string;
+  permissions: string[];
+}
+
+interface PermissionDefinition {
+  key: string;
   module: string;
   description: string;
   icon: React.ComponentType<any>;
-  roles: {
-    admin: boolean;
-    coordenador: boolean;
-    professor: boolean;
-    usuario: boolean;
-  };
 }
 
-// Default permissions structure
-const defaultPermissions: Permission[] = [
+// Permission definitions with their metadata
+const permissionDefinitions: PermissionDefinition[] = [
   {
-    id: 'employees',
+    key: 'canManageEmployees',
     module: 'Colaboradores',
     description: 'Visualizar e gerenciar colaboradores',
-    icon: Users,
-    roles: { admin: true, coordenador: true, professor: false, usuario: false }
+    icon: Users
   },
   {
-    id: 'documents',
+    key: 'canManageDocuments',
     module: 'Documentos',
     description: 'Gerenciar documentos e arquivos',
-    icon: FileText,
-    roles: { admin: true, coordenador: true, professor: true, usuario: false }
+    icon: FileText
   },
   {
-    id: 'schedule',
+    key: 'canManageSchedule',
     module: 'Agenda',
     description: 'Gerenciar eventos e compromissos',
-    icon: Calendar,
-    roles: { admin: true, coordenador: true, professor: true, usuario: true }
+    icon: Calendar
   },
   {
-    id: 'evaluations',
+    key: 'canManageEvaluations',
     module: 'Avaliações',
     description: 'Criar e gerenciar avaliações',
-    icon: Award,
-    roles: { admin: true, coordenador: true, professor: false, usuario: false }
+    icon: Award
   },
   {
-    id: 'settings',
+    key: 'canAccessSettings',
     module: 'Configurações',
     description: 'Acessar configurações do sistema',
-    icon: Settings,
-    roles: { admin: true, coordenador: false, professor: false, usuario: false }
+    icon: Settings
+  },
+  {
+    key: 'canCreateUsers',
+    module: 'Usuários',
+    description: 'Criar e gerenciar usuários',
+    icon: Users
+  },
+  {
+    key: 'canViewReports',
+    module: 'Relatórios',
+    description: 'Visualizar relatórios do sistema',
+    icon: FileText
+  },
+  {
+    key: 'canDeleteEmployees',
+    module: 'Exclusão',
+    description: 'Excluir colaboradores',
+    icon: Users
+  },
+  {
+    key: 'canPromoteUsers',
+    module: 'Promoção',
+    description: 'Promover usuários',
+    icon: Users
+  },
+  {
+    key: 'canExportData',
+    module: 'Exportação',
+    description: 'Exportar dados do sistema',
+    icon: FileText
+  },
+  {
+    key: 'canManageEverything',
+    module: 'Super Admin',
+    description: 'Acesso total ao sistema (Super Usuário)',
+    icon: Shield
   }
 ];
 
@@ -75,7 +106,7 @@ interface PermissionsDialogProps {
 }
 
 export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }) => {
-  const [permissions, setPermissions] = useState<Permission[]>(defaultPermissions);
+  const [rolePermissions, setRolePermissions] = useState<RolePermissions[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { permissions: userPermissions } = usePermissions();
@@ -88,18 +119,23 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
   const loadPermissions = async () => {
     setIsLoading(true);
     try {
-      // For now, we'll use the default permissions structure
-      // In a real implementation, you would fetch from the database
-      // const permissionsData = await fetchPermissionsFromDatabase();
-      setPermissions(defaultPermissions);
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*')
+        .order('role');
+
+      if (error) {
+        throw error;
+      }
+
+      setRolePermissions(data || []);
     } catch (error) {
       console.error('Error loading permissions:', error);
       toast({
         title: "Erro ao carregar permissões",
-        description: "Não foi possível carregar as permissões. Usando configuração padrão.",
+        description: "Não foi possível carregar as permissões do banco de dados.",
         variant: "destructive"
       });
-      setPermissions(defaultPermissions);
     } finally {
       setIsLoading(false);
     }
@@ -130,17 +166,16 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
     );
   }
 
-  const handlePermissionChange = (permissionId: string, role: string, value: boolean) => {
-    setPermissions(prev => prev.map(permission => 
-      permission.id === permissionId 
+  const handlePermissionChange = (role: string, permissionKey: string, value: boolean) => {
+    setRolePermissions(prev => prev.map(rolePermission => 
+      rolePermission.role === role 
         ? {
-            ...permission,
-            roles: {
-              ...permission.roles,
-              [role]: value
-            }
+            ...rolePermission,
+            permissions: value 
+              ? [...rolePermission.permissions.filter(p => p !== permissionKey), permissionKey]
+              : rolePermission.permissions.filter(p => p !== permissionKey)
           }
-        : permission
+        : rolePermission
     ));
 
     toast({
@@ -152,11 +187,21 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
   const handleSavePermissions = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, you would save to the database
-      // await savePermissionsToDatabase(permissions);
-      
-      // For now, we'll simulate a successful save
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Update each role's permissions individually by directly updating the role_permissions table
+      for (const rolePermission of rolePermissions) {
+        const { error } = await supabase
+          .from('role_permissions')
+          .upsert({
+            role: rolePermission.role,
+            permissions: rolePermission.permissions
+          }, {
+            onConflict: 'role'
+          });
+        
+        if (error) {
+          throw error;
+        }
+      }
       
       toast({
         title: "Permissões salvas",
@@ -201,10 +246,15 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
         <div className="space-y-6">
           {/* Roles Legend */}
           <div className="flex flex-wrap gap-2">
-            <Badge className={getRoleBadge('admin')}>Administrador</Badge>
-            <Badge className={getRoleBadge('coordenador')}>Coordenador</Badge>
-            <Badge className={getRoleBadge('professor')}>Professor</Badge>
-            <Badge className={getRoleBadge('usuario')}>Usuário</Badge>
+            {rolePermissions.map(rolePermission => (
+              <Badge key={rolePermission.role} className={getRoleBadge(rolePermission.role)}>
+                {rolePermission.role === 'admin' ? 'Administrador' :
+                 rolePermission.role === 'coordenador' ? 'Coordenador' :
+                 rolePermission.role === 'professor' ? 'Professor' :
+                 rolePermission.role === 'usuario' ? 'Usuário' :
+                 rolePermission.role}
+              </Badge>
+            ))}
           </div>
 
           {/* Permissions Table */}
@@ -214,16 +264,21 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
                 <TableRow>
                   <TableHead>Módulo</TableHead>
                   <TableHead>Descrição</TableHead>
-                  <TableHead className="text-center">Admin</TableHead>
-                  <TableHead className="text-center">Coordenador</TableHead>
-                  <TableHead className="text-center">Professor</TableHead>
-                  <TableHead className="text-center">Usuário</TableHead>
+                  {rolePermissions.map(rolePermission => (
+                    <TableHead key={rolePermission.role} className="text-center">
+                      {rolePermission.role === 'admin' ? 'Admin' :
+                       rolePermission.role === 'coordenador' ? 'Coordenador' :
+                       rolePermission.role === 'professor' ? 'Professor' :
+                       rolePermission.role === 'usuario' ? 'Usuário' :
+                       rolePermission.role}
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={rolePermissions.length + 2} className="text-center py-8">
                       <div className="flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Carregando permissões...</span>
@@ -231,53 +286,28 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
                     </TableCell>
                   </TableRow>
                 ) : (
-                  permissions.map((permission) => {
-                    const IconComponent = permission.icon;
+                  permissionDefinitions.map((permissionDef) => {
+                    const IconComponent = permissionDef.icon;
                     return (
-                      <TableRow key={permission.id}>
+                      <TableRow key={permissionDef.key}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <IconComponent className="w-4 h-4" />
-                            <span className="font-medium">{permission.module}</span>
+                            <span className="font-medium">{permissionDef.module}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{permission.description}</TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={permission.roles.admin}
-                            onCheckedChange={(value) => 
-                              handlePermissionChange(permission.id, 'admin', value)
-                            }
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={permission.roles.coordenador}
-                            onCheckedChange={(value) => 
-                              handlePermissionChange(permission.id, 'coordenador', value)
-                            }
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={permission.roles.professor}
-                            onCheckedChange={(value) => 
-                              handlePermissionChange(permission.id, 'professor', value)
-                            }
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Switch
-                            checked={permission.roles.usuario}
-                            onCheckedChange={(value) => 
-                              handlePermissionChange(permission.id, 'usuario', value)
-                            }
-                            disabled={isLoading}
-                          />
-                        </TableCell>
+                        <TableCell>{permissionDef.description}</TableCell>
+                        {rolePermissions.map(rolePermission => (
+                          <TableCell key={rolePermission.role} className="text-center">
+                            <Switch
+                              checked={rolePermission.permissions.includes(permissionDef.key)}
+                              onCheckedChange={(value) => 
+                                handlePermissionChange(rolePermission.role, permissionDef.key, value)
+                              }
+                              disabled={isLoading}
+                            />
+                          </TableCell>
+                        ))}
                       </TableRow>
                     );
                   })
@@ -293,10 +323,15 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
               size="sm"
               onClick={() => {
                 // Grant all permissions to admin
-                setPermissions(prev => prev.map(p => ({
-                  ...p,
-                  roles: { ...p.roles, admin: true }
-                })));
+                const allPermissions = permissionDefinitions.map(p => p.key).filter(p => p !== 'canManageEverything');
+                setRolePermissions(prev => prev.map(rolePermission => 
+                  rolePermission.role === 'admin' 
+                    ? {
+                        ...rolePermission,
+                        permissions: allPermissions
+                      }
+                    : rolePermission
+                ));
                 toast({
                   title: "Permissões atualizadas",
                   description: "Todas as permissões foram concedidas ao Administrador"
@@ -311,18 +346,22 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
               size="sm"
               onClick={() => {
                 // Remove all permissions from usuario
-                setPermissions(prev => prev.map(p => ({
-                  ...p,
-                  roles: { ...p.roles, usuario: false }
-                })));
+                setRolePermissions(prev => prev.map(rolePermission => 
+                  rolePermission.role === 'usuario' 
+                    ? {
+                        ...rolePermission,
+                        permissions: ['canViewOwnProfile', 'canAccessSchedule']
+                      }
+                    : rolePermission
+                ));
                 toast({
                   title: "Permissões atualizadas", 
-                  description: "Todas as permissões foram removidas do Usuário"
+                  description: "Permissões básicas foram definidas para o Usuário"
                 });
               }}
               disabled={isLoading}
             >
-              Remover Tudo do Usuário
+              Resetar Usuário
             </Button>
           </div>
         </div>

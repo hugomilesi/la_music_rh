@@ -1,8 +1,8 @@
 -- Migração para definir o usuário Luciano como administrador
 
 -- Inserir ou atualizar o perfil do usuário Luciano como admin
-INSERT INTO public.profiles (
-  id,
+INSERT INTO public.users (
+  auth_user_id,
   full_name,
   nivel,
   preferences,
@@ -15,11 +15,11 @@ VALUES (
   'Luciano Alf',
   'admin',
   '{"super_user": true}',
-  'active',
+  'ativo',
   now(),
   now()
 )
-ON CONFLICT (id) DO UPDATE SET
+ON CONFLICT (auth_user_id) DO UPDATE SET
   nivel = 'admin',
   preferences = '{"super_user": true}',
   updated_at = now();
@@ -28,8 +28,8 @@ ON CONFLICT (id) DO UPDATE SET
 DO $$
 BEGIN
   IF EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = '3818876c-dc03-44b0-9018-ee901091bad7' 
+    SELECT 1 FROM public.users 
+    WHERE auth_user_id = '3818876c-dc03-44b0-9018-ee901091bad7' 
     AND nivel = 'admin'
   ) THEN
     RAISE NOTICE 'Perfil do usuário Luciano configurado como admin com sucesso';

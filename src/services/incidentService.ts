@@ -11,8 +11,8 @@ export const incidentService = {
         .from('incidents')
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(id, name),
-          reporter:employees!incidents_reporter_id_fkey(id, name)
+          employee:users!employee_id(id, full_name),
+        reporter:users!reporter_id(id, full_name)
         `)
         .order('incident_date', { ascending: false });
 
@@ -21,13 +21,13 @@ export const incidentService = {
       return data?.map(incident => ({
         id: incident.id,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.name || '',
+        employeeName: incident.employee?.full_name || '',
         type: incident.type,
         severity: incident.severity,
         description: incident.description,
         incidentDate: incident.incident_date,
         reporterId: incident.reporter_id,
-        reporterName: incident.reporter?.name || '',
+        reporterName: incident.reporter?.full_name || '',
         status: incident.status,
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
@@ -54,8 +54,8 @@ export const incidentService = {
         .from('incidents')
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(id, name),
-          reporter:employees!incidents_reporter_id_fkey(id, name)
+          employee:users!employee_id(id, full_name),
+        reporter:users!reporter_id(id, full_name)
         `);
 
       if (filters.employeeId) {
@@ -86,13 +86,13 @@ export const incidentService = {
       return data?.map(incident => ({
         id: incident.id,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.name || '',
+        employeeName: incident.employee?.full_name || '',
         type: incident.type,
         severity: incident.severity,
         description: incident.description,
         incidentDate: incident.incident_date,
         reporterId: incident.reporter_id,
-        reporterName: incident.reporter?.name || '',
+        reporterName: incident.reporter?.full_name || '',
         status: incident.status,
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
@@ -123,8 +123,8 @@ export const incidentService = {
         .insert(insertData)
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(id, name),
-          reporter:employees!incidents_reporter_id_fkey(id, name)
+          employee:users!employee_id(id, full_name),
+        reporter:users!reporter_id(id, full_name)
         `)
         .single();
 
@@ -133,13 +133,13 @@ export const incidentService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.name || '',
+        employeeName: data.employee?.full_name || '',
         type: data.type,
         severity: data.severity,
         description: data.description,
         incidentDate: data.incident_date,
         reporterId: data.reporter_id,
-        reporterName: data.reporter?.name || '',
+        reporterName: data.reporter?.full_name || '',
         status: data.status,
         createdAt: data.created_at,
         updatedAt: data.updated_at
@@ -171,8 +171,8 @@ export const incidentService = {
         .eq('id', id)
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(id, name),
-          reporter:employees!incidents_reporter_id_fkey(id, name)
+          employee:users!employee_id(id, full_name),
+        reporter:users!reporter_id(id, full_name)
         `)
         .single();
 
@@ -181,13 +181,13 @@ export const incidentService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.name || '',
+        employeeName: data.employee?.full_name || '',
         type: data.type,
         severity: data.severity,
         description: data.description,
         incidentDate: data.incident_date,
         reporterId: data.reporter_id,
-        reporterName: data.reporter?.name || '',
+        reporterName: data.reporter?.full_name || '',
         status: data.status,
         createdAt: data.created_at,
         updatedAt: data.updated_at

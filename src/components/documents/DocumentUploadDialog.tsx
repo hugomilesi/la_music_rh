@@ -10,6 +10,7 @@ import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 interface DocumentUploadDialogProps {
   open: boolean;
@@ -251,7 +252,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
               id="expiryDate"
               value={formData.expiryDate}
               onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-              min={new Date().toISOString().split('T')[0]}
+              min={formatDateToLocal(new Date())}
             />
           </div>
 

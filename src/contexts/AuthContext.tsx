@@ -17,10 +17,17 @@ interface Profile {
   cargo?: string;
   departamento?: string;
   phone?: string;
+  department?: string;
   position?: string;
   bio?: string;
+  birth_date?: string;
+  address?: string;
+  emergency_contact?: string;
+  emergency_phone?: string;
+  start_date?: string;
   status?: string;
   preferences?: any;
+  employee_id?: string | null;
 }
 
 interface AuthContextType {
@@ -86,71 +93,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      // Validate userId before making the request
-      if (!userId || typeof userId !== 'string') {
-        console.warn('Invalid userId provided to fetchProfile:', userId);
-        return;
-      }
-
-      // Check if we have a valid session before making the request
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession || !currentSession.access_token) {
-        console.log('No valid session or access token, skipping profile fetch');
-        return;
-      }
-
-      // Add a timeout to the request to avoid hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .abortSignal(controller.signal)
-          .single();
-
-        clearTimeout(timeoutId);
-
-        if (error) {
-          // Handle specific error codes gracefully
-          if (error.code === 'PGRST116') {
-            // No rows returned - user profile doesn't exist yet
-            console.log('Profile not found for user:', userId);
-            setProfile(null);
-            return;
-          }
-          
-          // Handle authentication errors
-          if (error.message?.includes('JWT') || error.message?.includes('auth')) {
-            console.log('Authentication error fetching profile, user may need to re-login');
-            return;
-          }
-          
-          // Log other errors but don't throw
-          console.log('Error fetching profile (non-critical):', error.message);
-          return;
-        }
-
-        setProfile(data as Profile | null);
-      } catch (requestError) {
-        clearTimeout(timeoutId);
-        throw requestError;
-      }
-    } catch (error) {
-      // Handle network errors and other exceptions
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.log('Network connectivity issue, profile fetch skipped');
-      } else if (error.name === 'AbortError') {
-        console.log('Profile fetch timed out, skipping');
-      } else {
-        console.log('Profile fetch failed (non-critical):', error instanceof Error ? error.message : 'Unknown error');
-      }
-      // Don't set profile to null on network errors to avoid clearing existing data
+  const fetchProfile = async (userId?: string) => {
+    const targetUserId = userId || user?.id;
+    
+    if (!targetUserId) {
+      console.log('🔍 fetchProfile: No user ID available');
+      return;
     }
+
+    console.log('🔍 fetchProfile: Fetching profile for user:', targetUserId);
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', targetUserId)
+      .single();
+
+    if (error) {
+      console.error('❌ fetchProfile: Error fetching profile:', error);
+      return;
+    }
+
+    console.log('✅ fetchProfile: Profile fetched successfully:', data);
+    console.log('🔄 fetchProfile: Setting profile in state...');
+    setProfile(data as Profile);
+    console.log('✅ fetchProfile: Profile state updated');
   };
 
   const clearAuthState = () => {
@@ -351,18 +318,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return { error: 'No user logged in' };
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+    console.log('🔄 updateProfile: Called with updates:', updates);
+    
+    if (!user) {
+      console.error('❌ updateProfile: No user logged in');
+      return { error: 'Usuário não está logado' };
     }
 
-    return { error };
+    try {
+      console.log('🔄 updateProfile: Updating profile for user ID:', user.id);
+      console.log('🔄 updateProfile: Current profile state before update:', profile);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('auth_user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ updateProfile: Error updating profile:', error);
+        return { error: error.message };
+      }
+
+      console.log('✅ updateProfile: Profile updated successfully in database:', data);
+      
+      // Atualizar o estado local imediatamente
+      if (data) {
+        console.log('🔄 updateProfile: Setting updated profile in local state...');
+        setProfile(data);
+        console.log('✅ updateProfile: Profile state updated locally');
+        console.log('🔄 updateProfile: New profile state:', data);
+      }
+      
+      // Buscar o perfil atualizado para garantir sincronização
+      console.log('🔄 updateProfile: Fetching profile to ensure sync...');
+      await fetchProfile(user.id);
+      console.log('✅ updateProfile: Profile sync completed');
+      
+      return { data };
+    } catch (error) {
+      console.error('❌ updateProfile: Unexpected error:', error);
+      return { error: 'Erro inesperado ao atualizar perfil' };
+    }
   };
 
   const resendConfirmation = async (email: string) => {

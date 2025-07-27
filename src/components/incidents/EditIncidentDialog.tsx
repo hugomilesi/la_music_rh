@@ -25,18 +25,19 @@ import { useIncidents } from '@/contexts/IncidentsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 interface EditIncidentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   incident: {
     id: string;
-    employee?: string;
+    employeeId?: string;
     type: string;
     severity: 'leve' | 'moderado' | 'grave';
     description: string;
     incidentDate: string;
-    reporter?: string;
+    reporterId?: string;
     status: 'ativo' | 'resolvido' | 'arquivado';
   } | null;
 }
@@ -66,25 +67,34 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
-      employeeId: incident?.employee || '',
+      employeeId: incident?.employeeId || '',
       type: incident?.type || '',
       severity: incident?.severity || 'leve',
       description: incident?.description || '',
       incidentDate: incident?.incidentDate || '',
-      reporterId: incident?.reporter || '',
+      reporterId: incident?.reporterId || '',
       status: incident?.status || 'ativo'
     }
   });
 
   React.useEffect(() => {
     if (incident) {
+      // Format date to YYYY-MM-DD for date input
+      let formattedDate = incident.incidentDate;
+      if (incident.incidentDate) {
+        const date = new Date(incident.incidentDate);
+        if (!isNaN(date.getTime())) {
+          formattedDate = formatDateToLocal(date);
+        }
+      }
+      
       form.reset({
-        employeeId: incident.employee || '',
+        employeeId: incident.employeeId || '',
         type: incident.type,
         severity: incident.severity,
         description: incident.description,
-        incidentDate: incident.incidentDate,
-        reporterId: incident.reporter || '',
+        incidentDate: formattedDate,
+        reporterId: incident.reporterId || '',
         status: incident.status
       });
     }
@@ -114,7 +124,37 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   const onSubmit = (data: IncidentFormData) => {
     if (!incident) return;
     
-    updateIncident(incident.id, data);
+    // Validate that required UUIDs are not empty
+    if (!data.employeeId || data.employeeId.trim() === '') {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, selecione um colaborador.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!data.reporterId || data.reporterId.trim() === '') {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, selecione o responsável pelo registro.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Map form data to incident format
+    const updateData = {
+      employeeId: data.employeeId,
+      type: data.type,
+      severity: data.severity,
+      description: data.description,
+      incidentDate: data.incidentDate,
+      reporterId: data.reporterId,
+      status: data.status
+    };
+    
+    updateIncident(incident.id, updateData);
     
     toast({
       title: "Ocorrência atualizada",

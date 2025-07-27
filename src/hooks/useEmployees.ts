@@ -19,13 +19,19 @@ export const useEmployees = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('employees')
-          .select('id, name, department, position, status')
-          .order('name');
+          .from('users')
+          .select('id, full_name, department, position, status')
+          .order('full_name');
 
         if (error) throw error;
 
-        setEmployees(data || []);
+        setEmployees(data?.map(user => ({
+          id: user.id,
+          name: user.full_name,
+          department: user.department,
+          position: user.position,
+          status: user.status
+        })) || []);
       } catch (err) {
         console.error('Erro ao buscar funcionários:', err);
         setError(err instanceof Error ? err : new Error('Erro desconhecido ao buscar funcionários'));
@@ -38,11 +44,11 @@ export const useEmployees = () => {
 
     // Inscrever-se para atualizações em tempo real
     const subscription = supabase
-      .channel('employees-changes')
+      .channel('users-changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'employees'
+        table: 'users'
       }, () => {
         fetchEmployees();
       })

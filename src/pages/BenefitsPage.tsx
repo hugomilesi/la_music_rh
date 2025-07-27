@@ -43,6 +43,8 @@ const BenefitsPage: React.FC = () => {
     denyRenewal,
     extendRenewal
   } = useBenefits();
+  
+
   const [showNewBenefitDialog, setShowNewBenefitDialog] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);

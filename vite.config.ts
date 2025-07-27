@@ -19,4 +19,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    port: 8080,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
 }));
+
+// Note: For SPA routing to work properly in production,
+// make sure your server is configured to serve index.html
+// for all routes that don't match static files

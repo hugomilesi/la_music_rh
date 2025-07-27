@@ -18,7 +18,7 @@ interface DeleteUserDialogProps {
   user: SystemUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUserDelete: (id: number) => void;
+  onUserDelete: (user: SystemUser) => void;
 }
 
 export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
@@ -35,10 +35,8 @@ export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
 
     setIsLoading(true);
     try {
-      // Chamar a função real de exclusão
-      await deleteSystemUser(String(user.id));
-      
-      onUserDelete(user.id);
+      // Call the parent's delete handler which handles the actual deletion
+      onUserDelete(user);
       
       toast({
         title: "Usuário removido",

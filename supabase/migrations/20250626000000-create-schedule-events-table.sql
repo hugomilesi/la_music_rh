@@ -7,7 +7,7 @@ BEGIN
         CREATE TABLE public.schedule_events (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             title TEXT NOT NULL,
-            employee_id UUID REFERENCES public.employees(id),
+            employee_id UUID REFERENCES public.users(auth_user_id),
             unit TEXT,
             event_date DATE NOT NULL,
             start_time TIME NOT NULL,

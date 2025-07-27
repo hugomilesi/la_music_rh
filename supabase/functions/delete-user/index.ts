@@ -1,89 +1,116 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-interface DeleteUserRequest {
-  userId: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Initialize Supabase Admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
-    const { userId }: DeleteUserRequest = await req.json();
-
+    const { userId } = await req.json()
+    
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'User ID is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
     }
 
-    // First, delete the profile record
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    if (profileError) {
-      console.error('Error deleting profile:', profileError);
+    console.log(`Starting deletion process for user: ${userId}`)
+    
+    // Check if user exists in auth.users
+    const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(userId)
+    if (authError || !authUser.user) {
+      console.log(`User ${userId} not found in auth.users`)
       return new Response(
-        JSON.stringify({ error: 'Failed to delete user profile' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+        JSON.stringify({ error: 'User not found in authentication system' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
     }
 
-    // Then, delete the auth user
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const deletedFrom = []
+    const errors = []
 
-    if (authError) {
-      console.error('Error deleting auth user:', authError);
-      // If auth deletion fails, we should try to restore the profile
-      // But for now, we'll just log the error and continue
-      console.warn('Profile was deleted but auth user deletion failed');
+    // Delete from unified users table
+    try {
+      const { error: userError } = await supabaseClient
+        .from('users')
+        .delete()
+        .eq('auth_user_id', userId)
+      
+      if (userError) {
+        console.error('Error deleting from users:', userError)
+        errors.push(`users: ${userError.message}`)
+      } else {
+        deletedFrom.push('users')
+        console.log(`Deleted user ${userId} from users table`)
+      }
+    } catch (error) {
+      console.error('Exception deleting from users:', error)
+      errors.push(`users: ${error.message}`)
     }
+
+    // Delete from auth.users (this should be last)
+    try {
+      const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(userId)
+      
+      if (authDeleteError) {
+        console.error('Error deleting from auth.users:', authDeleteError)
+        errors.push(`auth.users: ${authDeleteError.message}`)
+      } else {
+        deletedFrom.push('auth.users')
+        console.log(`Deleted user ${userId} from auth.users`)
+      }
+    } catch (error) {
+      console.error('Exception deleting from auth.users:', error)
+      errors.push(`auth.users: ${error.message}`)
+    }
+
+    const success = deletedFrom.length > 0
+    const message = success 
+      ? `User deleted successfully from: ${deletedFrom.join(', ')}` 
+      : 'Failed to delete user from any table'
+
+    console.log(`Deletion process completed for user ${userId}:`, {
+      success,
+      deletedFrom,
+      errors
+    })
 
     return new Response(
-      JSON.stringify({ success: true, message: 'User deleted successfully' }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({
+        success,
+        message,
+        deletedFrom,
+        errors: errors.length > 0 ? errors : undefined,
+        userId
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: success ? 200 : 500
       }
-    );
-
+    )
   } catch (error) {
-    console.error('Error in delete-user function:', error);
+    console.error('Error in delete-user function:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
       }
-    );
+    )
   }
-});
+})

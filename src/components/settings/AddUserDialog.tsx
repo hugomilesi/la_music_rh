@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { CreateSystemUserData } from '@/types/systemUser';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -22,11 +23,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
 import { createUserWithAutoPassword } from '@/services/userManagementService';
-import { CreateUserFormData } from '@/types/userFormSchemas';
+import { CreateUserFormData, createUserSchema } from '@/types/userFormSchemas';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { UserCreatedModal } from './UserCreatedModal';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -62,9 +65,12 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const { toast } = useToast();
   const { checkPermission } = usePermissions();
   const [isLoading, setIsLoading] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [createdUserData, setCreatedUserData] = useState<any>(null);
   
   // Move useForm to top level - before any conditional returns
-  const form = useForm<UserFormData>({
+  const form = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -72,15 +78,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
       department: '',
       phone: '',
       position: '',
-      status: 'active',
-      permissions: {
-        canManageEmployees: false,
-        canManagePayroll: false,
-        canViewReports: false,
-        canManageSettings: false,
-        canManageUsers: false,
-        canManageEvaluations: false
-      }
+      status: 'active'
     }
   });
   
@@ -108,26 +106,51 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     );
   }
 
-  const onSubmit = async (data: UserFormData) => {
+  const onSubmit = async (data: CreateUserFormData) => {
     setIsLoading(true);
     
     try {
-      const userData: CreateUserFormData = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        position: data.position,
-        department: data.department,
-        role: data.role,
-        status: data.status
-      };
+      // Validação adicional no frontend
+      if (!data.name?.trim()) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Nome completo é obrigatório.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
       
-      const result = await createUserWithAutoPassword(userData);
+      if (!data.email?.trim()) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Email é obrigatório.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!data.position?.trim()) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Cargo é obrigatório.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const result = await createUserWithAutoPassword(data);
       
       if (result.success && result.user) {
-        toast({
-          title: "Usuário criado com sucesso!",
-          description: `Usuário ${result.user.name} foi criado. Senha temporária: ${result.user.password}`,
+        // Prepare user data for the credentials modal
+        setCreatedUserData({
+          name: result.user.name,
+          email: result.user.email,
+          password: result.user.password,
+          position: data.position,
+          department: data.department
         });
         
         // Call the parent callback to refresh the user list
@@ -135,26 +158,65 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
           name: result.user.name,
           email: result.user.email,
           role: data.role,
-          department: data.department,
+          department: data.department || '',
           position: data.position,
-          phone: data.phone,
+          phone: data.phone || '',
           status: data.status
         });
         
         form.reset();
         onOpenChange(false);
+        setShowCredentialsModal(true);
       } else {
+        // Tratamento específico de erros da API
+        let errorTitle = "Erro ao criar usuário";
+        let errorMessage = result.error || "Ocorreu um erro inesperado.";
+        
+        // Verificar tipos específicos de erro
+        if (result.error) {
+          if (result.error.includes('Email já cadastrado no sistema')) {
+            errorTitle = "Email já cadastrado";
+            errorMessage = "Este email já está sendo usado por outro usuário. Por favor, use um email diferente.";
+          } else if (result.error.includes('Por favor, corrija os seguintes campos:')) {
+            errorTitle = "Dados inválidos";
+            errorMessage = result.error;
+          } else if (result.error.includes('Invalid email')) {
+            errorTitle = "Email inválido";
+            errorMessage = "Por favor, insira um endereço de email válido.";
+          } else if (result.error.includes('Password')) {
+            errorTitle = "Erro na senha";
+            errorMessage = "Erro ao gerar senha temporária. Tente novamente.";
+          }
+        }
+        
         toast({
-          title: "Erro ao criar usuário",
-          description: result.error || "Ocorreu um erro inesperado.",
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
+      
+      // Tratamento de erros de rede ou outros erros inesperados
+      let errorMessage = "Ocorreu um erro inesperado. Verifique os dados e tente novamente.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Email já cadastrado no sistema')) {
+          toast({
+            title: "Email já cadastrado",
+            description: "Este email já está sendo usado por outro usuário. Por favor, use um email diferente.",
+            variant: "destructive"
+          });
+          return;
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+        }
+      }
+      
       toast({
         title: "Erro ao criar usuário",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -163,6 +225,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -386,5 +449,15 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
         </Form>
       </DialogContent>
     </Dialog>
+    
+    {/* Modal de credenciais do usuário criado */}
+    {createdUserData && (
+      <UserCreatedModal
+        open={showCredentialsModal}
+        onOpenChange={setShowCredentialsModal}
+        userData={createdUserData}
+      />
+    )}
+    </>
   );
 };

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDocuments } from '@/contexts/DocumentContext';
 import { Document } from '@/types/document';
 import { toast } from 'sonner';
+import { formatDateToLocal } from '@/utils/dateUtils';
 
 interface EditDocumentDialogProps {
   document: Document | null;
@@ -32,7 +33,7 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
     if (document) {
       setName(document.document || '');
       setNotes(document.notes || '');
-      setExpiryDate(document.expiryDate ? new Date(document.expiryDate).toISOString().split('T')[0] : '');
+      setExpiryDate(document.expiryDate ? formatDateToLocal(new Date(document.expiryDate)) : '');
     }
   }, [document]);
 

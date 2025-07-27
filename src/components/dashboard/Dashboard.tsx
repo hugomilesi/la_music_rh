@@ -191,7 +191,7 @@ export const Dashboard: React.FC = () => {
               
               <StatCard
                 title="Avaliações em Andamento"
-                value="15"
+                value={metrics.ongoingEvaluations.toString()}
                 subtitle="Em processo de avaliação"
                 icon={Target}
                 color="orange"
@@ -200,7 +200,7 @@ export const Dashboard: React.FC = () => {
               
               <StatCard
                 title="Gamificação"
-                value="89"
+                value={metrics.gamificationPoints.toString()}
                 subtitle="Pontos distribuídos"
                 icon={Award}
                 color="purple"

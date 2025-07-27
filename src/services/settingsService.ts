@@ -3,71 +3,56 @@ import { SystemUser, RoleData, SystemStats } from '@/types/settings';
 import { updateSystemUserAsAdmin } from './adminService';
 
 /**
- * Fetch all system users from profiles table with email from auth.users
+ * Fetch all system users from unified users table
  */
 export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
   try {
-    // First get profiles data
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
+    // Get all users from the unified users table (excluding soft deleted ones)
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
       .select(`
         id,
+        auth_user_id,
+        email,
         full_name,
         role,
-        department,
         position,
+        department,
         phone,
         status,
-        preferences,
         created_at,
-        updated_at
+        last_login,
+        preferences
       `)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      throw profilesError;
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      throw usersError;
     }
 
-    // Get emails from auth.users for each profile
-    const usersWithEmails = await Promise.all(
-      profilesData.map(async (profile: any) => {
-        try {
-          const { data: authData, error: authError } = await supabase.auth.admin.getUserById(profile.id);
-          
-          return {
-            id: profile.id,
-            name: profile.full_name || 'Nome não informado',
-            email: authData?.user?.email || 'Email não disponível',
-            role: profile.role || 'usuario',
-            position: profile.position || 'Não informado',
-            department: profile.department || 'Não informado',
-            phone: profile.phone || 'Não informado',
-            status: profile.status || 'active',
-            lastAccess: 'Não disponível', // Would need to track this separately
-            createdAt: new Date(profile.created_at).toLocaleDateString('pt-BR'),
-            permissions: getPermissionsFromRole(profile.role, profile.preferences)
-          };
-        } catch (error) {
-          console.error(`Error fetching email for user ${profile.id}:`, error);
-          return {
-            id: profile.id,
-            name: profile.full_name || 'Nome não informado',
-            email: 'Email não disponível',
-            role: profile.role || 'usuario',
-            position: profile.position || 'Não informado',
-            department: profile.department || 'Não informado',
-            phone: profile.phone || 'Não informado',
-            status: profile.status || 'active',
-            lastAccess: 'Não disponível',
-            createdAt: new Date(profile.created_at).toLocaleDateString('pt-BR'),
-            permissions: getPermissionsFromRole(profile.role, profile.preferences)
-          };
-        }
-      })
-    );
+    if (!usersData) {
+      return [];
+    }
 
-    return usersWithEmails;
+    // Transform data to SystemUser format
+    const systemUsers: SystemUser[] = usersData.map((user: any) => ({
+      id: user.id,
+      name: user.full_name || 'Usuário sem nome',
+      email: user.email,
+      role: user.role || 'usuario',
+      position: user.position || 'Não informado',
+      department: user.department || 'Não informado',
+      phone: user.phone || 'Não informado',
+      status: user.status === 'ativo' ? 'active' : 'inactive',
+      lastAccess: user.last_login ? new Date(user.last_login).toLocaleDateString('pt-BR') : 'Nunca acessou',
+      createdAt: new Date(user.created_at).toLocaleDateString('pt-BR'),
+      permissions: [], // Permissions now managed by role_permissions table
+      hasProfile: true
+    }));
+
+    return systemUsers;
   } catch (error) {
     console.error('Error in fetchSystemUsers:', error);
     throw error;
@@ -75,30 +60,37 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
 };
 
 /**
- * Fetch roles data from employees table
+ * Fetch roles data from unified users table
  */
 export const fetchRolesData = async (): Promise<RoleData[]> => {
   try {
     const { data, error } = await supabase
-      .from('employees')
+      .from('users')
       .select('position, department')
-      .eq('status', 'active');
+      .eq('status', 'ativo')
+      .is('deleted_at', null);
 
     if (error) {
       console.error('Error fetching roles data:', error);
       throw error;
     }
 
-    // Group by position and department, count employees
+    if (!data) {
+      return [];
+    }
+
+    // Group by position and department, count users
     const roleMap = new Map<string, { department: string; count: number }>();
     
-    data.forEach((employee: any) => {
-      const key = `${employee.position}-${employee.department}`;
+    data.forEach((user: any) => {
+      const position = user.position || 'Não informado';
+      const department = user.department || 'Não informado';
+      const key = `${position}-${department}`;
       if (roleMap.has(key)) {
         roleMap.get(key)!.count++;
       } else {
         roleMap.set(key, {
-          department: employee.department,
+          department: department,
           count: 1
         });
       }
@@ -125,45 +117,37 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
  */
 export const fetchSystemStats = async (): Promise<SystemStats> => {
   try {
-    // Get total employees
-    const { count: employeeCount, error: employeeError } = await supabase
-      .from('employees')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
-
-    if (employeeError) {
-      console.error('Error fetching employee count:', employeeError);
-    }
-
-    // Get total users
+    // Get total users from unified table
     const { count: userCount, error: userError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
+      .eq('status', 'ativo')
+      .is('deleted_at', null);
 
     if (userError) {
       console.error('Error fetching user count:', userError);
     }
 
-    // Get unique units count
-    const { data: unitsData, error: unitsError } = await supabase
-      .from('employees')
-      .select('units')
-      .eq('status', 'active');
+    // Get unique departments count as "units"
+    const { data: departmentsData, error: departmentsError } = await supabase
+      .from('users')
+      .select('department')
+      .eq('status', 'ativo')
+      .is('deleted_at', null);
 
     let activeUnits = 0;
-    if (!unitsError && unitsData) {
-      const allUnits = new Set<string>();
-      unitsData.forEach((employee: any) => {
-        if (employee.units && Array.isArray(employee.units)) {
-          employee.units.forEach((unit: string) => allUnits.add(unit));
+    if (!departmentsError && departmentsData) {
+      const allDepartments = new Set<string>();
+      departmentsData.forEach((user: any) => {
+        if (user.department && user.department !== 'Não informado') {
+          allDepartments.add(user.department);
         }
       });
-      activeUnits = allUnits.size;
+      activeUnits = allDepartments.size;
     }
 
     return {
-      totalEmployees: employeeCount || 0,
+      totalEmployees: userCount || 0, // Using same count for both since we unified the tables
       totalUsers: userCount || 0,
       activeUnits,
       lastBackup: new Date().toLocaleDateString('pt-BR') + ' 02:00'
@@ -179,45 +163,62 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
   }
 };
 
+// Removed getPermissionsFromRole function - permissions now managed by role_permissions table
+
 /**
- * Get permissions array based on role and preferences
+ * List all users in the system with synchronization status
  */
-function getPermissionsFromRole(role: string, preferences: any): string[] {
-  const basePermissions: string[] = [];
-  
-  switch (role) {
-    case 'admin':
-      return ['employees', 'documents', 'schedule', 'evaluations', 'settings', 'reports', 'users'];
-    case 'coordenador':
-      return ['employees', 'documents', 'schedule', 'evaluations', 'reports'];
-    case 'professor':
-      return ['documents', 'schedule'];
-    case 'usuario':
-    default:
-      return ['documents'];
+export const listAllSystemUsers = async () => {
+  try {
+    console.log('📋 Fetching all system users...');
+    
+    const { data, error } = await supabase.functions.invoke('list-all-users');
+
+    if (error) {
+      console.error('❌ Error calling list-all-users function:', error);
+      throw new Error(`Erro ao buscar usuários: ${error.message}`);
+    }
+
+    if (!data.success) {
+      console.error('❌ List users function returned error:', data.error);
+      throw new Error(data.error || 'Erro desconhecido ao buscar usuários');
+    }
+
+    console.log('✅ Users fetched successfully:', data.stats);
+    return data;
+  } catch (error) {
+    console.error('❌ Error in listAllSystemUsers:', error);
+    throw error;
   }
-}
+};
 
 /**
  * Delete a system user
  */
 export const deleteSystemUser = async (userId: string): Promise<void> => {
   try {
+    console.log('🗑️ deleteSystemUser called with userId:', userId);
+    
+    // Use the Edge Function to properly delete user from all tables
     const { data, error } = await supabase.functions.invoke('delete-user', {
-      body: { userId }
+      body: {
+        userId: userId
+      }
     });
 
     if (error) {
-      console.error('Error calling delete-user function:', error);
-      throw error;
+      console.error('❌ Error calling delete-user function:', error);
+      throw new Error(`Erro ao deletar usuário: ${error.message}`);
     }
 
-    if (data?.error) {
-      console.error('Error from delete-user function:', data.error);
-      throw new Error(data.error);
+    if (!data.success) {
+      console.error('❌ Delete user function returned error:', data.error);
+      throw new Error(data.error || 'Erro desconhecido ao deletar usuário');
     }
+
+    console.log('✅ User deleted successfully from all tables:', data.deletedFrom);
   } catch (error) {
-    console.error('Error in deleteSystemUser:', error);
+    console.error('❌ Error in deleteSystemUser:', error);
     throw error;
   }
 };
@@ -229,21 +230,40 @@ export const updateSystemUser = async (userId: string, updates: Partial<SystemUs
   try {
     console.log('updateSystemUser called with:', { userId, updates });
     
-    const updateData = {
+    // Update user data in the unified users table
+    const userUpdateData = {
       full_name: updates.name,
       role: updates.role,
       department: updates.department,
       position: updates.position,
       phone: updates.phone,
-      status: updates.status
+      status: updates.status === 'active' ? 'ativo' : 'inativo',
+      updated_at: new Date().toISOString()
     };
     
-    console.log('Update data being sent to admin service:', updateData);
-    
-    // Use the admin service to update the user
-    await updateSystemUserAsAdmin(userId, updateData);
-    
-    console.log('User updated successfully via admin service');
+    // Try to update by auth_user_id first, then by id if that fails
+    let { error: userError } = await supabase
+      .from('users')
+      .update(userUpdateData)
+      .eq('auth_user_id', userId);
+
+    // If no rows were affected and userId looks like a number, try updating by id
+    if (userError?.code === 'PGRST116' || (!userError && userId.match(/^\d+$/))) {
+      const { error: idError } = await supabase
+        .from('users')
+        .update(userUpdateData)
+        .eq('id', parseInt(userId));
+      
+      if (idError) {
+        console.error('Error updating user by id:', idError);
+        throw idError;
+      }
+    } else if (userError) {
+      console.error('Error updating user by auth_user_id:', userError);
+      throw userError;
+    }
+
+    console.log('User updated successfully');
   } catch (error) {
     console.error('Error in updateSystemUser:', error);
     throw error;

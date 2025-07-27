@@ -1,6 +1,6 @@
 
 -- Primeiro, vamos inserir alguns funcionários de demonstração se eles não existirem
-INSERT INTO employees (name, email, phone, position, department, units, start_date, status) 
+INSERT INTO users (full_name, email, phone, position, department, units, start_date, status) 
 VALUES 
   ('Maria Silva', 'maria.silva@empresa.com', '(21) 99999-0001', 'Gerente Geral', 'Administração', '{"campo-grande"}', '2022-01-15', 'active'),
   ('João Santos', 'joao.santos@empresa.com', '(21) 99999-0002', 'Coordenador Pedagógico', 'Educação', '{"recreio"}', '2022-03-10', 'active'),
@@ -38,8 +38,8 @@ WITH payroll_data AS (
 ),
 employee_payroll_data AS (
   SELECT 
-    e.id as colaborador_id,
-    e.name,
+    e.auth_user_id as colaborador_id,
+    e.full_name as name,
     e.position,
     p.payroll_id,
     CASE 
@@ -97,9 +97,9 @@ employee_payroll_data AS (
       ELSE 'Operacional'
     END as classificacao,
     e.position as funcao
-  FROM employees e
+  FROM users e
   CROSS JOIN payroll_data p
-  WHERE e.status = 'active'
+  WHERE e.status = 'ativo'
 )
 INSERT INTO folha_pagamento (
   payroll_id, colaborador_id, classificacao, funcao,
@@ -121,7 +121,7 @@ ON CONFLICT DO NOTHING;
 WITH folha_entries AS (
   SELECT fp.id, e.units, (fp.salario_base + COALESCE(fp.bonus, 0)) as total_amount
   FROM folha_pagamento fp
-  JOIN employees e ON fp.colaborador_id = e.id
+  JOIN users e ON fp.colaborador_id = e.auth_user_id
   WHERE fp.mes = 1 AND fp.ano = 2025
 ),
 unit_allocations AS (

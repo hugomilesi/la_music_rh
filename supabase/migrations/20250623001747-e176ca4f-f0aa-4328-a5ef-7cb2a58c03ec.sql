@@ -2,7 +2,7 @@
 -- Create documents table
 CREATE TABLE public.documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  employee_id UUID NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
+  employee_id UUID NOT NULL REFERENCES public.users(auth_user_id) ON DELETE CASCADE,
   document_name TEXT NOT NULL,
   document_type TEXT NOT NULL,
   file_name TEXT NOT NULL,

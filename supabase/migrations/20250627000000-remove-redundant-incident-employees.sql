@@ -1,6 +1,6 @@
 -- Migração para remover a tabela incident_employees redundante
 -- Esta tabela não está sendo usada no código e duplica funcionalidade
--- já que a tabela incidents já tem relacionamento direto com employees
+-- já que a tabela incidents já tem relacionamento direto com users
 
 -- Verificar se a tabela incident_employees existe antes de removê-la
 DO $$ 

@@ -124,10 +124,10 @@ export const notificationService = {
    */
   async sendNotificationEmail(notification: Notification): Promise<{ success: boolean; error?: string }> {
     try {
-      // Get recipient emails from employees table
+      // Get recipient emails from users table
       const { data: employees, error: employeesError } = await supabase
-        .from('employees')
-        .select('email, name')
+        .from('users')
+        .select('email, full_name')
         .in('id', notification.recipients);
 
       if (employeesError) {
@@ -150,7 +150,7 @@ export const notificationService = {
       
       if (notification.type === 'aniversario') {
         // For birthday notifications, we need to get the birthday info
-        const employeeName = employees[0]?.name || 'Colaborador';
+        const employeeName = employees[0]?.full_name || 'Colaborador';
         emailResult = await emailService.sendBirthdayEmail({
           to: emailAddresses,
           employeeName,
@@ -201,7 +201,7 @@ export const notificationService = {
         .from('vacation_requests')
         .select(`
           *,
-          employee:employees!vacation_requests_employee_id_fkey(name, email)
+          users(full_name, email)
         `)
         .eq('status', 'aprovado')
         .gte('start_date', new Date().toISOString().split('T')[0])
@@ -218,7 +218,7 @@ export const notificationService = {
 
       // Get HR emails to notify
       const { data: hrEmployees, error: hrError } = await supabase
-        .from('employees')
+        .from('users')
         .select('email')
         .eq('department', 'RH')
         .eq('status', 'ativo');
@@ -239,7 +239,7 @@ export const notificationService = {
 
         const emailResult = await emailService.sendVacationAlertEmail({
           to: hrEmails,
-          employeeName: vacation.employee?.name || 'Colaborador',
+          employeeName: vacation.users?.full_name || 'Colaborador',
           startDate: vacation.start_date,
           endDate: vacation.end_date,
           daysRemaining
@@ -248,7 +248,7 @@ export const notificationService = {
         if (emailResult.success) {
           sent++;
         } else {
-          errors.push(`Erro ao enviar alerta para ${vacation.employee?.name}: ${emailResult.error}`);
+          errors.push(`Erro ao enviar alerta para ${vacation.users?.full_name}: ${emailResult.error}`);
         }
       }
 
@@ -270,8 +270,8 @@ export const notificationService = {
 
       // Get employees with birthday today
       const { data: employees, error } = await supabase
-        .from('employees')
-        .select('id, name, email, birth_date')
+        .from('users')
+        .select('id, full_name, email, birth_date')
         .eq('status', 'ativo')
         .not('birth_date', 'is', null);
 
@@ -297,7 +297,7 @@ export const notificationService = {
 
       // Get all employee emails to notify about birthdays
       const { data: allEmployees, error: allError } = await supabase
-        .from('employees')
+        .from('users')
         .select('email')
         .eq('status', 'ativo')
         .not('email', 'is', null);
@@ -314,7 +314,7 @@ export const notificationService = {
       for (const employee of birthdayEmployees) {
         const emailResult = await emailService.sendBirthdayEmail({
           to: allEmails,
-          employeeName: employee.name,
+          employeeName: employee.full_name,
           birthdayDate: employee.birth_date
         });
 
@@ -323,11 +323,11 @@ export const notificationService = {
           
           // Create notification record
           await this.createNotification({
-            title: `🎉 Aniversário de ${employee.name}`,
-            message: `Hoje é aniversário de ${employee.name}! Não esqueça de parabenizar.`,
+            title: `🎉 Aniversário de ${employee.full_name}`,
+            message: `Hoje é aniversário de ${employee.full_name}! Não esqueça de parabenizar.`,
             type: 'aniversario',
             recipients: [employee.id],
-            recipientNames: [employee.name],
+            recipientNames: [employee.full_name],
             channel: 'email',
             status: 'enviado',
             sentAt: new Date().toISOString(),
@@ -338,7 +338,7 @@ export const notificationService = {
             }
           });
         } else {
-          errors.push(`Erro ao enviar aniversário de ${employee.name}: ${emailResult.error}`);
+          errors.push(`Erro ao enviar aniversário de ${employee.full_name}: ${emailResult.error}`);
         }
       }
 

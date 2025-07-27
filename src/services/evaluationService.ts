@@ -22,8 +22,8 @@ export const evaluationService = {
         meeting_time,
         follow_up_actions,
         confidential,
-        employees!evaluations_employee_id_fkey(name, position),
-        evaluator:employees!evaluations_evaluator_id_fkey(name)
+        employee:users!employee_id(full_name, position),
+        evaluator:users!evaluator_id(full_name)
       `)
       .order('date', { ascending: false });
     
@@ -37,9 +37,9 @@ export const evaluationService = {
       return {
         id: evaluation.id,
         employeeId: evaluation.employee_id,
-        employee: evaluation.employees?.name || 'Unknown',
-        role: evaluation.employees?.position || 'Unknown',
-        evaluator: evaluation.evaluator?.name || 'Unknown',
+        employee: evaluation.users?.full_name || 'Unknown',
+        role: evaluation.users?.position || 'Unknown',
+        evaluator: evaluation.evaluator?.full_name || 'Unknown',
         evaluatorId: evaluation.evaluator_id,
         type: this.mapEvaluationType(evaluation.type),
         period: evaluation.period,
@@ -96,8 +96,8 @@ export const evaluationService = {
         meeting_time,
         follow_up_actions,
         confidential,
-        employees!evaluations_employee_id_fkey(name, position),
-        evaluator:employees!evaluations_evaluator_id_fkey(name)
+        employee:users!employee_id(full_name, position),
+        evaluator:users!evaluator_id(full_name)
       `)
       .single();
 
@@ -110,9 +110,9 @@ export const evaluationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employee: data.employees?.name || 'Unknown',
-      role: data.employees?.position || 'Unknown',
-      evaluator: data.evaluator?.name || 'Unknown',
+      employee: data.users?.full_name || 'Unknown',
+      role: data.users?.position || 'Unknown',
+      evaluator: data.evaluator?.full_name || 'Unknown',
       evaluatorId: data.evaluator_id,
       type: this.mapEvaluationType(data.type),
       period: data.period,
@@ -203,23 +203,23 @@ export const evaluationService = {
 
     // Get employee and evaluator information separately
     const { data: employeeData } = await supabase
-      .from('employees')
-      .select('name, position')
+      .from('users')
+      .select('full_name, position')
       .eq('id', data.employee_id)
       .single();
 
     const { data: evaluatorData } = await supabase
-      .from('employees')
-      .select('name')
+      .from('users')
+      .select('full_name')
       .eq('id', data.evaluator_id)
       .single();
 
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employee: employeeData?.name || 'Unknown',
+      employee: employeeData?.full_name || 'Unknown',
       role: employeeData?.position || 'Unknown',
-      evaluator: evaluatorData?.name || 'Unknown',
+      evaluator: evaluatorData?.full_name || 'Unknown',
       evaluatorId: data.evaluator_id,
       type: this.mapEvaluationType(data.type),
       period: data.period,

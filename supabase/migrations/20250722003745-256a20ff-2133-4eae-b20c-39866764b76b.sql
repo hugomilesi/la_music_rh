@@ -30,7 +30,7 @@ SELECT
   fp.id,
   fp.payroll_id,
   fp.colaborador_id,
-  e.name as collaborator_name,
+  e.full_name as collaborator_name,
   e.email as collaborator_email,
   e.phone as collaborator_phone,
   fp.classificacao,
@@ -58,7 +58,7 @@ SELECT
   fp.created_at,
   fp.updated_at
 FROM public.folha_pagamento fp
-LEFT JOIN public.employees e ON fp.colaborador_id = e.id
+LEFT JOIN public.users e ON fp.colaborador_id = e.auth_user_id
 LEFT JOIN public.payrolls p ON fp.payroll_id = p.id;
 
 -- Create allocation summary view
@@ -66,7 +66,7 @@ CREATE OR REPLACE VIEW public.payroll_allocation_summary AS
 SELECT 
   fr.folha_pagamento_id,
   fp.colaborador_id,
-  e.name as collaborator_name,
+  e.full_name as collaborator_name,
   STRING_AGG(
     CASE 
       WHEN fr.valor > 0 THEN u.nome
@@ -78,9 +78,9 @@ SELECT
 FROM public.folha_rateio fr
 JOIN public.folha_pagamento fp ON fr.folha_pagamento_id = fp.id
 JOIN public.unidades u ON fr.unidade_id = u.id
-LEFT JOIN public.employees e ON fp.colaborador_id = e.id
+LEFT JOIN public.users e ON fp.colaborador_id = e.auth_user_id
 WHERE fr.valor > 0
-GROUP BY fr.folha_pagamento_id, fp.colaborador_id, e.name;
+GROUP BY fr.folha_pagamento_id, fp.colaborador_id, e.full_name;
 
 -- Create trigger to update timestamps
 CREATE OR REPLACE FUNCTION update_payrolls_updated_at()

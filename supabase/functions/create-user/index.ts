@@ -106,9 +106,9 @@ Deno.serve(async (req: Request) => {
 
     // Check user permissions
     const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
+      .from('users')
       .select('role, preferences')
-      .eq('id', user.id)
+      .eq('auth_user_id', user.id)
       .single();
 
     if (profileError || !profile) {
@@ -166,6 +166,53 @@ Deno.serve(async (req: Request) => {
       role
     } = requestData;
     
+    // Validação de campos obrigatórios
+    const validationErrors: string[] = [];
+    
+    if (!email || email.trim() === '') {
+      validationErrors.push('Email é obrigatório');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validationErrors.push('Email deve ter um formato válido');
+    }
+    
+    if (!password || password.trim() === '') {
+      validationErrors.push('Senha é obrigatória');
+    } else if (password.length < 6) {
+      validationErrors.push('Senha deve ter pelo menos 6 caracteres');
+    }
+    
+    if (!name || name.trim() === '') {
+      validationErrors.push('Nome completo é obrigatório');
+    } else if (name.trim().length < 2) {
+      validationErrors.push('Nome deve ter pelo menos 2 caracteres');
+    }
+    
+    if (!position || position.trim() === '') {
+      validationErrors.push('Cargo é obrigatório');
+    }
+    
+    if (!role || !['admin', 'coordenador', 'professor', 'usuario'].includes(role)) {
+      validationErrors.push('Perfil de usuário é obrigatório e deve ser válido');
+    }
+    
+    if (validationErrors.length > 0) {
+      console.error('Validation errors:', validationErrors);
+      return new Response(
+        JSON.stringify({
+          error: 'Dados inválidos',
+          details: validationErrors,
+          message: `Por favor, corrija os seguintes campos: ${validationErrors.join(', ')}`
+        }),
+        {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        }
+      );
+    }
+    
     console.log('Starting user creation with data:', {
       email,
       name,
@@ -180,70 +227,75 @@ Deno.serve(async (req: Request) => {
     const lastName = nameParts.slice(1).join(' ') || '';
 
     // Create auth user
+    console.log('Creating auth user with email:', email);
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true
     });
 
-    if (authError || !authUser.user) {
-      throw new Error(`Failed to create auth user: ${authError?.message}`);
+    if (authError) {
+      console.error('Auth error details:', {
+        message: authError.message,
+        status: authError.status,
+        code: authError.code,
+        details: authError
+      });
+      
+      // Check if it's an email already exists error
+      if (authError.code === 'email_exists' || authError.message.includes('already been registered')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Email já cadastrado no sistema',
+            message: 'Este email já está sendo usado por outro usuário. Por favor, use um email diferente.',
+            code: 'email_exists'
+          }),
+          {
+            status: 400,
+            headers: { 
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          }
+        );
+      }
+      
+      throw new Error(`Failed to create auth user: ${authError.message} (Code: ${authError.code}, Status: ${authError.status})`);
     }
+
+    if (!authUser.user) {
+      console.error('No user returned from auth creation');
+      throw new Error('Failed to create auth user: No user data returned');
+    }
+
+    console.log('Auth user created successfully:', authUser.user.id);
 
     const userId = authUser.user.id;
 
     try {
-      // Create employee record using the existing RPC function
-      const { data: dbResult, error: employeeError } = await supabaseAdmin
-        .rpc('create_employee', {
-          emp_name: name,
-          emp_email: email,
-          emp_phone: phone || null,
-          emp_position: position,
-          emp_department: department || 'Não informado',
-          emp_units: [],
-          emp_start_date: new Date().toISOString().split('T')[0]
-        });
-
-      if (employeeError) {
-        throw new Error(`Failed to create employee: ${employeeError.message}`);
-      }
-
-      if (!dbResult || dbResult.length === 0) {
-        throw new Error('No result from employee creation');
-      }
-
-      const result = dbResult[0];
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to create employee');
-      }
-
-      // Update employee with user_id
-      const { error: updateError } = await supabaseAdmin
-        .from('employees')
-        .update({ user_id: userId })
-        .eq('id', result.employee_id);
-
-      if (updateError) {
-        console.warn('Failed to update employee with user_id:', updateError.message);
-      }
-
-      // Create profile
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .upsert({
-          id: userId,
+      // Create user record in the unified users table
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          auth_user_id: userId,
+          email: email,
           full_name: name,
-          role,
-          department,
-          position,
-          phone,
-          status: 'active',
+          phone: phone || null,
+          position: position,
+          department: department || 'Não informado',
+          role: role,
+          status: 'ativo',
           preferences: role === 'admin' ? { super_user: true } : {}
-        });
+        })
+        .select()
+        .single();
 
-      if (profileError) {
-        throw new Error(`Failed to create profile: ${profileError.message}`);
+      if (userError) {
+        throw new Error(`Failed to create user: ${userError.message}`);
+      }
+
+      if (!userData) {
+        throw new Error('No result from user creation');
       }
 
       return new Response(

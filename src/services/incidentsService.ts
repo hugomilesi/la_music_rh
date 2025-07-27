@@ -10,8 +10,8 @@ export const incidentsService = {
         .from('incidents')
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(name),
-          reporter:employees!incidents_reporter_id_fkey(name)
+          employee:users!employee_id(full_name),
+        reporter:users!reporter_id(full_name)
         `)
         .order('incident_date', { ascending: false });
       
@@ -49,7 +49,7 @@ export const incidentsService = {
       return data.map(incident => ({
         id: incident.id,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.name || 'Funcionário não encontrado',
+        employeeName: incident.employee?.full_name || 'Funcionário não encontrado',
         type: incident.type,
         severity: incident.severity,
         description: incident.description,
@@ -74,8 +74,8 @@ export const incidentsService = {
         .from('incidents')
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(name),
-          reporter:employees!incidents_reporter_id_fkey(name)
+          employee:users!employee_id(full_name),
+        reporter:users!reporter_id(full_name)
         `)
         .eq('id', id)
         .single();
@@ -90,7 +90,7 @@ export const incidentsService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.name || 'Funcionário não encontrado',
+        employeeName: data.employee?.full_name || 'Funcionário não encontrado',
         type: data.type,
         severity: data.severity,
         description: data.description,
@@ -124,8 +124,8 @@ export const incidentsService = {
         })
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(name),
-          reporter:employees!incidents_reporter_id_fkey(name)
+          employee:users!employee_id(full_name),
+        reporter:users!reporter_id(full_name)
         `)
         .single();
       
@@ -139,7 +139,7 @@ export const incidentsService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.name || 'Funcionário não encontrado',
+        employeeName: data.employee?.full_name || 'Funcionário não encontrado',
         type: data.type,
         severity: data.severity,
         description: data.description,
@@ -175,8 +175,8 @@ export const incidentsService = {
         .eq('id', id)
         .select(`
           *,
-          employee:employees!incidents_employee_id_fkey(name),
-          reporter:employees!incidents_reporter_id_fkey(name)
+          employee:users!employee_id(full_name),
+        reporter:users!reporter_id(full_name)
         `)
         .single();
       
@@ -190,7 +190,7 @@ export const incidentsService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.name || 'Funcionário não encontrado',
+        employeeName: data.employee?.full_name || 'Funcionário não encontrado',
         type: data.type,
         severity: data.severity,
         description: data.description,

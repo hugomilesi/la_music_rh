@@ -55,7 +55,7 @@ export class NPSService {
         .select(`
           *,
           nps_surveys(title),
-          employees(name, department)
+          users(full_name, department)
         `)
         .order('created_at', { ascending: false });
 
@@ -136,7 +136,7 @@ export class NPSService {
         .select(`
           *,
           nps_surveys(title),
-          employees(name, department)
+          users(full_name, department)
         `)
         .single();
 
@@ -272,13 +272,13 @@ export class NPSService {
     return {
       id: dbResponse.id,
       employeeId: dbResponse.employee_id,
-      employeeName: dbResponse.employees?.name || 'Anônimo',
+      employeeName: dbResponse.users?.full_name || 'Anônimo',
       score: dbResponse.score,
       comment: dbResponse.comment || '',
       date: dbResponse.created_at.split('T')[0],
       surveyId: dbResponse.survey_id,
       category: this.categorizeResponse(dbResponse.score, 'nps'),
-      department: dbResponse.employees?.department || 'Não informado'
+      department: dbResponse.users?.department || 'Não informado'
     };
   }
 

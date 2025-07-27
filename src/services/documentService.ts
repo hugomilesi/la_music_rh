@@ -33,7 +33,10 @@ export const documentService = {
     try {
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select(`
+          *,
+          users(full_name)
+        `)
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });
       
@@ -56,7 +59,7 @@ export const documentService = {
         .from('documents')
         .select(`
           *,
-          employee:employees!documents_employee_id_fkey(name)
+          users(full_name)
         `)
         .order('created_at', { ascending: false });
       
@@ -79,8 +82,22 @@ export const documentService = {
       
       // Generate unique file path
       const timestamp = Date.now();
-      const sanitizedFileName = uploadData.file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const filePath = `employees/${uploadData.employee_id}/${uploadData.document_type}/${timestamp}_${sanitizedFileName}`;
+      // More comprehensive sanitization for file names and paths
+      const sanitizedFileName = uploadData.file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^a-zA-Z0-9.-]/g, '_')
+        .replace(/_+/g, '_') // Replace multiple underscores with single
+        .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+      
+      const sanitizedDocumentType = uploadData.document_type
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+      
+      const filePath = `employees/${uploadData.employee_id}/${sanitizedDocumentType}/${timestamp}_${sanitizedFileName}`;
       
       // Upload file to storage
       const { data: uploadResult, error: uploadError } = await supabase.storage

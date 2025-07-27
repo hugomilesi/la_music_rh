@@ -28,7 +28,7 @@ export const vacationService = {
       .from('vacation_requests')
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name)
+        employee:users!employee_id(full_name)
       `)
       .order('created_at', { ascending: false });
     
@@ -40,7 +40,7 @@ export const vacationService = {
     return data?.map(request => ({
       id: request.id,
       employeeId: request.employee_id,
-      employeeName: request.employee?.name || 'Unknown',
+      employeeName: request.employee?.full_name || 'Unknown',
       startDate: request.start_date,
       endDate: request.end_date,
       days: request.days,
@@ -107,7 +107,7 @@ export const vacationService = {
       .insert(insertData)
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name)
+        employee:users!employee_id(full_name)
       `)
       .single();
 
@@ -121,7 +121,7 @@ export const vacationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employeeName: data.employee?.name || 'Unknown',
+      employeeName: data.employee?.full_name || 'Unknown',
       startDate: data.start_date,
       endDate: data.end_date,
       days: data.days,
@@ -161,7 +161,7 @@ export const vacationService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name)
+        employee:users!employee_id(full_name)
       `)
       .single();
     
@@ -173,7 +173,7 @@ export const vacationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employeeName: data.employee?.name || 'Unknown',
+      employeeName: data.employee?.full_name || 'Unknown',
       startDate: data.start_date,
       endDate: data.end_date,
       days: data.days,
@@ -212,7 +212,7 @@ export const vacationService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name)
+        employee:users!employee_id(full_name)
       `)
       .single();
 
@@ -224,7 +224,7 @@ export const vacationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employeeName: data.employee?.name || 'Unknown',
+      employeeName: data.employee?.full_name || 'Unknown',
       startDate: data.start_date,
       endDate: data.end_date,
       days: data.days,
@@ -250,7 +250,7 @@ export const vacationService = {
       .eq('id', id)
       .select(`
         *,
-        employee:employees!vacation_requests_employee_id_fkey(name)
+        employee:users!employee_id(full_name)
       `)
       .single();
 
@@ -262,7 +262,7 @@ export const vacationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employeeName: data.employee?.name || 'Unknown',
+      employeeName: data.employee?.full_name || 'Unknown',
       startDate: data.start_date,
       endDate: data.end_date,
       days: data.days,

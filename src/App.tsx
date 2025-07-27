@@ -3,11 +3,12 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ProtectedRoute } from '../test/ProtectedRoute-test';
 import { MainLayout } from './components/layout/MainLayout';
 import { GlobalContextProvider } from './contexts/GlobalContextProvider';
 import { UnitProvider } from './contexts/UnitContext';
 import { EmployeeProvider } from './contexts/EmployeeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Pages
 import Index from './pages/Index';
@@ -48,9 +49,11 @@ const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) 
   <ProtectedRoute>
     <UnitProvider>
       <EmployeeProvider>
-        <MainLayout>
-          {children}
-        </MainLayout>
+        <NotificationProvider>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </NotificationProvider>
       </EmployeeProvider>
     </UnitProvider>
   </ProtectedRoute>

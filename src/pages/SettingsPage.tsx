@@ -14,6 +14,8 @@ import { AddUserDialog } from '@/components/settings/AddUserDialog';
 import { EditUserDialog } from '@/components/settings/EditUserDialog';
 import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
 
+
+
 import { SystemUser, CreateSystemUserData, UpdateSystemUserData } from '@/types/systemUser';
 import { 
   fetchSystemUsers, 
@@ -21,11 +23,12 @@ import {
   fetchSystemStats, 
   deleteSystemUser, 
   updateSystemUser,
+  listAllSystemUsers,
   RoleData,
   SystemStats 
 } from '@/services/settingsService';
 import { usePermissions } from '@/hooks/usePermissions';
-
+import { toast } from '@/hooks/use-toast';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +43,7 @@ const SettingsPage: React.FC = () => {
     activeUnits: 0,
     lastBackup: 'Carregando...'
   });
+  const [syncStats, setSyncStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,15 +61,61 @@ const SettingsPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [usersData, rolesDataResult, statsData] = await Promise.all([
-        fetchSystemUsers(),
+      const [allUsersData, rolesDataResult, statsData] = await Promise.all([
+        listAllSystemUsers(),
         fetchRolesData(),
         fetchSystemStats()
       ]);
       
-      setSystemUsers(usersData);
+      // Extract users and sync stats from the new function
+      if (allUsersData && allUsersData.success) {
+        // Transform the data to match SystemUser interface
+        const transformedUsers = (allUsersData.users || []).map((user: any) => {
+           const userData = user.user_data;
+           // For users without profile, determine status based on sync_status
+           let userStatus = 'inactive';
+           if (userData) {
+             userStatus = userData.status === 'ativo' ? 'active' : 'inactive';
+           } else if (user.sync_status && !user.sync_status.user_deleted) {
+             // User exists in auth but no profile - consider as active auth user
+             userStatus = 'active';
+           }
+           
+           return {
+             id: user.id, // This is the auth_user_id
+             auth_user_id: user.id, // Store auth_user_id explicitly
+             name: userData?.full_name || user.email || 'Usuário sem nome',
+             email: user.email,
+             role: userData?.role || 'usuario',
+             position: userData?.position || 'Não informado',
+             department: userData?.department || 'Não informado',
+             phone: userData?.phone || 'Não informado',
+             status: userStatus,
+             lastAccess: user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('pt-BR') : 'Nunca acessou',
+             createdAt: new Date(user.created_at).toLocaleDateString('pt-BR'),
+             permissions: [], // Permissions now managed by role_permissions table
+             hasProfile: !!userData
+           };
+         });
+        setSystemUsers(transformedUsers);
+        setSyncStats(allUsersData.statistics);
+        
+        // Update system stats with sync data - count only users with profiles
+        const usersWithProfiles = transformedUsers.filter(user => user.hasProfile);
+        setSystemStats({
+          totalEmployees: usersWithProfiles.length,
+          totalUsers: usersWithProfiles.length,
+          activeUnits: statsData.activeUnits,
+          lastBackup: statsData.lastBackup
+        });
+      } else {
+        // Fallback to old method if new function fails
+        const usersData = await fetchSystemUsers();
+        setSystemUsers(usersData);
+        setSystemStats(statsData);
+      }
+      
       setRolesData(rolesDataResult);
-      setSystemStats(statsData);
     } catch (err) {
       console.error('Error loading settings data:', err);
       setError('Erro ao carregar dados. Tente novamente.');
@@ -89,12 +139,21 @@ const SettingsPage: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateUser = async (id: number, userData: UpdateSystemUserData) => {
+  const handleUpdateUser = async (id: string, userData: UpdateSystemUserData) => {
     try {
-      await updateSystemUser(String(id), userData);
+      await updateSystemUser(id, userData);
       await loadAllData();
+      toast({
+        title: "Usuário atualizado",
+        description: "As informações do usuário foram atualizadas com sucesso.",
+      });
     } catch (error) {
       console.error('Error updating user:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar usuário",
+        description: "Não foi possível atualizar as informações do usuário.",
+      });
       setError('Erro ao atualizar usuário.');
     }
   };
@@ -104,17 +163,52 @@ const SettingsPage: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDeleteUser = async (id: number) => {
+  const handleConfirmDeleteUser = async (user: SystemUser) => {
     try {
-      await deleteSystemUser(String(id));
+      if (!user.auth_user_id) {
+        throw new Error('Usuário não encontrado ou ID de autenticação inválido');
+      }
+      
+      // Use the auth_user_id for deletion
+      await deleteSystemUser(user.auth_user_id);
       await loadAllData();
-    } catch (error) {
+      toast({
+        title: "Usuário excluído",
+        description: "O usuário foi removido com sucesso do sistema.",
+      });
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      setError('Erro ao excluir usuário.');
+      
+      let errorMessage = 'Erro desconhecido ao excluir usuário.';
+      let errorTitle = 'Erro na exclusão';
+      
+      if (error?.message) {
+        if (error.message.includes('Failed to find user profile')) {
+          errorTitle = 'Usuário não encontrado';
+          errorMessage = 'O usuário selecionado não foi encontrado no sistema.';
+        } else if (error.message.includes('Failed to delete user profile')) {
+          errorTitle = 'Erro no perfil';
+          errorMessage = 'Não foi possível remover o perfil do usuário.';
+        } else if (error.message.includes('auth user deletion failed')) {
+          errorTitle = 'Erro na autenticação';
+          errorMessage = 'O perfil foi removido, mas houve erro na exclusão da autenticação.';
+        } else if (error.message.includes('Internal server error')) {
+          errorTitle = 'Erro interno';
+          errorMessage = 'Erro interno do servidor. Tente novamente em alguns minutos.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        variant: "destructive",
+        title: errorTitle,
+        description: errorMessage,
+      });
+      
+      setError(errorMessage);
     }
   };
-
-
 
   const getRoleBadge = (role: string) => {
     const variants = {
@@ -125,6 +219,8 @@ const SettingsPage: React.FC = () => {
     };
     return variants[role as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
+
+  // Removed getPermissionsFromRole function - permissions now managed by role_permissions table
 
   // Check permissions first
   if (!canAccessSettings) {
@@ -155,6 +251,8 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
@@ -256,19 +354,21 @@ const SettingsPage: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                     <p className="mt-2 text-gray-500">Carregando usuários...</p>
                   </TableCell>
                 </TableRow>
-              ) : systemUsers.length === 0 ? (
+              ) : systemUsers.filter(user => user.hasProfile).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <p className="text-gray-500">Nenhum usuário encontrado</p>
                   </TableCell>
                 </TableRow>
               ) : (
-                systemUsers.map((user) => (
+                systemUsers
+                  .filter(user => user.hasProfile) // Only show users with valid profiles
+                  .map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -310,8 +410,6 @@ const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-
-
       {/* Error Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -326,74 +424,6 @@ const SettingsPage: React.FC = () => {
           </Button>
         </div>
       )}
-
-      {/* System Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Funcionários</p>
-                <p className="text-2xl font-bold">
-                  {isLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    systemStats.totalEmployees
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Usuários do Sistema</p>
-                <p className="text-2xl font-bold">
-                  {isLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    systemStats.totalUsers
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Settings className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm text-gray-600">Unidades Ativas</p>
-                <p className="text-2xl font-bold">
-                  {isLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    systemStats.activeUnits
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Último Backup</p>
-                <p className="text-sm font-medium">
-                  {isLoading ? 'Carregando...' : systemStats.lastBackup}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Roles and Departments */}
       <Card>
@@ -462,65 +492,84 @@ const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* System Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações do Sistema</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Versão do Sistema:</span>
-                <span className="font-medium">v2.4.1</span>
+      {/* Database Synchronization Status */}
+      {syncStats && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Status de Sincronização das Tabelas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">Usuários de Autenticação</h4>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total auth.users:</span>
+                  <span className="font-medium">{syncStats.totalAuthUsers}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Órfãos (sem perfil):</span>
+                  <span className={`font-medium ${
+                    syncStats.orphanedAuthUsers > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {syncStats.orphanedAuthUsers}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Última Atualização:</span>
-                <span className="font-medium">15/03/2024</span>
+              
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">Perfis de Usuário</h4>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total profiles:</span>
+                  <span className="font-medium">{syncStats.totalProfiles}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Sem funcionário:</span>
+                  <span className={`font-medium ${
+                    syncStats.usersWithoutEmployee > 0 ? 'text-yellow-600' : 'text-green-600'
+                  }`}>
+                    {syncStats.usersWithoutEmployee}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total de Colaboradores:</span>
-                <span className="font-medium">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    `${systemStats.totalEmployees} pessoas`
-                  )}
-                </span>
+              
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">Funcionários</h4>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Total employees:</span>
+                  <span className="font-medium">{syncStats.totalEmployees}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Status:</span>
+                  <Badge className={syncStats.orphanedAuthUsers === 0 && syncStats.usersWithoutEmployee === 0 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                  }>
+                    {syncStats.orphanedAuthUsers === 0 && syncStats.usersWithoutEmployee === 0 
+                      ? 'Sincronizado' 
+                      : 'Requer atenção'
+                    }
+                  </Badge>
+                </div>
               </div>
             </div>
             
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Usuários do Sistema:</span>
-                <span className="font-medium">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    `${systemStats.totalUsers} usuários`
-                  )}
-                </span>
+            {(syncStats.orphanedAuthUsers > 0 || syncStats.usersWithoutEmployee > 0) && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>Atenção:</strong> Existem inconsistências na sincronização das tabelas. 
+                  {syncStats.orphanedAuthUsers > 0 && `${syncStats.orphanedAuthUsers} usuários de autenticação sem perfil. `}
+                  {syncStats.usersWithoutEmployee > 0 && `${syncStats.usersWithoutEmployee} perfis sem registro de funcionário.`}
+                </p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Último Backup:</span>
-                <span className="font-medium">
-                  {isLoading ? 'Carregando...' : systemStats.lastBackup}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Unidades Ativas:</span>
-                <span className="font-medium">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    `${systemStats.activeUnits} unidades`
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
 
       {/* Edit User Dialog */}
       <EditUserDialog
@@ -537,8 +586,6 @@ const SettingsPage: React.FC = () => {
         onOpenChange={setIsDeleteDialogOpen}
         onUserDelete={handleConfirmDeleteUser}
       />
-
-
     </div>
   );
 };
