@@ -213,6 +213,69 @@ Deno.serve(async (req: Request) => {
       );
     }
     
+    // Check if email already exists in both auth.users and users table
+    console.log('Checking if email already exists:', email);
+    
+    // Check auth.users first
+    const { data: existingAuthUser, error: authCheckError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authCheckError) {
+      console.error('Error checking existing auth users:', authCheckError);
+      throw new Error('Failed to check if user already exists in auth');
+    }
+    
+    const emailExists = existingAuthUser.users.some(user => user.email === email);
+    
+    if (emailExists) {
+      console.log('Email already exists in auth.users:', email);
+      return new Response(
+        JSON.stringify({
+          error: 'Email já cadastrado no sistema',
+          message: 'Este email já está sendo usado por outro usuário. Por favor, use um email diferente.',
+          code: 'email_exists',
+          success: false
+        }),
+        {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        }
+      );
+    }
+    
+    // Also check users table
+    const { data: existingUser, error: checkError } = await supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error checking existing user:', checkError);
+      throw new Error('Failed to check if user already exists');
+    }
+
+    if (existingUser) {
+      console.log('Email already exists in users table:', email);
+      return new Response(
+        JSON.stringify({
+          error: 'Email já cadastrado no sistema',
+          message: 'Este email já está sendo usado por outro usuário. Por favor, use um email diferente.',
+          code: 'email_exists',
+          success: false
+        }),
+        {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        }
+      );
+    }
+
     console.log('Starting user creation with data:', {
       email,
       name,
@@ -226,12 +289,19 @@ Deno.serve(async (req: Request) => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Create auth user
+    // Create auth user with metadata
     console.log('Creating auth user with email:', email);
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: {
+        full_name: name,
+        role: role,
+        position: position,
+        department: department || 'Não informado',
+        phone: phone || null
+      }
     });
 
     if (authError) {
@@ -248,7 +318,27 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({
             error: 'Email já cadastrado no sistema',
             message: 'Este email já está sendo usado por outro usuário. Por favor, use um email diferente.',
-            code: 'email_exists'
+            code: 'email_exists',
+            success: false
+          }),
+          {
+            status: 400,
+            headers: { 
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          }
+        );
+      }
+      
+      // Check if it's a duplicate key constraint error
+      if (authError.message && authError.message.includes('duplicate key value violates unique constraint')) {
+        return new Response(
+          JSON.stringify({
+            error: 'Email já cadastrado no sistema',
+            message: 'Este email já está sendo usado por outro usuário. Por favor, use um email diferente.',
+            code: 'email_exists',
+            success: false
           }),
           {
             status: 400,
@@ -272,54 +362,43 @@ Deno.serve(async (req: Request) => {
 
     const userId = authUser.user.id;
 
-    try {
-      // Create user record in the unified users table
-      const { data: userData, error: userError } = await supabaseAdmin
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Update user preferences if admin
+    if (role === 'admin') {
+      const { error: updateError } = await supabaseAdmin
         .from('users')
-        .insert({
-          auth_user_id: userId,
-          email: email,
-          full_name: name,
-          phone: phone || null,
-          position: position,
-          department: department || 'Não informado',
-          role: role,
-          status: 'ativo',
-          preferences: role === 'admin' ? { super_user: true } : {}
+        .update({
+          preferences: { super_user: true }
         })
-        .select()
-        .single();
+        .eq('auth_user_id', userId);
 
-      if (userError) {
-        throw new Error(`Failed to create user: ${userError.message}`);
+      if (updateError) {
+        console.warn('Failed to update admin preferences:', updateError.message);
       }
-
-      if (!userData) {
-        throw new Error('No result from user creation');
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          user: {
-            id: userId,
-            email
-          }
-        }),
-        {
-          status: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        }
-      );
-
-    } catch (error) {
-      // If employee or profile creation fails, delete the auth user
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw error;
     }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Usuário criado com sucesso!',
+        user: {
+          id: userId,
+          email,
+          name,
+          role,
+          position
+        }
+      }),
+      {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      }
+    );
 
   } catch (error) {
     console.error('Error creating user:', error);
@@ -336,13 +415,56 @@ Deno.serve(async (req: Request) => {
       console.error('Failed to log request data:', logError);
     }
     
+    // Handle specific error types
+    let errorMessage = 'Erro interno do servidor';
+    let errorCode = 'internal_error';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase();
+      
+      // Handle duplicate key constraint errors
+      if (errorMsg.includes('duplicate key value violates unique constraint') || 
+          errorMsg.includes('users_email_key') ||
+          errorMsg.includes('user already registered')) {
+        errorMessage = 'Este email já está cadastrado no sistema. Por favor, use um email diferente.';
+        errorCode = 'email_exists';
+        statusCode = 400;
+      }
+      // Handle other auth errors
+      else if (errorMsg.includes('email_exists') || errorMsg.includes('already been registered')) {
+        errorMessage = 'Este email já está cadastrado no sistema. Por favor, use um email diferente.';
+        errorCode = 'email_exists';
+        statusCode = 400;
+      }
+      // Handle validation errors
+      else if (errorMsg.includes('validation') || errorMsg.includes('invalid')) {
+        errorMessage = 'Dados fornecidos são inválidos. Verifique os campos e tente novamente.';
+        errorCode = 'validation_error';
+        statusCode = 400;
+      }
+      // Handle permission errors
+      else if (errorMsg.includes('permission') || errorMsg.includes('unauthorized')) {
+        errorMessage = 'Você não tem permissão para realizar esta ação.';
+        errorCode = 'permission_denied';
+        statusCode = 403;
+      }
+      // Generic error with original message for debugging
+      else {
+        errorMessage = `Erro ao criar usuário: ${error.message}`;
+      }
+    }
+    
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        details: error instanceof Error ? error.stack : 'No additional details'
+        error: errorMessage,
+        code: errorCode,
+        message: errorMessage,
+        success: false,
+        details: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: { 
           'Content-Type': 'application/json',
           ...corsHeaders

@@ -28,25 +28,36 @@ export const LoginForm: React.FC = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
+        let errorTitle = 'Erro no Login';
         let errorMessage = 'Erro ao fazer login. Tente novamente.';
         let showHelp = false;
         
         if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'Email ou senha incorretos.';
+          errorTitle = 'Credenciais inválidas';
+          errorMessage = 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.';
         } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Email não confirmado. Verifique sua caixa de entrada.';
+          errorTitle = 'Email não confirmado';
+          errorMessage = 'Você precisa confirmar seu email antes de fazer login. Verifique sua caixa de entrada.';
           showHelp = true;
         } else if (error.message.includes('email_not_confirmed')) {
-          errorMessage = 'Email não confirmado. Verifique sua caixa de entrada.';
+          errorTitle = 'Email não confirmado';
+          errorMessage = 'Você precisa confirmar seu email antes de fazer login. Verifique sua caixa de entrada.';
           showHelp = true;
         } else if (error.message.includes('Too many requests')) {
-          errorMessage = 'Muitas tentativas de login. Tente novamente em alguns minutos.';
+          errorTitle = 'Muitas tentativas';
+          errorMessage = 'Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.';
+        } else if (error.message.includes('User not found')) {
+          errorTitle = 'Usuário não encontrado';
+          errorMessage = 'Não existe uma conta com este email. Verifique o email digitado.';
+        } else if (error.message.includes('Invalid email')) {
+          errorTitle = 'Email inválido';
+          errorMessage = 'O formato do email está incorreto. Digite um email válido.';
         }
         
         setShowConfirmationHelp(showHelp);
         
         toast({
-          title: 'Erro no Login',
+          title: errorTitle,
           description: errorMessage,
           variant: 'destructive'
         });

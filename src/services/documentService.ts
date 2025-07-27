@@ -35,7 +35,7 @@ export const documentService = {
         .from('documents')
         .select(`
           *,
-          users(full_name)
+          employee:users!employee_id(full_name)
         `)
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });
@@ -59,7 +59,7 @@ export const documentService = {
         .from('documents')
         .select(`
           *,
-          users(full_name)
+          employee:users!employee_id(full_name)
         `)
         .order('created_at', { ascending: false });
       

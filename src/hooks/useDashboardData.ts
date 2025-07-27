@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useNPS } from '@/contexts/NPSContext';
 import { useIncidents } from '@/contexts/IncidentsContext';
+import { useVacation } from '@/contexts/VacationContext';
 
 export interface DashboardMetrics {
   activeEmployees: number;
@@ -119,6 +120,7 @@ export const useUnitSummary = (unitDistribution: Record<string, number>, isLoadi
 export const useDashboardAlerts = () => {
   const { incidents } = useIncidents();
   const { employees } = useEmployees();
+  const { getPendingRequests, getActiveVacations, getVacationAlerts } = useVacation();
   
   return useMemo(() => {
     const pendingIncidents = incidents.filter(inc => inc.status === 'pending');
@@ -151,20 +153,43 @@ export const useDashboardAlerts = () => {
         };
       });
     
-    // Alertas de férias baseados em dados reais (simulação baseada em funcionários)
-    const activeEmployees = employees.filter(emp => emp.status === 'active');
-    const pendingVacationRequests = Math.floor(activeEmployees.length * 0.08); // 8% dos funcionários
+    // Alertas de férias baseados em dados reais do VacationContext
+    const pendingVacationRequests = getPendingRequests();
+    const activeVacations = getActiveVacations();
+    const vacationAlerts = getVacationAlerts();
     
     const vacations = [];
-    if (pendingVacationRequests > 0) {
-      vacations.push({ description: `${pendingVacationRequests} solicitações pendentes` });
+    
+    // Adicionar solicitações pendentes
+    if (pendingVacationRequests.length > 0) {
+      vacations.push({ 
+        description: `${pendingVacationRequests.length} solicitação${pendingVacationRequests.length > 1 ? 'ões' : ''} pendente${pendingVacationRequests.length > 1 ? 's' : ''}` 
+      });
     }
-    if (activeEmployees.length > 5) {
-      vacations.push({ description: `${activeEmployees[0]?.name || 'Funcionário'} sai em 3 dias` });
-    }
-    if (activeEmployees.length > 10) {
-      vacations.push({ description: `${activeEmployees[1]?.name || 'Funcionário'} retorna segunda` });
-    }
+    
+    // Adicionar férias ativas (funcionários em férias)
+    activeVacations.slice(0, 2).forEach(vacation => {
+      const endDate = new Date(vacation.endDate);
+      const daysUntilReturn = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilReturn > 0) {
+        vacations.push({ 
+          description: `${vacation.employeeName} retorna em ${daysUntilReturn} dia${daysUntilReturn > 1 ? 's' : ''}` 
+        });
+      } else {
+        vacations.push({ 
+          description: `${vacation.employeeName} retorna hoje` 
+        });
+      }
+    });
+    
+    // Adicionar alertas de saldo vencendo
+    vacationAlerts
+      .filter(alert => alert.type === 'expiring_vacation')
+      .slice(0, 1)
+      .forEach(alert => {
+        vacations.push({ description: alert.message });
+      });
     
     return {
       incidents: pendingIncidents.map(inc => ({
@@ -175,5 +200,5 @@ export const useDashboardAlerts = () => {
       vacations,
       totalPendingIncidents: pendingIncidents.length
     };
-  }, [incidents, employees]);
+  }, [incidents, employees, getPendingRequests, getActiveVacations, getVacationAlerts]);
 };

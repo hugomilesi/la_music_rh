@@ -12,10 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Settings, AlertTriangle, RefreshCw } from 'lucide-react';
+import { LogOut, User, Settings, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { EmergencyLogout } from '@/components/layout/EmergencyLogout';
 
 export const UserProfileDropdown: React.FC = () => {
   const navigate = useNavigate();
@@ -182,11 +181,7 @@ export const UserProfileDropdown: React.FC = () => {
             )}
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
-          
-          <div className="p-2">
-            <EmergencyLogout />
-          </div>
+
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

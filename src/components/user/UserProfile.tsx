@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { 
   Edit, 
   Mail, 
@@ -16,7 +20,10 @@ import {
   Building, 
   User,
   AlertTriangle,
-  Heart
+  Heart,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { EditProfileDialog } from './EditProfileDialog';
 import { AvatarUpload } from './AvatarUpload';
@@ -24,6 +31,17 @@ import { AvatarUpload } from './AvatarUpload';
 export const UserProfile: React.FC = () => {
   const { user, profile } = useAuth();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const getRoleColor = (role: string | null) => {
     switch (role?.toLowerCase()) {
@@ -61,6 +79,86 @@ export const UserProfile: React.FC = () => {
   };
 
   const profileData = getProfileData();
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Erro de validação",
+        description: "As senhas não coincidem. Verifique se a nova senha e a confirmação são idênticas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A nova senha deve ter pelo menos 6 caracteres para garantir a segurança.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      // Primeiro, verificar a senha atual fazendo login
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: passwordData.currentPassword
+      });
+
+      if (signInError) {
+        toast({
+          title: "Senha atual incorreta",
+          description: "A senha atual informada está incorreta. Verifique e tente novamente.",
+          variant: "destructive"
+        });
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Atualizar a senha
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (updateError) {
+        toast({
+          title: "Erro ao alterar senha",
+          description: `Não foi possível alterar a senha: ${updateError.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Senha alterada com sucesso!",
+          description: "Sua senha foi atualizada. Use a nova senha em seus próximos acessos.",
+        });
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro inesperado ao alterar a senha. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -248,6 +346,120 @@ export const UserProfile: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Password Change Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            Alterar Senha
+          </CardTitle>
+          <CardDescription>
+            Mantenha sua conta segura alterando sua senha regularmente
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Senha Atual</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showPasswords.current ? 'text' : 'password'}
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    placeholder="Digite sua senha atual"
+                    required
+                    disabled={isChangingPassword}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => togglePasswordVisibility('current')}
+                    disabled={isChangingPassword}
+                  >
+                    {showPasswords.current ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nova Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showPasswords.new ? 'text' : 'password'}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    placeholder="Digite sua nova senha"
+                    required
+                    disabled={isChangingPassword}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => togglePasswordVisibility('new')}
+                    disabled={isChangingPassword}
+                  >
+                    {showPasswords.new ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPasswords.confirm ? 'text' : 'password'}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    placeholder="Confirme sua nova senha"
+                    required
+                    disabled={isChangingPassword}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => togglePasswordVisibility('confirm')}
+                    disabled={isChangingPassword}
+                  >
+                    {showPasswords.confirm ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={isChangingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+              >
+                {isChangingPassword ? 'Alterando...' : 'Alterar Senha'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       <EditProfileDialog
         open={editDialogOpen}

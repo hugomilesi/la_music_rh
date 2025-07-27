@@ -79,6 +79,16 @@ export default function ProfilePage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validar se a senha atual foi informada
+    if (!passwordData.currentPassword) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, informe sua senha atual',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: 'Erro',
@@ -97,9 +107,38 @@ export default function ProfilePage() {
       return;
     }
 
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ser diferente da senha atual',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsPasswordLoading(true);
 
     try {
+      // Validar senha atual tentando fazer login
+      if (!user?.email) {
+        throw new Error('Email do usuário não encontrado');
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordData.currentPassword
+      });
+
+      if (signInError) {
+        toast({
+          title: 'Erro',
+          description: 'Senha atual incorreta',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Se chegou até aqui, a senha atual está correta
       const { error } = await supabase.auth.updateUser({
         password: passwordData.newPassword
       });
@@ -318,6 +357,18 @@ export default function ProfilePage() {
             <CardContent>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Senha Atual</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    placeholder="Digite sua senha atual"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="newPassword">Nova Senha</Label>
                   <Input
                     id="newPassword"
@@ -325,6 +376,7 @@ export default function ProfilePage() {
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                     placeholder="Digite sua nova senha"
+                    required
                   />
                 </div>
                 
@@ -336,6 +388,7 @@ export default function ProfilePage() {
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     placeholder="Confirme sua nova senha"
+                    required
                   />
                 </div>
                 

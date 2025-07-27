@@ -9,6 +9,7 @@ import { NewVacationDialog } from '@/components/vacation/NewVacationDialog';
 import { VacationRequest } from '@/types/vacation';
 import { VacationDetailsModal } from '@/components/vacation/VacationDetailsModal';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 const VacationPageContent = () => {
@@ -19,6 +20,7 @@ const VacationPageContent = () => {
     approveVacationRequest,
     rejectVacationRequest,
   } = useVacation();
+  const { user } = useAuth();
   const [isNewRequestDialogOpen, setIsNewRequestDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
   const { toast } = useToast();
@@ -26,23 +28,31 @@ const VacationPageContent = () => {
 
   const handleApprove = async (requestId: string) => {
     try {
-      // Assuming 'adminId' is available from auth context, hardcoding for now
-      await approveVacationRequest(requestId, 'adminId');
+      if (!user?.id) {
+        toast({ title: 'Erro', description: 'Usuário não autenticado.', variant: 'destructive' });
+        return;
+      }
+      await approveVacationRequest(requestId, user.id);
       toast({ title: 'Sucesso', description: 'Solicitação de férias aprovada.' });
       setSelectedRequest(null);
     } catch (error) {
-      toast({ title: 'Erro', description: 'Falha ao aprovar a solicitação.', variant: 'destructive' });
+      console.error('Error approving vacation request:', error);
+      toast({ title: 'Erro', description: 'Falha ao aprovar a solicitação. Verifique se você tem permissão para esta ação.', variant: 'destructive' });
     }
   };
 
   const handleReject = async (requestId: string, reason: string) => {
     try {
-       // Assuming 'adminId' is available from auth context, hardcoding for now
-      await rejectVacationRequest(requestId, reason, 'adminId');
+      if (!user?.id) {
+        toast({ title: 'Erro', description: 'Usuário não autenticado.', variant: 'destructive' });
+        return;
+      }
+      await rejectVacationRequest(requestId, reason, user.id);
       toast({ title: 'Sucesso', description: 'Solicitação de férias rejeitada.' });
       setSelectedRequest(null);
     } catch (error) {
-      toast({ title: 'Erro', description: 'Falha ao rejeitar a solicitação.', variant: 'destructive' });
+      console.error('Error rejecting vacation request:', error);
+      toast({ title: 'Erro', description: 'Falha ao rejeitar a solicitação. Verifique se você tem permissão para esta ação.', variant: 'destructive' });
     }
   };
 

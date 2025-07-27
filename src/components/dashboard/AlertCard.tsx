@@ -110,7 +110,7 @@ export const AlertCard: React.FC = () => {
               <Volume2 className="w-3 h-3 text-red-500 absolute -top-1 -right-1 animate-pulse" />
             </div>
             <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent font-bold">
-              Alertas Musicais
+              Alertas do Sistema
             </span>
             <Badge 
               variant="destructive" 
@@ -166,7 +166,7 @@ export const AlertCard: React.FC = () => {
                 <Music className="w-3 h-3 text-red-500 absolute -top-1 -right-1" />
               </div>
               <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                Gestão de Alertas Musicais
+                Gestão de Alertas do Sistema
               </span>
             </DialogTitle>
           </DialogHeader>

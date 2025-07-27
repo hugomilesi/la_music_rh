@@ -23,7 +23,8 @@ import {
   Save
 } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useEmployees } from '@/hooks/useEmployees';
+import { useAuth } from '@/contexts/AuthContext';
 import { VacationRequest } from '@/types/vacation';
 import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -47,6 +48,7 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
     getEmployeeBalance
   } = useVacation();
   const { employees } = useEmployees();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -92,10 +94,16 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
   };
 
   const handleApprove = () => {
-    // Use a valid employee ID instead of hardcoded 'Admin'
-    // This should ideally come from the current user context
-    const approverId = 'e0ba1ef1-2840-4d95-a6ab-8af93afb19ac'; // Anne Krissya - Gerente Comercial
-    approveVacationRequest(request.id, approverId);
+    if (!user?.id) {
+      toast({
+        title: 'Erro',
+        description: 'Usuário não autenticado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    approveVacationRequest(request.id, user.id);
     toast({
       title: 'Solicitação aprovada',
       description: 'A solicitação de férias foi aprovada com sucesso.',
@@ -112,9 +120,16 @@ export const VacationDetailsModal: React.FC<VacationDetailsModalProps> = ({
       return;
     }
     
-    // Use a valid employee ID instead of hardcoded 'Admin'
-    const approverId = 'e0ba1ef1-2840-4d95-a6ab-8af93afb19ac'; // Anne Krissya - Gerente Comercial
-    rejectVacationRequest(request.id, rejectionReason, approverId);
+    if (!user?.id) {
+      toast({
+        title: 'Erro',
+        description: 'Usuário não autenticado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    rejectVacationRequest(request.id, rejectionReason, user.id);
     toast({
       title: 'Solicitação rejeitada',
       description: 'A solicitação de férias foi rejeitada.',

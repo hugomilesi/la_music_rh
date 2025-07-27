@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoginForm } from './LoginForm';
 import { useAuth } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
 
 export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,6 +61,8 @@ export const AuthPage: React.FC = () => {
           <p>© 2024 LA Music RH. Todos os direitos reservados.</p>
         </div>
       </div>
+      
+      <Toaster />
     </div>
   );
 };

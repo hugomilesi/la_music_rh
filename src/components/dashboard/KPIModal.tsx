@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, ComposedChart } from 'recharts';
-import { Users, TrendingUp, Award, AlertTriangle, Calendar, Clock, UserPlus, FileText, Lock, Music, Piano, Mic, Volume2, Star, Sparkles, Guitar, Headphones, Radio, Disc, Target, TrendingDown, Activity, BarChart3, PieChart as PieChartIcon, Filter, Download, Eye, ChevronRight, MapPin, BookOpen, GraduationCap, CheckCircle, Bell, Building, Plus, X, Info, Minus, Heart, Shield, Zap, Briefcase, School, Home, Phone, Mail, Globe, Settings, Search, Edit, Trash2, Save, Upload, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, AlertCircle, MessageSquare, Timer, Coffee } from 'lucide-react';
+import { Users, TrendingUp, Award, AlertTriangle, Calendar, Clock, UserPlus, FileText, Lock, Music, Piano, Mic, Volume2, Star, Sparkles, Guitar, Headphones, Radio, Disc, Target, TrendingDown, Activity, BarChart3, PieChart as PieChartIcon, Filter, Download, Eye, ChevronRight, MapPin, BookOpen, GraduationCap, CheckCircle, Bell, Building, Plus, X, Info, Minus, Heart, Shield, Zap, Briefcase, School, Home, Phone, Mail, Globe, Settings, Search, Edit, Trash2, Save, Upload, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, AlertCircle, MessageSquare, Timer, Coffee, Trophy } from 'lucide-react';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useNPS } from '@/contexts/NPSContext';
 import { useIncidents } from '@/contexts/IncidentsContext';
@@ -26,7 +26,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 interface KPIModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'employees' | 'turnover' | 'nps' | 'alerts' | 'admissions' | 'evaluations' | 'hours' | 'incidents' | null;
+  type: 'employees' | 'turnover' | 'nps' | 'alerts' | 'admissions' | 'evaluations' | 'hours' | 'incidents' | 'gamification' | null;
 }
 
 const getUnitName = (unit: Unit): string => {
@@ -168,8 +168,8 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         });
 
         return {
-          title: '🎵 Professores e Alunos Ativos',
-          description: 'Análise completa da comunidade musical com métricas avançadas e insights',
+          title: '👥 Colaboradores Ativos',
+          description: 'Análise completa da equipe com métricas avançadas e insights',
           content: (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
@@ -187,7 +187,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-2xl font-bold text-purple-600">{activeEmployees.length}</p>
-                          <p className="text-sm text-purple-700">🎼 Músicos Ativos</p>
+                          <p className="text-sm text-purple-700">👥 Colaboradores Ativos</p>
                         </div>
                         <Music className="w-8 h-8 text-purple-500" />
                       </div>
@@ -340,7 +340,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-purple-600">{((activeEmployees.length / totalCapacity) * 100).toFixed(1)}%</p>
                       <p className="text-sm text-purple-700">🎯 Atingimento Meta</p>
-                      <p className="text-xs text-purple-600">Meta: {totalCapacity} músicos</p>
+                      <p className="text-xs text-purple-600">Meta: {totalCapacity} colaboradores</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -353,7 +353,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <PieChartIcon className="w-5 h-5 text-purple-600" />
-                        🎼 Distribuição por Instrumento
+                        📊 Distribuição por Departamento
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -503,7 +503,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
 
         return {
-          title: '🎼 Rotatividade Musical',
+          title: '🔄 Rotatividade de Pessoal',
           description: 'Análise completa da rotatividade com insights e tendências',
           content: (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -784,8 +784,8 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
 
         return {
-          title: '🎵 NPS Musical',
-          description: 'Análise completa da satisfação e lealdade da comunidade musical',
+          title: '📊 NPS Corporativo',
+          description: 'Análise completa da satisfação e lealdade dos colaboradores',
           content: (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
@@ -1552,7 +1552,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
 
         return {
-          title: '🎶 Novos Músicos na Escola',
+          title: '🆕 Novas Contratações',
           description: 'Análise completa de admissões e integração de novos colaboradores',
           content: (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1903,6 +1903,268 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         break;
       }
 
+      case 'gamification': {
+        // Mock data for gamification system
+        const totalPoints = 15420;
+        const activePrograms = 3;
+        const participatingEmployees = 42;
+        const monthlyDistribution = 2850;
+        
+        const programsData = [
+          { name: 'Estrela do Mês', participants: 18, points: 5200, color: CHART_COLORS.primary },
+          { name: 'Inovação', participants: 15, points: 4800, color: CHART_COLORS.secondary },
+          { name: 'Excelência', participants: 9, points: 5420, color: CHART_COLORS.accent }
+        ];
+        
+        const monthlyTrend = [
+          { month: 'Jul', points: 2100, participants: 35 },
+          { month: 'Ago', points: 2400, participants: 38 },
+          { month: 'Set', points: 2650, participants: 40 },
+          { month: 'Out', points: 2850, participants: 42 },
+          { month: 'Nov', points: 3100, participants: 45 },
+          { month: 'Dez', points: 2850, participants: 42 }
+        ];
+        
+        const topPerformers = [
+          { name: 'Ana Silva', points: 850, program: 'Estrela do Mês', unit: 'Campo Grande' },
+          { name: 'João Santos', points: 720, program: 'Inovação', unit: 'Recreio' },
+          { name: 'Maria Costa', points: 680, program: 'Excelência', unit: 'Barra' },
+          { name: 'Pedro Lima', points: 650, program: 'Estrela do Mês', unit: 'Campo Grande' },
+          { name: 'Carla Souza', points: 620, program: 'Inovação', unit: 'Recreio' }
+        ];
+        
+        const recentActivities = [
+          { employee: 'Ana Silva', action: 'Conquistou 50 pontos', program: 'Estrela do Mês', date: '2024-01-15' },
+          { employee: 'João Santos', action: 'Completou desafio', program: 'Inovação', date: '2024-01-14' },
+          { employee: 'Maria Costa', action: 'Recebeu reconhecimento', program: 'Excelência', date: '2024-01-13' },
+          { employee: 'Pedro Lima', action: 'Atingiu meta mensal', program: 'Estrela do Mês', date: '2024-01-12' }
+        ];
+
+        return {
+          title: '🏆 Sistema de Gamificação',
+          description: 'Gestão completa de reconhecimento e engajamento da equipe',
+          content: (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">📊 Visão Geral</TabsTrigger>
+                <TabsTrigger value="programs">🎯 Programas</TabsTrigger>
+                <TabsTrigger value="ranking">🏆 Ranking</TabsTrigger>
+                <TabsTrigger value="activities">📈 Atividades</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-6">
+                {/* Summary Stats */}
+                <div className="grid grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-purple-50 to-violet-100">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold text-purple-600">{totalPoints.toLocaleString()}</p>
+                          <p className="text-sm text-purple-700">🏆 Total de Pontos</p>
+                        </div>
+                        <Award className="w-8 h-8 text-purple-500" />
+                      </div>
+                      <div className="mt-2 flex items-center text-xs text-purple-600">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        +18% vs mês anterior
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-blue-50 to-cyan-100">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold text-blue-600">{activePrograms}</p>
+                          <p className="text-sm text-blue-700">🎯 Programas Ativos</p>
+                        </div>
+                        <Target className="w-8 h-8 text-blue-500" />
+                      </div>
+                      <div className="mt-2 flex items-center text-xs text-blue-600">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Todos funcionando
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-green-50 to-emerald-100">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold text-green-600">{participatingEmployees}</p>
+                          <p className="text-sm text-green-700">👥 Participantes</p>
+                        </div>
+                        <Users className="w-8 h-8 text-green-500" />
+                      </div>
+                      <div className="mt-2 flex items-center text-xs text-green-600">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        87% da equipe ativa
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-orange-50 to-amber-100">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-2xl font-bold text-orange-600">{monthlyDistribution.toLocaleString()}</p>
+                          <p className="text-sm text-orange-700">📅 Pontos/Mês</p>
+                        </div>
+                        <Calendar className="w-8 h-8 text-orange-500" />
+                      </div>
+                      <div className="mt-2 flex items-center text-xs text-orange-600">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Distribuição atual
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Monthly Trend Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                      📈 Evolução Mensal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={monthlyTrend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="month" stroke="#666" />
+                        <YAxis stroke="#666" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="points" 
+                          stroke={CHART_COLORS.primary} 
+                          strokeWidth={3}
+                          dot={{ fill: CHART_COLORS.primary, strokeWidth: 2, r: 6 }}
+                          name="Pontos Distribuídos"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="participants" 
+                          stroke={CHART_COLORS.secondary} 
+                          strokeWidth={3}
+                          dot={{ fill: CHART_COLORS.secondary, strokeWidth: 2, r: 6 }}
+                          name="Participantes"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="programs" className="space-y-6">
+                {/* Programs Overview */}
+                <div className="grid gap-4">
+                  {programsData.map((program, index) => (
+                    <Card key={index}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: program.color }}></div>
+                            {program.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-purple-600 border-purple-300">
+                              {program.participants} participantes
+                            </Badge>
+                            <Badge variant="outline" className="text-green-600 border-green-300">
+                              {program.points.toLocaleString()} pontos
+                            </Badge>
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Engajamento</span>
+                            <span>{Math.round((program.participants / participatingEmployees) * 100)}%</span>
+                          </div>
+                          <Progress value={(program.participants / participatingEmployees) * 100} className="h-2" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="ranking" className="space-y-6">
+                {/* Top Performers */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-600" />
+                      🏆 Top Performers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {topPerformers.map((performer, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                              index === 0 ? 'bg-yellow-500' :
+                              index === 1 ? 'bg-gray-400' :
+                              index === 2 ? 'bg-amber-600' : 'bg-blue-500'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium">{performer.name}</p>
+                              <p className="text-sm text-gray-600">{performer.unit} • {performer.program}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-purple-600">{performer.points} pts</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="activities" className="space-y-6">
+                {/* Recent Activities */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-blue-600" />
+                      📈 Atividades Recentes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {recentActivities.map((activity, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 border-l-4 border-purple-200 bg-purple-50">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <div className="flex-1">
+                            <p className="font-medium">{activity.employee}</p>
+                            <p className="text-sm text-gray-600">{activity.action} • {activity.program}</p>
+                            <p className="text-xs text-gray-500">{new Date(activity.date).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )
+        };
+      }
+
       case 'evaluations': {
         // Calcular dados reais das avaliações
         const totalEvaluations = evaluations.length;
@@ -1953,8 +2215,8 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         ];
 
         return {
-          title: '🎼 Avaliações Musicais',
-          description: 'Gestão completa de avaliações, feedback e desenvolvimento de talentos musicais',
+          title: '📋 Avaliações de Desempenho',
+          description: 'Gestão completa de avaliações, feedback e desenvolvimento profissional',
           content: (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
