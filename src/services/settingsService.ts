@@ -242,7 +242,7 @@ export const updateSystemUser = async (userId: string, updates: Partial<SystemUs
     };
     
     // Try to update by auth_user_id first, then by id if that fails
-    let { error: userError } = await supabase
+    const { error: userError } = await supabase
       .from('users')
       .update(userUpdateData)
       .eq('auth_user_id', userId);
