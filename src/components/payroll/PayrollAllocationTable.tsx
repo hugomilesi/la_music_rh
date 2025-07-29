@@ -204,8 +204,8 @@ export function PayrollAllocationTable({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div>
+      <Table className="w-full">
         <TableHeader>
           <TableRow>
             <TableHead className="min-w-[200px]">Nome do Colaborador</TableHead>

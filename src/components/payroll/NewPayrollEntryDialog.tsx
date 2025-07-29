@@ -1,12 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,14 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { User, Building, DollarSign, CreditCard, Edit } from 'lucide-react';
-import type { Payroll } from '@/types/payroll';
+import { Plus, User, Building, DollarSign, CreditCard } from 'lucide-react';
+import { payrollService } from '@/services/payrollService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface EditPayrollDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  payroll: Payroll | null;
-  onUpdatePayroll: (updates: Partial<Payroll>) => void;
+interface NewPayrollEntryDialogProps {
+  onSuccess?: () => void;
+  triggerButton?: React.ReactNode;
+  defaultMonth?: string;
+  defaultYear?: string;
+  defaultUnit?: string;
 }
 
 const UNITS = [
@@ -51,23 +48,20 @@ const CLASSIFICATIONS = [
   'Freelancer'
 ];
 
-export function EditPayrollDialog({
-  open,
-  onOpenChange,
-  payroll,
-  onUpdatePayroll
-}: EditPayrollDialogProps) {
+export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, defaultYear, defaultUnit }: NewPayrollEntryDialogProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Dados pessoais
     nome_funcionario: '',
     cpf_funcionario: '',
-    unidade: '',
+    unidade: defaultUnit || '',
     departamento: '',
     
     // Dados do período
-    mes: new Date().getMonth() + 1,
-    ano: new Date().getFullYear(),
+    mes: defaultMonth ? parseInt(defaultMonth) : new Date().getMonth() + 1,
+    ano: defaultYear ? parseInt(defaultYear) : new Date().getFullYear(),
     
     // Dados profissionais
     classificacao: '',
@@ -94,88 +88,81 @@ export function EditPayrollDialog({
     pix: '',
     
     // Observações
-    observacoes: '',
-    status: 'draft' as 'draft' | 'approved' | 'paid'
+    observacoes: ''
   });
-
-  useEffect(() => {
-    if (payroll) {
-      setFormData({
-        nome_funcionario: payroll.employee?.name || '',
-        cpf_funcionario: payroll.employee?.cpf || '',
-        unidade: payroll.unit || '',
-        departamento: payroll.department || '',
-        mes: payroll.month,
-        ano: payroll.year,
-        classificacao: payroll.classification || '',
-        funcao: payroll.position || '',
-        salario_base: payroll.base_salary || 0,
-        bonus: payroll.bonus || 0,
-        comissao: payroll.commission || 0,
-        passagem: payroll.transport || 0,
-        reembolso: payroll.reimbursement || 0,
-        inss: payroll.inss || 0,
-        lojinha: payroll.store_discount || 0,
-        bistro: payroll.bistro_discount || 0,
-        adiantamento: payroll.advance || 0,
-        outros_descontos: payroll.other_discounts || 0,
-        transport_voucher: payroll.transport_voucher || 0,
-        salary_advance: payroll.salary_advance || 0,
-        banco: payroll.bank || '',
-        agencia: payroll.agency || '',
-        conta: payroll.account || '',
-        pix: payroll.pix || '',
-        observacoes: payroll.notes || '',
-        status: payroll.status
-      });
-    }
-  }, [payroll]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!payroll) return;
+    if (!formData.nome_funcionario || !formData.cpf_funcionario || !formData.unidade || !formData.classificacao || !formData.funcao) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
 
     setLoading(true);
     
     try {
-      const updates = {
-        id: payroll.id,
-        employee: {
-          ...payroll.employee,
-          name: formData.nome_funcionario,
-          cpf: formData.cpf_funcionario
-        },
-        unit: formData.unidade,
-        department: formData.departamento,
-        month: formData.mes,
-        year: formData.ano,
-        classification: formData.classificacao,
-        position: formData.funcao,
-        base_salary: formData.salario_base,
+      // Usar o ID do usuário logado como colaborador_id
+      const payrollData = {
+        colaborador_id: user.id,
+        mes: formData.mes,
+        ano: formData.ano,
+        classificacao: formData.classificacao,
+        funcao: formData.funcao,
+        salario_base: formData.salario_base,
         bonus: formData.bonus,
-        commission: formData.comissao,
-        transport: formData.passagem,
-        reimbursement: formData.reembolso,
+        comissao: formData.comissao,
+        passagem: formData.passagem,
+        reembolso: formData.reembolso,
         inss: formData.inss,
-        store_discount: formData.lojinha,
-        bistro_discount: formData.bistro,
-        advance: formData.adiantamento,
-        other_discounts: formData.outros_descontos,
+        lojinha: formData.lojinha,
+        bistro: formData.bistro,
+        adiantamento: formData.adiantamento,
+        outros_descontos: formData.outros_descontos,
         transport_voucher: formData.transport_voucher,
         salary_advance: formData.salary_advance,
-        bank: formData.banco,
-        agency: formData.agencia,
-        account: formData.conta,
-        pix: formData.pix,
-        notes: formData.observacoes,
-        status: formData.status
+        observacoes: formData.observacoes
       };
       
-      onUpdatePayroll(updates);
-      onOpenChange(false);
+      await payrollService.createPayrollEntry(payrollData);
+      toast.success('Registro de folha de pagamento salvo com sucesso!');
+      setOpen(false);
+      setFormData({
+        nome_funcionario: '',
+        cpf_funcionario: '',
+        unidade: '',
+        departamento: '',
+        mes: new Date().getMonth() + 1,
+        ano: new Date().getFullYear(),
+        classificacao: '',
+        funcao: '',
+        salario_base: 0,
+        bonus: 0,
+        comissao: 0,
+        passagem: 0,
+        reembolso: 0,
+        inss: 0,
+        lojinha: 0,
+        bistro: 0,
+        adiantamento: 0,
+        outros_descontos: 0,
+        transport_voucher: 0,
+        salary_advance: 0,
+        banco: '',
+        agencia: '',
+        conta: '',
+        pix: '',
+        observacoes: ''
+      });
+      onSuccess?.();
     } catch (error) {
-      console.error('Erro ao atualizar registro:', error);
+      console.error('Erro ao criar registro:', error);
+      toast.error('Erro ao criar registro de folha de pagamento');
     } finally {
       setLoading(false);
     }
@@ -191,23 +178,21 @@ export function EditPayrollDialog({
     setFormData(prev => ({ ...prev, cpf_funcionario: formatted }));
   };
 
-  const getMonthName = (month: number) => {
-    const months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-    return months[month - 1];
-  };
-
-  if (!payroll) return null;
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {triggerButton || (
+          <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black shadow-lg gap-2">
+            <Plus className="h-4 w-4 text-black" />
+            Nova Folha
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
-            Editar Folha de Pagamento - {getMonthName(payroll.month)}/{payroll.year}
+            <Plus className="h-5 w-5" />
+            Nova Folha de Pagamento
           </DialogTitle>
         </DialogHeader>
         
@@ -554,49 +539,31 @@ export function EditPayrollDialog({
             </CardContent>
           </Card>
 
-          {/* Status e Observações */}
+          {/* Observações */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Status e Observações</CardTitle>
+              <CardTitle className="text-lg">Observações</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value: 'draft' | 'approved' | 'paid') => setFormData(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="approved">Aprovado</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                  placeholder="Observações adicionais..."
-                  rows={3}
-                />
-              </div>
+            <CardContent>
+              <Textarea
+                value={formData.observacoes}
+                onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                placeholder="Observações adicionais..."
+                rows={3}
+              />
             </CardContent>
           </Card>
 
           <Separator />
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
+              {loading ? 'Salvando...' : 'Salvar Folha de Pagamento'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

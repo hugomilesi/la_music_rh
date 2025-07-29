@@ -9,33 +9,37 @@ export interface Payroll {
 
 export interface PayrollEntry {
   id: string;
-  payroll_id: string;
+  payroll_id?: string;
   collaborator_id: string;
-  collaborator_name: string;
-  collaborator_email: string;
-  collaborator_phone: string;
+  // Dados pessoais vêm da tabela users via relacionamento
+  collaborator_name: string; // users.full_name
+  month: number;
+  year: number;
   classification: string;
   role: string;
   base_salary: number;
   bonus: number;
   commission: number;
   reimbursement: number;
-  transport_voucher: number;
+  transport: number; // passagem
   inss: number;
-  store_expenses: number;
-  bistro_expenses: number;
-  salary_advance: number;
-  other_discounts: number;
+  store_discount: number; // lojinha
+  bistro_discount: number; // bistro
+  advance: number; // adiantamento
+  other_discounts: number; // outros_descontos
+  total_amount?: number;
   notes?: string;
   status: string;
-  month: number;
-  year: number;
-  payroll_status: string;
-  total_earnings: number;
-  total_deductions: number;
-  net_total: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  // Dados pessoais que vêm da tabela users
+  units: string[];
+  department: string;
+  bank: string;
+  agency: string;
+  account: string;
+  cpf: string;
+  pix: string;
 }
 
 export interface PayrollAllocation {
