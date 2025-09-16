@@ -32,6 +32,7 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   
+  const [isRegisteredEmployee, setIsRegisteredEmployee] = useState(!!entry?.colaborador_id);
   const [formData, setFormData] = useState<PayrollEntryInput>({
     colaborador_id: entry?.colaborador_id || '',
     mes: entry?.mes || month || new Date().getMonth() + 1,
@@ -49,7 +50,10 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
     adiantamento: entry?.adiantamento || 0,
     outros_descontos: entry?.outros_descontos || 0,
     observacoes: entry?.observacoes || '',
-    payroll_id: entry?.payroll_id || payrollId
+    payroll_id: entry?.payroll_id || payrollId,
+    nome_colaborador: entry?.nome_colaborador || '',
+    cpf_colaborador: entry?.cpf_colaborador || '',
+    unidade: entry?.unidade || ''
   });
 
   useEffect(() => {
@@ -58,7 +62,7 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
       } catch (err) {
-        console.error('Erro ao carregar funcionários:', err);
+        // Log desabilitado: Erro ao carregar funcionários
       } finally {
         setLoadingEmployees(false);
       }
@@ -103,6 +107,17 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate based on employee type
+    if (isRegisteredEmployee && !formData.colaborador_id) {
+      alert('Por favor, selecione um colaborador cadastrado');
+      return;
+    }
+    
+    if (!isRegisteredEmployee && (!formData.nome_colaborador || !formData.cpf_colaborador || !formData.unidade)) {
+      alert('Por favor, preencha todos os dados do colaborador (nome, CPF e unidade)');
+      return;
+    }
+    
     try {
       let result: PayrollEntry | null;
       
@@ -132,7 +147,7 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
         onSave(result);
       }
     } catch (err) {
-      console.error('Erro ao salvar entrada:', err);
+      // Log desabilitado: Erro ao salvar entrada
     }
   };
 
@@ -158,31 +173,124 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Employee Selection */}
-          <div>
+          {/* Employee Type Selection */}
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Funcionário *
+              Tipo de Colaborador *
             </label>
-            <select
-              value={formData.colaborador_id}
-              onChange={(e) => handleInputChange('colaborador_id', e.target.value)}
-              required
-              disabled={loadingEmployees || !!entry}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-            >
-              <option value="">Selecione um funcionário</option>
-              {employees.map(employee => (
-                <option key={employee.auth_user_id} value={employee.auth_user_id}>
-                  {employee.full_name} - {employee.units}
-                </option>
-              ))}
-            </select>
-            {selectedEmployee && (
-              <p className="text-sm text-gray-600 mt-1">
-                {selectedEmployee.department} | CPF: {selectedEmployee.cpf}
-              </p>
-            )}
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="employeeType"
+                  checked={isRegisteredEmployee}
+                  onChange={() => {
+                    setIsRegisteredEmployee(true);
+                    setFormData({ 
+                      ...formData, 
+                      colaborador_id: '',
+                      nome_colaborador: '',
+                      cpf_colaborador: '',
+                      unidade: ''
+                    });
+                  }}
+                  className="mr-2"
+                  disabled={!!entry}
+                />
+                Colaborador Cadastrado
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="employeeType"
+                  checked={!isRegisteredEmployee}
+                  onChange={() => {
+                    setIsRegisteredEmployee(false);
+                    setFormData({ 
+                      ...formData, 
+                      colaborador_id: undefined
+                    });
+                  }}
+                  className="mr-2"
+                  disabled={!!entry}
+                />
+                Colaborador Não Cadastrado
+              </label>
+            </div>
           </div>
+
+          {/* Employee Selection for Registered */}
+          {isRegisteredEmployee && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Funcionário *
+              </label>
+              <select
+                value={formData.colaborador_id}
+                onChange={(e) => handleInputChange('colaborador_id', e.target.value)}
+                required
+                disabled={loadingEmployees || !!entry}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              >
+                <option value="">Selecione um funcionário</option>
+                {employees.map(employee => (
+                  <option key={employee.auth_user_id} value={employee.auth_user_id}>
+                    {employee.full_name} - {employee.units}
+                  </option>
+                ))}
+              </select>
+              {selectedEmployee && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedEmployee.department} | CPF: {selectedEmployee.cpf}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Manual Employee Data for Unregistered */}
+          {!isRegisteredEmployee && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Colaborador *
+                </label>
+                <input
+                  type="text"
+                  value={formData.nome_colaborador || ''}
+                  onChange={(e) => handleInputChange('nome_colaborador', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  placeholder="Digite o nome completo"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  CPF *
+                </label>
+                <input
+                  type="text"
+                  value={formData.cpf_colaborador || ''}
+                  onChange={(e) => handleInputChange('cpf_colaborador', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  placeholder="000.000.000-00"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Unidade *
+                </label>
+                <input
+                  type="text"
+                  value={formData.unidade || ''}
+                  onChange={(e) => handleInputChange('unidade', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  placeholder="Digite a unidade de trabalho"
+                />
+              </div>
+            </>
+          )}
 
           {/* Month and Year */}
           <div className="grid grid-cols-2 gap-3">

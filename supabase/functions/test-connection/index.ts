@@ -1,15 +1,20 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+    ? '*' 
+    : 'http://localhost:8081',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
-      },
+      headers: corsHeaders,
     });
   }
 
@@ -26,9 +31,7 @@ Deno.serve(async (req: Request) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
+        ...corsHeaders,
       },
     });
   } catch (error) {
@@ -42,7 +45,7 @@ Deno.serve(async (req: Request) => {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...corsHeaders,
       },
     });
   }

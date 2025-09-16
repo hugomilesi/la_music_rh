@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Evaluation } from '@/types/evaluation';
 import { Star, Edit, Coffee, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface CompletedEvaluationsModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
   onOpenChange,
   evaluations
 }) => {
-  const { permissions } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name'>('date');
 
   const getSortedEvaluations = () => {
@@ -60,7 +60,7 @@ export const CompletedEvaluationsModal: React.FC<CompletedEvaluationsModalProps>
   const sortedEvaluations = getSortedEvaluations();
 
   // Verificação de permissão
-  if (!permissions.canManageEvaluations) {
+  if (!canViewModule('avaliacoes')) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">

@@ -4,7 +4,7 @@ import { PayrollEntry } from '../types/payroll';
 
 export interface PayrollEntryInput {
   id?: string;
-  colaborador_id: string;
+  colaborador_id?: string;
   mes: number;
   ano: number;
   classificacao: string;
@@ -21,6 +21,9 @@ export interface PayrollEntryInput {
   outros_descontos?: number;
   observacoes?: string;
   payroll_id?: string;
+  nome_colaborador?: string;
+  cpf_colaborador?: string;
+  unidade?: string;
 }
 
 export interface PayrollEntryUpdate {

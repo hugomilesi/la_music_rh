@@ -45,7 +45,7 @@ export const AdminProfileDropdown: React.FC = () => {
   };
 
   const handleLogout = () => {
-    console.log('Logout clicked');
+    // Log desabilitado: Logout clicked
     // Implement logout logic here
   };
 

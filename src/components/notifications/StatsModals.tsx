@@ -105,7 +105,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ children, type }) => {
     try {
       await sendNotification(notificationId);
     } catch (error) {
-      console.error('Erro ao enviar notificação:', error);
+      // Log desabilitado: Erro ao enviar notificação
     }
   };
 

@@ -1,3 +1,13 @@
+/* Import advanced responsive grid system */
+@import './styles/advanced-responsive-grid.css';
+@import './styles/mobile-responsive.css';
+@import './styles/mobile-responsive-complete.css';
+@import './styles/mobile-forms.css';
+@import './styles/touch-targets.css';
+
+/* PWA Styles */
+@import './styles/pwa-styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

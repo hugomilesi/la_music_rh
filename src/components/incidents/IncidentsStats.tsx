@@ -128,7 +128,7 @@ const IncidentsStats: React.FC = () => {
         const data = await incidentService.getFiltered({});
         setIncidents(data);
       } catch (error) {
-        console.error('Erro ao buscar incidentes:', error);
+        // Log desabilitado: Erro ao buscar incidentes
       } finally {
         setLoading(false);
       }

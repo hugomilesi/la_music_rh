@@ -79,7 +79,7 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating evaluation:', error);
+      // Log desabilitado: Error updating evaluation
       // Error handling is already done in the context
     }
   };

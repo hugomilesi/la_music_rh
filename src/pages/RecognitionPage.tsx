@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { getFirstAccessibleRoute } from '@/utils/redirectUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trophy, Star, DollarSign, Award, Crown, Medal, Eye, Filter, Loader2, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { CriteriaModal } from '@/components/recognition/CriteriaModal';
 import { NewBonusDialog } from '@/components/recognition/NewBonusDialog';
 import { DeliverPrizeDialog } from '@/components/recognition/DeliverPrizeDialog';
@@ -23,8 +24,8 @@ import { toast } from 'sonner';
 
 const RecognitionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
+  const { canViewModule, hasPermission, canManagePermissions } = usePermissionsV2();
+  const canViewRecognition = canViewModule('reconhecimento');
   
   const [selectedProgram, setSelectedProgram] = useState<RecognitionProgram | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<DetailedRankingEmployee | null>(null);
@@ -64,12 +65,12 @@ const RecognitionPage: React.FC = () => {
         const achievementsData = await RecognitionService.getEmployeeAchievements();
         setAchievements(achievementsData);
       } catch (error) {
-        console.error('Erro ao carregar conquistas:', error);
+        // Log desabilitado: Erro ao carregar conquistas
         setAchievements([]);
       }
       
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      // Log desabilitado: Erro ao carregar dados
       toast.error('Erro ao carregar dados do reconhecimento');
     } finally {
       setLoading(false);
@@ -95,7 +96,7 @@ const RecognitionPage: React.FC = () => {
         setCriteriaModalOpen(true);
       }
     } catch (error) {
-      console.error('Erro ao carregar critérios:', error);
+      // Log desabilitado: Erro ao carregar critérios
       toast.error('Erro ao carregar critérios do programa');
     }
   };
@@ -115,7 +116,7 @@ const RecognitionPage: React.FC = () => {
       // Se for uma string normal, retornar como está
       return employeeUnit;
     } catch (error) {
-      console.warn('Erro ao fazer parse do employee_unit:', error);
+      // Log desabilitado: Erro ao fazer parse do employee_unit
       return employeeUnit || 'N/A';
     }
   };
@@ -146,7 +147,7 @@ const RecognitionPage: React.FC = () => {
       setSelectedEmployee(detailedEmployee);
       setEmployeeDetailsModalOpen(true);
     } catch (error) {
-      console.error('Erro ao carregar detalhes do funcionário:', error);
+      // Log desabilitado: Erro ao carregar detalhes do funcionário
       toast.error('Erro ao carregar detalhes do funcionário');
     }
   };
@@ -166,36 +167,36 @@ const RecognitionPage: React.FC = () => {
 
   const handleCreateBonus = async (bonus: any) => {
     try {
-      console.log('Nova bonificação criada:', bonus);
+      // Log desabilitado: Nova bonificação criada
       toast.success('Bonificação criada com sucesso!');
       // Recarregar dados
       await loadData();
     } catch (error) {
-      console.error('Erro ao criar bonificação:', error);
+      // Log desabilitado: Erro ao criar bonificação
       toast.error('Erro ao criar bonificação');
     }
   };
 
   const handleDeliverPrize = async (prize: any) => {
     try {
-      console.log('Prêmio entregue:', prize);
+      // Log desabilitado: Prêmio entregue
       toast.success('Prêmio entregue com sucesso!');
       // Recarregar dados
       await loadData();
     } catch (error) {
-      console.error('Erro ao entregar prêmio:', error);
+      // Log desabilitado: Erro ao entregar prêmio
       toast.error('Erro ao entregar prêmio');
     }
   };
 
   const handleSaveProgram = async (updatedProgram: RecognitionProgram) => {
     try {
-      console.log('Programa atualizado:', updatedProgram);
+      // Log desabilitado: Programa atualizado
       toast.success('Programa atualizado com sucesso!');
       // Recarregar dados
       await loadData();
     } catch (error) {
-      console.error('Erro ao atualizar programa:', error);
+      // Log desabilitado: Erro ao atualizar programa
       toast.error('Erro ao atualizar programa');
     }
   };
@@ -247,30 +248,10 @@ const RecognitionPage: React.FC = () => {
     );
   }
 
-  if (!canManageEmployees) {
-    return (
-      <Dialog open={true} onOpenChange={() => navigate(-1)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-red-500" />
-              Acesso Negado
-            </DialogTitle>
-            <DialogDescription>
-              Você não tem permissão para visualizar informações de reconhecimento e colaboradores.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-500 mb-6">
-              Entre em contato com o administrador para solicitar acesso.
-            </p>
-            <Button onClick={() => navigate(-1)} className="w-full">
-              Voltar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+  if (!canViewRecognition) {
+    const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
+    // Log desabilitado: User lacks recognition view permission, redirecting
+    return <Navigate to={firstAccessibleRoute} replace />;
   }
 
   return (
@@ -699,7 +680,7 @@ const RecognitionPage: React.FC = () => {
           onOpenChange={setCriteriaModalOpen}
           program={selectedProgram}
           onSaveEvaluation={(evaluations) => {
-            console.log('Avaliação salva:', evaluations);
+            // Avaliação salva com sucesso
             // Here you would typically save to a backend or state management
           }}
           onSaveProgram={handleSaveProgram}

@@ -24,7 +24,7 @@ import { Lock } from 'lucide-react';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { formatDateToLocal } from '@/utils/dateUtils';
 
 interface EditIncidentDialogProps {
@@ -60,10 +60,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   const { updateIncident } = useIncidents();
   const { employees } = useEmployees();
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
+  const { canEditInModule } = usePermissionsV2();
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canManageEmployees = useMemo(() => canEditInModule('usuarios'), [canEditInModule]);
   
   const form = useForm<IncidentFormData>({
     defaultValues: {

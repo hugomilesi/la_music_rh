@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Department {
   id: string;
@@ -20,6 +20,7 @@ export interface Role {
 
 export interface RoleWithDepartment extends Role {
   department: Department;
+  employees: number;
 }
 
 // Department CRUD operations
@@ -90,80 +91,30 @@ export const fetchRoles = async (): Promise<RoleWithDepartment[]> => {
     throw new Error(`Erro ao buscar cargos: ${error.message}`);
   }
 
-  return data || [];
+  // Transform the data to match the expected interface
+  const transformedData = data?.map(role => ({
+    ...role,
+    department: role.department || null,
+    employees: 0 // Default value, will be updated by countEmployeesByRole if needed
+  })) || [];
+
+  return transformedData;
 };
 
-export const createRole = async (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>): Promise<Role> => {
-  const { data, error } = await supabase
-    .from('roles')
-    .insert([role])
-    .select()
-    .single();
 
-  if (error) {
-    throw new Error(`Erro ao criar cargo: ${error.message}`);
-  }
 
-  return data;
-};
 
-export const updateRole = async (id: string, updates: Partial<Omit<Role, 'id' | 'created_at' | 'updated_at'>>): Promise<Role> => {
-  const { data, error } = await supabase
-    .from('roles')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
 
-  if (error) {
-    throw new Error(`Erro ao atualizar cargo: ${error.message}`);
-  }
 
-  return data;
-};
-
-export const deleteRole = async (id: string): Promise<void> => {
-  // First get the role name to check if it's being used by employees
-  const { data: role, error: roleError } = await supabase
-    .from('roles')
-    .select('name')
-    .eq('id', id)
-    .single();
-
-  if (roleError) {
-    throw new Error(`Erro ao buscar cargo: ${roleError.message}`);
-  }
-
-  // Check if role name is being used by employees
-  const { data: employees, error: checkError } = await supabase
-    .from('users')
-    .select('id')
-    .eq('position', role.name)
-    .limit(1);
-
-  if (checkError) {
-    throw new Error(`Erro ao verificar uso do cargo: ${checkError.message}`);
-  }
-
-  if (employees && employees.length > 0) {
-    throw new Error('Não é possível excluir um cargo que está sendo usado por funcionários.');
-  }
-
-  const { error } = await supabase
-    .from('roles')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`Erro ao deletar cargo: ${error.message}`);
-  }
-};
 
 // Get roles by department
 export const fetchRolesByDepartment = async (departmentId: string): Promise<Role[]> => {
   const { data, error } = await supabase
     .from('roles')
-    .select('*')
+    .select(`
+      *,
+      department:departments(*)
+    `)
     .eq('department_id', departmentId)
     .order('name');
 
@@ -175,15 +126,35 @@ export const fetchRolesByDepartment = async (departmentId: string): Promise<Role
 };
 
 // Count employees by role
-export const countEmployeesByRole = async (roleName: string): Promise<number> => {
-  const { count, error } = await supabase
-    .from('users')
-    .select('*', { count: 'exact', head: true })
-    .eq('position', roleName);
+export const countEmployeesByRole = async (roleId: string): Promise<number> => {
+  try {
+    // First get the role name
+    const { data: roleData, error: roleError } = await supabase
+      .from('roles')
+      .select('name')
+      .eq('id', roleId)
+      .single();
 
-  if (error) {
-    throw new Error(`Erro ao contar funcionários: ${error.message}`);
+    if (roleError || !roleData) {
+      // Could not find role warning disabled
+      return 0;
+    }
+
+    // Count users with this role
+    const { count, error } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', roleData.name)
+      .neq('status', 'inactive');
+
+    if (error) {
+      // Could not count users for role warning disabled
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    // Error counting employees for role warning disabled
+    return 0;
   }
-
-  return count || 0;
 };

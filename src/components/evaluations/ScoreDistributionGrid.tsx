@@ -8,7 +8,7 @@ interface ScoreDistributionGridProps {
 }
 
 export const ScoreDistributionGrid: React.FC<ScoreDistributionGridProps> = ({ evaluations }) => {
-  const completedEvaluations = evaluations.filter(e => e.status === 'Concluída' && e.type !== 'Coffee Connection');
+  const completedEvaluations = evaluations.filter(e => e.status === 'Concluída' && e.type !== 'Coffee Connection' && e.score > 0);
 
   const scoreDistribution = {
     excellent: completedEvaluations.filter(e => e.score >= 4.5).length,

@@ -17,6 +17,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Search, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,15 +41,12 @@ interface VacationRequestsListProps {
 }
 
 export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onViewDetails, onEditRequest }) => {
-  const { 
-    vacationRequests, 
-    deleteVacationRequest,
-    updateVacationRequest 
-  } = useVacation();
+  const { vacationRequests, deleteVacationRequest, updateVacationRequest } = useVacation();
   const { user } = useAuth();
-  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; employeeName: string; type: 'delete' | 'cancel' }>({ open: false, id: '', employeeName: '', type: 'delete' });
 
   const formatSafeDate = (dateString: string | null | undefined): string => {
     if (!dateString) return 'Data inválida';
@@ -89,16 +97,20 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
 
 
   const handleDelete = (id: string, employeeName: string) => {
-    if (confirm(`Tem certeza que deseja excluir a solicitação de férias de ${employeeName}?`)) {
-      deleteVacationRequest(id);
-    }
+    setDeleteDialog({ open: true, id, employeeName, type: 'delete' });
   };
 
   const handleCancelApproved = (id: string, employeeName: string) => {
-    if (confirm(`Tem certeza que deseja cancelar a solicitação de férias aprovada de ${employeeName}? Esta ação não pode ser desfeita.`)) {
-      // Update the status to 'cancelado' instead of deleting
-      updateVacationRequest(id, { status: 'cancelado' });
+    setDeleteDialog({ open: true, id, employeeName, type: 'cancel' });
+  };
+
+  const confirmDelete = () => {
+    if (deleteDialog.type === 'delete') {
+      deleteVacationRequest(deleteDialog.id);
+    } else {
+      updateVacationRequest(deleteDialog.id, { status: 'cancelado' });
     }
+    setDeleteDialog({ open: false, id: '', employeeName: '', type: 'delete' });
   };
 
   return (
@@ -218,6 +230,31 @@ export const VacationRequestsList: React.FC<VacationRequestsListProps> = ({ onVi
           ))
         )}
       </div>
+
+      {/* Dialog de Confirmação */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteDialog.type === 'delete' ? 'Excluir Solicitação' : 'Cancelar Solicitação'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog.type === 'delete' 
+                ? `Tem certeza que deseja excluir a solicitação de férias de ${deleteDialog.employeeName}?`
+                : `Tem certeza que deseja cancelar a solicitação de férias aprovada de ${deleteDialog.employeeName}? Esta ação não pode ser desfeita.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialog({ open: false, id: '', employeeName: '', type: 'delete' })}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              {deleteDialog.type === 'delete' ? 'Excluir' : 'Cancelar Solicitação'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

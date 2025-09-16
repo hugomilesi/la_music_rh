@@ -126,7 +126,7 @@ export const Dashboard: React.FC = () => {
           <p className="text-gray-600">Acompanhe o desempenho da gestão de pessoas em tempo real</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="dashboard-stats-grid">
           {metrics.isLoading ? (
             <>
               <StatCardSkeleton className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200" />
@@ -195,7 +195,7 @@ export const Dashboard: React.FC = () => {
                 subtitle="Em processo de avaliação"
                 icon={Target}
                 color="orange"
-                onClick={() => handleStatCardClick('evaluations')}
+                onClick={() => handleStatCardClick('avaliacoes')}
               />
               
               <StatCard
@@ -230,7 +230,7 @@ export const Dashboard: React.FC = () => {
           <p className="text-gray-600">Informações importantes e eventos da equipe</p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="dashboard-cards-grid">
           {/* Aniversários */}
           <div className="gradient-hr-warm glass-subtle rounded-xl p-6 text-white relative overflow-hidden group hover-lift transition-all duration-300 border border-white/20 shadow-hr-soft">
             <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors"></div>

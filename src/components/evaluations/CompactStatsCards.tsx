@@ -15,8 +15,9 @@ export const CompactStatsCards: React.FC = () => {
   const totalEvaluations = evaluations.length;
   const completedEvaluations = evaluations.filter(e => e.status === 'Concluída').length;
   const inProgressEvaluations = evaluations.filter(e => e.status === 'Em Andamento').length;
-  const averageScore = evaluations.length > 0 
-    ? evaluations.reduce((sum, e) => sum + (e.score || 0), 0) / evaluations.length 
+  const completedEvaluationsWithScore = evaluations.filter(e => e.status === 'Concluída' && e.score > 0);
+  const averageScore = completedEvaluationsWithScore.length > 0 
+    ? completedEvaluationsWithScore.reduce((sum, e) => sum + e.score, 0) / completedEvaluationsWithScore.length 
     : 0;
 
   const completionRate = totalEvaluations > 0 

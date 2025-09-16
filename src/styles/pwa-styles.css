@@ -1,0 +1,475 @@
+/* PWA Specific Styles */
+/* Estilos específicos para Progressive Web App */
+
+/* Detecção de PWA instalado */
+@media all and (display-mode: standalone) {
+  :root {
+    --pwa-safe-area-top: env(safe-area-inset-top, 0px);
+    --pwa-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --pwa-safe-area-left: env(safe-area-inset-left, 0px);
+    --pwa-safe-area-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Ajustes para PWA instalado */
+  body {
+    padding-top: var(--pwa-safe-area-top);
+    padding-bottom: var(--pwa-safe-area-bottom);
+    padding-left: var(--pwa-safe-area-left);
+    padding-right: var(--pwa-safe-area-right);
+  }
+
+  /* Header ajustado para PWA - sem interferir no menu mobile */
+  .main-header:not(header) {
+    padding-top: calc(1rem + var(--pwa-safe-area-top));
+  }
+
+  /* Sidebar ajustada para PWA - preservar funcionalidade mobile */
+  .main-sidebar:not([class*="sidebar"]) {
+    top: var(--pwa-safe-area-top);
+    height: calc(100vh - var(--pwa-safe-area-top) - var(--pwa-safe-area-bottom));
+  }
+
+  /* Conteúdo principal ajustado */
+  .main-content {
+    padding-bottom: calc(1rem + var(--pwa-safe-area-bottom));
+  }
+
+  /* Garantir que elementos de navegação mobile não sejam afetados */
+  header, .header, [role="banner"] {
+    position: relative !important;
+    z-index: 50 !important;
+  }
+
+  /* Botão de menu sempre visível em PWA mobile */
+  header .menu-toggle-button,
+  .header .menu-toggle-button,
+  [role="banner"] .menu-toggle-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* Estilos específicos para dispositivos móveis em PWA */
+@media (max-width: 768px) and (display-mode: standalone) {
+  /* Otimizações para tela pequena em PWA */
+  .container {
+    padding-left: max(1rem, var(--pwa-safe-area-left));
+    padding-right: max(1rem, var(--pwa-safe-area-right));
+  }
+
+  /* Cards otimizados para PWA mobile */
+  .card {
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Botões otimizados para touch em PWA - EXCETO menu toggle */
+  .btn:not(.menu-toggle-button), button:not(.menu-toggle-button) {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    touch-action: manipulation;
+  }
+
+  /* Garantir que o botão de menu seja sempre visível */
+  .menu-toggle-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Inputs otimizados para PWA mobile */
+  input, textarea, select {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s ease;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+  }
+
+  /* Navegação otimizada para PWA */
+  .nav-item {
+    padding: 12px 16px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .nav-item:hover, .nav-item:focus {
+    background-color: rgba(59, 130, 246, 0.1);
+    transform: translateX(2px);
+  }
+
+  /* Tabelas responsivas em PWA */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  th, td {
+    padding: 12px 8px;
+    white-space: nowrap;
+  }
+
+  /* Modais otimizados para PWA mobile */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem - var(--pwa-safe-area-top) - var(--pwa-safe-area-bottom));
+    border-radius: 16px;
+    overflow-y: auto;
+  }
+
+  /* Forms otimizados para PWA */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* Grid responsivo para PWA */
+  .grid-responsive {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .grid-responsive.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-responsive.cols-3 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Status bar para PWA */
+  .pwa-status-bar {
+    height: var(--pwa-safe-area-top);
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+  }
+}
+
+/* Estilos para PWA em landscape */
+@media (orientation: landscape) and (display-mode: standalone) and (max-height: 500px) {
+  .main-header {
+    height: 60px;
+    padding: 0.5rem 1rem;
+  }
+
+  .main-sidebar {
+    width: 240px;
+  }
+
+  .sidebar-collapsed .main-sidebar {
+    width: 60px;
+  }
+
+  .main-content {
+    margin-left: 240px;
+  }
+
+  .sidebar-collapsed .main-content {
+    margin-left: 60px;
+  }
+}
+
+/* Estilos gerais para mobile - garantir menu sempre visível */
+@media (max-width: 768px) {
+  /* Botão de menu sempre visível em mobile */
+  .menu-toggle-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Header sempre visível em mobile */
+  header, .header, [role="banner"] {
+    position: relative !important;
+    z-index: 50 !important;
+    display: flex !important;
+  }
+
+  /* Garantir que o container do botão seja visível */
+  header .menu-toggle-button,
+  .header .menu-toggle-button,
+  [role="banner"] .menu-toggle-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* Animações otimizadas para PWA */
+@media (display-mode: standalone) {
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+/* Scrollbar personalizada para PWA */
+@media (display-mode: standalone) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Otimizações para iOS PWA */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    /* Remover bounce scroll no iOS */
+    body {
+      -webkit-overflow-scrolling: touch;
+      overflow-scrolling: touch;
+    }
+
+    /* Otimizar tap highlights */
+    * {
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      -webkit-touch-callout: none;
+    }
+
+    /* Botões e links com tap highlight personalizado */
+    button, .btn, a {
+      -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    }
+
+    /* Inputs sem zoom no iOS */
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+
+    /* Otimizar performance de animações */
+    .animated {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+  }
+}
+
+/* Otimizações para Android PWA */
+@media (display-mode: standalone) and (max-width: 768px) {
+  /* Melhorar performance de scroll */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+    will-change: scroll-position;
+  }
+
+  /* Otimizar renderização */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Melhorar touch response */
+  .touch-target {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* Dark mode para PWA */
+@media (prefers-color-scheme: dark) and (display-mode: standalone) {
+  :root {
+    --pwa-bg-primary: #1f2937;
+    --pwa-bg-secondary: #374151;
+    --pwa-text-primary: #f9fafb;
+    --pwa-text-secondary: #d1d5db;
+    --pwa-border: #4b5563;
+  }
+
+  body {
+    background-color: var(--pwa-bg-primary);
+    color: var(--pwa-text-primary);
+  }
+
+  .card {
+    background-color: var(--pwa-bg-secondary);
+    border-color: var(--pwa-border);
+  }
+
+  input, textarea, select {
+    background-color: var(--pwa-bg-secondary);
+    border-color: var(--pwa-border);
+    color: var(--pwa-text-primary);
+  }
+
+  .nav-item:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Prevenção de zoom indesejado */
+@media (display-mode: standalone) {
+  @viewport {
+    width: device-width;
+    initial-scale: 1;
+    maximum-scale: 1;
+    user-scalable: no;
+  }
+}
+
+/* Otimizações de acessibilidade para PWA */
+@media (display-mode: standalone) {
+  /* Melhor contraste para elementos focáveis */
+  button:focus, .btn:focus, a:focus, input:focus, textarea:focus, select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Indicadores visuais para elementos interativos */
+  .interactive {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .interactive:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Otimizações para telas de alta densidade */
+@media (display-mode: standalone) and (-webkit-min-device-pixel-ratio: 2) {
+  /* Ícones e imagens mais nítidos */
+  .icon, .logo {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  /* Bordas mais nítidas */
+  .card, .btn, input, textarea, select {
+    border-width: 0.5px;
+  }
+}
+
+/* Estilos para notificações PWA */
+@media (display-mode: standalone) {
+  .pwa-notification {
+    position: fixed;
+    top: calc(1rem + var(--pwa-safe-area-top));
+    right: 1rem;
+    left: 1rem;
+    z-index: 10000;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

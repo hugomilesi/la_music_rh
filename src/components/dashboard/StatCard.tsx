@@ -2,6 +2,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import '@/styles/card-animations.css';
 
 interface StatCardProps {
   title: string;
@@ -81,10 +82,10 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div 
       className={cn(
-        "bg-white rounded-xl shadow-sm border p-6 transition-all duration-300 group relative overflow-hidden",
+        "bg-white rounded-xl shadow-sm border p-6 group relative overflow-hidden stat-card",
         colorStyle.border,
         colorStyle.shadow,
-        onClick ? "hover:shadow-xl hover:scale-105 hover:-translate-y-1 cursor-pointer" : "hover:shadow-lg"
+        onClick ? "cursor-pointer" : ""
       )}
       onClick={onClick}
     >
@@ -97,7 +98,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       <div className="flex items-start justify-between relative z-10">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-2 group-hover:text-gray-700 transition-colors">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform origin-left">{value}</p>
+          <p className="text-3xl font-bold text-gray-900 mb-2 stat-value origin-left">{value}</p>
           {subtitle && (
             <p className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors leading-relaxed">{subtitle}</p>
           )}
@@ -117,10 +118,10 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
         
         <div className={cn(
-          "w-14 h-14 rounded-xl bg-gradient-to-r flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300",
+          "w-14 h-14 rounded-xl bg-gradient-to-r flex items-center justify-center shadow-lg stat-icon",
           colorStyle.gradient
         )}>
-          <Icon className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-300" />
+          <Icon className="w-7 h-7 text-white" />
         </div>
       </div>
       

@@ -11,7 +11,7 @@ export const createUserSchema = z.object({
     .min(1, 'Email é obrigatório')
     .email('Email deve ter um formato válido')
     .max(255, 'Email não pode ter mais de 255 caracteres'),
-  role: z.enum(['admin', 'coordenador', 'professor', 'usuario'], {
+  role: z.enum(['admin', 'gestor_rh', 'gerente'], {
     errorMap: () => ({ message: 'Perfil de usuário é obrigatório' })
   }),
   position: z.string()
@@ -25,7 +25,7 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  role: z.enum(['admin', 'coordenador', 'professor', 'usuario']),
+  role: z.enum(['admin', 'gestor_rh', 'gerente']),
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),
   phone: z.string().optional(),

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { documentService, Document as ServiceDocument } from '@/services/documentService';
 import { Document, DocumentUpload } from '@/types/document';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface DocumentFilter {
   searchTerm?: string;
@@ -75,38 +76,19 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   // Helper function to map service document to UI document
-  const mapServiceDocumentToUIDocument = (serviceDoc: ServiceDocument & { employee?: { full_name: string } }): Document => {
-    // Ensure we have a valid UUID for the document ID
-    const documentId = typeof serviceDoc.id === 'string' ? serviceDoc.id : String(serviceDoc.id);
-    
-    return {
-      id: documentId,
-      employeeId: serviceDoc.employee_id,
-      employee: serviceDoc.employee?.full_name || 'Nome não encontrado',
-      document: serviceDoc.document_name,
-      type: serviceDoc.document_type as Document['type'],
-      uploadDate: serviceDoc.created_at,
-      expiryDate: serviceDoc.expiry_date,
-      status: serviceDoc.status,
-      fileUrl: serviceDoc.file_path,
-      fileName: serviceDoc.file_name,
-      fileSize: serviceDoc.file_size,
-      uploadedBy: serviceDoc.uploaded_by,
-      notes: serviceDoc.notes
-    };
+  const mapServiceDocumentToUIDocument = (serviceDoc: any): Document => {
+    return serviceDoc; // No mapping needed, data comes in correct format
   };
 
   const loadDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔄 Loading documents...');
+      
       const data = await documentService.getAllDocuments();
-      console.log('✅ Documents loaded:', data.length);
       const mappedDocuments = data.map(mapServiceDocumentToUIDocument);
       setDocuments(mappedDocuments);
     } catch (err) {
-      console.error('❌ Error loading documents:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar documentos');
       toast({
         title: 'Erro',
@@ -120,7 +102,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const uploadDocument = async (uploadData: DocumentUpload): Promise<Document> => {
     try {
-      console.log('🔄 Uploading document:', uploadData.documentType);
+      // Log desabilitado: Uploading document
       
       // Map UI upload data to service upload data
       const serviceUploadData = {
@@ -134,7 +116,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
       
       const newServiceDocument = await documentService.uploadDocument(serviceUploadData);
-      console.log('✅ Document uploaded:', newServiceDocument.id);
+      // Log desabilitado: Document uploaded
       
       // Map service document to UI document
       const newDocument = mapServiceDocumentToUIDocument(newServiceDocument);
@@ -149,7 +131,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return newDocument;
     } catch (err) {
-      console.error('❌ Error uploading document:', err);
+      // Log desabilitado: Error uploading document
       const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar documento';
       toast({
         title: 'Erro',
@@ -184,7 +166,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return updatedDocument;
     } catch (err) {
-      console.error('❌ Error updating document:', err);
+      // Log desabilitado: Error updating document
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar documento',
@@ -206,7 +188,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: 'Documento excluído com sucesso'
       });
     } catch (err) {
-      console.error('❌ Error deleting document:', err);
+      // Log desabilitado: Error deleting document
       toast({
         title: 'Erro',
         description: 'Erro ao excluir documento',
@@ -218,7 +200,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const replaceDocument = async (documentId: string, newFile: File): Promise<Document> => {
     try {
-      console.log('🔄 Replacing document:', documentId);
+      // Log desabilitado: Replacing document
       
       // Find the existing document
       const existingDocument = documents.find(doc => doc.id === documentId);
@@ -255,7 +237,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return newDocument;
     } catch (err) {
-      console.error('❌ Error replacing document:', err);
+      // Log desabilitado: Error replacing document
       toast({
         title: 'Erro',
         description: 'Erro ao substituir documento',
@@ -267,7 +249,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const downloadDocument = async (document: Document): Promise<void> => {
     try {
-      console.log('🔄 Downloading document:', document.id);
+      // Log desabilitado: Downloading document
       
       // Ensure we have a valid document ID
       if (!document.id || typeof document.id !== 'string') {
@@ -289,7 +271,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: 'Download iniciado com sucesso'
       });
     } catch (err) {
-      console.error('❌ Error downloading document:', err);
+      // Log desabilitado: Error downloading document
       toast({
         title: 'Erro',
         description: 'Erro ao baixar documento',
@@ -301,7 +283,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const viewDocument = async (document: Document): Promise<void> => {
     try {
-      console.log('🔄 Viewing document:', document.id);
+      // Log desabilitado: Viewing document
       
       // Ensure we have a valid document ID
       if (!document.id || typeof document.id !== 'string') {
@@ -318,7 +300,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: 'Documento aberto em nova aba'
       });
     } catch (err) {
-      console.error('❌ Error viewing document:', err);
+      // Log desabilitado: Error viewing document
       toast({
         title: 'Erro',
         description: 'Erro ao visualizar documento',
@@ -330,7 +312,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const exportDocumentsByEmployee = async (employeeId: string, format: 'pdf' | 'excel'): Promise<void> => {
     try {
-      console.log('🔄 Exporting documents for employee:', employeeId, 'format:', format);
+      // Log desabilitado: Exporting documents for employee
       
       // Get employee documents
       const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
@@ -383,7 +365,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       }
     } catch (err) {
-      console.error('❌ Error exporting employee documents:', err);
+      // Log desabilitado: Error exporting employee documents
       toast({
         title: 'Erro',
         description: 'Erro ao exportar documentos do funcionário',
@@ -398,7 +380,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const serviceDocuments = await documentService.getDocumentsByEmployeeId(employeeId);
       return serviceDocuments.map(mapServiceDocumentToUIDocument);
     } catch (err) {
-      console.error('❌ Error getting employee documents:', err);
+      // Log desabilitado: Error getting employee documents
       toast({
         title: 'Erro',
         description: 'Erro ao carregar documentos do funcionário',

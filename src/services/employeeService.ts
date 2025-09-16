@@ -13,7 +13,7 @@ export const employeeService = {
       .order('full_name');
     
     if (error) {
-      console.error('Error fetching users:', error);
+      // Log desabilitado: Error getting employees
       throw error;
     }
     
@@ -34,7 +34,7 @@ export const employeeService = {
       .single();
     
     if (error) {
-      console.error('Error fetching user:', error);
+      // Log desabilitado: Error fetching user
       return null;
     }
     
@@ -74,7 +74,7 @@ export const employeeService = {
       .single();
     
     if (error) {
-      console.error('Error creating user:', error);
+      // Log desabilitado: Error creating employee
       throw error;
     }
     
@@ -103,7 +103,7 @@ export const employeeService = {
       .single();
     
     if (error) {
-      console.error('Error updating user:', error);
+      // Log desabilitado: Error updating employee
       throw error;
     }
     
@@ -127,11 +127,11 @@ export const employeeService = {
         .eq('id', id);
       
       if (error) {
-        console.error('Error deleting user:', error);
+        // Log desabilitado: Error deleting employee
         throw error;
       }
     } catch (error) {
-      console.error('Error in delete user:', error);
+      // Log desabilitado: Error in delete user
       throw error;
     }
   }

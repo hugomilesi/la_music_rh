@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from '@/components/ui/switch';
 import { FileText, Plus, Edit, Trash2, Copy, Eye, CheckCircle, Clock, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface MessageTemplate {
   id: string;
@@ -77,8 +77,8 @@ const mockTemplates: MessageTemplate[] = [
 ];
 
 export const TemplateManager: React.FC = () => {
-  const { checkPermission } = usePermissions();
-  const canAccessSettings = useMemo(() => checkPermission('canAccessSettings', false), [checkPermission]);
+  const { canManageModule } = usePermissionsV2();
+  const canAccessSettings = canManageModule('whatsapp');
   
   const [templates, setTemplates] = useState<MessageTemplate[]>(mockTemplates);
   const [showNewDialog, setShowNewDialog] = useState(false);

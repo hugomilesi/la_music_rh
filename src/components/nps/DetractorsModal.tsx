@@ -24,7 +24,7 @@ export const DetractorsModal: React.FC<DetractorsModalProps> = ({
     : '0';
 
   const handleContactDetractor = (detractorName: string) => {
-    console.log(`Iniciando contato com ${detractorName}`);
+    // Iniciando contato com detrator
     // Aqui seria implementada a funcionalidade de contato
   };
 

@@ -65,7 +65,7 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
       onOpenChange(false);
       setNewFile(null);
     } catch (error) {
-      console.error('Error updating document:', error);
+      // Log desabilitado: Error updating document
       toast.error('Erro ao atualizar documento');
     } finally {
       setLoading(false);

@@ -17,15 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Search, Building, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import {
   fetchRoles,
   fetchDepartments,
-  createRole,
   createDepartment,
-  updateRole,
   updateDepartment,
-  deleteRole,
   countEmployeesByRole,
   type RoleWithDepartment,
   type Department
@@ -39,23 +36,17 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   const [roles, setRoles] = useState<RoleWithDepartment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAddingRole, setIsAddingRole] = useState(false);
   const [isAddingDepartment, setIsAddingDepartment] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleWithDepartment | null>(null);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [newRole, setNewRole] = useState({
-    name: '',
-    department_id: '',
-    description: ''
-  });
+
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: ''
   });
   const { toast } = useToast();
-  const { canAccessSettings } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
 
   useEffect(() => {
     const loadData = async () => {
@@ -70,7 +61,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
         const counts: Record<string, number> = {};
         const rolesWithEmployeeCount = await Promise.all(
           rolesData.map(async (role) => {
-            const employeeCount = await countEmployeesByRole(role.name);
+            const employeeCount = await countEmployeesByRole(role.id);
             counts[role.id] = employeeCount;
             return { ...role, employees: employeeCount };
           })
@@ -80,7 +71,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
         setDepartments(departmentsData);
         setEmployeeCounts(counts);
       } catch (error) {
-        console.error('Error loading data:', error);
+        // Log desabilitado: Error loading data
         toast({
           title: "Erro ao carregar",
           description: "Ocorreu um erro ao carregar os dados. Tente novamente.",
@@ -95,7 +86,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   }, [toast]);
 
   // Check if user has permission to manage roles
-  if (!canAccessSettings) {
+  if (!canViewModule('configuracoes')) {
     return (
       <Dialog>
         <DialogTrigger asChild>
@@ -124,11 +115,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     role.department?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddRole = () => {
-    setEditingRole(null);
-    setNewRole({ name: '', description: '', department_id: '' });
-    setIsAddingRole(true);
-  };
+
 
   const handleAddDepartment = () => {
     setEditingDepartment(null);
@@ -136,48 +123,9 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     setIsAddingDepartment(true);
   };
 
-  const handleDeleteRole = async (roleId: string) => {
-    const role = roles.find(r => r.id === roleId);
-    if (!role) return;
 
-    if (role.employees > 0) {
-      toast({
-        title: "Não é possível excluir",
-        description: `Este cargo possui ${role.employees} funcionário(s) associado(s). Remova-os primeiro.`,
-        variant: "destructive"
-      });
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      await deleteRole(roleId);
-      setRoles(roles.filter(r => r.id !== roleId));
-      toast({
-        title: "Sucesso",
-        description: "Cargo excluído com sucesso"
-      });
-    } catch (error) {
-      console.error('Error deleting role:', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao excluir o cargo.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleEditRole = async (role: RoleWithDepartment) => {
-    setEditingRole(role);
-    setNewRole({
-      name: role.name,
-      description: role.description,
-      department_id: role.department_id
-    });
-    setIsAddingRole(true);
-  };
 
   const handleEditDepartment = async (department: Department) => {
     setEditingDepartment(department);
@@ -188,56 +136,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     setIsAddingDepartment(true);
   };
 
-  const handleSaveRole = async () => {
-    if (!newRole.name.trim()) {
-      toast({
-        title: "Erro",
-        description: "Nome do cargo é obrigatório",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    if (!newRole.department_id) {
-      toast({
-        title: "Erro",
-        description: "Departamento é obrigatório",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      if (editingRole) {
-        await updateRole(editingRole.id, newRole);
-        toast({
-          title: "Sucesso",
-          description: "Cargo atualizado com sucesso",
-        });
-      } else {
-        await createRole(newRole);
-        toast({
-          title: "Sucesso",
-          description: "Cargo criado com sucesso",
-        });
-      }
-      
-      setNewRole({ name: '', description: '', department_id: '' });
-      setIsAddingRole(false);
-      setEditingRole(null);
-      await loadData();
-    } catch (error) {
-      console.error('Error saving role:', error);
-      toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao salvar cargo",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSaveDepartment = async () => {
     if (!newDepartment.name.trim()) {
@@ -270,7 +169,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
       setEditingDepartment(null);
       await loadData();
     } catch (error) {
-      console.error('Error saving department:', error);
+      // Log desabilitado: Error saving department
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Erro ao salvar departamento",
@@ -282,11 +181,8 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   };
 
   const handleCancelEdit = () => {
-    setEditingRole(null);
     setEditingDepartment(null);
-    setNewRole({ name: '', description: '', department_id: '' });
     setNewDepartment({ name: '', description: '' });
-    setIsAddingRole(false);
     setIsAddingDepartment(false);
   };
 
@@ -302,7 +198,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
       const counts: Record<string, number> = {};
       const rolesWithCounts = await Promise.all(
         rolesData.map(async (role) => {
-          const employeeCount = await countEmployeesByRole(role.name);
+          const employeeCount = await countEmployeesByRole(role.id);
           counts[role.id] = employeeCount;
           return { ...role, employees: employeeCount };
         })
@@ -312,7 +208,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
       setDepartments(departmentsData);
       setEmployeeCounts(counts);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Log desabilitado: Error loading data
       toast({
         title: "Erro",
         description: "Erro ao carregar dados",
@@ -356,10 +252,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
               <Plus className="w-4 h-4 mr-2" />
               Novo Departamento
             </Button>
-            <Button onClick={() => setIsAddingRole(true)} disabled={isLoading}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Cargo
-            </Button>
+
           </div>
 
           {/* Statistics Summary */}
@@ -374,7 +267,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
-                {roles.reduce((sum, role) => sum + role.employees, 0)}
+                {roles.reduce((sum, role) => sum + (employeeCounts[role.id] || 0), 0)}
               </div>
               <div className="text-sm text-gray-600">Total de Funcionários</div>
             </div>
@@ -384,7 +277,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {departments.map((dept) => {
               const deptRoles = roles.filter(role => role.department?.name === dept.name);
-              const totalEmployees = deptRoles.reduce((sum, role) => sum + role.employees, 0);
+              const totalEmployees = deptRoles.reduce((sum, role) => sum + (employeeCounts[role.id] || 0), 0);
               
               return (
                 <div key={dept.id} className="border rounded-lg p-4">
@@ -445,59 +338,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
             </div>
           )}
 
-          {/* Add Role Form */}
-          {isAddingRole && (
-            <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
-              <h3 className="font-medium">Adicionar Novo Cargo</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="roleName">Nome do Cargo</Label>
-                  <Input
-                    id="roleName"
-                    value={newRole.name}
-                    onChange={(e) => setNewRole({...newRole, name: e.target.value})}
-                    placeholder="Ex: Professor de Piano"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="department">Departamento</Label>
-                  <Select
-                    value={newRole.department_id}
-                    onValueChange={(value) => setNewRole({...newRole, department_id: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um departamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="description">Descrição (Opcional)</Label>
-                <Input
-                  id="description"
-                  value={newRole.description}
-                  onChange={(e) => setNewRole({...newRole, description: e.target.value})}
-                  placeholder="Descrição das responsabilidades"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSaveRole} disabled={isLoading}>
-                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {editingRole ? 'Atualizar' : 'Adicionar'} Cargo
-                </Button>
-                <Button variant="outline" onClick={handleCancelEdit} disabled={isLoading}>
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          )}
+
 
           {/* Roles Table */}
           <div className="border rounded-lg">
@@ -539,27 +380,12 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-blue-100 text-blue-800">
-                          {role.employees} pessoas
+                          {employeeCounts[role.id] || 0} pessoas
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleEditRole(role)}
-                            disabled={isLoading}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteRole(role.id)}
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <span className="text-sm text-gray-500">Somente visualização</span>
                         </div>
                       </TableCell>
                     </TableRow>

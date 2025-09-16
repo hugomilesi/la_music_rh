@@ -36,17 +36,17 @@ export function EvaluationsPage() {
   const [showStatsModal, setShowStatsModal] = React.useState(false);
   const [showCoffeeStatsModal, setShowCoffeeStatsModal] = React.useState(false);
 
-  console.log('EvaluationsPage: Component rendering...');
+  // Log desabilitado: EvaluationsPage: Component rendering
 
   // Load evaluations function
   const loadEvaluations = async () => {
     try {
       setLoading(true);
       const data = await evaluationService.getEvaluations();
-      console.log('EvaluationsPage: Retrieved evaluations:', data);
+      // Log desabilitado: EvaluationsPage: Retrieved evaluations
       setEvaluations(data);
     } catch (error) {
-      console.error('Error loading evaluations:', error);
+      // Log desabilitado: Erro ao buscar avaliações
       toast({
         title: "Erro ao carregar avaliações",
         description: "Não foi possível carregar as avaliações. Tente novamente.",
@@ -72,7 +72,7 @@ export function EvaluationsPage() {
         description: "A avaliação foi removida com sucesso.",
       });
     } catch (error) {
-      console.error('Error deleting evaluation:', error);
+      // Log desabilitado: Error deleting evaluation
       toast({
         title: "Erro ao remover avaliação",
         description: "Ocorreu um erro ao tentar remover a avaliação. Tente novamente.",
@@ -178,7 +178,7 @@ export function EvaluationsPage() {
     });
   }, [evaluations, searchTerm, selectedEmployee, selectedUnit, selectedType, selectedStatus, selectedLocation, selectedDateRange]);
 
-  console.log('EvaluationsPage: Rendering with evaluations:', evaluations.length, 'filtered:', filteredEvaluations.length);
+  // Log desabilitado: EvaluationsPage: Rendering with evaluations
 
   if (loading) {
     return (

@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Calendar, Users, Building } from 'lucide-react';
+import { Plus, Trash2, Calendar, Users, Target, Clock } from 'lucide-react';
 import { useNPS } from '@/contexts/NPSContext';
 import { NPSQuestion } from '@/types/nps';
 
@@ -22,7 +21,7 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
   open,
   onOpenChange
 }) => {
-  const { createSurvey, departments } = useNPS();
+  const { createSurvey } = useNPS();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,8 +29,6 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
     endDate: '',
     surveyType: 'nps' as 'nps' | 'satisfaction'
   });
-
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 
   const [questions, setQuestions] = useState<NPSQuestion[]>([
     {
@@ -58,13 +55,7 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
     }]);
   };
 
-  const handleDepartmentToggle = (departmentId: string) => {
-    setSelectedDepartments(prev => 
-      prev.includes(departmentId)
-        ? prev.filter(id => id !== departmentId)
-        : [...prev, departmentId]
-    );
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,18 +65,13 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
       return;
     }
 
-    if (selectedDepartments.length === 0) {
-      alert('Por favor, selecione pelo menos um departamento');
-      return;
-    }
-
     const newSurvey = {
       ...formData,
       questions,
-      status: 'draft' as const,
+      status: 'active' as const,
       responses: [],
-      targetEmployees: [], // Seria preenchido baseado nos departamentos selecionados
-      targetDepartments: selectedDepartments
+      targetEmployees: [],
+      targetDepartments: []
     };
 
     createSurvey(newSurvey);
@@ -98,7 +84,6 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
       endDate: '',
       surveyType: 'nps'
     });
-    setSelectedDepartments([]);
     setQuestions([{
       id: 'q1',
       type: 'nps',
@@ -210,42 +195,7 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Seleção de Departamentos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="w-5 h-5" />
-                Departamentos Participantes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {departments.map((department) => (
-                  <div key={department.id} className="flex items-center space-x-2 p-3 border rounded-lg">
-                    <Checkbox
-                      id={department.id}
-                      checked={selectedDepartments.includes(department.id)}
-                      onCheckedChange={() => handleDepartmentToggle(department.id)}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor={department.id} className="cursor-pointer font-medium">
-                        {department.name}
-                      </Label>
-                      <p className="text-sm text-gray-500">{department.employeeCount} colaboradores</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {selectedDepartments.length > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm text-gray-600">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    {selectedDepartments.length} departamento(s) selecionado(s)
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
 
           {/* Perguntas */}
           <Card>

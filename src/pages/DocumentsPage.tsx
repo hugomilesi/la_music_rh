@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { getFirstAccessibleRoute } from '@/utils/redirectUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -24,21 +25,20 @@ import { Document } from '@/types/document';
 
 const DocumentsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { checkPermission, getPermissionLevel } = usePermissions();
+  const { canViewModule, canManageModule, canManagePermissions, user, loading: permissionsLoading } = usePermissionsV2();
   const { profile } = useAuth();
-  const canManageEmployees = checkPermission('canManageEmployees', false);
-  const canManageDocuments = checkPermission('canManageDocuments', false);
-  const canAccessSettings = checkPermission('canAccessSettings', false);
-  const userPermissionLevel = getPermissionLevel();
+  const canViewEmployees = canViewModule('usuarios');
+  const canViewDocuments = canViewModule('documentos');
+  const canAccessSettings = canViewModule('configuracoes');
   
   // Determine user access level based on profile
   const getUserAccessLevel = () => {
     if (!profile) return 'user';
     
     // Use permission-based access control instead of hardcoded roles
-    if (canManageEmployees && canAccessSettings) return 'admin';
-    if (canManageEmployees) return 'collaborator';
-    if (canManageDocuments) return 'professor';
+    if (canViewEmployees && canAccessSettings) return 'admin';
+    if (canViewEmployees) return 'collaborator';
+    if (canViewDocuments) return 'professor';
     return 'user';
   };
   
@@ -110,30 +110,24 @@ const DocumentsPage: React.FC = () => {
     expired: visibleDocuments.filter(doc => doc.status === 'vencido').length
   };
 
-  if (!canManageEmployees) {
+  // Aguardar carregamento das permissões
+  if (permissionsLoading) {
     return (
-      <Dialog open={true} onOpenChange={() => navigate(-1)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-red-500" />
-              Acesso Negado
-            </DialogTitle>
-            <DialogDescription>
-              Você não tem permissão para visualizar documentos e informações de colaboradores.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-500 mb-6">
-              Entre em contato com o administrador para solicitar acesso.
-            </p>
-            <Button onClick={() => navigate(-1)} className="w-full">
-              Voltar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando permissões...</p>
+        </div>
+      </div>
     );
+  }
+
+  // Verificar se o usuário tem permissão para visualizar documentos
+  const canView = canViewModule('documentos');
+
+  if (!canView) {
+    const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
+    return <Navigate to={firstAccessibleRoute} replace />;
   }
 
   return (

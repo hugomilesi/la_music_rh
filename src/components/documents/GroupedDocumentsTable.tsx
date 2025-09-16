@@ -39,10 +39,10 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
     const groups = new Map<string, EmployeeDocumentGroup>();
 
     filteredDocuments.forEach(doc => {
-      if (!groups.has(doc.employeeId)) {
-        groups.set(doc.employeeId, {
-          employeeId: doc.employeeId,
-          employeeName: doc.employee,
+      if (!groups.has(doc.employee_id)) {
+        groups.set(doc.employee_id, {
+          employeeId: doc.employee_id,
+          employeeName: doc.employee?.full_name || 'Nome não encontrado',
           documents: [],
           totalDocuments: 0,
           validDocuments: 0,
@@ -51,7 +51,7 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
         });
       }
 
-      const group = groups.get(doc.employeeId)!;
+      const group = groups.get(doc.employee_id)!;
       group.documents.push(doc);
       group.totalDocuments++;
 
@@ -128,7 +128,7 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
           </TableHeader>
           <TableBody>
             {groupedDocuments.map((group) => (
-              <React.Fragment key={`group-${group.employeeId}`}>
+              <React.Fragment key={group.employeeId}>
                 <TableRow 
                   className="cursor-pointer hover:bg-gray-50 border-b-2" 
                   onClick={() => toggleEmployee(group.employeeId)}
@@ -193,20 +193,20 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
                     <TableCell className="pl-8">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm">{doc.document}</span>
+                        <span className="text-sm">{doc.document_name || doc.file_name}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getTypeColor(doc.type)} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                        {doc.type === 'obrigatorio' ? 'Obrigatório' : 
-                         doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
+                      <Badge className={getTypeColor(doc.document_type)} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                        {doc.document_type === 'obrigatorio' ? 'Obrigatório' : 
+                         doc.document_type === 'temporario' ? 'Temporário' : 'Complementar'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
+                      {doc.created_at ? new Date(doc.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
+                      {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('pt-BR') : 'Sem validade'}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusBadge(doc.status)} style={{ fontSize: '10px', padding: '2px 6px' }}>

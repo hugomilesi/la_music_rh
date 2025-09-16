@@ -47,7 +47,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
   }, [] as { month: string; incidents: number }[]);
 
   const handleExport = () => {
-    console.log('Exportando relatório...');
+    // Log desabilitado: Exportando relatório
   };
 
   const handlePrint = () => {

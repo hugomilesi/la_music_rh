@@ -81,7 +81,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       setUsage(backendUsage);
     } catch (error) {
-      console.error('Error refreshing stats:', error);
+      // Log desabilitado: Error refreshing stats
       // Fallback to local calculation if backend fails
       const activeBenefits = benefits.filter(b => b.isActive).length;
       const benefitsWithGoals = benefits.filter(b => b.performanceGoals && b.performanceGoals.length > 0).length;
@@ -150,8 +150,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setBenefitTypes(benefitTypesData);
       setEmployeeBenefits(employeeBenefitsData);
     } catch (error) {
-      console.error('Error loading initial data:', error);
-      toast.error('Erro ao carregar dados dos benefícios');
+      setError('Erro ao carregar dados dos benefícios');
     } finally {
       setLoading(false);
     }
@@ -163,7 +162,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setBenefits(prev => [...prev, newBenefit]);
       toast.success('Benefício criado com sucesso!');
     } catch (error) {
-      console.error('Error creating benefit:', error);
+      // Log desabilitado: Error creating benefit
       toast.error('Erro ao criar benefício');
       throw error;
     }
@@ -177,7 +176,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ));
       toast.success('Benefício atualizado com sucesso!');
     } catch (error) {
-      console.error('Error updating benefit:', error);
+      // Log desabilitado: Error updating benefit
       toast.error('Erro ao atualizar benefício');
       throw error;
     }
@@ -190,7 +189,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setEmployeeBenefits(prev => prev.filter(eb => eb.benefitId !== id));
       toast.success('Benefício excluído com sucesso!');
     } catch (error) {
-      console.error('Error deleting benefit:', error);
+      // Log desabilitado: Error deleting benefit
       toast.error('Erro ao excluir benefício');
       throw error;
     }
@@ -215,7 +214,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setEmployeeBenefits(prev => [...prev, newEnrollment]);
       toast.success('Funcionário inscrito no benefício com sucesso!');
     } catch (error) {
-      console.error('Error enrolling employee:', error);
+      // Log desabilitado: Error enrolling employee
       toast.error('Erro ao inscrever funcionário no benefício');
       throw error;
     }
@@ -229,7 +228,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ));
       toast.success('Inscrição atualizada com sucesso!');
     } catch (error) {
-      console.error('Error updating enrollment:', error);
+      // Log desabilitado: Error updating enrollment
       toast.error('Erro ao atualizar inscrição');
       throw error;
     }
@@ -242,7 +241,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await updateEnrollment(id, { nextRenewalDate: today });
       toast.success('Inscrição cancelada com sucesso!');
     } catch (error) {
-      console.error('Error cancelling enrollment:', error);
+      // Log desabilitado: Error cancelling enrollment
       toast.error('Erro ao cancelar inscrição');
       throw error;
     }
@@ -312,9 +311,9 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       toast.success('Renovação aprovada com sucesso!');
-      console.log(`Renewal approved for enrollment ${enrollmentId}`, comments);
+      // Log desabilitado: Renewal approved
     } catch (error) {
-      console.error('Error approving renewal:', error);
+      // Log desabilitado: Error approving renewal
       toast.error('Erro ao aprovar renovação');
     }
   };
@@ -327,9 +326,9 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       toast.success('Renovação negada');
-      console.log(`Renewal denied for enrollment ${enrollmentId}: ${comments}`);
+      // Log desabilitado: Renewal denied
     } catch (error) {
-      console.error('Error denying renewal:', error);
+      // Log desabilitado: Error denying renewal
       toast.error('Erro ao negar renovação');
     }
   };
@@ -342,9 +341,9 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       toast.success('Prazo de renovação estendido');
-      console.log(`Renewal extended for enrollment ${enrollmentId} to ${newDate}`);
+      // Log desabilitado: Renewal extended
     } catch (error) {
-      console.error('Error extending renewal:', error);
+      // Log desabilitado: Error extending renewal
       toast.error('Erro ao estender renovação');
     }
   };

@@ -5,7 +5,7 @@ import { Search, User, MapPin, Lock } from 'lucide-react';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface EmployeeSelectorProps {
   value?: string;
@@ -23,8 +23,8 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   disabled = false
 }) => {
   const { employees, isLoading, error: employeesError } = useEmployees();
-  const { checkPermission } = usePermissions();
-  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canViewModule } = usePermissionsV2();
+  const canViewEmployees = useMemo(() => canViewModule('usuarios'), [canViewModule]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);

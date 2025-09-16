@@ -25,7 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Employee, Unit } from '@/types/employee';
 import { UNITS } from '@/types/unit';
 
@@ -54,7 +54,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
 }) => {
   const { updateEmployee } = useEmployees();
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
+  const { canEditInModule } = usePermissionsV2();
   
   // Move useForm to top level - before any conditional returns
   const form = useForm<FormData>({
@@ -71,7 +71,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
   });
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canManageEmployees = useMemo(() => canEditInModule('usuarios'), [canEditInModule]);
 
   // Update form when employee changes - must be before any conditional returns
   useEffect(() => {
@@ -126,7 +126,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
       onOpenChange(false);
     } catch (error) {
       // Error handling is done in the context
-      console.error('Error updating employee:', error);
+      // Log desabilitado: Error updating employee
     }
   };
 

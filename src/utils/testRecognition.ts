@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 
 // Função para testar a funcionalidade de reconhecimento
 export async function testRecognitionIntegration() {
-  console.log('🧪 Iniciando testes de integração do reconhecimento...');
+  // console.log('🧪 Iniciando testes de integração do reconhecimento...');
   
   const results = {
     connection: false,
@@ -16,7 +16,7 @@ export async function testRecognitionIntegration() {
   
   try {
     // Teste 1: Conexão com banco
-    console.log('🔌 Testando conexão com banco...');
+    // Testing database connection logging disabled
     const { data: testData, error: connectionError } = await supabase
       .from('users')
       .select('id')
@@ -26,17 +26,17 @@ export async function testRecognitionIntegration() {
       results.errors.push(`Erro de conexão: ${connectionError.message}`);
     } else {
       results.connection = true;
-      console.log('✅ Conexão com banco OK');
+      // console.log('✅ Conexão com banco OK');
     }
     
     // Teste 2: Carregamento de programas
-    console.log('📋 Testando carregamento de programas...');
+    // Testing programs loading logging disabled
     try {
       const programs = await RecognitionService.getPrograms();
       if (programs && programs.length > 0) {
         results.programs = true;
-        console.log(`✅ ${programs.length} programas carregados:`);
-        programs.forEach(p => console.log(`  - ${p.name} (${p.id})`));
+        // console.log(`✅ ${programs.length} programas carregados:`);
+        // programs.forEach(p => console.log(`  - ${p.name} (${p.id})`));
       } else {
         results.errors.push('Nenhum programa encontrado');
       }
@@ -45,16 +45,16 @@ export async function testRecognitionIntegration() {
     }
     
     // Teste 3: Carregamento de ranking
-    console.log('🏆 Testando carregamento de ranking...');
+    // Testing ranking loading logging disabled
     try {
       const ranking = await RecognitionService.getEmployeeRanking();
       if (ranking && ranking.length > 0) {
         results.ranking = true;
-        console.log(`✅ ${ranking.length} funcionários no ranking`);
-        console.log('Top 3:');
-        ranking.slice(0, 3).forEach((emp, idx) => {
-          console.log(`  ${idx + 1}. ${emp.employee_name} - ${emp.total_stars} estrelas`);
-        });
+        // console.log(`✅ ${ranking.length} funcionários no ranking`);
+        // console.log('Top 3:');
+        // ranking.slice(0, 3).forEach((emp, idx) => {
+        //   console.log(`  ${idx + 1}. ${emp.employee_name} - ${emp.total_stars} estrelas`);
+        // });
       } else {
         results.errors.push('Nenhum funcionário encontrado no ranking');
       }
@@ -63,17 +63,17 @@ export async function testRecognitionIntegration() {
     }
     
     // Teste 4: Carregamento de conquistas
-    console.log('🎖️ Testando carregamento de conquistas...');
+    // Testing achievements loading logging disabled
     try {
       const achievements = await RecognitionService.getEmployeeAchievements();
       if (achievements && achievements.length > 0) {
         results.achievements = true;
-        console.log(`✅ ${achievements.length} conquistas carregadas`);
-        achievements.slice(0, 3).forEach(achievement => {
-          console.log(`  - ${achievement.title} (${achievement.stars_awarded} estrelas)`);
-        });
+        // console.log(`✅ ${achievements.length} conquistas carregadas`);
+        // achievements.slice(0, 3).forEach(achievement => {
+        //   console.log(`  - ${achievement.title} (${achievement.stars_awarded} estrelas)`);
+        // });
       } else {
-        console.log('⚠️ Nenhuma conquista encontrada (isso é normal se não houver dados)');
+        // console.log('⚠️ Nenhuma conquista encontrada (isso é normal se não houver dados)');
         results.achievements = true; // Não é erro se não houver conquistas
       }
     } catch (error) {
@@ -81,7 +81,7 @@ export async function testRecognitionIntegration() {
     }
     
     // Teste 5: Teste de criação de avaliação (apenas se houver dados)
-    console.log('📝 Testando criação de avaliação...');
+    // Testing evaluation creation logging disabled
     try {
       const ranking = await RecognitionService.getEmployeeRanking();
       const programs = await RecognitionService.getPrograms();
@@ -105,19 +105,19 @@ export async function testRecognitionIntegration() {
         
         if (evaluation && evaluation.id) {
           results.evaluation = true;
-          console.log(`✅ Avaliação criada com sucesso (ID: ${evaluation.id})`);
+          // console.log(`✅ Avaliação criada com sucesso (ID: ${evaluation.id})`);
           
           // Limpar dados de teste
           await supabase
             .from('employee_evaluations')
             .delete()
             .eq('id', evaluation.id);
-          console.log('🧹 Dados de teste removidos');
+          // console.log('🧹 Dados de teste removidos');
         } else {
           results.errors.push('Falha ao criar avaliação de teste');
         }
       } else {
-        console.log('⚠️ Pulando teste de avaliação - sem dados suficientes');
+        // console.log('⚠️ Pulando teste de avaliação - sem dados suficientes');
         results.evaluation = true; // Não é erro se não houver dados
       }
     } catch (error) {
@@ -125,24 +125,24 @@ export async function testRecognitionIntegration() {
     }
     
     // Resumo dos resultados
-    console.log('\n📊 RESUMO DOS TESTES:');
-    console.log(`Conexão: ${results.connection ? '✅' : '❌'}`);
-    console.log(`Programas: ${results.programs ? '✅' : '❌'}`);
-    console.log(`Ranking: ${results.ranking ? '✅' : '❌'}`);
-    console.log(`Conquistas: ${results.achievements ? '✅' : '❌'}`);
-    console.log(`Avaliação: ${results.evaluation ? '✅' : '❌'}`);
+    // console.log('\n📊 RESUMO DOS TESTES:');
+    // console.log(`Conexão: ${results.connection ? '✅' : '❌'}`);
+    // console.log(`Programas: ${results.programs ? '✅' : '❌'}`);
+    // console.log(`Ranking: ${results.ranking ? '✅' : '❌'}`);
+    // console.log(`Conquistas: ${results.achievements ? '✅' : '❌'}`);
+    // console.log(`Avaliação: ${results.evaluation ? '✅' : '❌'}`);
     
     if (results.errors.length > 0) {
-      console.log('\n❌ ERROS ENCONTRADOS:');
-      results.errors.forEach(error => console.log(`  - ${error}`));
+      // Error reporting logging disabled
+    // results.errors.forEach(error => console.log(`  - ${error}`));
     }
     
     const allPassed = results.connection && results.programs && results.ranking && results.achievements && results.evaluation;
     
     if (allPassed) {
-      console.log('\n🎉 TODOS OS TESTES PASSARAM! A integração está funcionando corretamente.');
+      // console.log('\n🎉 TODOS OS TESTES PASSARAM! A integração está funcionando corretamente.');
     } else {
-      console.log('\n⚠️ ALGUNS TESTES FALHARAM. Verifique os erros acima.');
+      // Some tests failed logging disabled
     }
     
     return {
@@ -152,7 +152,7 @@ export async function testRecognitionIntegration() {
     };
     
   } catch (error) {
-    console.error('❌ Erro geral nos testes:', error);
+    // General test error logging disabled
     return {
       success: false,
       results,
@@ -163,31 +163,31 @@ export async function testRecognitionIntegration() {
 
 // Função para testar dados específicos
 export async function testSpecificData() {
-  console.log('🔍 Testando dados específicos...');
+  // Testing specific data logging disabled
   
   try {
     // Verificar estrutura das tabelas
     const tables = ['users', 'recognition_programs', 'employee_evaluations', 'employee_achievements'];
     
     for (const table of tables) {
-      console.log(`\n📋 Testando tabela: ${table}`);
+      // Testing table logging disabled
       const { data, error, count } = await supabase
         .from(table)
         .select('*', { count: 'exact' })
         .limit(1);
       
       if (error) {
-        console.log(`❌ Erro na tabela ${table}: ${error.message}`);
+        // Table error logging disabled
       } else {
-        console.log(`✅ Tabela ${table}: ${count} registros`);
+        // console.log(`✅ Tabela ${table}: ${count} registros`);
         if (data && data.length > 0) {
-          console.log(`   Colunas: ${Object.keys(data[0]).join(', ')}`);
+          // console.log(`   Colunas: ${Object.keys(data[0]).join(', ')}`);
         }
       }
     }
     
     // Verificar integridade dos dados
-    console.log('\n🔗 Verificando integridade dos dados...');
+    // Verifying data integrity logging disabled
     
     // Verificar se todos os employee_ids no ranking existem na tabela users
     const { data: evaluations } = await supabase
@@ -204,15 +204,15 @@ export async function testSpecificData() {
           .single();
         
         if (!employee) {
-          console.log(`⚠️ Funcionário ${evaluation.employee_id} não encontrado na tabela users`);
+          // Employee not found warning disabled
         }
       }
     }
     
-    console.log('✅ Verificação de integridade concluída');
+    // console.log('✅ Verificação de integridade concluída');
     
   } catch (error) {
-    console.error('❌ Erro na verificação de dados:', error);
+    // Data verification error logging disabled
   }
 }
 
@@ -220,5 +220,5 @@ export async function testSpecificData() {
 (window as any).testRecognition = testRecognitionIntegration;
 (window as any).testSpecificData = testSpecificData;
 
-console.log('🧪 Funções de teste carregadas!');
-console.log('Execute testRecognition() ou testSpecificData() no console para testar.');
+// Test functions loaded logging disabled
+// Execute testRecognition() or testSpecificData() in console to test

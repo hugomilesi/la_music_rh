@@ -65,7 +65,7 @@ export const useAvatarUpload = () => {
       return urlData.publicUrl;
 
     } catch (error: any) {
-      console.error('Erro no upload:', error);
+      // Error uploading avatar logging disabled
       toast({
         title: "Erro no upload",
         description: error.message || "Erro ao fazer upload da imagem",
@@ -105,7 +105,7 @@ export const useAvatarUpload = () => {
       });
 
     } catch (error: any) {
-      console.error('Erro ao deletar avatar:', error);
+      // Error deleting avatar logging disabled
       toast({
         title: "Erro",
         description: "Erro ao remover avatar",

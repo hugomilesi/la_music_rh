@@ -100,7 +100,7 @@ export const payrollService = {
 
     // Get user data for all collaborators
     const collaboratorIds = payrollData.map(entry => entry.colaborador_id).filter(Boolean);
-    console.log('🔍 Collaborator IDs:', collaboratorIds);
+    // Log desabilitado: Collaborator IDs
     
     let usersQuery = supabase
       .from('users')
@@ -113,15 +113,11 @@ export const payrollService = {
 
     const { data: usersData, error: usersError } = await usersQuery;
     if (usersError) {
-      console.error('❌ Users query error:', usersError);
+      // Log desabilitado: Users query error
       throw usersError;
     }
-    console.log('👥 Users data retrieved:', usersData);
-    console.log('🔍 Users query details:', {
-      collaboratorIds,
-      queryCount: usersData?.length || 0,
-      firstUser: usersData?.[0]
-    });
+    // Log desabilitado: Users data retrieved
+    // Log desabilitado: Users query details
 
     // Create a map of users by auth_user_id for quick lookup
     const usersMap = new Map();
@@ -172,7 +168,7 @@ export const payrollService = {
       // Preserve users object for PayrollPage compatibility
       users: entry.users,
       // Dados pessoais otimizados - agora vêm da tabela users
-      units: entry.users?.units ? [entry.users.units] : [],
+      units: entry.users?.units || [],
       department: entry.users?.department || '',
       bank: entry.users?.bank || '',
       agency: entry.users?.agency || '',
@@ -185,7 +181,7 @@ export const payrollService = {
   },
 
   async createPayrollEntry(entry: {
-    colaborador_id: string;
+    colaborador_id?: string;
     mes: number;
     ano: number;
     classificacao: string;
@@ -202,11 +198,15 @@ export const payrollService = {
     outros_descontos?: number;
     observacoes?: string;
     payroll_id?: string;
+    nome_colaborador?: string;
+    cpf_colaborador?: string;
+    unidade?: string;
+    banco?: string;
+    agencia?: string;
+    conta?: string;
+    pix?: string;
   }): Promise<PayrollEntry> {
     // Validate required fields
-    if (!entry.colaborador_id) {
-      throw new Error('ID do colaborador é obrigatório');
-    }
     if (!entry.mes || entry.mes < 1 || entry.mes > 12) {
       throw new Error('Mês deve estar entre 1 e 12');
     }
@@ -214,14 +214,25 @@ export const payrollService = {
       throw new Error('Ano deve ser válido');
     }
 
-    // Verificar se já existe um registro para este colaborador no mesmo mês/ano
-    const { data: existingEntry, error: checkError } = await supabase
+    // Validate that either colaborador_id or manual employee data is provided
+    if (!entry.colaborador_id && (!entry.nome_colaborador || !entry.cpf_colaborador || !entry.unidade)) {
+      throw new Error('É necessário fornecer um colaborador cadastrado ou os dados completos do colaborador (nome, CPF e unidade)');
+    }
+
+    // Check if entry already exists for this employee in this month/year
+    let existingEntryQuery = supabase
       .from('folha_pagamento')
       .select('id')
-      .eq('colaborador_id', entry.colaborador_id)
       .eq('mes', entry.mes)
-      .eq('ano', entry.ano)
-      .maybeSingle();
+      .eq('ano', entry.ano);
+
+    if (entry.colaborador_id) {
+      existingEntryQuery = existingEntryQuery.eq('colaborador_id', entry.colaborador_id);
+    } else {
+      existingEntryQuery = existingEntryQuery.eq('cpf_colaborador', entry.cpf_colaborador);
+    }
+
+    const { data: existingEntry, error: checkError } = await existingEntryQuery.maybeSingle();
 
     if (checkError) throw checkError;
 
@@ -247,6 +258,13 @@ export const payrollService = {
       outros_descontos: entry.outros_descontos || 0,
       observacoes: entry.observacoes || '',
       payroll_id: entry.payroll_id,
+      nome_colaborador: entry.nome_colaborador,
+      cpf_colaborador: entry.cpf_colaborador,
+      unidade: entry.unidade,
+      banco: entry.banco,
+      agencia: entry.agencia,
+      conta: entry.conta,
+      pix: entry.pix,
       status: 'pendente',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -438,8 +456,26 @@ export const payrollService = {
       throw new Error('Nenhum usuário ativo encontrado para criar entradas da folha');
     }
 
+    // Check for existing entries to avoid duplicates
+    const { data: existingEntries, error: existingError } = await supabase
+      .from('folha_pagamento')
+      .select('colaborador_id')
+      .eq('mes', targetMonth)
+      .eq('ano', targetYear);
+
+    if (existingError) throw existingError;
+
+    const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
+
+    // Filter out users who already have entries for this month/year
+    const usersToCreate = users.filter(user => !existingUserIds.has(user.auth_user_id));
+
+    if (usersToCreate.length === 0) {
+      return;
+    }
+
     // Create payroll entries for each user (dados pessoais vêm da tabela users)
-    const entries = users.map(user => ({
+    const entries = usersToCreate.map(user => ({
       payroll_id: payrollId,
       colaborador_id: user.auth_user_id,
       mes: targetMonth,
@@ -468,6 +504,15 @@ export const payrollService = {
   },
 
   async duplicatePayrollEntries(newPayrollId: string, duplicateFrom: { month: number; year: number }): Promise<void> {
+    // Get the target payroll info to determine the correct month/year
+    const { data: targetPayroll, error: targetError } = await supabase
+      .from('payrolls')
+      .select('month, year')
+      .eq('id', newPayrollId)
+      .single();
+
+    if (targetError) throw targetError;
+
     // Get existing entries from the source month/year
     const { data: sourceEntries, error: sourceError } = await supabase
       .from('folha_pagamento')
@@ -496,12 +541,30 @@ export const payrollService = {
       throw new Error('Nenhuma entrada encontrada para duplicar');
     }
 
-    // Create new entries with the new payroll_id and current month/year
-    const newEntries = sourceEntries.map(entry => ({
+    // Check for existing entries in the target month/year to avoid duplicates
+    const { data: existingEntries, error: existingError } = await supabase
+      .from('folha_pagamento')
+      .select('colaborador_id')
+      .eq('mes', targetPayroll.month)
+      .eq('ano', targetPayroll.year);
+
+    if (existingError) throw existingError;
+
+    const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
+
+    // Filter out entries for users who already have entries in the target month/year
+    const entriesToCreate = sourceEntries.filter(entry => !existingUserIds.has(entry.colaborador_id));
+
+    if (entriesToCreate.length === 0) {
+      return;
+    }
+
+    // Create new entries with the new payroll_id and target month/year
+    const newEntries = entriesToCreate.map(entry => ({
       payroll_id: newPayrollId,
       colaborador_id: entry.colaborador_id,
-      mes: new Date().getMonth() + 1,
-      ano: new Date().getFullYear(),
+      mes: targetPayroll.month,
+      ano: targetPayroll.year,
       classificacao: entry.classificacao,
       funcao: entry.funcao,
       salario_base: entry.salario_base,
@@ -685,5 +748,71 @@ export const payrollService = {
     }
   },
 
+  mapPayrollEntry(data: any): PayrollEntry {
+    return {
+      id: data.id,
+      colaborador_id: data.colaborador_id,
+      mes: data.mes,
+      ano: data.ano,
+      classificacao: data.classificacao || '',
+      funcao: data.funcao || '',
+      salario_base: Number(data.salario_base) || 0,
+      bonus: Number(data.bonus) || 0,
+      comissao: Number(data.comissao) || 0,
+      passagem: Number(data.passagem) || 0,
+      reembolso: Number(data.reembolso) || 0,
+      inss: Number(data.inss) || 0,
+      lojinha: Number(data.lojinha) || 0,
+      bistro: Number(data.bistro) || 0,
+      adiantamento: Number(data.adiantamento) || 0,
+      outros_descontos: Number(data.outros_descontos) || 0,
+      observacoes: data.observacoes || '',
+      status: data.status || 'rascunho',
+      aprovado_por: data.aprovado_por,
+      aprovado_em: data.aprovado_em,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      payroll_id: data.payroll_id,
+      transport_voucher: Number(data.transport_voucher) || 0,
+      salary_advance: Number(data.salary_advance) || 0,
+      nome_colaborador: data.nome_colaborador,
+      cpf_colaborador: data.cpf_colaborador,
+      unidade: data.unidade
+    };
+  },
+
+  mapEmployee(data: any): Employee {
+    return {
+      id: data.id,
+      name: data.nome_colaborador || data.users?.full_name || 'Nome não disponível',
+      unit: data.unidade || data.users?.units || 'Unidade não disponível',
+      units: data.users?.units ? 1 : 0,
+      position: data.funcao || data.users?.position || 'Posição não disponível',
+      classification: data.classificacao || 'Classificação não disponível',
+      salario_base: Number(data.salario_base) || 0,
+      bonus: Number(data.bonus) || 0,
+      comissao: Number(data.comissao) || 0,
+      passagem: Number(data.passagem) || 0,
+      reembolso: Number(data.reembolso) || 0,
+      inss: Number(data.inss) || 0,
+      lojinha: Number(data.lojinha) || 0,
+      bistro: Number(data.bistro) || 0,
+      adiantamento: Number(data.adiantamento) || 0,
+      outros_descontos: Number(data.outros_descontos) || 0,
+      observacoes: data.observacoes || '',
+      status: data.status || 'rascunho',
+      aprovado_por: data.aprovado_por,
+      aprovado_em: data.aprovado_em,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      payroll_id: data.payroll_id,
+      mes: data.mes,
+      ano: data.ano,
+      colaborador_id: data.colaborador_id,
+      nome_colaborador: data.nome_colaborador,
+      cpf_colaborador: data.cpf_colaborador,
+      unidade: data.unidade
+    };
+  }
 
 };

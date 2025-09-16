@@ -81,7 +81,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error in onSubmit:', error);
+      // Log desabilitado: Error in onSubmit
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a avaliação.',

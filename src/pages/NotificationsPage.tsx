@@ -4,19 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Filter, Send, Calendar, Mail, MessageSquare } from 'lucide-react';
+import { Plus, Filter, Send, Calendar, Mail, MessageSquare, TestTube } from 'lucide-react';
 import { NewNotificationDialog } from '@/components/notifications/NewNotificationDialog';
-import { ScheduleSendModal } from '@/components/notifications/ScheduleSendModal';
+
 import { EditNotificationDialog } from '@/components/notifications/EditNotificationDialog';
 import { EnhancedStatsModal } from '@/components/notifications/EnhancedStatsModal';
 import { PerformanceAnalytics } from '@/components/notifications/PerformanceAnalytics';
 import { QuickActions } from '@/components/notifications/QuickActions';
 import { NotificationDetailsModal } from '@/components/notifications/NotificationDetailsModal';
+import UnifiedScheduler from '@/components/UnifiedScheduler';
+import TestController from '@/components/TestController';
 import { useNotifications } from '@/contexts/NotificationContext';
+import useMessageScheduler from '@/hooks/useMessageScheduler';
 import { Notification } from '@/types/notification';
 
 const NotificationsPage: React.FC = () => {
   const { notifications, stats, deleteNotification } = useNotifications();
+  const { schedules, statistics } = useMessageScheduler();
+  const [activeTab, setActiveTab] = useState('overview');
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -83,12 +88,14 @@ const NotificationsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <ScheduleSendModal>
-            <Button variant="outline" size="sm">
-              <Calendar className="w-4 h-4 mr-2" />
-              Programar Envio
-            </Button>
-          </ScheduleSendModal>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setActiveTab('scheduling')}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Programar Envio
+          </Button>
           
           <NewNotificationDialog>
             <Button size="sm">
@@ -99,9 +106,11 @@ const NotificationsPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid grid-cols-5 w-full max-w-4xl">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="scheduler">Agendamento</TabsTrigger>
+          <TabsTrigger value="test">Testes</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
         </TabsList>
@@ -180,6 +189,36 @@ const NotificationsPage: React.FC = () => {
 
           {/* Quick Actions */}
           <QuickActions />
+        </TabsContent>
+
+        <TabsContent value="scheduler" className="space-y-6">
+          {/* Unified Scheduler for Notifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Agendamento Unificado de Notificações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UnifiedScheduler defaultType="notification" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="test" className="space-y-6">
+          {/* Test Controller for Notifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TestTube className="w-5 h-5" />
+                Controle de Testes - Notificações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TestController scheduleType="notification" />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">

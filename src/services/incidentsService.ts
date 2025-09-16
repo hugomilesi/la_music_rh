@@ -1,10 +1,10 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Incident, CreateIncidentData, UpdateIncidentData, IncidentStats, IncidentFilter } from '@/types/incidents';
 
 export const incidentsService = {
   async getIncidents(filter?: IncidentFilter): Promise<Incident[]> {
     try {
-      console.log('🔍 Fetching incidents with filter:', filter);
+      // Log desabilitado: Getting incidents
       
       let query = supabase
         .from('incidents')
@@ -40,11 +40,11 @@ export const incidentsService = {
       const { data, error } = await query;
       
       if (error) {
-        console.error('❌ Error fetching incidents:', error);
+        // Log desabilitado: Error getting incidents
         throw error;
       }
       
-      console.log('✅ Incidents fetched successfully:', data?.length);
+      // Incidents fetch success logging disabled
       
       return data.map(incident => ({
         id: incident.id,
@@ -61,14 +61,14 @@ export const incidentsService = {
         updatedAt: incident.updated_at
       }));
     } catch (error) {
-      console.error('❌ Error in getIncidents:', error);
+      // Error in getIncidents logging disabled
       throw error;
     }
   },
 
   async getIncidentById(id: number): Promise<Incident> {
     try {
-      console.log('🔍 Fetching incident by ID:', id);
+      // Incident by ID fetching logging disabled
       
       const { data, error } = await supabase
         .from('incidents')
@@ -81,11 +81,11 @@ export const incidentsService = {
         .single();
       
       if (error) {
-        console.error('❌ Error fetching incident:', error);
+        // Error fetching incident logging disabled
         throw error;
       }
       
-      console.log('✅ Incident fetched successfully:', data.id);
+      // Incident fetch success logging disabled
       
       return {
         id: data.id,
@@ -102,14 +102,14 @@ export const incidentsService = {
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('❌ Error in getIncidentById:', error);
+      // Error in getIncidentById logging disabled
       throw error;
     }
   },
 
   async createIncident(incidentData: CreateIncidentData): Promise<Incident> {
     try {
-      console.log('📝 Creating new incident:', incidentData);
+      // Log desabilitado: Creating incident
       
       const { data, error } = await supabase
         .from('incidents')
@@ -130,11 +130,11 @@ export const incidentsService = {
         .single();
       
       if (error) {
-        console.error('❌ Error creating incident:', error);
+        // Log desabilitado: Error creating incident
         throw error;
       }
       
-      console.log('✅ Incident created successfully:', data.id);
+      // Incident creation success logging disabled
       
       return {
         id: data.id,
@@ -151,14 +151,14 @@ export const incidentsService = {
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('❌ Error in createIncident:', error);
+      // Error in createIncident logging disabled
       throw error;
     }
   },
 
   async updateIncident(id: number, updateData: UpdateIncidentData): Promise<Incident> {
     try {
-      console.log('📝 Updating incident:', id, updateData);
+      // Log desabilitado: Updating incident
       
       const dbUpdateData: any = {};
       
@@ -181,11 +181,11 @@ export const incidentsService = {
         .single();
       
       if (error) {
-        console.error('❌ Error updating incident:', error);
+        // Log desabilitado: Error updating incident
         throw error;
       }
       
-      console.log('✅ Incident updated successfully:', data.id);
+      // Incident update success logging disabled
       
       return {
         id: data.id,
@@ -202,14 +202,14 @@ export const incidentsService = {
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('❌ Error in updateIncident:', error);
+      // Error in updateIncident logging disabled
       throw error;
     }
   },
 
   async deleteIncident(id: number): Promise<void> {
     try {
-      console.log('🗑️ Deleting incident:', id);
+      // Log desabilitado: Deleting incident
       
       const { error } = await supabase
         .from('incidents')
@@ -217,27 +217,27 @@ export const incidentsService = {
         .eq('id', id);
       
       if (error) {
-        console.error('❌ Error deleting incident:', error);
+        // Log desabilitado: Error deleting incident
         throw error;
       }
       
-      console.log('✅ Incident deleted successfully:', id);
+      // Incident deletion success logging disabled
     } catch (error) {
-      console.error('❌ Error in deleteIncident:', error);
+      // Error in deleteIncident logging disabled
       throw error;
     }
   },
 
   async getIncidentStats(): Promise<IncidentStats> {
     try {
-      console.log('📊 Fetching incident statistics');
+    
       
       const { data: incidents, error } = await supabase
         .from('incidents')
         .select('type, severity, status, created_at, updated_at');
       
       if (error) {
-        console.error('❌ Error fetching incident stats:', error);
+        // Error fetching incident stats logging disabled
         throw error;
       }
       
@@ -286,17 +286,17 @@ export const incidentsService = {
         averageResolutionTime: Math.round(averageResolutionTime * 100) / 100
       };
       
-      console.log('✅ Incident stats calculated:', stats);
+      // console.log('✅ Incident stats calculated:', stats);
       return stats;
     } catch (error) {
-      console.error('❌ Error in getIncidentStats:', error);
+      // Error in getIncidentStats logging disabled
       throw error;
     }
   },
 
   async getIncidentTypes(): Promise<string[]> {
     try {
-      console.log('🔍 Fetching incident types');
+      // Fetching incident types logging disabled
       
       const { data, error } = await supabase
         .from('incidents')
@@ -304,16 +304,16 @@ export const incidentsService = {
         .order('type');
       
       if (error) {
-        console.error('❌ Error fetching incident types:', error);
+        // Error fetching incident types logging disabled
         throw error;
       }
       
       const uniqueTypes = [...new Set(data.map(item => item.type))];
-      console.log('✅ Incident types fetched:', uniqueTypes);
+      // console.log('✅ Incident types fetched:', uniqueTypes);
       
       return uniqueTypes;
     } catch (error) {
-      console.error('❌ Error in getIncidentTypes:', error);
+      // Error in getIncidentTypes logging disabled
       throw error;
     }
   }

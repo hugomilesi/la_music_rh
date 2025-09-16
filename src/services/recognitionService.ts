@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import type {
   Database,
   RecognitionProgram,
@@ -380,7 +380,7 @@ export class RecognitionService {
 
       return evaluation;
     } catch (error) {
-      console.error('Erro ao atualizar avaliação:', error);
+      // Log desabilitado: Error updating evaluation
       throw error;
     }
   }
@@ -418,27 +418,9 @@ export class RecognitionService {
 
       return true;
     } catch (error) {
-       console.error('Erro ao deletar avaliação:', error);
+       // Log desabilitado: Error deleting evaluation
        throw error;
      }
    }
 
-   // Função para buscar avaliações de critérios por avaliação
-   static async getCriterionEvaluations(evaluationId: string) {
-     try {
-       const { data, error } = await supabase
-         .from('criterion_evaluations')
-         .select(`
-           *,
-           criterion:recognition_criteria(*)
-         `)
-         .eq('evaluation_id', evaluationId);
-
-       if (error) throw error;
-       return data || [];
-     } catch (error) {
-       console.error('Erro ao buscar avaliações de critérios:', error);
-       throw error;
-     }
-   }
  }

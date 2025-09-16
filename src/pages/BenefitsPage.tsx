@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,16 +10,18 @@ import {
   Users, 
   DollarSign, 
   TrendingUp, 
-  AlertCircle,
   Eye,
   Edit,
   Trash2,
   UserPlus,
   Target,
   RefreshCw,
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
+import { getFirstAccessibleRoute } from '@/utils/redirectUtils';
 import { NewBenefitDialog } from '@/components/benefits/NewBenefitDialog';
 import { BenefitDetailsModal } from '@/components/benefits/BenefitDetailsModal';
 import { EditBenefitDialog } from '@/components/benefits/EditBenefitDialog';
@@ -31,6 +34,8 @@ import { RenewalManagementModal } from '@/components/benefits/RenewalManagementM
 import { EmployeeBenefitsModal } from '@/components/benefits/EmployeeBenefitsModal';
 
 const BenefitsPage: React.FC = () => {
+  const { canViewModule, canManageModule, canManagePermissions, user, loading: permissionsLoading } = usePermissionsV2();
+  
   const { 
     benefits, 
     stats, 
@@ -45,6 +50,8 @@ const BenefitsPage: React.FC = () => {
   } = useBenefits();
   
 
+
+  // Todos os hooks useState devem vir antes de qualquer early return
   const [showNewBenefitDialog, setShowNewBenefitDialog] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -55,6 +62,24 @@ const BenefitsPage: React.FC = () => {
   const [showRenewalSettingsModal, setShowRenewalSettingsModal] = useState(false);
   const [showRenewalManagementModal, setShowRenewalManagementModal] = useState(false);
   const [showEmployeeBenefitsModal, setShowEmployeeBenefitsModal] = useState(false);
+
+  // Aguardar carregamento das permissões antes de verificar acesso
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Carregando permissões...</span>
+      </div>
+    );
+  }
+
+  // Verificar permissão de acesso aos benefícios e redirecionar se necessário
+  const canViewBeneficios = canViewModule('beneficios');
+  
+  if (!canViewBeneficios) {
+    const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
+    return <Navigate to={firstAccessibleRoute} replace />;
+  }
 
   const pendingRenewals = checkRenewals();
 
@@ -119,19 +144,26 @@ const BenefitsPage: React.FC = () => {
           <p className="text-gray-600">Gerencie planos e benefícios dos colaboradores</p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowEmployeeBenefitsModal(true)}
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Ver Funcionários
-          </Button>
-          <Button onClick={() => setShowNewBenefitDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Benefício
-          </Button>
+
+          {canViewModule('beneficios') && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowEmployeeBenefitsModal(true)}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Ver Funcionários
+            </Button>
+          )}
+          {canManageModule('beneficios') && (
+            <Button onClick={() => setShowNewBenefitDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Benefício
+            </Button>
+          )}
         </div>
       </div>
+
+
 
       {/* Renewal Alert */}
       {pendingRenewals.length > 0 && (
@@ -296,52 +328,64 @@ const BenefitsPage: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-1 pt-2 border-t">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewDetails(benefit)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditBenefit(benefit)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(benefit)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditBenefit(benefit)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
                       {/* Universal features - now available for all benefits */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleManageGoals(benefit)}
-                        title="Gerenciar Metas"
-                      >
-                        <Target className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRenewalSettings(benefit)}
-                        title="Configurar Renovação"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEnrollEmployee(benefit)}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteBenefit(benefit.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleManageGoals(benefit)}
+                          title="Gerenciar Metas"
+                        >
+                          <Target className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRenewalSettings(benefit)}
+                          title="Configurar Renovação"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEnrollEmployee(benefit)}
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteBenefit(benefit.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

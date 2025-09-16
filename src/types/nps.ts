@@ -23,6 +23,11 @@ export interface NPSSurvey {
   targetEmployees: string[];
   targetDepartments: string[];
   surveyType: 'nps' | 'satisfaction';
+  isAnonymous?: boolean;
+  autoSend?: boolean;
+  frequencyDays?: number;
+  lastSentAt?: string;
+  nextSendDate?: string;
 }
 
 export interface NPSQuestion {
@@ -57,4 +62,19 @@ export interface Department {
   id: string;
   name: string;
   employeeCount: number;
+}
+
+export interface NPSAutomationConfig {
+  id: string;
+  survey_id: string;
+  is_active: boolean;
+  frequency_type: 'daily' | 'weekly' | 'monthly';
+  frequency_value: number;
+  send_time: string; // HH:MM format
+  target_day_of_week?: number; // 0-6 (Sunday-Saturday)
+  target_day_of_month?: number; // 1-31
+  last_execution_date?: string;
+  next_execution_date: string;
+  created_at: string;
+  updated_at: string;
 }

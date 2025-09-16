@@ -93,7 +93,7 @@ const IncidentsList: React.FC = () => {
       const data = await incidentService.getFiltered(filter === 'all' ? {} : { status: filter });
       setIncidents(data);
     } catch (error) {
-      console.error('Erro ao buscar incidentes:', error);
+      // Log desabilitado: Erro ao buscar incidentes
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ const IncidentsList: React.FC = () => {
         await incidentService.delete(incidentToDelete);
         setIncidents(incidents.filter(i => i.id !== incidentToDelete));
       } catch (error) {
-        console.error('Erro ao excluir incidente:', error);
+        // Log desabilitado: Erro ao excluir incidente
       }
     }
     setConfirmDialogOpen(false);
@@ -167,7 +167,7 @@ const IncidentsList: React.FC = () => {
         await incidentService.update(incidentToUpdateStatus.id, { status: incidentToUpdateStatus.status });
         await fetchIncidents();
       } catch (error) {
-        console.error('Erro ao atualizar status do incidente:', error);
+        // Log desabilitado: Erro ao atualizar status do incidente
       }
     }
     setStatusDialogOpen(false);
@@ -184,7 +184,7 @@ const IncidentsList: React.FC = () => {
       await fetchIncidents();
       setDialogOpen(false);
     } catch (error) {
-      console.error('Erro ao salvar incidente:', error);
+      // Log desabilitado: Erro ao salvar incidente
     }
   };
 

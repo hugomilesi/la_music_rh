@@ -33,7 +33,7 @@ export const vacationService = {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error fetching vacation requests:', error);
+      // Log desabilitado: Error getting vacation requests
       throw error;
     }
     
@@ -61,7 +61,7 @@ export const vacationService = {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error fetching vacation balances:', error);
+      // Log desabilitado: Error getting vacation balances
       throw error;
     }
     
@@ -76,8 +76,6 @@ export const vacationService = {
   },
 
   async createVacationRequest(requestData: NewVacationRequest): Promise<VacationRequest> {
-    console.log('🔍 createVacationRequest: Starting to create vacation request with data:', requestData);
-    
     // Validate UUID format for employeeId
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(requestData.employeeId)) {
@@ -100,8 +98,6 @@ export const vacationService = {
       status: 'pending'
     };
 
-    console.log('🔍 createVacationRequest: Insert data prepared:', insertData);
-
     const { data, error } = await supabase
       .from('vacation_requests')
       .insert(insertData)
@@ -112,11 +108,8 @@ export const vacationService = {
       .single();
 
     if (error) {
-      console.error('❌ createVacationRequest: Error creating vacation request:', error);
       throw error;
     }
-
-    console.log('✅ createVacationRequest: Vacation request created successfully:', data);
 
     return {
       id: data.id,
@@ -166,7 +159,7 @@ export const vacationService = {
       .single();
     
     if (error) {
-      console.error('Error updating vacation request:', error);
+      // Log desabilitado: Error updating vacation request
       throw error;
     }
     
@@ -194,13 +187,12 @@ export const vacationService = {
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting vacation request:', error);
-      throw error;
+      throw new Error(`Erro ao excluir solicitação: ${error.message}`);
     }
   },
 
   async approveVacationRequest(id: string, approvedBy: string): Promise<VacationRequest> {
-    console.log('🔍 approveVacationRequest: Starting approval with data:', { id, approvedBy });
+    // console.log('🔍 approveVacationRequest: Starting approval with data:', { id, approvedBy });
     
     // Validate that approvedBy user exists
     const { data: userExists, error: userError } = await supabase
@@ -210,7 +202,7 @@ export const vacationService = {
       .single();
     
     if (userError || !userExists) {
-      console.error('❌ approveVacationRequest: User not found:', { approvedBy, userError });
+      // console.error('❌ approveVacationRequest: User not found:', { approvedBy, userError });
       throw new Error('Usuário aprovador não encontrado no sistema. Verifique se você está logado corretamente.');
     }
 
@@ -220,7 +212,7 @@ export const vacationService = {
       approved_date: new Date().toISOString().split('T')[0]
     };
 
-    console.log('🔍 approveVacationRequest: Update data prepared:', updateData);
+    // console.log('🔍 approveVacationRequest: Update data prepared:', updateData);
 
     const { data, error } = await supabase
       .from('vacation_requests')
@@ -233,14 +225,14 @@ export const vacationService = {
       .single();
 
     if (error) {
-      console.error('❌ approveVacationRequest: Error approving vacation request:', error);
+      // console.error('❌ approveVacationRequest: Error approving vacation request:', error);
       if (error.code === '23503') {
         throw new Error('Erro de referência: Usuário aprovador não encontrado no sistema.');
       }
       throw new Error(`Erro ao aprovar solicitação: ${error.message}`);
     }
 
-    console.log('✅ approveVacationRequest: Vacation request approved successfully:', data);
+    // console.log('✅ approveVacationRequest: Vacation request approved successfully:', data);
 
     return {
       id: data.id,
@@ -260,8 +252,6 @@ export const vacationService = {
   },
 
   async rejectVacationRequest(id: string, rejectionReason: string, rejectedBy: string): Promise<VacationRequest> {
-    console.log('🔍 rejectVacationRequest: Starting rejection with data:', { id, rejectionReason, rejectedBy });
-    
     // Validate that rejectedBy user exists
     const { data: userExists, error: userError } = await supabase
       .from('users')
@@ -270,7 +260,6 @@ export const vacationService = {
       .single();
     
     if (userError || !userExists) {
-      console.error('❌ rejectVacationRequest: User not found:', { rejectedBy, userError });
       throw new Error('Usuário rejeitador não encontrado no sistema. Verifique se você está logado corretamente.');
     }
 
@@ -280,8 +269,6 @@ export const vacationService = {
       approved_by: rejectedBy,
       approved_date: new Date().toISOString().split('T')[0]
     };
-
-    console.log('🔍 rejectVacationRequest: Update data prepared:', updateData);
 
     const { data, error } = await supabase
       .from('vacation_requests')
@@ -294,14 +281,11 @@ export const vacationService = {
       .single();
 
     if (error) {
-      console.error('❌ rejectVacationRequest: Error rejecting vacation request:', error);
       if (error.code === '23503') {
         throw new Error('Erro de referência: Usuário rejeitador não encontrado no sistema.');
       }
       throw new Error(`Erro ao rejeitar solicitação: ${error.message}`);
     }
-
-    console.log('✅ rejectVacationRequest: Vacation request rejected successfully:', data);
 
     return {
       id: data.id,

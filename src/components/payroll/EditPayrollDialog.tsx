@@ -175,7 +175,7 @@ export function EditPayrollDialog({
       onUpdatePayroll(updates);
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao atualizar registro:', error);
+      // Error handled by parent component
     } finally {
       setLoading(false);
     }

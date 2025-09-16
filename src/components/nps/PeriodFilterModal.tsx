@@ -86,7 +86,7 @@ export const PeriodFilterModal: React.FC<PeriodFilterModalProps> = ({
     });
 
     onOpenChange(false);
-    console.log('Filtro aplicado:', { startDate, endDate, period: selectedPeriod });
+    // Filtro aplicado com sucesso
   };
 
   return (

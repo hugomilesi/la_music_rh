@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Download, Mail, FileText, Search, Package, Eye, Edit, Trash2, Lock } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Document } from '@/types/document';
 import { EditDocumentDialog } from './EditDocumentDialog';
 
@@ -27,7 +27,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   onSendToAccountant
 }) => {
   const { getDocumentsByEmployee, downloadDocument, exportDocumentsByEmployee, viewDocument, deleteDocument } = useDocuments();
-  const { checkPermission } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
   const [employeeDocuments, setEmployeeDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +36,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   // Verificar se o usuário tem permissão para gerenciar colaboradores
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canViewDocuments = useMemo(() => canViewModule('documentos'), [canViewModule]);
 
   useEffect(() => {
     if (employeeId) {
@@ -62,8 +62,8 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
 
   const filteredDocuments = Array.isArray(employeeDocuments) 
      ? employeeDocuments.filter(doc =>
-         doc.document.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         doc.type.toLowerCase().includes(searchTerm.toLowerCase())
+         doc.document_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         doc.document_type?.toLowerCase().includes(searchTerm.toLowerCase())
        )
      : [];
 
@@ -97,7 +97,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
   };
 
   // Se não tem permissão, mostrar modal de acesso negado
-  if (!canManageEmployees) {
+  if (!canViewDocuments) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
@@ -174,16 +174,16 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
               <TableBody>
                 {filteredDocuments.map((doc) => (
                   <TableRow key={doc.id}>
-                    <TableCell className="font-medium">{doc.document}</TableCell>
+                    <TableCell className="font-medium">{doc.document_name}</TableCell>
                     <TableCell>
-                      <Badge className={getTypeColor(doc.type)}>
-                        {doc.type === 'obrigatorio' ? 'Obrigatório' : 
-                         doc.type === 'temporario' ? 'Temporário' : 'Complementar'}
+                      <Badge className={getTypeColor(doc.document_type)}>
+                        {doc.document_type === 'obrigatorio' ? 'Obrigatório' : 
+                         doc.document_type === 'temporario' ? 'Temporário' : 'Complementar'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(doc.uploadDate).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{new Date(doc.created_at).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
-                      {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}
+                      {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('pt-BR') : 'Sem validade'}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusBadge(doc.status)}>

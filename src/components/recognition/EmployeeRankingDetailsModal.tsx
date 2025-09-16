@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { DetailedRankingEmployee, isEligibleForProgram } from '@/types/recognition';
 import { recognitionPrograms } from '@/data/recognitionMockData';
 import { Trophy, Calendar, Star, Award, DollarSign, Gift, Crown, Medal, TrendingUp, User, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface EmployeeRankingDetailsModalProps {
   open: boolean;
@@ -28,8 +28,8 @@ export const EmployeeRankingDetailsModal: React.FC<EmployeeRankingDetailsModalPr
   onCreateBonus
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { checkPermission } = usePermissions();
-  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canViewModule } = usePermissionsV2();
+  const canViewEmployees = useMemo(() => canViewModule('reconhecimento'), [canViewModule]);
 
   if (!employee) return null;
 

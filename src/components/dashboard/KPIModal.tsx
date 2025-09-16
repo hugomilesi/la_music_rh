@@ -21,12 +21,12 @@ import { useVacation } from '@/contexts/VacationContext';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { Unit } from '@/types/employee';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface KPIModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'employees' | 'turnover' | 'nps' | 'alerts' | 'admissions' | 'evaluations' | 'hours' | 'incidents' | 'gamification' | null;
+  type: 'employees' | 'turnover' | 'nps' | 'alerts' | 'admissions' | 'avaliacoes' | 'hours' | 'incidents' | 'gamification' | null;
 }
 
 const getUnitName = (unit: Unit): string => {
@@ -50,11 +50,11 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
   const { requests: vacationRequests, vacationAlerts } = useVacation();
   const { events: scheduleEvents } = useSchedule();
   const { benefits, employeeBenefits, stats: benefitStats } = useBenefits();
-  const { checkPermission } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
-  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canViewEmployees = useMemo(() => canViewModule('usuarios'), [canViewModule]);
 
   // Cores para gráficos
   const CHART_COLORS = {
@@ -2165,7 +2165,7 @@ export const KPIModal: React.FC<KPIModalProps> = ({ isOpen, onClose, type }) => 
         };
       }
 
-      case 'evaluations': {
+      case 'avaliacoes': {
         // Calcular dados reais das avaliações
         const totalEvaluations = evaluations.length;
         const pendingEvaluations = evaluations.filter(e => e.status === 'pending').length;

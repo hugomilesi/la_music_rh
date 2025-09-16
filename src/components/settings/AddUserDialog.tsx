@@ -25,11 +25,12 @@ import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { Lock, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { createUserWithAutoPassword } from '@/services/userManagementService';
 import { CreateUserFormData, createUserSchema } from '@/types/userFormSchemas';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserCreatedModal } from './UserCreatedModal';
+import { notifyPermissionChange } from '@/utils/redirectUtils';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -41,19 +42,11 @@ interface AddUserDialogProps {
 interface UserFormData {
   name: string;
   email: string;
-  role: 'admin' | 'professor' | 'coordenador' | 'usuario';
+  role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   department: string;
   phone: string;
   position: string;
   status: 'active' | 'inactive';
-  permissions: {
-    canManageEmployees: boolean;
-    canManagePayroll: boolean;
-    canViewReports: boolean;
-    canManageSettings: boolean;
-    canManageUsers: boolean;
-    canManageEvaluations: boolean;
-  };
 }
 
 export const AddUserDialog: React.FC<AddUserDialogProps> = ({
@@ -63,7 +56,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   children
 }) => {
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
+  const { canCreateInModule, isSuperAdmin, forceRefreshPermissions } = usePermissionsV2();
   const [isLoading, setIsLoading] = useState(false);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [createdUserData, setCreatedUserData] = useState<any>(null);
@@ -74,7 +67,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
     defaultValues: {
       name: '',
       email: '',
-      role: 'usuario',
+      role: 'gerente',
       department: '',
       phone: '',
       position: '',
@@ -83,7 +76,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   });
   
   // Verificar se o usuário tem permissão para gerenciar usuários
-  const canManageUsers = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canManageUsers = useMemo(() => canCreateInModule('usuarios'), [canCreateInModule]);
   
   if (!canManageUsers) {
     return (
@@ -164,6 +157,10 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
           status: data.status
         });
         
+        // Invalidate cache and notify permission changes when new user is created
+        notifyPermissionChange();
+        forceRefreshPermissions();
+        
         form.reset();
         onOpenChange(false);
         setShowCredentialsModal(true);
@@ -196,7 +193,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
         });
       }
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
+      // Log desabilitado: Erro ao criar usuário
       
       // Tratamento de erros de rede ou outros erros inesperados
       let errorMessage = "Ocorreu um erro inesperado. Verifique os dados e tente novamente.";
@@ -277,10 +274,9 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                     <FormControl>
                       <Combobox
                         options={[
-                          { value: 'admin', label: 'Administrador' },
-                          { value: 'professor', label: 'Professor' },
-                          { value: 'coordenador', label: 'Coordenador' },
-                          { value: 'usuario', label: 'Usuário' },
+                          ...(isSuperAdmin ? [{ value: 'admin', label: 'Administrador' }] : []),
+                          { value: 'gestor_rh', label: 'Gestor de RH' },
+                          { value: 'gerente', label: 'Gerente' },
                         ]}
                         value={field.value}
                         onValueChange={field.onChange}
@@ -339,95 +335,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
               />
             </div>
 
-            {/* Permissions Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Permissões</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="permissions.canManageEmployees"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Gerenciar Funcionários</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Adicionar, editar e remover funcionários
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="permissions.canManagePayroll"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Gerenciar Folha</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Acesso à folha de pagamento
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="permissions.canViewReports"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Ver Relatórios</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Visualizar relatórios e estatísticas
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="permissions.canManageEvaluations"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <FormLabel>Gerenciar Avaliações</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Criar e editar critérios de avaliação
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* Nota sobre permissões */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>Nota:</strong> As permissões são automaticamente definidas com base no perfil do usuário e podem ser gerenciadas na seção de Configurações.
+              </p>
             </div>
 
             <DialogFooter>

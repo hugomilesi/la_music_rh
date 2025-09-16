@@ -5,7 +5,7 @@ import { benefitDocumentService, BenefitDocumentUpload } from './benefitDocument
 export const benefitsService = {
   // Benefit Types
   async getBenefitTypes(): Promise<BenefitType[]> {
-    console.log('🔍 getBenefitTypes: Starting to fetch benefit types...');
+    // Benefit types fetch logging disabled
     
     const { data, error } = await supabase
       .from('benefit_types')
@@ -13,11 +13,11 @@ export const benefitsService = {
       .order('name');
 
     if (error) {
-      console.error('❌ getBenefitTypes: Error fetching benefit types:', error);
+      // Error fetching benefit types logging disabled
       throw error;
     }
 
-    console.log('✅ getBenefitTypes: Raw data from Supabase:', data);
+
     
     const mappedData = data.map(type => ({
       id: type.id,
@@ -27,13 +27,13 @@ export const benefitsService = {
       color: benefitsService.getCategoryColor(type.category)
     }));
     
-    console.log('✅ getBenefitTypes: Mapped benefit types:', mappedData);
+
     return mappedData;
   },
 
   // Benefits
   async getBenefits(): Promise<Benefit[]> {
-    console.log('🔍 getBenefits: Starting to fetch benefits...');
+    // Log desabilitado: Getting benefits
     
     const { data, error } = await supabase
       .from('benefits')
@@ -44,12 +44,11 @@ export const benefitsService = {
       .order('nome');
 
     if (error) {
-      console.error('❌ getBenefits: Error fetching benefits:', error);
+      // Log desabilitado: Error getting benefits
       throw error;
     }
     
-    console.log('✅ getBenefits: Raw data from Supabase:', data);
-    console.log('✅ getBenefits: Number of benefits found:', data?.length || 0);
+
 
     // Map benefits and load documents for each
     const benefitsWithDocuments = await Promise.all(
@@ -64,7 +63,7 @@ export const benefitsService = {
           // we'll implement a simpler approach for now
           documents = [];
         } catch (error) {
-          console.warn(`Could not load documents for benefit ${benefit.id}:`, error);
+          // Document loading warning disabled
           documents = [];
         }
 
@@ -110,8 +109,7 @@ export const benefitsService = {
       })
     );
     
-    console.log('✅ getBenefits: Final mapped benefits:', benefitsWithDocuments);
-    console.log('✅ getBenefits: Returning', benefitsWithDocuments.length, 'benefits');
+
 
     return benefitsWithDocuments;
   },
@@ -156,7 +154,7 @@ export const benefitsService = {
       .single();
 
     if (error) {
-      console.error('Error creating benefit:', error);
+      // Log desabilitado: Error creating benefit
       throw error;
     }
 
@@ -259,7 +257,7 @@ export const benefitsService = {
       .single();
 
     if (error) {
-      console.error('Error updating benefit:', error);
+      // Log desabilitado: Error updating benefit
       throw error;
     }
 
@@ -267,7 +265,7 @@ export const benefitsService = {
     let uploadedDocuments: string[] = [];
     if (benefitData.documentFiles && benefitData.documentFiles.length > 0) {
       try {
-        console.log('📄 Processing document uploads for benefit:', id);
+        // Processing document uploads for benefit logging disabled
         
         // Upload each file and create document records
         for (const file of benefitData.documentFiles) {
@@ -282,7 +280,7 @@ export const benefitsService = {
             // 2. Get the storage URL
             // 3. Create the document record with the storage URL
             
-            console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`);
+            // Processing file logging disabled
             uploadedDocuments.push(file.name);
             
             // TODO: Implement actual file upload to storage
@@ -294,13 +292,13 @@ export const benefitsService = {
             // });
             
           } catch (fileError) {
-            console.warn(`⚠️ Error processing file ${file.name}:`, fileError);
+            // Error processing file logging disabled
           }
         }
         
-        console.log('✅ Document processing completed. Uploaded:', uploadedDocuments.length);
+    
       } catch (docError) {
-        console.warn('⚠️ Error processing documents during benefit update:', docError);
+        // Error processing documents during benefit update logging disabled
         // Don't fail the entire update if document processing fails
       }
     } else if (benefitData.documents && benefitData.documents.length > 0) {
@@ -356,14 +354,14 @@ export const benefitsService = {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting benefit:', error);
+      // Log desabilitado: Error deleting benefit
       throw error;
     }
   },
 
   // Employee Benefits
   async getEmployeeBenefits(): Promise<EmployeeBenefit[]> {
-    console.log('🔍 getEmployeeBenefits called - fetching employee benefits data');
+    // Log desabilitado
     
     try {
       // First get employee benefits with user and benefit info
@@ -377,7 +375,7 @@ export const benefitsService = {
         .order('enrollment_date', { ascending: false });
       
       if (error) {
-        console.error('🚨 Error in getEmployeeBenefits query:', error);
+        // Log desabilitado
         throw error;
       }
       
@@ -389,7 +387,7 @@ export const benefitsService = {
         .in('employee_benefit_id', employeeBenefitIds);
       
       if (dependentsError) {
-        console.error('🚨 Error fetching dependents:', dependentsError);
+        // Log desabilitado
         // Don't throw, just log and continue without dependents
       }
       
@@ -407,8 +405,8 @@ export const benefitsService = {
         benefit_dependents: dependentsByEmployeeBenefit[eb.id] || []
       }));
       
-      console.log('✅ getEmployeeBenefits query successful, processing data...');
-       console.log('Raw data received:', data);
+  
+       // Log desabilitado
        
        return data.map(eb => ({
       id: eb.id,
@@ -432,77 +430,49 @@ export const benefitsService = {
       renewalStatus: eb.status || 'active'
     }));
     } catch (error) {
-      console.error('🚨 Unexpected error in getEmployeeBenefits:', error);
+      // Log desabilitado
       throw error;
     }
   },
 
   async createEmployeeBenefit(data: { employeeId: string; benefitId: string; dependents?: any[]; documents?: any[] }): Promise<EmployeeBenefit> {
-    // Enhanced logging to track the source of invalid IDs
-    console.log('🔍 createEmployeeBenefit called with:', {
-      employeeId: data.employeeId,
-      benefitId: data.benefitId,
-      dependents: data.dependents,
-      employeeIdType: typeof data.employeeId,
-      benefitIdType: typeof data.benefitId,
-      stackTrace: new Error().stack
-    });
+    // Log desabilitado
     
     // UUID validation
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     
     if (!uuidRegex.test(data.employeeId)) {
-      console.error('🚨 Invalid employeeId UUID in createEmployeeBenefit!');
-      console.error('Value:', data.employeeId);
-      console.error('Type:', typeof data.employeeId);
-      console.error('Stack trace:', new Error().stack);
+      // Log desabilitado
       throw new Error(`Invalid employeeId format: ${data.employeeId}. Expected UUID format.`);
     }
     
     if (!uuidRegex.test(data.benefitId)) {
-      console.error('🚨 Invalid benefitId UUID in createEmployeeBenefit!');
-      console.error('Value:', data.benefitId);
-      console.error('Type:', typeof data.benefitId);
-      console.error('Stack trace:', new Error().stack);
+      // Log desabilitado
       throw new Error(`Invalid benefitId format: ${data.benefitId}. Expected UUID format.`);
     }
     
-    console.log('✅ UUID validation passed in createEmployeeBenefit. Proceeding:', { employeeId: data.employeeId, benefitId: data.benefitId, dependents: data.dependents });
+
     
     return this.enrollEmployee(data.employeeId, data.benefitId, data.dependents);
   },
 
   async enrollEmployee(employeeId: string, benefitId: string, dependents: any[] = []): Promise<EmployeeBenefit> {
-    // Enhanced logging to track the source of invalid IDs
-    console.log('🔍 enrollEmployee called with:', {
-      employeeId,
-      benefitId,
-      dependents,
-      employeeIdType: typeof employeeId,
-      benefitIdType: typeof benefitId,
-      stackTrace: new Error().stack
-    });
+    // Log desabilitado
     
     // UUID validation
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     
     if (!uuidRegex.test(employeeId)) {
-      console.error('🚨 Invalid employeeId UUID detected!');
-      console.error('Value:', employeeId);
-      console.error('Type:', typeof employeeId);
-      console.error('Stack trace:', new Error().stack);
+      // Log desabilitado
       throw new Error(`Invalid employeeId format: ${employeeId}. Expected UUID format.`);
     }
     
     if (!uuidRegex.test(benefitId)) {
-      console.error('🚨 Invalid benefitId UUID detected!');
-      console.error('Value:', benefitId);
-      console.error('Type:', typeof benefitId);
-      console.error('Stack trace:', new Error().stack);
+      // Log desabilitado
       throw new Error(`Invalid benefitId format: ${benefitId}. Expected UUID format.`);
     }
 
-    console.log('✅ UUID validation passed. Proceeding with enrollment:', { employeeId, benefitId, dependents });
+
     
     // Check if enrollment already exists
     const { data: existingEnrollment, error: checkError } = await supabase
@@ -513,7 +483,7 @@ export const benefitsService = {
       .maybeSingle();
 
     if (checkError) {
-      console.error('Error checking existing enrollment:', checkError);
+      // Log desabilitado
       throw checkError;
     }
 
@@ -538,7 +508,7 @@ export const benefitsService = {
       .single();
 
     if (enrollmentError) {
-      console.error('Error creating enrollment:', enrollmentError);
+      // Log desabilitado
       if (enrollmentError.code === '23505') {
         throw new Error('Funcionário já está inscrito neste benefício');
       }
@@ -561,7 +531,7 @@ export const benefitsService = {
         .insert(dependentData);
 
       if (dependentsError) {
-        console.error('Error creating dependents:', dependentsError);
+        // Log desabilitado
         // Don't throw here, enrollment was successful
       }
     }
@@ -583,7 +553,7 @@ export const benefitsService = {
   },
 
   async updateEmployeeBenefit(id: string, data: Partial<EmployeeBenefit>): Promise<EmployeeBenefit> {
-    console.log('🔄 Updating employee benefit:', { id, data });
+    // Log desabilitado
     
     const updateData: any = {};
     
@@ -595,11 +565,11 @@ export const benefitsService = {
     // Note: performance_data column doesn't exist in the database
     // This is handled in the frontend logic based on other data
     
-    console.log('📝 Update data prepared:', updateData);
+    // Log desabilitado
     
     // Check if there's actually data to update
     if (Object.keys(updateData).length === 0) {
-      console.log('⚠️ No data to update, fetching current record');
+      // Log desabilitado
       // If no data to update, just fetch the current record
       const { data: current, error: fetchError } = await supabase
         .from('employee_benefits')
@@ -613,7 +583,7 @@ export const benefitsService = {
         .single();
         
       if (fetchError) {
-        console.error('Error fetching employee benefit:', fetchError);
+        // Log desabilitado
         throw fetchError;
       }
       
@@ -652,13 +622,11 @@ export const benefitsService = {
       .single();
 
     if (error) {
-      console.error('Error updating employee benefit:', error);
-      console.error('Update data was:', updateData);
-      console.error('ID was:', id);
+      // Log desabilitado
       throw error;
     }
     
-    console.log('✅ Employee benefit updated successfully:', updated);
+
 
     return {
       id: updated.id,
@@ -690,7 +658,7 @@ export const benefitsService = {
       .eq('id', id);
 
     if (error) {
-      console.error('Error cancelling employee benefit:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -704,7 +672,7 @@ export const benefitsService = {
         .select('id, nome, valor, ativo, tipo');
 
       if (benefitsError) {
-        console.error('Error fetching benefits for stats:', benefitsError);
+        // Log desabilitado
         throw benefitsError;
       }
 
@@ -720,7 +688,7 @@ export const benefitsService = {
         `);
 
       if (employeeBenefitsError) {
-        console.error('Error fetching employee benefits for stats:', employeeBenefitsError);
+        // Log desabilitado
         throw employeeBenefitsError;
       }
 
@@ -795,7 +763,7 @@ export const benefitsService = {
         usage
       };
     } catch (error) {
-      console.error('Error calculating benefit statistics:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -803,10 +771,10 @@ export const benefitsService = {
   // Document management methods
   async uploadBenefitDocument(uploadData: BenefitDocumentUpload) {
     try {
-      console.log('🔄 Uploading benefit document:', uploadData.document_name);
+      // Log desabilitado
       return await benefitDocumentService.uploadDocument(uploadData);
     } catch (error) {
-      console.error('❌ Error uploading benefit document:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -815,7 +783,7 @@ export const benefitsService = {
     try {
       return await benefitDocumentService.getDocumentsByBenefitId(employeeBenefitId);
     } catch (error) {
-      console.error('❌ Error fetching benefit documents:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -824,7 +792,7 @@ export const benefitsService = {
     try {
       return await benefitDocumentService.downloadDocument(documentId);
     } catch (error) {
-      console.error('❌ Error downloading benefit document:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -832,9 +800,9 @@ export const benefitsService = {
   async deleteBenefitDocument(documentId: string) {
     try {
       await benefitDocumentService.deleteDocument(documentId);
-      console.log('✅ Benefit document deleted successfully');
+  
     } catch (error) {
-      console.error('❌ Error deleting benefit document:', error);
+      // Log desabilitado
       throw error;
     }
   },
@@ -843,7 +811,7 @@ export const benefitsService = {
     try {
       return await benefitDocumentService.updateDocument(documentId, updates);
     } catch (error) {
-      console.error('❌ Error updating benefit document:', error);
+      // Log desabilitado
       throw error;
     }
   },

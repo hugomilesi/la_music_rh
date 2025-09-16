@@ -392,7 +392,7 @@ export type Database = {
             foreignKeyName: "employee_benefits_benefit_id_fkey"
             columns: ["benefit_id"]
             isOneToOne: false
-            referencedRelation: "benefits"
+            referencedRelation: "beneficios"
             referencedColumns: ["id"]
           },
           {

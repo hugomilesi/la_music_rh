@@ -8,7 +8,7 @@ import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
 import { EditEmployeeDialog } from '@/components/employees/EditEmployeeDialog';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface CollaboratorSearchDropdownProps {
   placeholder?: string;
@@ -21,7 +21,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
 }) => {
   // Use the real employee context hook
   const { employees, isLoading, error } = useEmployees();
-  const { checkPermission } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +31,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Verificar se o usuário tem permissão para visualizar colaboradores
-  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canViewEmployees = useMemo(() => canViewModule('usuarios'), [canViewModule]);
 
   // If loading or error, show appropriate state
   const isDisabled = isLoading || error !== null || !employees || employees.length === 0 || !canViewEmployees;
@@ -78,7 +78,7 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   };
 
   const handleEmployeeSelect = (employee: Employee) => {
-    console.log('Employee selected:', employee);
+    // Log desabilitado: Employee selected
     setSelectedEmployee(employee);
     setIsEditDialogOpen(true);
     setIsOpen(false);

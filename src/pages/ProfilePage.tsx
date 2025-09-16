@@ -65,7 +65,7 @@ export default function ProfilePage() {
         description: 'Suas informações foram atualizadas com sucesso',
       });
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      // Log desabilitado: Error updating profile
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao atualizar perfil',
@@ -158,7 +158,7 @@ export default function ProfilePage() {
         description: 'Sua senha foi alterada com sucesso',
       });
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      // Log desabilitado: Error changing password
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao alterar senha',

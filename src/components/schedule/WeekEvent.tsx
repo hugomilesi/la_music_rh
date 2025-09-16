@@ -30,9 +30,9 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
     const startMinutes = (startHour - 8) * 60 + startMinute;
     const endMinutes = (endHour - 8) * 60 + endMinute;
     
-    // Each hour is 48px (12 slots * 4px)
-    const top = (startMinutes / 60) * 48;
-    const height = ((endMinutes - startMinutes) / 60) * 48;
+    // Each hour is 80px (20px per slot)
+    const top = (startMinutes / 60) * 80;
+    const height = ((endMinutes - startMinutes) / 60) * 80;
     
     return { top, height: Math.max(height, 20) }; // Minimum height of 20px
   };
@@ -42,7 +42,7 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
 
   return (
     <div
-      className={`absolute left-1 right-1 rounded p-1 text-xs cursor-pointer border ${getEventTypeColor(event.type)} hover:shadow-md transition-all z-10`}
+      className={`absolute left-2 right-2 rounded-md p-2 text-xs cursor-pointer border ${getEventTypeColor(event.type)} hover:shadow-lg hover:scale-105 transition-all z-10`}
       style={{ 
         top: `${top}px`, 
         height: `${height}px`,
@@ -51,23 +51,29 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
       }}
       onClick={() => onClick(event)}
     >
-      <div className="flex items-center gap-1 mb-1">
-        <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
-        <span className="text-xs text-gray-500">{unitInfo.name}</span>
-      </div>
-      <div className="font-medium truncate">{event.title}</div>
-      <div className="text-gray-600 truncate">{event.employee}</div>
-      <div className="text-gray-500">{event.startTime}</div>
-      {(event.emailAlert || event.whatsappAlert) && (
-        <div className="flex gap-1 mt-1">
-          {event.emailAlert && (
-            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📧</span>
-          )}
-          {event.whatsappAlert && (
-            <span className="text-xs bg-green-100 text-green-800 px-1 rounded">📱</span>
-          )}
+      <div className="space-y-1 h-full flex flex-col">
+        <div className="flex items-center gap-1">
+          <div className={`w-2 h-2 rounded-full ${unitInfo.color}`}></div>
+          <span className="text-xs font-medium text-gray-600 truncate">{unitInfo.name}</span>
         </div>
-      )}
+        
+        <div className="flex-1 space-y-1">
+          <div className="font-semibold text-gray-900 truncate leading-tight">{event.title}</div>
+          <div className="text-gray-700 truncate font-medium">{event.employee}</div>
+          <div className="text-gray-500 text-xs">{event.startTime}</div>
+        </div>
+        
+        {(event.emailAlert || event.whatsappAlert) && (
+          <div className="flex gap-1 mt-auto">
+            {event.emailAlert && (
+              <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">📧</span>
+            )}
+            {event.whatsappAlert && (
+              <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">📱</span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

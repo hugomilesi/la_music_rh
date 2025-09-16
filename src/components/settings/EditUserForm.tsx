@@ -5,41 +5,47 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { UpdateUserFormData } from '@/types/userFormSchemas';
-import { fetchRoles, RoleWithDepartment } from '@/services/rolesService';
+import { fetchRoles, fetchDepartments, RoleWithDepartment, Department } from '@/services/rolesService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditUserFormProps {
   form: UseFormReturn<UpdateUserFormData>;
 }
 
-const departments = [
-  'Administração',
-  'Coordenação',
-  'Educação Musical',
-  'Atendimento',
-  'Recursos Humanos',
-  'Tecnologia'
-];
+
 
 // Permissões removidas - serão gerenciadas pelo card de permissões
 
 export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
   const { register, formState: { errors }, watch, setValue } = form;
+  const { profile } = useAuth();
   const [roles, setRoles] = useState<RoleWithDepartment[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
+  
+  // Verificar se é super admin (pode promover para admin)
+  const isSuperAdmin = profile?.role === 'super_admin';
+  
+  // Verificar se é admin (pode promover para gestor_rh e gerente)
+  const isAdmin = profile?.role === 'admin' || isSuperAdmin;
 
   useEffect(() => {
-    const loadRoles = async () => {
+    const loadRolesAndDepartments = async () => {
       try {
-        const rolesData = await fetchRoles();
+        const [rolesData, departmentsData] = await Promise.all([
+          fetchRoles(),
+          fetchDepartments()
+        ]);
         setRoles(rolesData);
+        setDepartments(departmentsData);
       } catch (error) {
-        console.error('Erro ao carregar cargos:', error);
+        // Log desabilitado: Erro ao carregar cargos e departamentos
       } finally {
         setLoadingRoles(false);
       }
     };
 
-    loadRoles();
+    loadRolesAndDepartments();
   }, []);
 
   return (
@@ -99,10 +105,11 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
               id="department"
               {...register('department')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
+              disabled={loadingRoles}
             >
               <option value="">Selecione um setor</option>
               {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
+                <option key={dept.id} value={dept.name}>{dept.name}</option>
               ))}
             </select>
           </div>
@@ -121,10 +128,15 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
               {...register('role')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
             >
-              <option value="usuario">Usuário</option>
-              <option value="professor">Professor</option>
-              <option value="coordenador">Coordenador</option>
-              <option value="admin">Administrador</option>
+              {isSuperAdmin && (
+                <option value="admin">Administrador</option>
+              )}
+              {isAdmin && (
+                <>
+                  <option value="gerente">Gerente</option>
+                  <option value="gestor_rh">Gestor RH</option>
+                </>
+              )}
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>

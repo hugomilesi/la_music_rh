@@ -7,39 +7,67 @@ export interface Payroll {
   updated_at: string;
 }
 
+export interface Employee {
+  id: string;
+  name: string;
+  unit: string;
+  units: number;
+  position: string;
+  classification: string;
+  salario_base: number;
+  bonus: number;
+  comissao: number;
+  passagem: number;
+  reembolso: number;
+  inss: number;
+  lojinha: number;
+  bistro: number;
+  adiantamento: number;
+  outros_descontos: number;
+  observacoes?: string;
+  status: string;
+  aprovado_por?: string;
+  aprovado_em?: string;
+  created_at: string;
+  updated_at: string;
+  payroll_id?: string;
+  mes: number;
+  ano: number;
+  colaborador_id?: string;
+  nome_colaborador?: string;
+  cpf_colaborador?: string;
+  unidade?: string;
+}
+
 export interface PayrollEntry {
   id: string;
-  payroll_id?: string;
-  collaborator_id: string;
-  // Dados pessoais vêm da tabela users via relacionamento
-  collaborator_name: string; // users.full_name
-  month: number;
-  year: number;
-  classification: string;
-  role: string;
-  base_salary: number;
+  colaborador_id?: string;
+  mes: number;
+  ano: number;
+  classificacao: string;
+  funcao: string;
+  salario_base: number;
   bonus: number;
-  commission: number;
-  reimbursement: number;
-  transport: number; // passagem
+  comissao: number;
+  passagem: number;
+  reembolso: number;
   inss: number;
-  store_discount: number; // lojinha
-  bistro_discount: number; // bistro
-  advance: number; // adiantamento
-  other_discounts: number; // outros_descontos
-  total_amount?: number;
-  notes?: string;
+  lojinha: number;
+  bistro: number;
+  adiantamento: number;
+  outros_descontos: number;
+  observacoes?: string;
   status: string;
-  created_at?: string;
-  updated_at?: string;
-  // Dados pessoais que vêm da tabela users
-  units: string[];
-  department: string;
-  bank: string;
-  agency: string;
-  account: string;
-  cpf: string;
-  pix: string;
+  aprovado_por?: string;
+  aprovado_em?: string;
+  created_at: string;
+  updated_at: string;
+  payroll_id?: string;
+  transport_voucher?: number;
+  salary_advance?: number;
+  nome_colaborador?: string;
+  cpf_colaborador?: string;
+  unidade?: string;
 }
 
 export interface PayrollAllocation {

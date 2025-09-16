@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,12 +52,20 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState<Array<{auth_user_id: string, full_name: string, cpf: string, units: string, department: string}>>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [isRegisteredEmployee, setIsRegisteredEmployee] = useState(true);
   const [formData, setFormData] = useState({
     // Dados pessoais
+    colaborador_id: '',
     nome_funcionario: '',
     cpf_funcionario: '',
     unidade: defaultUnit || '',
     departamento: '',
+    
+    // Dados para colaborador não cadastrado
+    nome_colaborador: '',
+    cpf_colaborador: '',
     
     // Dados do período
     mes: defaultMonth ? parseInt(defaultMonth) : new Date().getMonth() + 1,
@@ -91,11 +99,67 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     observacoes: ''
   });
 
+  // Carregar funcionários quando o diálogo abrir
+  useEffect(() => {
+    if (open) {
+      loadEmployees();
+    }
+  }, [open]);
+
+  const loadEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('auth_user_id, full_name, cpf, units, department')
+        .order('full_name');
+      
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
+      toast.error('Erro ao carregar lista de funcionários');
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  const handleEmployeeSelect = (employeeId: string) => {
+    const selectedEmployee = employees.find(emp => emp.auth_user_id === employeeId);
+    if (selectedEmployee) {
+      setFormData(prev => ({
+        ...prev,
+        colaborador_id: employeeId,
+        nome_funcionario: selectedEmployee.full_name,
+        cpf_funcionario: selectedEmployee.cpf || '',
+        unidade: selectedEmployee.units || defaultUnit || '',
+        departamento: selectedEmployee.department || ''
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nome_funcionario || !formData.cpf_funcionario || !formData.unidade || !formData.classificacao || !formData.funcao) {
-      toast.error('Preencha todos os campos obrigatórios');
+    // Validação baseada no tipo de colaborador
+    if (isRegisteredEmployee) {
+      if (!formData.colaborador_id) {
+        toast.error('Por favor, selecione um funcionário');
+        return;
+      }
+      if (!formData.nome_funcionario || !formData.cpf_funcionario) {
+        toast.error('Dados do funcionário são obrigatórios');
+        return;
+      }
+    } else {
+      if (!formData.nome_colaborador || !formData.cpf_colaborador || !formData.unidade) {
+        toast.error('Nome, CPF e unidade são obrigatórios para colaboradores não cadastrados');
+        return;
+      }
+    }
+
+    if (!formData.classificacao || !formData.funcao) {
+      toast.error('Classificação e função são obrigatórios');
       return;
     }
 
@@ -107,9 +171,17 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     setLoading(true);
     
     try {
-      // Usar o ID do usuário logado como colaborador_id
       const payrollData = {
-        colaborador_id: user.id,
+        // Para colaborador cadastrado
+        ...(isRegisteredEmployee && { colaborador_id: formData.colaborador_id }),
+        
+        // Para colaborador não cadastrado
+        ...(!isRegisteredEmployee && {
+          nome_colaborador: formData.nome_colaborador,
+          cpf_colaborador: formData.cpf_colaborador,
+          unidade: formData.unidade
+        }),
+        
         mes: formData.mes,
         ano: formData.ano,
         classificacao: formData.classificacao,
@@ -126,39 +198,17 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
         outros_descontos: formData.outros_descontos,
         transport_voucher: formData.transport_voucher,
         salary_advance: formData.salary_advance,
+        banco: formData.banco,
+        agencia: formData.agencia,
+        conta: formData.conta,
+        pix: formData.pix,
         observacoes: formData.observacoes
       };
       
       await payrollService.createPayrollEntry(payrollData);
       toast.success('Registro de folha de pagamento salvo com sucesso!');
+      resetForm();
       setOpen(false);
-      setFormData({
-        nome_funcionario: '',
-        cpf_funcionario: '',
-        unidade: '',
-        departamento: '',
-        mes: new Date().getMonth() + 1,
-        ano: new Date().getFullYear(),
-        classificacao: '',
-        funcao: '',
-        salario_base: 0,
-        bonus: 0,
-        comissao: 0,
-        passagem: 0,
-        reembolso: 0,
-        inss: 0,
-        lojinha: 0,
-        bistro: 0,
-        adiantamento: 0,
-        outros_descontos: 0,
-        transport_voucher: 0,
-        salary_advance: 0,
-        banco: '',
-        agencia: '',
-        conta: '',
-        pix: '',
-        observacoes: ''
-      });
       onSuccess?.();
     } catch (error) {
       console.error('Erro ao criar registro:', error);
@@ -166,6 +216,53 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setIsRegisteredEmployee(true);
+    setFormData({
+      // Dados pessoais
+      colaborador_id: '',
+      nome_funcionario: '',
+      cpf_funcionario: '',
+      unidade: defaultUnit || '',
+      departamento: '',
+      
+      // Dados para colaborador não cadastrado
+      nome_colaborador: '',
+      cpf_colaborador: '',
+      
+      // Dados do período
+      mes: defaultMonth ? parseInt(defaultMonth) : new Date().getMonth() + 1,
+      ano: defaultYear ? parseInt(defaultYear) : new Date().getFullYear(),
+      
+      // Dados profissionais
+      classificacao: '',
+      funcao: '',
+      
+      // Valores financeiros
+      salario_base: 0,
+      bonus: 0,
+      comissao: 0,
+      passagem: 0,
+      reembolso: 0,
+      inss: 0,
+      lojinha: 0,
+      bistro: 0,
+      adiantamento: 0,
+      outros_descontos: 0,
+      transport_voucher: 0,
+      salary_advance: 0,
+      
+      // Dados bancários
+      banco: '',
+      agencia: '',
+      conta: '',
+      pix: '',
+      
+      // Observações
+      observacoes: ''
+    });
   };
 
   const formatCPF = (value: string) => {
@@ -205,29 +302,120 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                 Dados Pessoais
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4">
+              {/* Seleção do tipo de colaborador */}
               <div className="space-y-2">
-                <Label htmlFor="nome_funcionario">Nome Completo *</Label>
-                <Input
-                  id="nome_funcionario"
-                  value={formData.nome_funcionario}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome_funcionario: e.target.value }))}
-                  placeholder="Digite o nome completo"
-                  required
-                />
+                <Label>Tipo de Colaborador *</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="employeeType"
+                      checked={isRegisteredEmployee}
+                      onChange={() => {
+                        setIsRegisteredEmployee(true);
+                        setFormData(prev => ({
+                          ...prev,
+                          colaborador_id: '',
+                          nome_funcionario: '',
+                          cpf_funcionario: '',
+                          nome_colaborador: '',
+                          cpf_colaborador: ''
+                        }));
+                      }}
+                      className="text-blue-600"
+                    />
+                    <span>Colaborador Cadastrado</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="employeeType"
+                      checked={!isRegisteredEmployee}
+                      onChange={() => {
+                        setIsRegisteredEmployee(false);
+                        setFormData(prev => ({
+                          ...prev,
+                          colaborador_id: '',
+                          nome_funcionario: '',
+                          cpf_funcionario: ''
+                        }));
+                      }}
+                      className="text-blue-600"
+                    />
+                    <span>Colaborador Não Cadastrado</span>
+                  </label>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="cpf_funcionario">CPF *</Label>
-                <Input
-                  id="cpf_funcionario"
-                  value={formData.cpf_funcionario}
-                  onChange={(e) => handleCPFChange(e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  required
-                />
-              </div>
+
+              {/* Campos para colaborador cadastrado */}
+              {isRegisteredEmployee && (
+                <>
+                  <div>
+                    <Label htmlFor="colaborador_id">Funcionário *</Label>
+                    <Select
+                      value={formData.colaborador_id}
+                      onValueChange={handleEmployeeSelect}
+                      disabled={loadingEmployees}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingEmployees ? "Carregando funcionários..." : "Selecione um funcionário"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.auth_user_id} value={employee.auth_user_id}>
+                            {employee.full_name} {employee.cpf ? `- ${employee.cpf}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.colaborador_id && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nome Completo</Label>
+                        <Input
+                          value={formData.nome_funcionario}
+                          disabled
+                          className="bg-gray-50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CPF</Label>
+                        <Input
+                          value={formData.cpf_funcionario}
+                          disabled
+                          className="bg-gray-50"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Campos para colaborador não cadastrado */}
+              {!isRegisteredEmployee && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome_colaborador">Nome Completo *</Label>
+                    <Input
+                      id="nome_colaborador"
+                      value={formData.nome_colaborador}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nome_colaborador: e.target.value }))}
+                      placeholder="Digite o nome completo"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf_colaborador">CPF *</Label>
+                    <Input
+                      id="cpf_colaborador"
+                      value={formData.cpf_colaborador}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cpf_colaborador: e.target.value }))}
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

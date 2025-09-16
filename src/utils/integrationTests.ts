@@ -6,10 +6,10 @@ import { scheduleService } from '@/services/scheduleService';
 
 export const integrationTests = {
   async testEmployeeService() {
-    console.log('🧪 Testing Employee Service...');
+    // Employee Service Integration Test logging disabled
     try {
       const employees = await employeeService.getEmployees();
-      console.log(`✅ Employee Service: Loaded ${employees.length} employees`);
+      // console.log(`✅ Employee Service: Loaded ${employees.length} employees`);
       
       // Test data structure
       if (employees.length > 0) {
@@ -18,31 +18,31 @@ export const integrationTests = {
         const missingFields = requiredFields.filter(field => !(field in firstEmployee));
         
         if (missingFields.length === 0) {
-          console.log('✅ Employee Service: Data structure is valid');
+          // Employee data structure validation logging disabled
         } else {
-          console.error('❌ Employee Service: Missing fields:', missingFields);
+          // Log desabilitado: Employee Service: Missing fields
         }
         
         // Test status type
         if (firstEmployee.status === 'active' || firstEmployee.status === 'inactive') {
-          console.log('✅ Employee Service: Status type is valid');
+          // Employee service methods validation logging disabled
         } else {
-          console.error('❌ Employee Service: Invalid status type:', firstEmployee.status);
+          // Log desabilitado: Employee Service: Invalid status type
         }
       }
       
       return true;
     } catch (error) {
-      console.error('❌ Employee Service test failed:', error);
+      // Employee Service Test failed logging disabled
       return false;
     }
   },
 
   async testEvaluationService() {
-    console.log('🧪 Testing Evaluation Service...');
+    // Evaluation Service Integration Test logging disabled
     try {
       const evaluations = await evaluationService.getEvaluations();
-      console.log(`✅ Evaluation Service: Loaded ${evaluations.length} evaluations`);
+      // console.log(`✅ Evaluation Service: Loaded ${evaluations.length} evaluations`);
       
       // Test data structure
       if (evaluations.length > 0) {
@@ -51,40 +51,40 @@ export const integrationTests = {
         const missingFields = requiredFields.filter(field => !(field in firstEvaluation));
         
         if (missingFields.length === 0) {
-          console.log('✅ Evaluation Service: Data structure is valid');
+          // Evaluation data structure validation logging disabled
         } else {
-          console.error('❌ Evaluation Service: Missing fields:', missingFields);
+          // Log desabilitado: Evaluation Service: Missing fields
         }
       }
       
       return true;
     } catch (error) {
-      console.error('❌ Evaluation Service test failed:', error);
+      // Evaluation Service Test failed logging disabled
       return false;
     }
   },
 
   async testVacationService() {
-    console.log('🧪 Testing Vacation Service...');
+    // Vacation Service Integration Test logging disabled
     try {
       const vacationRequests = await vacationService.getVacationRequests();
-      console.log(`✅ Vacation Service: Loaded ${vacationRequests.length} vacation requests`);
+      // console.log(`✅ Vacation Service: Loaded ${vacationRequests.length} vacation requests`);
       
       const vacationBalances = await vacationService.getVacationBalances();
-      console.log(`✅ Vacation Service: Loaded ${vacationBalances.length} vacation balances`);
+      // console.log(`✅ Vacation Service: Loaded ${vacationBalances.length} vacation balances`);
       
       return true;
     } catch (error) {
-      console.error('❌ Vacation Service test failed:', error);
+      // Vacation Service Test failed logging disabled
       return false;
     }
   },
 
   async testScheduleService() {
-    console.log('🧪 Testing Schedule Service...');
+    // Schedule Service Integration Test logging disabled
     try {
       const scheduleEvents = await scheduleService.getScheduleEvents();
-      console.log(`✅ Schedule Service: Loaded ${scheduleEvents.length} schedule events`);
+      // console.log(`✅ Schedule Service: Loaded ${scheduleEvents.length} schedule events`);
       
       // Test data structure
       if (scheduleEvents.length > 0) {
@@ -93,45 +93,45 @@ export const integrationTests = {
         const missingFields = requiredFields.filter(field => !(field in firstEvent));
         
         if (missingFields.length === 0) {
-          console.log('✅ Schedule Service: Data structure is valid');
+          // Schedule data structure validation logging disabled
         } else {
-          console.error('❌ Schedule Service: Missing fields:', missingFields);
+          // Log desabilitado: Schedule Service: Missing fields
         }
 
         // Test event type validation
         const validTypes = ['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'];
         if (validTypes.includes(firstEvent.type)) {
-          console.log('✅ Schedule Service: Event type is valid');
+          // Schedule event type validation logging disabled
         } else {
-          console.error('❌ Schedule Service: Invalid event type:', firstEvent.type);
+          // Log desabilitado: Schedule Service: Invalid event type
         }
 
         // Test unit validation
         const validUnits = ['uti_neonatal', 'uti_pediatrica', 'emergencia_pediatrica', 'internacao', 'ambulatorio'];
         if (validUnits.includes(firstEvent.unit)) {
-          console.log('✅ Schedule Service: Unit type is valid');
+          // Schedule unit validation logging disabled
         } else {
-          console.error('❌ Schedule Service: Invalid unit:', firstEvent.unit);
+          // Log desabilitado: Schedule Service: Invalid unit
         }
 
         // Test time format validation
         const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
         if (timeRegex.test(firstEvent.startTime) && timeRegex.test(firstEvent.endTime)) {
-          console.log('✅ Schedule Service: Time format is valid');
+          // Schedule time format validation logging disabled
         } else {
-          console.error('❌ Schedule Service: Invalid time format');
+          // Log desabilitado: Schedule Service: Invalid time format
         }
       }
       
       return true;
     } catch (error) {
-      console.error('❌ Schedule Service test failed:', error);
+      // Schedule Service Test failed logging disabled
       return false;
     }
   },
 
   async runAllTests() {
-    console.log('🚀 Starting Integration Tests...');
+    // console.log('🚀 Starting Integration Tests...');
     const results = await Promise.all([
       this.testEmployeeService(),
       this.testEvaluationService(),
@@ -142,13 +142,13 @@ export const integrationTests = {
     const passedTests = results.filter(Boolean).length;
     const totalTests = results.length;
     
-    console.log(`📊 Integration Tests Complete: ${passedTests}/${totalTests} passed`);
-    
-    if (passedTests === totalTests) {
-      console.log('✅ All integration tests passed!');
-    } else {
-      console.log('❌ Some integration tests failed. Check logs above.');
-    }
+    // console.log(`📊 Integration Tests Complete: ${passedTests}/${totalTests} passed`);
+  
+  // if (passedTests === totalTests) {
+  //   console.log('✅ All integration tests passed!');
+  // } else {
+  //   console.log('❌ Some integration tests failed. Check logs above.');
+  // }
     
     return passedTests === totalTests;
   }

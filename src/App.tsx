@@ -1,180 +1,297 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { MainLayout } from './components/layout/MainLayout';
-import { GlobalContextProvider } from './contexts/GlobalContextProvider';
-import { UnitProvider } from './contexts/UnitContext';
-import { EmployeeProvider } from './contexts/EmployeeContext';
-import { NotificationProvider } from './contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
-// Pages
-import Index from './pages/Index';
-import AuthPage from './pages/AuthPage';
-import DashboardPage from './pages/DashboardPage';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ProtectedPageRoute } from '@/components/auth/ProtectedPageRoute';
+import { AuthPage } from '@/components/auth/AuthPage';
+import { MainLayout } from '@/components/layout/MainLayout';
+import PageTransition from '@/components/layout/PageTransition';
+import { Toaster } from '@/components/ui/toaster';
+import { GlobalContextProvider } from '@/contexts/GlobalContextProvider';
+import { UnitProvider } from '@/contexts/UnitContext';
+import { EmployeeProvider } from '@/contexts/EmployeeContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import { NPSProvider } from './contexts/NPSContext';
+import { IncidentsProvider } from './contexts/IncidentsContext';
+import { VacationProvider } from './contexts/VacationContext';
+import { EvaluationProvider } from './contexts/EvaluationContext';
+import { BenefitsProvider } from './contexts/BenefitsContext';
+import { ScheduleProvider } from './contexts/ScheduleContext';
+import Index from '@/pages/Index';
 
-import DocumentsPage from './pages/DocumentsPage';
-import EvaluationsPage from './pages/EvaluationsPage';
-import VacationPage from './pages/VacationPage';
-import SchedulePage from './pages/SchedulePage';
+import DashboardPage from '@/pages/DashboardPage';
 
-import NPSPage from './pages/NPSPage';
-import RecognitionPage from './pages/RecognitionPage';
-import IncidentsPage from './pages/incidents';
-import BenefitsPage from './pages/BenefitsPage';
-import WhatsAppPage from './pages/WhatsAppPage';
-import NotificationsPage from './pages/NotificationsPage';
-import SettingsPage from './pages/SettingsPage';
-import PayrollPage from './pages/PayrollPage';
-import UserProfilePage from './pages/UserProfilePage';
-import UserSettingsPage from './pages/UserSettingsPage';
-import ProfilePage from './pages/ProfilePage';
-import NotFound from './pages/NotFound';
+import BenefitsPage from '@/pages/BenefitsPage';
+import DocumentsPage from '@/pages/DocumentsPage';
+import EvaluationsPage from '@/pages/EvaluationsPage';
+import PayrollPage from '@/pages/PayrollPage';
+import RecognitionPage from '@/pages/RecognitionPage';
+import SchedulePage from '@/pages/SchedulePage';
+import VacationPage from '@/pages/VacationPage';
+import WhatsAppPage from '@/pages/WhatsAppPage';
+import SettingsPage from '@/pages/SettingsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import UserSettingsPage from '@/pages/UserSettingsPage';
+import IncidentsIndexPage from '@/pages/incidents/index';
+import NPSPage from '@/pages/NPSPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import PermissionsManagement from '@/pages/PermissionsManagement';
+import PermissionsMigration from '@/components/permissions/PermissionsMigration';
+import PermissionsTest from '@/pages/PermissionsTest';
+import PermissionsDebug from '@/pages/PermissionsDebug';
+import RedirectDebug from '@/components/debug/RedirectDebug';
+import NotFound from '@/pages/NotFound';
+import { PublicSurveyPage } from '@/pages/PublicSurveyPage';
+import { NPSResponsePage } from '@/components/nps/NPSResponsePage';
+import { useParams, useSearchParams } from 'react-router-dom';
 
-// Wrapper component for protected pages with global context
-const ProtectedPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute>
-    <GlobalContextProvider>
-      <MainLayout>
-        {children}
-      </MainLayout>
-    </GlobalContextProvider>
-  </ProtectedRoute>
-);
+import './index.css';
+
+// Wrapper component for NPSResponsePage to handle URL parameters
+const NPSResponsePageWrapper: React.FC = () => {
+  const { token: routeToken } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  
+  // Priorizar o token dos query parameters, se não existir, usar o da rota
+  const token = searchParams.get('token') || routeToken;
+  
+  if (!token) {
+    return <div>Link inválido ou expirado</div>;
+  }
+  
+  return <NPSResponsePage token={token} />;
+};
+
+// Wrapper component for protected pages with global context and permission check
+const ProtectedPageWrapper: React.FC<{ 
+  children: React.ReactNode;
+  requiredPermission: string;
+}> = ({ children, requiredPermission }) => {
+  
+  return (
+    <ProtectedPageRoute requiredPermission={requiredPermission}>
+      <GlobalContextProvider>
+        <MainLayout>
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </MainLayout>
+      </GlobalContextProvider>
+    </ProtectedPageRoute>
+  );
+};
 
 // Wrapper component for user pages with minimal context (only what's needed for the header)
 const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ProtectedRoute>
     <UnitProvider>
       <EmployeeProvider>
-        <NotificationProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
-        </NotificationProvider>
+        <ScheduleProvider>
+          <NPSProvider>
+            <IncidentsProvider>
+              <VacationProvider>
+                <EvaluationProvider>
+                  <BenefitsProvider>
+                    <NotificationProvider>
+                      <MainLayout>
+                        <PageTransition>
+                          {children}
+                        </PageTransition>
+                      </MainLayout>
+                    </NotificationProvider>
+                  </BenefitsProvider>
+                </EvaluationProvider>
+              </VacationProvider>
+            </IncidentsProvider>
+          </NPSProvider>
+        </ScheduleProvider>
       </EmployeeProvider>
     </UnitProvider>
   </ProtectedRoute>
 );
 
+// Wrapper component for public pages
+const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <PageTransition>
+    {children}
+  </PageTransition>
+);
+
 function App() {
   return (
-    <HelmetProvider>
-      <Router>
-        <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
-          
-          {/* User profile and settings routes */}
-          <Route path="/perfil" element={
-            <UserPageWrapper>
-              <UserProfilePage />
-            </UserPageWrapper>
-          } />
-          
-          <Route path="/configuracoes-usuario" element={
-            <UserPageWrapper>
-              <UserSettingsPage />
-            </UserPageWrapper>
-          } />
-          
-          <Route path="/meu-perfil" element={
-            <UserPageWrapper>
-              <ProfilePage />
-            </UserPageWrapper>
-          } />
-          
-          {/* All protected routes share the same GlobalContextProvider instance */}
-          <Route path="/dashboard" element={
-            <ProtectedPageWrapper>
-              <DashboardPage />
-            </ProtectedPageWrapper>
-          } />
-          
+    <Router>
+      <Routes>
+        {/* Completely public routes without any auth context */}
 
-          
-          <Route path="/documentos" element={
-            <ProtectedPageWrapper>
-              <DocumentsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/avaliacoes" element={
-            <ProtectedPageWrapper>
-              <EvaluationsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/ferias" element={
-            <ProtectedPageWrapper>
-              <VacationPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/agenda" element={
-            <ProtectedPageWrapper>
-              <SchedulePage />
-            </ProtectedPageWrapper>
-          } />
-          
+        <Route path="/nps/:token" element={
+          <PublicPageWrapper>
+            <NPSResponsePageWrapper />
+          </PublicPageWrapper>
+        } />
+        
+        <Route path="/whatsapp-nps/response" element={
+          <PublicPageWrapper>
+            <NPSResponsePageWrapper />
+          </PublicPageWrapper>
+        } />
+        
+        {/* Routes with auth context */}
+        <Route path="/*" element={
+          <AuthProvider>
+            <Routes>
+                {/* Public routes */}
+                <Route path="/" element={
+                  <PublicPageWrapper>
+                    <Index />
+                  </PublicPageWrapper>
+                } />
+                <Route path="/auth" element={
+                  <PublicPageWrapper>
+                    <AuthPage />
+                  </PublicPageWrapper>
+                } />
+                <Route path="/survey/:surveyId" element={
+                  <PublicPageWrapper>
+                    <PublicSurveyPage />
+                  </PublicPageWrapper>
+                } />
 
-          
-          <Route path="/nps" element={
-            <ProtectedPageWrapper>
-              <NPSPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/reconhecimento" element={
-            <ProtectedPageWrapper>
-              <RecognitionPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/ocorrencias" element={
-            <ProtectedPageWrapper>
-              <IncidentsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/beneficios" element={
-            <ProtectedPageWrapper>
-              <BenefitsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/whatsapp" element={
-            <ProtectedPageWrapper>
-              <WhatsAppPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/notificacoes" element={
-            <ProtectedPageWrapper>
-              <NotificationsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/configuracoes" element={
-            <ProtectedPageWrapper>
-              <SettingsPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="/folha-pagamento" element={
-            <ProtectedPageWrapper>
-              <PayrollPage />
-            </ProtectedPageWrapper>
-          } />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        </AuthProvider>
-      </Router>
-    </HelmetProvider>
+                {/* Protected routes with permission checks */}
+                <Route path="/dashboard" element={
+                  <ProtectedPageWrapper requiredPermission="dashboard.view">
+                    <DashboardPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/beneficios" element={
+                    <ProtectedPageWrapper requiredPermission="beneficios.view">
+                      <BenefitsPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/documentos" element={
+                    <ProtectedPageWrapper requiredPermission="documentos.view">
+                      <DocumentsPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/avaliacoes" element={
+                    <ProtectedPageWrapper requiredPermission="avaliacoes.view">
+                      <EvaluationsPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/folha-pagamento" element={
+                    <ProtectedPageWrapper requiredPermission="folha_pagamento.view">
+                      <PayrollPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/reconhecimento" element={
+                    <ProtectedPageWrapper requiredPermission="reconhecimento.view">
+                      <RecognitionPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/agenda" element={
+                    <ProtectedPageWrapper requiredPermission="agenda.view">
+                      <SchedulePage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/ferias" element={
+                    <ProtectedPageWrapper requiredPermission="ferias.view">
+                      <VacationPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/whatsapp" element={
+                  <ProtectedPageWrapper requiredPermission="whatsapp.view">
+                    <WhatsAppPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/configuracoes" element={
+                    <ProtectedPageWrapper requiredPermission="configuracoes.view">
+                      <SettingsPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/ocorrencias" element={
+                  <ProtectedPageWrapper requiredPermission="ocorrencias.view">
+                    <IncidentsIndexPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/nps" element={
+                  <ProtectedPageWrapper requiredPermission="nps.view">
+                    <NPSPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/notificacoes" element={
+                  <ProtectedPageWrapper requiredPermission="notificacoes.view">
+                    <NotificationsPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/gerenciar-permissoes" element={
+                  <ProtectedPageWrapper requiredPermission="permissoes.manage">
+                    <PermissionsManagement />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/migrar-permissoes" element={
+                  <ProtectedPageWrapper requiredPermission="permissoes.manage">
+                    <PermissionsMigration />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/debug-permissoes" element={
+                  <UserPageWrapper>
+                    <PermissionsDebug />
+                  </UserPageWrapper>
+                } />
+                
+                <Route path="/debug-redirect" element={
+                  <UserPageWrapper>
+                    <RedirectDebug />
+                  </UserPageWrapper>
+                } />
+                
+                <Route path="/teste-permissoes" element={
+                  <UserPageWrapper>
+                    <PermissionsTest />
+                  </UserPageWrapper>
+                } />
+                
+                {/* User profile routes (no specific permission required, just authentication) */}
+                <Route path="/perfil" element={
+                  <UserPageWrapper>
+                    <ProfilePage />
+                  </UserPageWrapper>
+                } />
+                
+                <Route path="/configuracoes-usuario" element={
+                  <UserPageWrapper>
+                    <UserSettingsPage />
+                  </UserPageWrapper>
+                } />
+                
+                {/* 404 route */}
+                <Route path="*" element={
+                  <PublicPageWrapper>
+                    <NotFound />
+                  </PublicPageWrapper>
+                } />
+              </Routes>
+                <Toaster />
+          </AuthProvider>
+        } />
+      </Routes>
+    </Router>
   );
 }
 

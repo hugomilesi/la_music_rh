@@ -24,7 +24,7 @@ export const useSupabaseSubscription = ({
   const cleanup = useCallback(() => {
     const existingChannel = activeSubscriptions.get(channelName);
     if (existingChannel) {
-      console.log(`Cleaning up subscription for ${channelName}`);
+      // Log desabilitado: Cleaning up subscription
       supabase.removeChannel(existingChannel);
       activeSubscriptions.delete(channelName);
     }
@@ -37,24 +37,24 @@ export const useSupabaseSubscription = ({
 
     // Check if subscription already exists
     if (activeSubscriptions.has(channelName)) {
-      console.log(`Subscription for ${channelName} already exists, skipping`);
+      // Log desabilitado: Subscription already exists, skipping
       isInitializedRef.current = true;
       return;
     }
 
-    console.log(`Setting up subscription for ${channelName}`);
+    // Log desabilitado: Setting up subscription
     
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', 
         { event: '*', schema: 'public', table },
         (payload) => {
-          console.log(`Real-time update for ${table}:`, payload);
+          // Log desabilitado: Real-time update
           onDataChange();
         }
       )
       .subscribe((status) => {
-        console.log(`Subscription status for ${channelName}:`, status);
+        // Log desabilitado: Subscription status
         if (status === 'SUBSCRIBED') {
           activeSubscriptions.set(channelName, channel);
           isInitializedRef.current = true;

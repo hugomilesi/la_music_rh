@@ -1,5 +1,43 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { CreateUserFormData } from '@/types/userFormSchemas';
+
+// Rate limiting storage
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
+// Input validation helpers
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+}
+
+function validatePassword(password: string): boolean {
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+  return passwordRegex.test(password);
+}
+
+function sanitizeInput(input: string): string {
+  return input.trim().replace(/[<>"'&]/g, '');
+}
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(identifier);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
 
 interface CreateUserResult {
   success: boolean;
@@ -15,10 +53,28 @@ interface CreateUserResult {
 
 // Função para deletar colaborador
 export async function deleteEmployee(employeeId: string): Promise<{ success: boolean; error?: string }> {
+  // Rate limiting check
+  if (!checkRateLimit(`delete_${employeeId}`)) {
+    return {
+      success: false,
+      error: 'Muitas tentativas. Tente novamente em alguns minutos.'
+    };
+  }
+
+  // Input validation
+  if (!employeeId || typeof employeeId !== 'string' || employeeId.trim().length === 0) {
+    return {
+      success: false,
+      error: 'ID do colaborador inválido'
+    };
+  }
+
+  const sanitizedId = sanitizeInput(employeeId);
+  
   try {
     const { data: dbResult, error: dbError } = await supabase
       .rpc('delete_employee', {
-        emp_id: employeeId
+        emp_id: sanitizedId
       });
     
     if (dbError) {
@@ -43,7 +99,7 @@ export async function deleteEmployee(employeeId: string): Promise<{ success: boo
     };
     
   } catch (error) {
-    console.error('Erro ao deletar colaborador:', error);
+    // Log desabilitado: Error deleting collaborator
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -91,7 +147,7 @@ export async function updateEmployee(employeeId: string, updateData: Partial<Cre
     };
     
   } catch (error) {
-    console.error('Erro ao atualizar colaborador:', error);
+    // Log desabilitado: Error updating collaborator
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -101,15 +157,71 @@ export async function updateEmployee(employeeId: string, updateData: Partial<Cre
 
 // Função para gerar senha aleatória no frontend
 function generateRandomPassword(length: number = 12): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  // Ensure minimum length for security
+  const minLength = Math.max(length, 12);
+  
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  
+  // Ensure at least one character from each category
+  let password = '';
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  // Fill the rest with random characters
+  const allChars = lowercase + uppercase + numbers + symbols;
+  for (let i = password.length; i < minLength; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
   }
-  return result;
+  
+  // Shuffle the password to avoid predictable patterns
+  return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
 export async function createUserWithAutoPassword(userData: CreateUserFormData): Promise<CreateUserResult> {
+  // Rate limiting check
+  if (!checkRateLimit(`create_user_${userData.email}`)) {
+    return {
+      success: false,
+      error: 'Muitas tentativas de criação de usuário. Tente novamente em alguns minutos.'
+    };
+  }
+
+  // Input validation
+  if (!validateEmail(userData.email)) {
+    return {
+      success: false,
+      error: 'Email inválido'
+    };
+  }
+
+  if (!userData.name || userData.name.trim().length < 2) {
+    return {
+      success: false,
+      error: 'Nome deve ter pelo menos 2 caracteres'
+    };
+  }
+
+  if (!userData.position || userData.position.trim().length < 2) {
+    return {
+      success: false,
+      error: 'Cargo deve ter pelo menos 2 caracteres'
+    };
+  }
+
+  // Sanitize inputs
+  const sanitizedUserData = {
+    ...userData,
+    email: sanitizeInput(userData.email.toLowerCase()),
+    name: sanitizeInput(userData.name),
+    position: sanitizeInput(userData.position),
+    department: userData.department ? sanitizeInput(userData.department) : undefined
+  };
+
   try {
     // Gerar senha automática
     const autoPassword = generateRandomPassword(12);
@@ -132,13 +244,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
       .eq('auth_user_id', currentUser?.id)
       .single();
     
-    console.log('Debug - Current user info:', {
-      userId: currentUser?.id,
-      userEmail: currentUser?.email,
-      profileRole: currentProfile?.role,
-      profilePreferences: currentProfile?.preferences,
-      profileStatus: currentProfile?.status
-    });
+    // Log desabilitado: Debug - Current user info
     
     // Call the Edge Function to create user
     const { data, error } = await supabase.functions.invoke('create-user', {
@@ -154,7 +260,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     });
 
     if (error) {
-      console.error('Erro na Edge Function:', error);
+      // Log desabilitado: Edge Function error
       return {
         success: false,
         error: `Erro ao criar usuário: ${error.message}`
@@ -189,7 +295,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     };
     
   } catch (error) {
-    console.error('Erro geral ao criar usuário:', error);
+    // Log desabilitado: Error creating collaborator
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'

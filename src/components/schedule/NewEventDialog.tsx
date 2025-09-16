@@ -17,7 +17,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { NewScheduleEventData, EventFormData } from '@/types/schedule';
 import { Unit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
@@ -56,8 +56,8 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
   const { employees } = useEmployees();
   const { toast } = useToast();
   const { checkEventConflicts } = useScheduleCalendar();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canCreateInModule } = usePermissionsV2();
+  const canManageEmployees = useMemo(() => canCreateInModule('agenda'), [canCreateInModule]);
   const [conflicts, setConflicts] = useState<any[]>([]);
 
   // Create form with proper FormData type

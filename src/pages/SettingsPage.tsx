@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { getFirstAccessibleRoute } from '@/utils/redirectUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2, Lock } from 'lucide-react';
+import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2, Lock, Database } from 'lucide-react';
 import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
@@ -13,6 +14,7 @@ import { DataExportDialog } from '@/components/settings/DataExportDialog';
 import { AddUserDialog } from '@/components/settings/AddUserDialog';
 import { EditUserDialog } from '@/components/settings/EditUserDialog';
 import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
+import { SystemSettings } from '@/components/settings/SystemSettings';
 
 
 
@@ -27,12 +29,16 @@ import {
   RoleData,
   SystemStats 
 } from '@/services/settingsService';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { toast } from '@/hooks/use-toast';
+import { notifyPermissionChange } from '@/utils/redirectUtils';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { permissions, canAccessSettings } = usePermissions();
+  const { canViewModule, canCreateInModule, checkPermission, isAdmin, isSuperAdmin, canManagePermissions, forceRefreshPermissions } = usePermissionsV2();
+  
+  // Para super_admin e admin, sempre permitir acesso às configurações
+  const canAccessSettings = isSuperAdmin || isAdmin || canViewModule('configuracoes');
   
   // State for real data
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
@@ -51,6 +57,7 @@ const SettingsPage: React.FC = () => {
   const [deletingUser, setDeletingUser] = useState<SystemUser | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [showSystemSettings, setShowSystemSettings] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -117,7 +124,7 @@ const SettingsPage: React.FC = () => {
       
       setRolesData(rolesDataResult);
     } catch (err) {
-      console.error('Error loading settings data:', err);
+      // Log desabilitado: Error loading settings data
       setError('Erro ao carregar dados. Tente novamente.');
     } finally {
       setIsLoading(false);
@@ -129,7 +136,7 @@ const SettingsPage: React.FC = () => {
       // Reload the data to get the updated user list
       await loadAllData();
     } catch (error) {
-      console.error('Error adding user:', error);
+      // Log desabilitado: Error adding user
       setError('Erro ao adicionar usuário.');
     }
   };
@@ -143,12 +150,18 @@ const SettingsPage: React.FC = () => {
     try {
       await updateSystemUser(id, userData);
       await loadAllData();
+      
+      // Invalidate cache and notify permission changes for any user update
+      // as it might affect role-based permissions
+      notifyPermissionChange();
+      forceRefreshPermissions();
+      
       toast({
         title: "Usuário atualizado",
         description: "As informações do usuário foram atualizadas com sucesso.",
       });
     } catch (error) {
-      console.error('Error updating user:', error);
+      // Log desabilitado: Error updating user
       toast({
         variant: "destructive",
         title: "Erro ao atualizar usuário",
@@ -177,7 +190,7 @@ const SettingsPage: React.FC = () => {
         description: "O usuário foi removido com sucesso do sistema.",
       });
     } catch (error: any) {
-      console.error('Error deleting user:', error);
+      // Log desabilitado: Error deleting user
       
       let errorMessage = 'Erro desconhecido ao excluir usuário.';
       let errorTitle = 'Erro na exclusão';
@@ -222,31 +235,11 @@ const SettingsPage: React.FC = () => {
 
   // Removed getPermissionsFromRole function - permissions now managed by role_permissions table
 
-  // Check permissions first
+  // Check permissions first and redirect if necessary
   if (!canAccessSettings) {
-    return (
-      <Dialog open={true} onOpenChange={() => navigate(-1)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-red-500" />
-              Acesso Negado
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <p className="text-gray-600 mb-4">
-              Você não tem permissão para acessar as configurações do sistema.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Entre em contato com o administrador para solicitar acesso.
-            </p>
-            <Button onClick={() => navigate(-1)} className="w-full">
-              Voltar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+    const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
+    // Log desabilitado: User lacks settings access permission, redirecting
+    return <Navigate to={firstAccessibleRoute} replace />;
   }
 
   return (
@@ -273,7 +266,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Quick Actions - Now Interactive */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <SystemUsersDialog>
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6 text-center">
@@ -286,17 +279,18 @@ const SettingsPage: React.FC = () => {
           </Card>
         </SystemUsersDialog>
 
-        <PermissionsDialog>
-          <Card className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Shield className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-medium">Permissões</h3>
-              <p className="text-sm text-gray-600">Controlar acessos</p>
-            </CardContent>
-          </Card>
-        </PermissionsDialog>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/gerenciar-permissoes')}
+        >
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <Shield className="w-6 h-6 text-green-600" />
+            </div>
+            <h3 className="font-medium">Gerenciar Permissões</h3>
+            <p className="text-sm text-gray-600">Configurar permissões granulares</p>
+          </CardContent>
+        </Card>
 
         <RolesDialog>
           <Card className="cursor-pointer hover:shadow-md transition-shadow">
@@ -321,6 +315,19 @@ const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
         </DataExportDialog>
+
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowSystemSettings(true)}
+        >
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <Database className="w-6 h-6 text-orange-600" />
+            </div>
+            <h3 className="font-medium">Configurações Sistema</h3>
+            <p className="text-sm text-gray-600">URLs e configurações globais</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Usuários e Colaboradores Unificados */}
@@ -328,7 +335,7 @@ const SettingsPage: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Usuários e Colaboradores</CardTitle>
-            {permissions.canCreateUsers && (
+            {canCreateInModule('usuarios') && (
               <AddUserDialog onUserAdd={handleAddUser}>
                 <Button size="sm">
                   <Plus className="w-4 h-4 mr-2" />
@@ -428,15 +435,7 @@ const SettingsPage: React.FC = () => {
       {/* Roles and Departments */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Cargos Cadastrados</CardTitle>
-            <RolesDialog>
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Cargo
-              </Button>
-            </RolesDialog>
-          </div>
+          <CardTitle>Cargos Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -473,16 +472,7 @@ const SettingsPage: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <RolesDialog>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </RolesDialog>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <Badge variant="secondary">Fixo</Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -570,6 +560,16 @@ const SettingsPage: React.FC = () => {
       )}
 
 
+
+      {/* System Settings Dialog */}
+      <Dialog open={showSystemSettings} onOpenChange={setShowSystemSettings}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configurações do Sistema</DialogTitle>
+          </DialogHeader>
+          <SystemSettings />
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Dialog */}
       <EditUserDialog

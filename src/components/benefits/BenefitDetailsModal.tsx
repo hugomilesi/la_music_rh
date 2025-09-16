@@ -64,13 +64,13 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   const loadDocuments = async () => {
     try {
       setLoadingDocuments(true);
-      console.log('📄 Loading documents for benefit:', benefit.id);
+      // console.log('📄 Loading documents for benefit:', benefit.id);
       
       // Get all employee benefits for this benefit to find documents
       const employeeBenefits = await benefitsService.getEmployeeBenefits();
       const benefitEnrollments = employeeBenefits.filter(eb => eb.benefitId === benefit.id);
       
-      console.log('Found enrollments for benefit:', benefitEnrollments.length);
+      // console.log('Found enrollments for benefit:', benefitEnrollments.length);
       
       // Collect all documents from all enrollments for this benefit
       const allDocuments: BenefitDocument[] = [];
@@ -89,14 +89,14 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
           }));
           allDocuments.push(...docsWithEmployee);
         } catch (docError) {
-          console.warn(`Could not load documents for enrollment ${enrollment.id}:`, docError);
+          // console.warn(`Could not load documents for enrollment ${enrollment.id}:`, docError);
         }
       }
       
-      console.log('Total documents found:', allDocuments.length);
+      // console.log('Total documents found:', allDocuments.length);
       setDocuments(allDocuments);
     } catch (error) {
-      console.error('❌ Error loading documents:', error);
+      // console.error('❌ Error loading documents:', error);
       // Fallback to showing benefit.documents if available
       if (benefit.documents && benefit.documents.length > 0) {
         const fallbackDocs: BenefitDocument[] = benefit.documents.map((docName, index) => ({
@@ -117,7 +117,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   const handleDownloadDocument = async (doc: BenefitDocument) => {
     try {
       setDownloadingDoc(doc.id);
-      console.log('📥 Downloading document:', doc.name);
+      // console.log('📥 Downloading document:', doc.name);
       
       // Use the real download service
       const downloadUrl = await benefitDocumentService.downloadDocument(doc.id);
@@ -125,10 +125,10 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
       // Open the download URL in a new tab
       window.open(downloadUrl, '_blank');
       
-      console.log('✅ Document download initiated successfully');
+      // console.log('✅ Document download initiated successfully');
       
     } catch (error) {
-      console.error('❌ Error downloading document:', error);
+      // console.error('❌ Error downloading document:', error);
       alert('Erro ao baixar documento. Verifique se o arquivo ainda existe no storage.');
     } finally {
       setDownloadingDoc(null);

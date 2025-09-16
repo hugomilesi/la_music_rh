@@ -33,7 +33,7 @@ export const useEmployees = () => {
           status: user.status
         })) || []);
       } catch (err) {
-        console.error('Erro ao buscar funcionários:', err);
+        // Log desabilitado: Erro ao buscar funcionários
         setError(err instanceof Error ? err : new Error('Erro desconhecido ao buscar funcionários'));
       } finally {
         setLoading(false);

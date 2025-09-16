@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { NPSResponse, NPSSurvey, NPSStats, NPSEvolution } from '@/types/nps';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://grbajpcxfmxeexqthpwz.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYmFqcGN4Zm14ZWV4cXRocHd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwNzEwMDAsImV4cCI6MjA2NzY0NzAwMH0.NZ2B_wF1caWMrj3QNt_pw8Z2wunVM2njuHkZmJv3f-M';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface DatabaseNPSResponse {
   id: string;
@@ -18,13 +13,35 @@ export interface DatabaseNPSResponse {
 
 export interface DatabaseNPSSurvey {
   id: string;
-  titulo: string;
-  descricao?: string;
-  pergunta: string;
-  data_inicio: string;
-  data_fim: string;
+  title: string;
+  description?: string;
+  question: string;
+  survey_type: string;
   status: string;
-  anonimo: boolean;
+  start_date: string;
+  end_date: string;
+  target_employees?: string[];
+  target_departments?: string[];
+  is_anonymous: boolean;
+  auto_send: boolean;
+  frequency_days: number;
+  last_sent_at?: string;
+  next_send_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NPSAutomationConfig {
+  id: string;
+  survey_id: string;
+  is_active: boolean;
+  frequency_type: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  frequency_value: number;
+  send_time: string;
+  target_day_of_week?: number;
+  target_day_of_month?: number;
+  last_execution_date?: string;
+  next_execution_date?: string;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +59,7 @@ export class NPSService {
 
       return data.map(this.mapDatabaseSurveyToNPSSurvey);
     } catch (error) {
-      console.error('Erro ao buscar pesquisas:', error);
+      // Log desabilitado: Error fetching surveys
       return [];
     }
   }
@@ -63,7 +80,7 @@ export class NPSService {
 
       return data.map(this.mapDatabaseResponseToNPSResponse);
     } catch (error) {
-      console.error('Erro ao buscar respostas:', error);
+      // Log desabilitado: Error fetching responses
       return [];
     }
   }
@@ -83,9 +100,8 @@ export class NPSService {
 
       return this.mapDatabaseSurveyToNPSSurvey(data);
     } catch (error) {
-      console.error('Erro ao criar pesquisa:', error);
-      return null;
-    }
+    throw error;
+  }
   }
 
   // Atualizar pesquisa
@@ -104,7 +120,7 @@ export class NPSService {
 
       return this.mapDatabaseSurveyToNPSSurvey(data);
     } catch (error) {
-      console.error('Erro ao atualizar pesquisa:', error);
+      // Log desabilitado: Error updating survey
       return null;
     }
   }
@@ -120,7 +136,7 @@ export class NPSService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Erro ao deletar pesquisa:', error);
+      // Log desabilitado: Error deleting survey
       return false;
     }
   }
@@ -144,7 +160,7 @@ export class NPSService {
 
       return this.mapDatabaseResponseToNPSResponse(data);
     } catch (error) {
-      console.error('Erro ao adicionar resposta:', error);
+      // Log desabilitado: Error adding response
       return null;
     }
   }
@@ -199,7 +215,7 @@ export class NPSService {
         dissatisfied: Math.round((dissatisfied / satisfactionResponses.length) * 100) || 0
       };
     } catch (error) {
-      console.error('Erro ao calcular estatísticas:', error);
+      // Log desabilitado: Error calculating statistics
       return {
         currentScore: 0,
         previousScore: 0,
@@ -215,6 +231,103 @@ export class NPSService {
     }
   }
 
+  // Criar configuração de automação
+  static async createAutomationConfig(config: Omit<NPSAutomationConfig, 'id' | 'created_at' | 'updated_at'>): Promise<NPSAutomationConfig | null> {
+    try {
+      const { data, error } = await supabase
+        .from('nps_automation_config')
+        .insert([config])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      // Log desabilitado: Error creating automation config
+      return null;
+    }
+  }
+
+  // Atualizar configuração de automação
+  static async updateAutomationConfig(id: string, updates: Partial<NPSAutomationConfig>): Promise<NPSAutomationConfig | null> {
+    try {
+      const { data, error } = await supabase
+        .from('nps_automation_config')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      // Log desabilitado: Error updating automation config
+      return null;
+    }
+  }
+
+  // Buscar configurações de automação
+  static async getAutomationConfigs(surveyId?: string): Promise<NPSAutomationConfig[]> {
+    try {
+      let query = supabase
+        .from('nps_automation_config')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (surveyId) {
+        query = query.eq('survey_id', surveyId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      // Log desabilitado: Error fetching automation configs
+      return [];
+    }
+  }
+
+  // Buscar pesquisas ativas para automação
+  static async getActiveSurveysForAutomation(): Promise<(DatabaseNPSSurvey & { automation_config: NPSAutomationConfig })[]> {
+    try {
+      const { data, error } = await supabase
+        .from('nps_surveys')
+        .select(`
+          *,
+          nps_automation_config!inner(*)
+        `)
+        .eq('auto_send', true)
+        .eq('nps_automation_config.is_active', true)
+        .lte('nps_automation_config.next_execution_date', new Date().toISOString().split('T')[0]);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      // Log desabilitado: Error fetching active surveys for automation
+      return [];
+    }
+  }
+
+  // Marcar pesquisa como enviada
+  static async markSurveyAsSent(surveyId: string, nextExecutionDate: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('nps_automation_config')
+        .update({
+          last_execution_date: new Date().toISOString().split('T')[0],
+          next_execution_date: nextExecutionDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('survey_id', surveyId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      // Log desabilitado: Error marking survey as sent
+      return false;
+    }
+  }
+
   // Buscar evolução do NPS
   static async getNPSEvolution(): Promise<NPSEvolution[]> {
     try {
@@ -226,7 +339,7 @@ export class NPSService {
         { date: '2024-03', score: 65, responses: 23 }
       ];
     } catch (error) {
-      console.error('Erro ao buscar evolução:', error);
+      // Log desabilitado: Error fetching evolution
       return [];
     }
   }
@@ -237,21 +350,24 @@ export class NPSService {
       id: dbSurvey.id,
       title: dbSurvey.title,
       description: dbSurvey.description || '',
-      questions: [
-        {
-          id: 'q1',
-          type: 'nps',
-          question: 'Como você avaliaria nossa empresa?',
-          required: true
-        }
-      ],
+      questions: [{
+        id: '1',
+        type: dbSurvey.survey_type === 'satisfaction' ? 'satisfaction' : 'nps',
+        question: dbSurvey.question || 'Como você avaliaria nossa empresa?',
+        required: true
+      }],
       status: dbSurvey.status as 'draft' | 'active' | 'completed',
       startDate: dbSurvey.start_date,
       endDate: dbSurvey.end_date,
       responses: [],
       targetEmployees: dbSurvey.target_employees || [],
       targetDepartments: dbSurvey.target_departments || [],
-      surveyType: dbSurvey.survey_type || 'nps'
+      surveyType: dbSurvey.survey_type as 'nps' | 'satisfaction',
+      isAnonymous: dbSurvey.is_anonymous,
+      autoSend: dbSurvey.auto_send,
+      frequencyDays: dbSurvey.frequency_days,
+      lastSentAt: dbSurvey.last_sent_at,
+      nextSendDate: dbSurvey.next_send_date
     };
   }
 
@@ -264,7 +380,13 @@ export class NPSService {
       end_date: survey.endDate,
       status: survey.status,
       target_employees: survey.targetEmployees || [],
-      target_departments: survey.targetDepartments || []
+      target_departments: survey.targetDepartments || [],
+      question: survey.questions[0]?.question || 'Como você avaliaria nossa empresa?',
+      is_anonymous: true,
+      auto_send: false,
+      frequency_days: 0,
+      last_sent_at: null,
+      next_send_date: null
     };
   }
 

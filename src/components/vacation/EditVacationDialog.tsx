@@ -103,7 +103,7 @@ export const EditVacationDialog: React.FC<EditVacationDialogProps> = ({
       onOpenChange(false);
       form.reset();
     } catch (error) {
-      console.error('Error updating vacation request:', error);
+      // Log desabilitado: Error updating vacation request
     } finally {
       setIsSubmitting(false);
     }

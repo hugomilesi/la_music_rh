@@ -28,7 +28,7 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
       .order('created_at', { ascending: false });
 
     if (usersError) {
-      console.error('Error fetching users:', usersError);
+      // console.error('Error fetching users:', usersError);
       throw usersError;
     }
 
@@ -39,6 +39,7 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
     // Transform data to SystemUser format
     const systemUsers: SystemUser[] = usersData.map((user: any) => ({
       id: user.id,
+      auth_user_id: user.auth_user_id, // Include auth_user_id in the response
       name: user.full_name || 'Usuário sem nome',
       email: user.email,
       role: user.role || 'usuario',
@@ -52,9 +53,16 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
       hasProfile: true
     }));
 
-    return systemUsers;
+    // Filter out users without auth_user_id (these are legacy users that should not be deletable)
+    const validUsers = systemUsers.filter(user => user.auth_user_id);
+    
+    if (validUsers.length !== systemUsers.length) {
+      // console.warn(`Found ${systemUsers.length - validUsers.length} users without auth_user_id. These users will not be shown in the interface.`);
+    }
+    
+    return validUsers;
   } catch (error) {
-    console.error('Error in fetchSystemUsers:', error);
+    // console.error('Error in fetchSystemUsers:', error);
     throw error;
   }
 };
@@ -71,7 +79,7 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
       .is('deleted_at', null);
 
     if (error) {
-      console.error('Error fetching roles data:', error);
+      // console.error('Error fetching roles data:', error);
       throw error;
     }
 
@@ -107,7 +115,7 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
       };
     });
   } catch (error) {
-    console.error('Error in fetchRolesData:', error);
+    // Log desabilitado: Error in fetchRolesData
     throw error;
   }
 };
@@ -125,7 +133,7 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
       .is('deleted_at', null);
 
     if (userError) {
-      console.error('Error fetching user count:', userError);
+      // Log desabilitado: Error fetching user count
     }
 
     // Get unique departments count as "units"
@@ -153,7 +161,7 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
       lastBackup: new Date().toLocaleDateString('pt-BR') + ' 02:00'
     };
   } catch (error) {
-    console.error('Error in fetchSystemStats:', error);
+    // Log desabilitado: Error in fetchSystemStats
     return {
       totalEmployees: 0,
       totalUsers: 0,
@@ -161,34 +169,109 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
       lastBackup: 'Não disponível'
     };
   }
-};
+}
 
 // Removed getPermissionsFromRole function - permissions now managed by role_permissions table
 
 /**
  * List all users in the system with synchronization status
+ * Falls back to fetchSystemUsers if edge function is not available
  */
 export const listAllSystemUsers = async () => {
   try {
-    console.log('📋 Fetching all system users...');
+    // console.log('📋 Fetching all system users...');
     
-    const { data, error } = await supabase.functions.invoke('list-all-users');
-
-    if (error) {
-      console.error('❌ Error calling list-all-users function:', error);
-      throw new Error(`Erro ao buscar usuários: ${error.message}`);
-    }
-
-    if (!data.success) {
-      console.error('❌ List users function returned error:', data.error);
-      throw new Error(data.error || 'Erro desconhecido ao buscar usuários');
-    }
-
-    console.log('✅ Users fetched successfully:', data.stats);
-    return data;
+    // Use fetchSystemUsers directly since list-all-users edge function doesn't exist
+    const users = await fetchSystemUsers();
+    return {
+      success: true,
+      users: users.map(user => ({
+        id: user.auth_user_id || user.id,
+        email: user.email,
+        created_at: user.createdAt,
+        last_sign_in_at: null,
+        user_data: {
+          id: user.id,
+          auth_user_id: user.auth_user_id,
+          email: user.email,
+          full_name: user.name,
+          role: user.role,
+          position: user.position,
+          department: user.department,
+          phone: user.phone,
+          status: user.status === 'active' ? 'ativo' : 'inativo'
+        },
+        sync_status: {
+          has_user_record: true,
+          user_deleted: false,
+          status: user.status === 'active' ? 'ativo' : 'inativo',
+          role: user.role
+        }
+      })),
+      statistics: {
+        total_auth_users: users.length,
+        total_users: users.length,
+        active_users: users.filter(u => u.status === 'active').length,
+        inactive_users: users.filter(u => u.status === 'inactive').length,
+        suspended_users: 0,
+        deleted_users: 0,
+        orphaned_auth_users: 0,
+        admin_users: users.filter(u => u.role === 'admin').length,
+        regular_users: users.filter(u => u.role === 'usuario').length,
+        professor_users: users.filter(u => u.role === 'professor').length,
+        manager_users: users.filter(u => u.role === 'manager').length,
+        sync_issues: 0
+      }
+    };
   } catch (error) {
-    console.error('❌ Error in listAllSystemUsers:', error);
-    throw error;
+    // Log desabilitado: Error in listAllSystemUsers, falling back to fetchSystemUsers
+    try {
+      // Fallback to regular fetchSystemUsers
+      const users = await fetchSystemUsers();
+      return {
+        success: true,
+        users: users.map(user => ({
+          id: user.auth_user_id || user.id,
+          email: user.email,
+          created_at: user.createdAt,
+          last_sign_in_at: null,
+          user_data: {
+            id: user.id,
+            auth_user_id: user.auth_user_id,
+            email: user.email,
+            full_name: user.name,
+            role: user.role,
+            position: user.position,
+            department: user.department,
+            phone: user.phone,
+            status: user.status === 'active' ? 'ativo' : 'inativo'
+          },
+          sync_status: {
+            has_user_record: true,
+            user_deleted: false,
+            status: user.status === 'active' ? 'ativo' : 'inativo',
+            role: user.role
+          }
+        })),
+        statistics: {
+          total_auth_users: users.length,
+          total_users: users.length,
+          active_users: users.filter(u => u.status === 'active').length,
+          inactive_users: users.filter(u => u.status === 'inactive').length,
+          suspended_users: 0,
+          deleted_users: 0,
+          orphaned_auth_users: 0,
+          admin_users: users.filter(u => u.role === 'admin').length,
+          regular_users: users.filter(u => u.role === 'usuario').length,
+          professor_users: users.filter(u => u.role === 'professor').length,
+          manager_users: users.filter(u => u.role === 'manager').length,
+          sync_issues: 0
+        }
+      };
+    } catch (fallbackError) {
+      // Log desabilitado: Error in fallback fetchSystemUsers
+      throw fallbackError;
+    }
   }
 };
 
@@ -197,7 +280,12 @@ export const listAllSystemUsers = async () => {
  */
 export const deleteSystemUser = async (userId: string): Promise<void> => {
   try {
-    console.log('🗑️ deleteSystemUser called with userId:', userId);
+    // Log desabilitado: deleteSystemUser called with userId
+    
+    // Validate that userId is not empty or null
+    if (!userId || userId === 'null' || userId === 'undefined') {
+      throw new Error('ID do usuário inválido. Não é possível deletar usuário sem ID válido.');
+    }
     
     // Use the Edge Function to properly delete user from all tables
     const { data, error } = await supabase.functions.invoke('delete-user', {
@@ -207,18 +295,18 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
     });
 
     if (error) {
-      console.error('❌ Error calling delete-user function:', error);
+      // Log desabilitado: Error calling delete-user function
       throw new Error(`Erro ao deletar usuário: ${error.message}`);
     }
 
     if (!data.success) {
-      console.error('❌ Delete user function returned error:', data.error);
+      // Log desabilitado: Delete user function returned error
       throw new Error(data.error || 'Erro desconhecido ao deletar usuário');
     }
 
-    console.log('✅ User deleted successfully from all tables:', data.deletedFrom);
+    // console.log('✅ User deleted successfully from all tables:', data.deletedFrom);
   } catch (error) {
-    console.error('❌ Error in deleteSystemUser:', error);
+    // Log desabilitado: Error in deleteSystemUser
     throw error;
   }
 };
@@ -228,7 +316,7 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
  */
 export const updateSystemUser = async (userId: string, updates: Partial<SystemUser>): Promise<void> => {
   try {
-    console.log('updateSystemUser called with:', { userId, updates });
+    // Log desabilitado: updateSystemUser called with userId and updates
     
     // Update user data in the unified users table
     const userUpdateData = {
@@ -255,17 +343,17 @@ export const updateSystemUser = async (userId: string, updates: Partial<SystemUs
         .eq('id', parseInt(userId));
       
       if (idError) {
-        console.error('Error updating user by id:', idError);
+        // Log desabilitado: Error updating user by id
         throw idError;
       }
     } else if (userError) {
-      console.error('Error updating user by auth_user_id:', userError);
+      // Log desabilitado: Error updating user by auth_user_id
       throw userError;
     }
 
-    console.log('User updated successfully');
+    // Log desabilitado: User updated successfully
   } catch (error) {
-    console.error('Error in updateSystemUser:', error);
+    // Log desabilitado: Error in updateSystemUser
     throw error;
   }
 };

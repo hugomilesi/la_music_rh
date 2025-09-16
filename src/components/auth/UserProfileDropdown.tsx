@@ -26,13 +26,13 @@ export const UserProfileDropdown: React.FC = () => {
     if (isLoggingOut) return;
     
     setIsLoggingOut(true);
-    console.log('User initiated logout');
+    // Log desabilitado: User initiated logout
 
     try {
       const { error } = await signOut();
       
       if (error) {
-        console.error('Logout error:', error);
+        // Log desabilitado: Logout error
         toast({
           title: "Erro ao sair",
           description: "Houve um problema ao fazer logout. Tente o logout de emergência.",
@@ -45,7 +45,7 @@ export const UserProfileDropdown: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Unexpected logout error:', error);
+      // Log desabilitado: Unexpected logout error
       toast({
         title: "Erro inesperado",
         description: "Erro durante o logout. Use o logout de emergência se necessário.",

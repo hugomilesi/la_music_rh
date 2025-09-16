@@ -15,8 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { EditUserForm } from './EditUserForm';
 import { SystemUser, UpdateSystemUserData } from '@/types/systemUser';
 import { updateUserSchema, UpdateUserFormData } from '@/types/userFormSchemas';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Lock } from 'lucide-react';
+import { notifyPermissionChange } from '@/utils/redirectUtils';
 
 interface EditUserDialogProps {
   user: SystemUser | null;
@@ -33,7 +34,8 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { canCreateUsers } = usePermissions();
+  const { canEditInModule, forceRefreshPermissions } = usePermissionsV2();
+  const canCreateUsers = canEditInModule('usuarios');
 
   const form = useForm<UpdateUserFormData>({
     resolver: zodResolver(updateUserSchema),
@@ -81,6 +83,12 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
       };
       
       onUserUpdate(user.auth_user_id || String(user.id), userData);
+      
+      // Invalidate cache and notify permission changes if role changed
+      if (data.role !== user.role) {
+        notifyPermissionChange();
+        forceRefreshPermissions();
+      }
       
       toast({
         title: "Usuário atualizado com sucesso",

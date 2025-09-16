@@ -1,28 +1,43 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CreateUserFormData } from '@/types/userFormSchemas';
+import { fetchRoles, fetchDepartments, RoleWithDepartment, Department } from '@/services/rolesService';
 
 interface CreateUserFormProps {
   form: UseFormReturn<CreateUserFormData>;
 }
 
-const departments = [
-  'Administração',
-  'Coordenação',
-  'Educação Musical',
-  'Atendimento',
-  'Recursos Humanos',
-  'Tecnologia'
-];
-
 // Permissões removidas - serão gerenciadas pelo card de permissões
 
 export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
   const { register, formState: { errors }, watch, setValue } = form;
+  const [roles, setRoles] = useState<RoleWithDepartment[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+
+  useEffect(() => {
+    const loadRolesAndDepartments = async () => {
+      setLoadingRoles(true);
+      try {
+        const [rolesData, departmentsData] = await Promise.all([
+          fetchRoles(),
+          fetchDepartments()
+        ]);
+        setRoles(rolesData);
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error('Erro ao carregar cargos e departamentos:', error);
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    loadRolesAndDepartments();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -73,10 +88,11 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
               id="department"
               {...register('department')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
+              disabled={loadingRoles}
             >
               <option value="">Selecione um setor</option>
               {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
+                <option key={dept.id} value={dept.name}>{dept.name}</option>
               ))}
             </select>
           </div>
@@ -110,10 +126,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
               {...register('role')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
             >
-              <option value="usuario">Usuário</option>
-              <option value="professor">Professor</option>
-              <option value="coordenador">Coordenador</option>
-              <option value="admin">Administrador</option>
+              <option value="gerente">Gerente</option>
+              <option value="gestor_rh">Gestor RH</option>
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>
@@ -122,12 +136,21 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
 
           <div>
             <Label htmlFor="position">Cargo *</Label>
-            <Input
+            <select
               id="position"
               {...register('position')}
-              placeholder="Ex: Assistente, Coordenador, Professor"
-              className={errors.position ? 'border-red-500' : ''}
-            />
+              className={`w-full h-10 px-3 rounded-md border border-input bg-background ${
+                errors.position ? 'border-red-500' : ''
+              }`}
+              disabled={loadingRoles}
+            >
+              <option value="">Selecione um cargo</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name} - {role.department?.name}
+                </option>
+              ))}
+            </select>
             {errors.position && (
               <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
             )}

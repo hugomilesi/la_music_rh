@@ -24,8 +24,8 @@ const messageTemplates = [
   { id: 'reminder', name: 'Lembrete', template: 'Lembrete: {assunto} agendado para {data} às {hora}.' },
   { id: 'welcome', name: 'Boas-vindas', template: 'Bem-vindo(a) à nossa equipe! Estamos felizes em tê-lo(a) conosco.' },
   { id: 'meeting', name: 'Reunião', template: 'Reunião agendada para {data} às {hora}. Local: {local}.' },
-  { id: 'evaluation', name: 'Avaliação', template: 'Lembrete: Sua avaliação está agendada para {data} às {hora}.' },
-  { id: 'document', name: 'Documento', template: 'Seu documento {documento} está próximo ao vencimento em {data}.' }
+  { id: 'avaliacao', name: 'Avaliação', template: 'Lembrete: Sua avaliação está agendada para {data} às {hora}.' },
+    { id: 'documento', name: 'Documento', template: 'Seu documento {documento} está próximo ao vencimento em {data}.' }
 ];
 
 export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({ children }) => {

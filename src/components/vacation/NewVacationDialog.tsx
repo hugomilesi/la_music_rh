@@ -32,7 +32,7 @@ import { Lock } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { NewVacationRequest } from '@/types/vacation';
 
 const formSchema = z.object({
@@ -62,8 +62,8 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   const { addVacationRequest, isLoading } = useVacation();
   const { employees } = useEmployees();
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canCreateInModule } = usePermissionsV2();
+  const canManageEmployees = useMemo(() => canCreateInModule('ferias'), [canCreateInModule]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -78,7 +78,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('Submitting vacation request:', data);
+      // Log desabilitado: Submitting vacation request
       const vacationData: NewVacationRequest = {
         employeeId: data.employeeId,
         startDate: data.startDate,
@@ -95,7 +95,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating vacation request:', error);
+      // Log desabilitado: Error creating vacation request
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a solicitação.',
@@ -114,7 +114,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
 
   // Add error boundary for employee data
   if (!employees || employees.length === 0) {
-    console.log('No employees available for vacation dialog');
+    // Log desabilitado: No employees available for vacation dialog
   }
 
   if (!canManageEmployees) {

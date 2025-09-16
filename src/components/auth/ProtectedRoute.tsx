@@ -15,7 +15,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     if (user && session) {
       const now = Math.floor(Date.now() / 1000);
       if (session.expires_at && session.expires_at < now) {
-        console.log('Expired session detected in ProtectedRoute, forcing logout');
+
         forceLogout();
         return;
       }
@@ -35,14 +35,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Check for valid authentication
   if (!user || !session) {
-    console.log('User not authenticated or session invalid, redirecting to home page');
+
     return <Navigate to="/" replace />;
   }
 
   // Additional session validation
   const now = Math.floor(Date.now() / 1000);
   if (session.expires_at && session.expires_at < now) {
-    console.log('Session expired, redirecting to home page');
+
     return <Navigate to="/" replace />;
   }
 

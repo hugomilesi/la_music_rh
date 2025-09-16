@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Trophy, Gift, Medal, Crown, Star, Lock } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface DeliverPrizeDialogProps {
   open: boolean;
@@ -22,8 +22,8 @@ export const DeliverPrizeDialog: React.FC<DeliverPrizeDialogProps> = ({
   onOpenChange,
   onDeliverPrize
 }) => {
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canEditInModule } = usePermissionsV2();
+  const canManageEmployees = useMemo(() => canEditInModule('reconhecimento'), [canEditInModule]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [prizeType, setPrizeType] = useState('');
   const [achievement, setAchievement] = useState('');
@@ -92,7 +92,7 @@ export const DeliverPrizeDialog: React.FC<DeliverPrizeDialogProps> = ({
       status: 'delivered'
     };
 
-    console.log('Prêmio entregue:', prize);
+    // Log desabilitado: Prêmio entregue
     
     if (onDeliverPrize) {
       onDeliverPrize(prize);

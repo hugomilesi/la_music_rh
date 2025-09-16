@@ -1,5 +1,5 @@
-import { supabase } from '../integrations/supabase/client';
-import type { Incident } from '../types/incident';
+import { supabase } from '@/integrations/supabase/client';
+import type { Incident, IncidentStats } from '../types/incident';
 
 export const incidentService = {
   /**
@@ -33,7 +33,7 @@ export const incidentService = {
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      console.error('Erro ao buscar incidentes:', error);
+      // Error fetching incidents logging disabled
       throw error;
     }
   },
@@ -98,7 +98,7 @@ export const incidentService = {
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      console.error('Erro ao buscar incidentes filtrados:', error);
+      // Error fetching filtered incidents logging disabled
       throw error;
     }
   },
@@ -145,7 +145,7 @@ export const incidentService = {
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('Erro ao adicionar incidente:', error);
+      // Error adding incident logging disabled
       throw error;
     }
   },
@@ -193,7 +193,7 @@ export const incidentService = {
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('Erro ao atualizar incidente:', error);
+      // Error updating incident logging disabled
       throw error;
     }
   },
@@ -208,7 +208,7 @@ export const incidentService = {
       .eq('id', id);
 
     if (error) {
-      console.error('Erro ao excluir incidente:', error);
+      // Error deleting incident logging disabled
       throw error;
     }
   },
@@ -272,7 +272,7 @@ export const incidentService = {
 
       return stats;
     } catch (error) {
-      console.error('Erro ao buscar estatísticas de incidentes:', error);
+      // Error fetching incident statistics logging disabled
       throw error;
     }
   },
@@ -280,23 +280,37 @@ export const incidentService = {
   /**
    * Inscreve-se para atualizações em tempo real de incidentes
    */
-  subscribeToChanges(callback: () => void) {
-    // Create a unique channel name to avoid conflicts
-    const channelName = `incidents-changes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  subscribeToIncidents(callback: (payload: any) => void) {
     
     const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'incidents'
-      }, callback)
+      .channel('incidents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'incidents'
+        },
+        (payload) => {
+          callback(payload);
+        }
+      )
       .subscribe();
 
-    return {
-      unsubscribe: () => {
+    return channel;
+  },
+
+  /**
+   * Remove inscrição de atualizações em tempo real de incidentes
+   */
+  unsubscribeFromIncidents(channel: any) {
+    
+    if (channel) {
+      try {
         supabase.removeChannel(channel);
+      } catch (error) {
+        // Channel não existe para remoção
       }
-    };
+    }
   }
 };

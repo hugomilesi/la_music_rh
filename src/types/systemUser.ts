@@ -4,7 +4,7 @@ export interface SystemUser {
   auth_user_id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   position?: string;
   department?: string;
   phone?: string;
@@ -18,7 +18,7 @@ export interface SystemUser {
 export interface CreateSystemUserData {
   name: string;
   email: string;
-  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   department?: string;
   phone?: string;
   password: string;
@@ -30,7 +30,7 @@ export interface CreateSystemUserData {
 export interface UpdateSystemUserData {
   name: string;
   email: string;
-  role: 'admin' | 'coordenador' | 'professor' | 'usuario';
+  role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   position?: string;
   department?: string;
   phone?: string;

@@ -47,7 +47,7 @@ const mockTemplates: NotificationTemplate[] = [
     subject: 'Documento vencendo',
     message: 'Olá {name}, seu documento {document} vence em {days} dias. Por favor, providencie a renovação.',
     type: 'lembrete',
-    variables: ['name', 'document', 'days']
+    variables: ['name', 'documento', 'days']
   }
 ];
 
@@ -83,7 +83,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       const data = await notificationService.getNotifications();
       setNotifications(data);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      // Log desabilitado: Error loading notifications
       toast({
         title: "Erro",
         description: "Erro ao carregar notificações",
@@ -107,7 +107,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         description: "Notificação criada com sucesso",
       });
     } catch (error) {
-      console.error('Error creating notification:', error);
+      // Log desabilitado: Error creating notification
       toast({
         title: "Erro",
         description: "Erro ao criar notificação",
@@ -128,7 +128,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         description: "Notificação atualizada com sucesso",
       });
     } catch (error) {
-      console.error('Error updating notification:', error);
+      // Log desabilitado: Error updating notification
       toast({
         title: "Erro",
         description: "Erro ao atualizar notificação",
@@ -147,7 +147,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         description: "Notificação removida com sucesso",
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // Log desabilitado: Error deleting notification
       toast({
         title: "Erro",
         description: "Erro ao remover notificação",

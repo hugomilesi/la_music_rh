@@ -29,7 +29,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       const data = await incidentService.getAll();
       setIncidents(data);
     } catch (error) {
-      console.error('Erro ao carregar incidentes:', error);
+      // Log desabilitado: Erro ao carregar incidentes
       toast.error('Erro ao carregar incidentes');
     } finally {
       setLoading(false);
@@ -41,7 +41,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       const statsData = await incidentService.getStats();
       setStats(statsData);
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      // Log desabilitado: Erro ao carregar estatísticas
     }
   }, []);
 
@@ -53,14 +53,18 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Inscreve-se para atualizações em tempo real
   useEffect(() => {
-    const subscription = incidentService.subscribeToChanges(() => {
-      // Use the functions directly to avoid dependency issues
+    const subscription = incidentService.subscribeToIncidents(() => {
       refreshIncidents();
       refreshStats();
     });
-
+    
     return () => {
-      subscription.unsubscribe();
+      try {
+        incidentService.unsubscribeFromIncidents(subscription);
+        // Cleanup completed
+      } catch (error) {
+        // Error during cleanup
+      }
     };
   }, []); // Empty dependency array to prevent re-subscription
 
@@ -71,7 +75,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       await refreshStats();
       toast.success('Incidente adicionado com sucesso!');
     } catch (error) {
-      console.error('Erro ao adicionar incidente:', error);
+      // Log desabilitado: Erro ao adicionar incidente
       toast.error('Erro ao adicionar incidente');
       throw error;
     }
@@ -86,7 +90,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       await refreshStats();
       toast.success('Incidente atualizado com sucesso!');
     } catch (error) {
-      console.error('Erro ao atualizar incidente:', error);
+      // Log desabilitado: Erro ao atualizar incidente
       toast.error('Erro ao atualizar incidente');
       throw error;
     }
@@ -99,7 +103,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       await refreshStats();
       toast.success('Incidente removido com sucesso!');
     } catch (error) {
-      console.error('Erro ao remover incidente:', error);
+      // Log desabilitado: Erro ao remover incidente
       toast.error('Erro ao remover incidente');
       throw error;
     }
@@ -109,7 +113,7 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       return await incidentService.getFiltered(filter);
     } catch (error) {
-      console.error('Erro ao filtrar incidentes:', error);
+      // Log desabilitado: Erro ao filtrar incidentes
       toast.error('Erro ao filtrar incidentes');
       return [];
     }

@@ -115,7 +115,7 @@ const PayrollDetailsModal: React.FC<PayrollDetailsModalProps> = ({
     { name: 'Benefícios', value: costBreakdown.beneficios, color: '#10b981' },
     { name: 'Comissões', value: costBreakdown.comissoes, color: '#f59e0b' },
     { name: '13º Salário', value: costBreakdown.decimoTerceiro, color: '#8b5cf6' },
-    { name: 'Deduções', value: -costBreakdown.deducoes, color: '#ef4444' },
+    { name: 'Deduções', value: -costBreakdown.deducoes, color: '#3b82f6' },
   ];
 
   function getClassificationColor(classification: string): string {

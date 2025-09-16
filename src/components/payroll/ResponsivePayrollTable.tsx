@@ -17,7 +17,8 @@ import {
   CreditCard,
   User,
   DollarSign,
-  Calculator
+  Calculator,
+  Maximize2
 } from 'lucide-react';
 
 interface Employee {
@@ -65,6 +66,11 @@ export function ResponsivePayrollTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [showSensitiveData, setShowSensitiveData] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toggleExpansion = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   const handleEdit = (employee: Employee) => {
     if (onEditEmployee) {
@@ -226,13 +232,13 @@ export function ResponsivePayrollTable({
               {(employee.bonus || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>Bônus:</span>
-                  <span className="text-green-600">{formatCurrency(employee.bonus || 0)}</span>
+                  <span className="text-gray-700 font-medium">{formatCurrency(employee.bonus || 0)}</span>
                 </div>
               )}
               {(employee.commission || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>Comissão:</span>
-                  <span className="text-green-600">{formatCurrency(employee.commission || 0)}</span>
+                  <span className="text-gray-700 font-medium">{formatCurrency(employee.commission || 0)}</span>
                 </div>
               )}
             </div>
@@ -243,19 +249,19 @@ export function ResponsivePayrollTable({
               {(employee.inss || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>INSS:</span>
-                  <span className="text-red-600">{formatCurrency(employee.inss || 0)}</span>
+                  <span className="text-gray-600 font-medium">{formatCurrency(employee.inss || 0)}</span>
                 </div>
               )}
               {(employee.advance || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>Adiantamento:</span>
-                  <span className="text-red-600">{formatCurrency(employee.advance || 0)}</span>
+                  <span className="text-gray-600 font-medium">{formatCurrency(employee.advance || 0)}</span>
                 </div>
               )}
               {(employee.discount || 0) > 0 && (
                 <div className="flex justify-between">
                   <span>Outros:</span>
-                  <span className="text-red-600">{formatCurrency(employee.discount || 0)}</span>
+                  <span className="text-gray-600 font-medium">{formatCurrency(employee.discount || 0)}</span>
                 </div>
               )}
             </div>
@@ -294,24 +300,37 @@ export function ResponsivePayrollTable({
   );
 
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Exibindo {employees.length} funcionários</span>
+    <>
+      {/* Normal View */}
+      <div className={`space-y-4 ${isExpanded ? 'hidden' : 'block'}`}>
+        {/* Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Exibindo {employees.length} funcionários</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleExpansion}
+              className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black shadow-lg gap-2 border-none"
+            >
+              <Maximize2 className="w-4 h-4" />
+              Expandir Tabela
+            </Button>
+            {showPrivateData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSensitiveData(!showSensitiveData)}
+                className="flex items-center gap-2"
+              >
+                {showSensitiveData ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showSensitiveData ? 'Ocultar' : 'Mostrar'} Dados Bancários
+              </Button>
+            )}
+          </div>
         </div>
-        {showPrivateData && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSensitiveData(!showSensitiveData)}
-            className="flex items-center gap-2"
-          >
-            {showSensitiveData ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showSensitiveData ? 'Ocultar' : 'Mostrar'} Dados Bancários
-          </Button>
-        )}
-      </div>
 
       {/* Mobile View (< md) */}
       <div className="block md:hidden">
@@ -327,31 +346,31 @@ export function ResponsivePayrollTable({
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="bg-gradient-hr-primary/10">
-                  <TableHead className="min-w-[200px] font-semibold">Nome</TableHead>
-                  <TableHead className="min-w-[120px] font-semibold">Função</TableHead>
-                  <TableHead className="min-w-[120px] font-semibold">Classificação</TableHead>
-                  <TableHead className="min-w-[120px] font-semibold text-right">Salário</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Vale Transporte</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Bônus</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Comissão</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Reembolso</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">13º/Férias</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">INSS</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Lojinha</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Bistrô</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Adiantamento</TableHead>
-                  <TableHead className="min-w-[100px] font-semibold text-right">Desconto</TableHead>
-                  <TableHead className="min-w-[120px] font-semibold text-right">Total</TableHead>
+                  <TableHead className="font-semibold">Nome</TableHead>
+                  <TableHead className="font-semibold">Função</TableHead>
+                  <TableHead className="font-semibold hidden lg:table-cell">Classificação</TableHead>
+                  <TableHead className="font-semibold text-right">Salário</TableHead>
+                  <TableHead className="font-semibold text-right hidden lg:table-cell">Vale Transporte</TableHead>
+                  <TableHead className="font-semibold text-right hidden xl:table-cell">Bônus</TableHead>
+                  <TableHead className="font-semibold text-right hidden xl:table-cell">Comissão</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">Reembolso</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">13º/Férias</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">INSS</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">Lojinha</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">Bistrô</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">Adiantamento</TableHead>
+                  <TableHead className="font-semibold text-right hidden 2xl:table-cell">Desconto</TableHead>
+                  <TableHead className="font-semibold text-right">Total</TableHead>
                   {showSensitiveData && showPrivateData && (
                     <>
-                      <TableHead className="min-w-[150px] font-semibold">Banco</TableHead>
-                      <TableHead className="min-w-[100px] font-semibold">Agência</TableHead>
-                      <TableHead className="min-w-[120px] font-semibold">Conta</TableHead>
-                      <TableHead className="min-w-[120px] font-semibold">CPF</TableHead>
-                      <TableHead className="min-w-[150px] font-semibold">PIX</TableHead>
+                      <TableHead className="font-semibold hidden xl:table-cell">Banco</TableHead>
+                      <TableHead className="font-semibold hidden xl:table-cell">Agência</TableHead>
+                      <TableHead className="font-semibold hidden xl:table-cell">Conta</TableHead>
+                      <TableHead className="font-semibold hidden xl:table-cell">CPF</TableHead>
+                      <TableHead className="font-semibold hidden xl:table-cell">PIX</TableHead>
                     </>
                   )}
-                  <TableHead className="min-w-[100px] font-semibold text-center">Ações</TableHead>
+                  <TableHead className="font-semibold text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -369,7 +388,7 @@ export function ResponsivePayrollTable({
                     <TableCell>
                       <span className="text-sm">{employee.role || 'N/A'}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <Badge className={getClassificationColor(employee.classification)}>
                         {employee.classification}
                       </Badge>
@@ -389,7 +408,7 @@ export function ResponsivePayrollTable({
                         formatCurrency(employee.salary || 0)
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden lg:table-cell">
                       {editingId === employee.id ? (
                         <Input
                           type="number"
@@ -404,7 +423,7 @@ export function ResponsivePayrollTable({
                         formatCurrency(employee.transport || 0)
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden xl:table-cell">
                       {editingId === employee.id ? (
                         <Input
                           type="number"
@@ -419,7 +438,7 @@ export function ResponsivePayrollTable({
                         formatCurrency(employee.bonus || 0)
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden xl:table-cell">
                       {editingId === employee.id ? (
                         <Input
                           type="number"
@@ -434,33 +453,33 @@ export function ResponsivePayrollTable({
                         formatCurrency(employee.commission || 0)
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.reimbursement || 0)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.thirteenth || 0)}
                     </TableCell>
-                    <TableCell className="text-right text-red-600 font-medium">
+                    <TableCell className="text-right text-gray-600 font-medium hidden 2xl:table-cell">
                       {formatCurrency(employee.inss || 0)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.store || 0)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.bistro || 0)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.advance || 0)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right hidden 2xl:table-cell">
                       {formatCurrency(employee.discount || 0)}
                     </TableCell>
-                    <TableCell className="text-right font-bold text-blue-600">
+                    <TableCell className="text-right font-bold text-gray-800 dark:text-gray-200">
                       {formatCurrency(employee.total || 0)}
                     </TableCell>
                     {showSensitiveData && showPrivateData && (
                       <>
-                        <TableCell>
+                        <TableCell className="hidden xl:table-cell">
                           <Tooltip>
                             <TooltipTrigger>
                               <span className="truncate max-w-[120px] block">{employee.bank}</span>
@@ -470,9 +489,9 @@ export function ResponsivePayrollTable({
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>{employee.agency}</TableCell>
-                        <TableCell>{employee.account}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden xl:table-cell">{employee.agency}</TableCell>
+                        <TableCell className="hidden xl:table-cell">{employee.account}</TableCell>
+                        <TableCell className="hidden xl:table-cell">
                           <Tooltip>
                             <TooltipTrigger>
                               <span className="truncate max-w-[120px] block">{employee.cpf}</span>
@@ -482,7 +501,7 @@ export function ResponsivePayrollTable({
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden xl:table-cell">
                           <Tooltip>
                             <TooltipTrigger>
                               <span className="truncate max-w-[120px] block">{employee.pix}</span>
@@ -547,12 +566,177 @@ export function ResponsivePayrollTable({
         </div>
       </div>
 
-      {employees.length === 0 && (
-        <div className="text-center py-12">
-          <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Nenhum funcionário encontrado</p>
+        {employees.length === 0 && (
+          <div className="text-center py-12">
+            <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Nenhum funcionário encontrado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Expanded Table View with Glassmorphism */}
+      {isExpanded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/20 backdrop-blur-sm">
+          <div className="w-[95vw] sm:w-[90vw] max-h-[90vh] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl overflow-hidden relative">
+            {/* Header with close button */}
+            <div className="flex items-center justify-between p-4 border-b border-white/20 bg-white/50 dark:bg-gray-800/50">
+              <h3 className="text-xl font-semibold">Folha de Pagamento Expandida</h3>
+              <div className="flex items-center gap-2">
+                {showPrivateData && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSensitiveData(!showSensitiveData)}
+                    className="flex items-center gap-2"
+                  >
+                    {showSensitiveData ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showSensitiveData ? 'Ocultar' : 'Mostrar'} Dados Bancários
+                  </Button>
+                )}
+                <button
+                  onClick={toggleExpansion}
+                  className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-lg hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-md"
+                  style={{ background: 'linear-gradient(135deg, hsl(0, 0%, 98%) 0%, #FAFAFA 100%)' }}
+                >
+                  <X className="w-4 h-4" />
+                  Fechar
+                </button>
+              </div>
+            </div>
+            
+            {/* Scrollable table container */}
+            <div className="overflow-auto max-h-[calc(90vh-120px)]">
+              <Table className="w-full min-w-[1600px]">
+                <TableHeader className="sticky top-0 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+                  <TableRow className="border-b border-white/20">
+                    <TableHead className="font-semibold w-[200px] bg-white/90 dark:bg-gray-800/90">Nome</TableHead>
+                    <TableHead className="font-semibold w-[150px] bg-white/90 dark:bg-gray-800/90">Função</TableHead>
+                    <TableHead className="font-semibold w-[120px] bg-white/90 dark:bg-gray-800/90">Classificação</TableHead>
+                    <TableHead className="font-semibold w-[120px] text-right bg-white/90 dark:bg-gray-800/90">Salário</TableHead>
+                    <TableHead className="font-semibold w-[120px] text-right bg-white/90 dark:bg-gray-800/90">Vale Transporte</TableHead>
+                    <TableHead className="font-semibold w-[100px] text-right bg-white/90 dark:bg-gray-800/90">Bônus</TableHead>
+                    <TableHead className="font-semibold w-[100px] text-right bg-white/90 dark:bg-gray-800/90">Comissão</TableHead>
+                    <TableHead className="font-semibold w-[120px] text-right bg-white/90 dark:bg-gray-800/90">Reembolso</TableHead>
+                    <TableHead className="font-semibold w-[120px] text-right bg-white/90 dark:bg-gray-800/90">13º/Férias</TableHead>
+                    <TableHead className="font-semibold text-gray-600 w-[100px] text-right bg-white/90 dark:bg-gray-800/90">INSS</TableHead>
+                    <TableHead className="font-semibold text-gray-600 w-[100px] text-right bg-white/90 dark:bg-gray-800/90">Lojinha</TableHead>
+                    <TableHead className="font-semibold text-gray-600 w-[100px] text-right bg-white/90 dark:bg-gray-800/90">Bistrô</TableHead>
+                    <TableHead className="font-semibold text-gray-600 w-[120px] text-right bg-white/90 dark:bg-gray-800/90">Adiantamento</TableHead>
+                    <TableHead className="font-semibold text-gray-600 w-[100px] text-right bg-white/90 dark:bg-gray-800/90">Desconto</TableHead>
+                    <TableHead className="font-semibold text-blue-600 w-[120px] text-right bg-white/90 dark:bg-gray-800/90">Total</TableHead>
+                    {showSensitiveData && showPrivateData && (
+                      <>
+                        <TableHead className="font-semibold w-[150px] bg-white/90 dark:bg-gray-800/90">Banco</TableHead>
+                        <TableHead className="font-semibold w-[100px] bg-white/90 dark:bg-gray-800/90">Agência</TableHead>
+                        <TableHead className="font-semibold w-[120px] bg-white/90 dark:bg-gray-800/90">Conta</TableHead>
+                        <TableHead className="font-semibold w-[120px] bg-white/90 dark:bg-gray-800/90">CPF</TableHead>
+                        <TableHead className="font-semibold w-[150px] bg-white/90 dark:bg-gray-800/90">PIX</TableHead>
+                      </>
+                    )}
+                    <TableHead className="font-semibold w-[100px] text-center bg-white/90 dark:bg-gray-800/90">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {safeEmployees.map(employee => (
+                    <TableRow key={employee.id} className="hover:bg-white/30 dark:hover:bg-gray-800/30 border-b border-white/10">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${getUnitColor(employee.unit)}`}></div>
+                          <div>
+                            <p className="font-medium">{employee.name}</p>
+                            <p className="text-sm text-gray-500 capitalize">{employee.unit}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="w-[150px]">
+                        <span className="text-sm">{employee.role || 'N/A'}</span>
+                      </TableCell>
+                      <TableCell className="w-[120px]">
+                        <Badge className={getClassificationColor(employee.classification)}>
+                          {employee.classification}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium w-[120px]">
+                        {formatCurrency(employee.salary || 0)}
+                      </TableCell>
+                      <TableCell className="text-right w-[120px]">
+                        {formatCurrency(employee.transport || 0)}
+                      </TableCell>
+                      <TableCell className="text-right w-[100px]">
+                        {formatCurrency(employee.bonus || 0)}
+                      </TableCell>
+                      <TableCell className="text-right w-[100px]">
+                        {formatCurrency(employee.commission || 0)}
+                      </TableCell>
+                      <TableCell className="text-right w-[120px]">
+                        {formatCurrency(employee.reimbursement || 0)}
+                      </TableCell>
+                      <TableCell className="text-right w-[120px]">
+                        {formatCurrency(employee.thirteenth || 0)}
+                      </TableCell>
+                      <TableCell className="text-gray-600 font-medium text-right w-[100px]">
+                        {formatCurrency(employee.inss || 0)}
+                      </TableCell>
+                      <TableCell className="text-gray-600 text-right w-[100px]">
+                        {formatCurrency(employee.store || 0)}
+                      </TableCell>
+                      <TableCell className="text-gray-600 text-right w-[100px]">
+                        {formatCurrency(employee.bistro || 0)}
+                      </TableCell>
+                      <TableCell className="text-gray-600 text-right w-[120px]">
+                        {formatCurrency(employee.advance || 0)}
+                      </TableCell>
+                      <TableCell className="text-gray-600 text-right w-[100px]">
+                        {formatCurrency(employee.discount || 0)}
+                      </TableCell>
+                      <TableCell className="font-bold text-blue-600 text-right w-[120px]">
+                        {formatCurrency(employee.total || 0)}
+                      </TableCell>
+                      {showSensitiveData && showPrivateData && (
+                        <>
+                          <TableCell className="w-[150px]">
+                            {employee.bank}
+                          </TableCell>
+                          <TableCell className="w-[100px]">{employee.agency}</TableCell>
+                          <TableCell className="w-[120px]">{employee.account}</TableCell>
+                          <TableCell className="w-[120px]">
+                            {employee.cpf}
+                          </TableCell>
+                          <TableCell className="w-[150px]">
+                            {employee.pix}
+                          </TableCell>
+                        </>
+                      )}
+                      <TableCell className="w-[100px]">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(employee)}
+                            className="p-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {onEmployeeDelete && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onEmployeeDelete(employee.id)}
+                              className="p-2 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

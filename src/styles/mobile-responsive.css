@@ -1,0 +1,148 @@
+/* Mobile Responsive Improvements */
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 1023px) {
+  /* Minimum touch target size */
+  button, 
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve form inputs on mobile */
+  input, 
+  textarea, 
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+  }
+
+  /* Better spacing for mobile */
+  .mobile-spacing {
+    padding: 0.75rem;
+  }
+
+  /* Ensure proper scrolling */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Show mobile-only elements */
+  .mobile-only {
+    display: block !important;
+  }
+
+  /* Improve table responsiveness */
+  .responsive-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-table table {
+    min-width: 600px;
+  }
+
+  /* Better modal behavior on mobile */
+  .mobile-modal {
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  /* Improve card layouts */
+  .mobile-card {
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+  }
+
+  /* Better navigation spacing */
+  .mobile-nav {
+    padding: 0.5rem;
+  }
+
+  .mobile-nav-item {
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+  }
+}
+
+/* Tablet specific improvements */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .tablet-layout {
+    padding: 1rem;
+  }
+
+  .tablet-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Desktop improvements */
+@media (min-width: 1280px) {
+  .desktop-layout {
+    padding: 1.5rem;
+  }
+
+  .desktop-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  /* Hide mobile-only elements */
+  .mobile-only {
+    display: none !important;
+  }
+
+  /* Show desktop-only elements */
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .glass-dark,
+  .glass-subtle {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 2px solid #fff !important;
+  }
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  .auto-dark {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-full-width {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}

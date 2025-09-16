@@ -8,7 +8,7 @@ import { Search, Phone, Mail, MapPin, User, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Employee } from '@/types/employee';
 import { Unit } from '@/types/unit';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface CollaboratorSearchModalProps {
   isOpen: boolean;
@@ -20,12 +20,12 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
   onClose
 }) => {
   const { employees } = useEmployees();
-  const { permissions, checkPermission } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
 
   // Verificar se o usuário tem permissão para visualizar colaboradores
-  const canViewEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const canViewEmployees = useMemo(() => canViewModule('usuarios'), [canViewModule]);
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
@@ -76,7 +76,7 @@ export const CollaboratorSearchModal: React.FC<CollaboratorSearchModalProps> = (
 
   const handleEmployeeSelect = (employee: Employee) => {
     // Here you could implement actions like opening employee details, calling, etc.
-    console.log('Employee selected:', employee);
+    // Funcionário selecionado
   };
 
   return (

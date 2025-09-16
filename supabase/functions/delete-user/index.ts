@@ -2,8 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+    ? '*' 
+    : 'http://localhost:8081',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
 }
 
 serve(async (req) => {
@@ -28,52 +32,71 @@ serve(async (req) => {
 
     console.log(`Starting deletion process for user: ${userId}`)
     
-    // Check if user exists in auth.users
-    const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(userId)
-    if (authError || !authUser.user) {
-      console.log(`User ${userId} not found in auth.users`)
+    // First, try to find the user in the users table
+    const { data: userRecord, error: userFindError } = await supabaseClient
+      .from('users')
+      .select('id, auth_user_id, email, full_name')
+      .or(`auth_user_id.eq.${userId},id.eq.${userId}`)
+      .single()
+    
+    if (userFindError) {
+      console.error('Error finding user:', userFindError)
       return new Response(
-        JSON.stringify({ error: 'User not found in authentication system' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        JSON.stringify({
+          success: false,
+          error: `User not found: ${userFindError.message}`
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404
+        }
       )
     }
 
+    console.log('User found:', userRecord)
+
     const deletedFrom = []
     const errors = []
+    const hasAuthUserId = userRecord.auth_user_id !== null
 
-    // Delete from unified users table
+    // Delete from users table first
     try {
       const { error: userError } = await supabaseClient
         .from('users')
         .delete()
-        .eq('auth_user_id', userId)
+        .eq('id', userRecord.id)
       
       if (userError) {
         console.error('Error deleting from users:', userError)
         errors.push(`users: ${userError.message}`)
       } else {
         deletedFrom.push('users')
-        console.log(`Deleted user ${userId} from users table`)
+        console.log(`Deleted user ${userRecord.id} from users table`)
       }
     } catch (error) {
       console.error('Exception deleting from users:', error)
       errors.push(`users: ${error.message}`)
     }
 
-    // Delete from auth.users (this should be last)
-    try {
-      const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(userId)
-      
-      if (authDeleteError) {
-        console.error('Error deleting from auth.users:', authDeleteError)
-        errors.push(`auth.users: ${authDeleteError.message}`)
-      } else {
-        deletedFrom.push('auth.users')
-        console.log(`Deleted user ${userId} from auth.users`)
+    // Only try to delete from auth.users if the user has an auth_user_id
+    if (hasAuthUserId) {
+      try {
+        const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(userRecord.auth_user_id)
+        
+        if (authDeleteError) {
+          console.error('Error deleting from auth.users:', authDeleteError)
+          errors.push(`auth.users: ${authDeleteError.message}`)
+        } else {
+          deletedFrom.push('auth.users')
+          console.log(`Deleted user ${userRecord.auth_user_id} from auth.users`)
+        }
+      } catch (error) {
+        console.error('Exception deleting from auth.users:', error)
+        errors.push(`auth.users: ${error.message}`)
       }
-    } catch (error) {
-      console.error('Exception deleting from auth.users:', error)
-      errors.push(`auth.users: ${error.message}`)
+    } else {
+      console.log('User has no auth_user_id, skipping auth.users deletion')
+      deletedFrom.push('users (no auth record)')
     }
 
     const success = deletedFrom.length > 0

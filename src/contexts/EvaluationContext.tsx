@@ -29,12 +29,12 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Loading evaluations...');
+      // Log desabilitado: Loading evaluations
       const data = await evaluationService.getEvaluations();
-      console.log('Evaluations loaded:', data.length);
+      // Log desabilitado: Evaluations loaded
       setEvaluations(data);
     } catch (error) {
-      console.error('Error loading evaluations:', error);
+      // Log desabilitado: Error loading evaluations
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setError(errorMessage);
       toast({
@@ -53,16 +53,16 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const addEvaluation = async (evaluationData: NewEvaluationData) => {
     try {
-      console.log('Adding evaluation:', evaluationData);
+      // Log desabilitado: Adding evaluation
       const newEvaluation = await evaluationService.createEvaluation(evaluationData);
-      console.log('Evaluation added:', newEvaluation);
+      // Log desabilitado: Evaluation added
       setEvaluations(prev => [...prev, newEvaluation]);
       toast({
         title: "Sucesso",
         description: "Avaliação criada com sucesso",
       });
     } catch (error) {
-      console.error('Error adding evaluation:', error);
+      // Log desabilitado: Error adding evaluation
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -75,16 +75,16 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const updateEvaluation = async (id: string, updates: Partial<Evaluation>) => {
     try {
-      console.log('Updating evaluation:', id, updates);
+      // Log desabilitado: Updating evaluation
       const updatedEvaluation = await evaluationService.updateEvaluation(id, updates);
-      console.log('Evaluation updated:', updatedEvaluation);
+      // Log desabilitado: Evaluation updated
       setEvaluations(prev => prev.map(evaluation => evaluation.id === id ? updatedEvaluation : evaluation));
       toast({
         title: "Sucesso",
         description: "Avaliação atualizada com sucesso",
       });
     } catch (error) {
-      console.error('Error updating evaluation:', error);
+      // Log desabilitado: Error updating evaluation
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -97,16 +97,16 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const deleteEvaluation = async (id: string) => {
     try {
-      console.log('Deleting evaluation:', id);
+      // Log desabilitado: Deleting evaluation
       await evaluationService.deleteEvaluation(id);
-      console.log('Evaluation deleted:', id);
+      // Log desabilitado: Evaluation deleted
       setEvaluations(prev => prev.filter(evaluation => evaluation.id !== id));
       toast({
         title: "Sucesso",
         description: "Avaliação removida com sucesso",
       });
     } catch (error) {
-      console.error('Error deleting evaluation:', error);
+      // Log desabilitado: Error deleting evaluation
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -121,7 +121,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       return evaluations.filter(evaluation => evaluation.type === type);
     } catch (error) {
-      console.error('Error filtering evaluations by type:', error);
+      // Log desabilitado: Error filtering evaluations by type
       return [];
     }
   };
@@ -130,7 +130,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       return evaluations.filter(evaluation => evaluation.employeeId === employeeId);
     } catch (error) {
-      console.error('Error filtering evaluations by employee:', error);
+      // Log desabilitado: Error filtering evaluations by employee
       return [];
     }
   };
@@ -149,7 +149,7 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
           employee: evaluation.employee
         }));
     } catch (error) {
-      console.error('Error getting coffee connection schedule:', error);
+      // Log desabilitado: Error getting coffee connection schedule
       return [];
     }
   };

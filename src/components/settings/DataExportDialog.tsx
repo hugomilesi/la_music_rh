@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Download, FileText, Users, Calendar, Award, Shield, Clock, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface ExportOption {
   id: string;
@@ -37,7 +37,7 @@ const exportOptions: ExportOption[] = [
     format: ['Excel', 'CSV', 'PDF']
   },
   {
-    id: 'documents',
+    id: 'documentos',
     name: 'Documentos',
     description: 'Contratos, certificados e documentos anexados',
     icon: FileText,
@@ -45,7 +45,7 @@ const exportOptions: ExportOption[] = [
     format: ['ZIP', 'PDF']
   },
   {
-    id: 'evaluations',
+    id: 'avaliacoes',
     name: 'Avaliações',
     description: 'Histórico de avaliações e feedbacks',
     icon: Award,
@@ -53,7 +53,7 @@ const exportOptions: ExportOption[] = [
     format: ['Excel', 'PDF']
   },
   {
-    id: 'schedule',
+    id: 'agenda',
     name: 'Agenda e Eventos',
     description: 'Compromissos, reuniões e eventos agendados',
     icon: Calendar,
@@ -84,14 +84,14 @@ interface DataExportDialogProps {
 
 export const DataExportDialog: React.FC<DataExportDialogProps> = ({ children }) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<string>('Excel');
+  const [selectedFormats, setSelectedFormats] = useState<Record<string, string>>({});
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
 
   // Check if user has permission to export data
-  if (!checkPermission('canViewReports', false)) {
+  if (!canViewModule('configuracoes')) {
     return (
       <Dialog>
         <DialogTrigger asChild>

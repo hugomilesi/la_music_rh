@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, Edit, Plus, Star, Trophy, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { EmployeeSelector } from '@/components/incidents/EmployeeSelector';
 
 interface RankingEntry {
@@ -42,8 +42,8 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
   evaluationPeriod
 }) => {
   const { employees } = useEmployees();
-  const { checkPermission } = usePermissions();
-  const canManageEvaluations = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
+  const { canEditInModule } = usePermissionsV2();
+  const canManageEvaluations = useMemo(() => canEditInModule('avaliacoes'), [canEditInModule]);
   
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<RankingEntry | null>(null);

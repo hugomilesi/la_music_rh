@@ -101,8 +101,7 @@ export const SendToAccountantDialog: React.FC<SendToAccountantDialogProps> = ({
         toast.error(result.error || 'Erro ao enviar documentos.');
       }
     } catch (err) {
-      console.error('Erro ao enviar documentos:', err);
-      toast.error('Erro inesperado ao enviar documentos.');
+      toast.error('Erro ao enviar documentos para o contador');
     }
   };
 

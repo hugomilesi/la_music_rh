@@ -11,7 +11,7 @@ export const notificationService = {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error fetching notifications:', error);
+      // Log desabilitado: Error fetching notifications
       throw error;
     }
     
@@ -54,7 +54,7 @@ export const notificationService = {
       .single();
     
     if (error) {
-      console.error('Error creating notification:', error);
+      // Log desabilitado: Error creating notification
       throw error;
     }
     
@@ -97,7 +97,7 @@ export const notificationService = {
       .single();
     
     if (error) {
-      console.error('Error updating notification:', error);
+      // Log desabilitado: Error updating notification
       throw error;
     }
     
@@ -131,7 +131,7 @@ export const notificationService = {
         .in('id', notification.recipients);
 
       if (employeesError) {
-        console.error('Error fetching employee emails:', employeesError);
+        // Log desabilitado: Error fetching employee emails
         return { success: false, error: 'Erro ao buscar emails dos destinatários' };
       }
 
@@ -183,7 +183,7 @@ export const notificationService = {
         return { success: false, error: emailResult.error };
       }
     } catch (error) {
-      console.error('Error sending notification email:', error);
+      // Log desabilitado: Error sending notification email
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   },
@@ -208,7 +208,7 @@ export const notificationService = {
         .lte('start_date', nextWeek.toISOString().split('T')[0]);
 
       if (error) {
-        console.error('Error fetching vacation requests:', error);
+        // Log desabilitado: Error fetching vacation requests
         return { success: false, sent: 0, errors: [error.message] };
       }
 
@@ -254,7 +254,7 @@ export const notificationService = {
 
       return { success: errors.length === 0, sent, errors };
     } catch (error) {
-      console.error('Error sending vacation alerts:', error);
+      // Log desabilitado: Error sending vacation alerts
       return { success: false, sent: 0, errors: [error instanceof Error ? error.message : 'Erro desconhecido'] };
     }
   },
@@ -276,7 +276,7 @@ export const notificationService = {
         .not('birth_date', 'is', null);
 
       if (error) {
-        console.error('Error fetching employees:', error);
+        // Log desabilitado: Error fetching employees
         return { success: false, sent: 0, errors: [error.message] };
       }
 
@@ -344,7 +344,7 @@ export const notificationService = {
 
       return { success: errors.length === 0, sent, errors };
     } catch (error) {
-      console.error('Error sending birthday notifications:', error);
+      // Log desabilitado: Error sending birthday notifications
       return { success: false, sent: 0, errors: [error instanceof Error ? error.message : 'Erro desconhecido'] };
     }
   },
@@ -356,7 +356,7 @@ export const notificationService = {
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting notification:', error);
+      // Log desabilitado: Error deleting notification
       throw error;
     }
   }

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Search, Filter, Lock, Loader2 } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { SystemUser, CreateSystemUserData, UpdateSystemUserData, SystemUserFilters } from '@/types/systemUser';
 import { AddUserDialog } from './AddUserDialog';
 import { EditUserDialog } from './EditUserDialog';
@@ -28,7 +28,8 @@ interface SystemUsersDialogProps {
 }
 
 export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }) => {
-  const { canAccessSettings } = usePermissions();
+  const { canViewModule } = usePermissionsV2();
+  const canAccessSettings = canViewModule('configuracoes');
   const { toast } = useToast();
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +56,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
       const usersData = await fetchSystemUsers();
       setUsers(usersData);
     } catch (error) {
-      console.error('Error loading users:', error);
+      // Log desabilitado: Error loading users
       toast({
         title: "Erro ao carregar usuários",
         description: "Não foi possível carregar a lista de usuários.",
@@ -90,7 +91,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
         description: "Os dados do usuário foram atualizados com sucesso."
       });
     } catch (error) {
-      console.error('Error updating user:', error);
+      // Log desabilitado: Error updating user
       toast({
         title: "Erro ao atualizar usuário",
         description: "Não foi possível atualizar os dados do usuário.",
@@ -101,8 +102,20 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
 
   const handleDeleteUser = async (user: SystemUser) => {
     try {
-      // Use auth_user_id if available, otherwise use the id as string
-      const userIdToDelete = user.auth_user_id || String(user.id);
+      // Use auth_user_id if available, otherwise use the user's id
+      const userIdToDelete = user.auth_user_id || user.id;
+      
+      if (!userIdToDelete) {
+        toast({
+          title: "Erro ao excluir usuário",
+          description: "ID do usuário não encontrado.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Log desabilitado: Deleting user with ID
+      
       await deleteSystemUser(userIdToDelete);
       await loadUsers();
       setDeletingUser(null);
@@ -110,11 +123,23 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
         title: "Usuário excluído",
         description: "O usuário foi excluído com sucesso."
       });
-    } catch (error) {
-      console.error('Error deleting user:', error);
+    } catch (error: any) {
+      // Log desabilitado: Error deleting user
+      
+      let errorMessage = "Não foi possível excluir o usuário.";
+      if (error?.message) {
+        if (error.message.includes('ID do usuário inválido')) {
+          errorMessage = "Este usuário não pode ser excluído pois não possui ID válido.";
+        } else if (error.message.includes('User not found')) {
+          errorMessage = "Usuário não encontrado no sistema.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Erro ao excluir usuário",
-        description: "Não foi possível excluir o usuário.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -132,10 +157,10 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
 
   const getRoleBadge = (role: string) => {
     const variants = {
+      'super_admin': 'bg-purple-100 text-purple-800',
       'admin': 'bg-red-100 text-red-800',
-      'coordenador': 'bg-blue-100 text-blue-800',
-      'professor': 'bg-green-100 text-green-800',
-      'usuario': 'bg-gray-100 text-gray-800'
+      'gestor_rh': 'bg-blue-100 text-blue-800',
+      'gerente': 'bg-green-100 text-green-800'
     };
     return variants[role as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
@@ -208,9 +233,8 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 >
                   <option value="">Todos os perfis</option>
                   <option value="admin">Administrador</option>
-                  <option value="coordenador">Coordenador</option>
-                  <option value="professor">Professor</option>
-                  <option value="usuario">Usuário</option>
+                  <option value="gestor_rh">Gestor de RH</option>
+                  <option value="gerente">Gerente</option>
                 </select>
 
                 <select
@@ -270,7 +294,11 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>
                           <Badge className={getRoleBadge(user.role)}>
-                            {user.role}
+                            {user.role === 'super_admin' ? 'Super Administrador' :
+                             user.role === 'admin' ? 'Administrador' :
+                             user.role === 'gestor_rh' ? 'Gestor de RH' :
+                             user.role === 'gerente' ? 'Gerente' :
+                             user.role}
                           </Badge>
                         </TableCell>
                         <TableCell>{user.department || '-'}</TableCell>
@@ -327,9 +355,9 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {users.filter(u => u.role === 'professor').length}
+                  {users.filter(u => u.role === 'gestor_rh').length}
                 </div>
-                <div className="text-sm text-gray-600">Professores</div>
+                <div className="text-sm text-gray-600">Gestores de RH</div>
               </div>
             </div>
           </div>

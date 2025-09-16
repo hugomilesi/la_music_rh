@@ -63,12 +63,11 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
           description: `Coffee Connection aprovado e adicionado ao calendário para ${connection.employee}`,
         });
         
-        console.log('Coffee Connection aprovado e adicionado ao calendário:', newEvent);
+        // Coffee Connection aprovado e adicionado ao calendário
       } catch (error) {
-        console.error('Erro ao aprovar e adicionar Coffee Connection ao calendário:', error);
         toast({
           title: "Erro",
-          description: "Erro ao aprovar e adicionar Coffee Connection ao calendário",
+          description: "Erro ao processar aprovação",
           variant: "destructive",
         });
       }

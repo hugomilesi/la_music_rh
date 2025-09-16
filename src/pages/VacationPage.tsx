@@ -36,7 +36,7 @@ const VacationPageContent = () => {
       toast({ title: 'Sucesso', description: 'Solicitação de férias aprovada.' });
       setSelectedRequest(null);
     } catch (error) {
-      console.error('Error approving vacation request:', error);
+      // Log desabilitado: Error approving vacation request
       toast({ title: 'Erro', description: 'Falha ao aprovar a solicitação. Verifique se você tem permissão para esta ação.', variant: 'destructive' });
     }
   };
@@ -51,7 +51,7 @@ const VacationPageContent = () => {
       toast({ title: 'Sucesso', description: 'Solicitação de férias rejeitada.' });
       setSelectedRequest(null);
     } catch (error) {
-      console.error('Error rejecting vacation request:', error);
+      // Log desabilitado: Error rejecting vacation request
       toast({ title: 'Erro', description: 'Falha ao rejeitar a solicitação. Verifique se você tem permissão para esta ação.', variant: 'destructive' });
     }
   };

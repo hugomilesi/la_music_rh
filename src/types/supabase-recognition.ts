@@ -228,7 +228,7 @@ export interface Database {
           id: string
           employee_id: string
           program_id: string
-          bonus_type: 'monetary' | 'gift' | 'time_off' | 'recognition'
+          bonus_type: 'monetary' | 'gift' | 'time_off' | 'reconhecimento'
           amount: number | null
           description: string
           awarded_date: string
@@ -240,7 +240,7 @@ export interface Database {
           id?: string
           employee_id: string
           program_id: string
-          bonus_type: 'monetary' | 'gift' | 'time_off' | 'recognition'
+          bonus_type: 'monetary' | 'gift' | 'time_off' | 'reconhecimento'
           amount?: number | null
           description: string
           awarded_date: string
@@ -252,7 +252,7 @@ export interface Database {
           id?: string
           employee_id?: string
           program_id?: string
-          bonus_type?: 'monetary' | 'gift' | 'time_off' | 'recognition'
+          bonus_type?: 'monetary' | 'gift' | 'time_off' | 'reconhecimento'
           amount?: number | null
           description?: string
           awarded_date?: string

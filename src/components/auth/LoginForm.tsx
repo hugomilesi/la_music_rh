@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
+import { getFirstAccessibleRoute } from '@/utils/redirectUtils';
+import { supabase } from '@/lib/supabase';
 
 export const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +22,13 @@ export const LoginForm: React.FC = () => {
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const { signIn, signInWithGoogle, resendConfirmation } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { hasPermission, user, profile, canViewModule, isAdmin, isSuperAdmin } = usePermissionsV2();
+  
+  // Função para verificar se pode gerenciar permissões
+  const canManagePermissions = isAdmin || isSuperAdmin;
+  
+  // Debug: Log removido
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +79,39 @@ export const LoginForm: React.FC = () => {
         title: 'Login realizado com sucesso!',
         description: 'Bem-vindo ao LA Music RH.',
       });
+      
+      // Aguardar que user e profile estejam carregados antes de verificar permissões
+      const waitForAuthAndRedirect = async () => {
+        let attempts = 0;
+        const maxAttempts = 15; // 6 segundos total
+        
+        const checkAuthAndPermissions = async () => {
+          attempts++;
+          
+          if (user && profile && typeof canViewModule === 'function' && typeof canManagePermissions === 'function') {
+            
+            try {
+              const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions);
+              
+              navigate(firstAccessibleRoute, { replace: true });
+              return;
+            } catch (error) {
+              navigate('/dashboard', { replace: true });
+              return;
+            }
+          }
+          
+          if (attempts >= maxAttempts) {
+            navigate('/dashboard', { replace: true });
+          } else {
+            setTimeout(checkAuthAndPermissions, 400);
+          }
+        };
+        
+        setTimeout(checkAuthAndPermissions, 800);
+      };
+      
+      waitForAuthAndRedirect();
     } catch (error) {
       toast({
         title: 'Erro no Login',
@@ -188,6 +232,7 @@ export const LoginForm: React.FC = () => {
               className="pl-10"
               required
               disabled={loading}
+              data-testid="email-input"
             />
           </div>
         </div>
@@ -205,6 +250,7 @@ export const LoginForm: React.FC = () => {
               className="pl-10 pr-10"
               required
               disabled={loading}
+              data-testid="password-input"
             />
             <button
               type="button"
@@ -217,7 +263,7 @@ export const LoginForm: React.FC = () => {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full" disabled={loading} data-testid="login-button">
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
       </form>

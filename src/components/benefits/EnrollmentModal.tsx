@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, X, Users, Lock } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Benefit, Dependent } from '@/types/benefits';
 
 interface EnrollmentModalProps {
@@ -24,8 +24,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
 }) => {
   const { enrollEmployee } = useBenefits();
   const { employees } = useEmployees();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canEditInModule } = usePermissionsV2();
+  const canManageEmployees = useMemo(() => canEditInModule('beneficios'), [canEditInModule]);
   const [employeeId, setEmployeeId] = useState('');
   const [dependents, setDependents] = useState<Dependent[]>([]);
   const [newDependent, setNewDependent] = useState({

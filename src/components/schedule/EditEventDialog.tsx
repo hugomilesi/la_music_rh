@@ -29,7 +29,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { ScheduleEvent } from '@/types/schedule';
 import { Unit, UNITS } from '@/types/unit';
 
@@ -62,8 +62,8 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
 }) => {
   const { updateEvent, isLoading } = useSchedule();
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
-  const canManageEmployees = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
+  const { canEditInModule } = usePermissionsV2();
+  const canManageEmployees = useMemo(() => canEditInModule('agenda'), [canEditInModule]);
 
   const form = useForm<EditEventFormData>({
     resolver: zodResolver(editEventSchema),

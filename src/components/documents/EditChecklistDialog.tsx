@@ -64,7 +64,7 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
   };
 
   const handleSave = () => {
-    console.log('Salvando checklist:', checklist);
+    // Salvando checklist
     // Here you would save to your backend/context
     onOpenChange(false);
   };

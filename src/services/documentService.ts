@@ -41,13 +41,13 @@ export const documentService = {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('Error fetching documents:', error);
+        // Error fetching documents logging disabled
         throw error;
       }
       
       return data || [];
     } catch (error) {
-      console.error('Error fetching employee documents:', error);
+      // Error fetching employee documents logging disabled
       throw error;
     }
   },
@@ -56,21 +56,16 @@ export const documentService = {
   async getAllDocuments(): Promise<Document[]> {
     try {
       const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          *,
-          employee:users!employee_id(full_name)
-        `)
-        .order('created_at', { ascending: false });
-      
+        .rpc('get_documents_with_employees');
+
       if (error) {
-        console.error('Error fetching all documents:', error);
+        console.error('Error fetching documents:', error);
         throw error;
       }
-      
+
       return data || [];
     } catch (error) {
-      console.error('Error fetching all documents:', error);
+      console.error('Error fetching documents:', error);
       throw error;
     }
   },
@@ -78,7 +73,7 @@ export const documentService = {
   // Upload a new document
   async uploadDocument(uploadData: DocumentUpload): Promise<Document> {
     try {
-      console.log('🔄 Starting document upload:', uploadData.document_name);
+      // Document upload start logging disabled
       
       // Generate unique file path
       const timestamp = Date.now();
@@ -108,11 +103,11 @@ export const documentService = {
         });
       
       if (uploadError) {
-        console.error('❌ Storage upload error:', uploadError);
+        // Storage upload error logging disabled
         throw uploadError;
       }
       
-      console.log('✅ File uploaded to storage:', uploadResult.path);
+      // File upload success logging disabled
       
       // Create document record in database
       const { data: document, error: dbError } = await supabase
@@ -134,16 +129,16 @@ export const documentService = {
         .single();
       
       if (dbError) {
-        console.error('❌ Database insert error:', dbError);
+        // Database insert error logging disabled
         // Clean up uploaded file
         await supabase.storage.from('documents').remove([uploadResult.path]);
         throw dbError;
       }
       
-      console.log('✅ Document record created:', document.id);
+      // Document record creation logging disabled
       return document;
     } catch (error) {
-      console.error('❌ Document upload failed:', error);
+      // Document upload failure logging disabled
       throw error;
     }
   },
@@ -159,7 +154,7 @@ export const documentService = {
         .single();
       
       if (docError) {
-        console.error('Error fetching document:', docError);
+        // Error fetching document logging disabled
         throw docError;
       }
       
@@ -169,13 +164,13 @@ export const documentService = {
         .createSignedUrl(document.file_path, 3600); // 1 hour expiry
       
       if (urlError) {
-        console.error('Error creating download URL:', urlError);
+        // Error creating download URL logging disabled
         throw urlError;
       }
       
       return urlData.signedUrl;
     } catch (error) {
-      console.error('Error downloading document:', error);
+      // Error downloading document logging disabled
       throw error;
     }
   },
@@ -191,13 +186,13 @@ export const documentService = {
         .single();
       
       if (error) {
-        console.error('Error updating document:', error);
+        // Error updating document logging disabled
         throw error;
       }
       
       return document;
     } catch (error) {
-      console.error('Error updating document:', error);
+      // Error updating document logging disabled
       throw error;
     }
   },
@@ -213,7 +208,7 @@ export const documentService = {
         .single();
       
       if (docError) {
-        console.error('Error fetching document for deletion:', docError);
+        // Error fetching document for deletion logging disabled
         throw docError;
       }
       
@@ -223,7 +218,7 @@ export const documentService = {
         .remove([document.file_path]);
       
       if (storageError) {
-        console.error('Error deleting from storage:', storageError);
+        // Error deleting from storage logging disabled
         // Continue with database deletion even if storage fails
       }
       
@@ -234,13 +229,13 @@ export const documentService = {
         .eq('id', documentId);
       
       if (deleteError) {
-        console.error('Error deleting document record:', deleteError);
+        // Error deleting document record logging disabled
         throw deleteError;
       }
       
-      console.log('✅ Document deleted successfully:', documentId);
+      // Document deletion success logging disabled
     } catch (error) {
-      console.error('Error deleting document:', error);
+      // Error deleting document logging disabled
       throw error;
     }
   },
@@ -254,14 +249,14 @@ export const documentService = {
         .limit(1);
       
       if (error) {
-        console.error('Connection test failed:', error);
+        // Connection test failure logging disabled
         return false;
       }
       
-      console.log('Connection test successful');
+      // Connection test success logging disabled
       return true;
     } catch (error) {
-      console.error('Connection test error:', error);
+      // Connection test error logging disabled
       return false;
     }
   }

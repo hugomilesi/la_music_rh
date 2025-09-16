@@ -1,18 +1,29 @@
 
+export interface Employee {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  department: string;
+  position: string;
+}
+
 export interface Document {
   id: string;
-  employeeId: string;
-  employee: string;
-  document: string;
-  type: DocumentType;
-  uploadDate: string;
-  expiryDate: string | null;
-  status: DocumentStatus;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  uploadedBy?: string;
-  notes?: string;
+  employee_id: string;
+  employee: Employee;
+  document_name: string;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  expiry_date: string | null;
+  status: string;
+  notes: string | null;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type DocumentType = 'obrigatorio' | 'temporario' | 'complementar';

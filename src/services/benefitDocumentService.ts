@@ -30,7 +30,7 @@ export interface BenefitDocumentUpload {
 export const benefitDocumentService = {
   async uploadDocument(uploadData: BenefitDocumentUpload): Promise<BenefitDocument> {
     try {
-      console.log('🔄 Starting benefit document upload:', uploadData.document_name);
+      // Log desabilitado: Document upload
       
       // Generate unique file path
       const timestamp = Date.now();
@@ -46,11 +46,11 @@ export const benefitDocumentService = {
         });
       
       if (uploadError) {
-        console.error('❌ Storage upload error:', uploadError);
+        // Log desabilitado: Storage upload error
         throw uploadError;
       }
       
-      console.log('✅ File uploaded to storage:', uploadResult.path);
+      // Log desabilitado: Storage upload
       
       // Create document record in database
       const { data: document, error: dbError } = await supabase
@@ -72,13 +72,13 @@ export const benefitDocumentService = {
         .single();
       
       if (dbError) {
-        console.error('❌ Database insert error:', dbError);
+        // Log desabilitado: Database insert error
         // Clean up uploaded file
         await supabase.storage.from('documents').remove([uploadResult.path]);
         throw dbError;
       }
       
-      console.log('✅ Document record created:', document.id);
+      // Log desabilitado: Document creation
       
       // Create relationship between document and employee benefit
       const { error: relationError } = await supabase
@@ -89,9 +89,9 @@ export const benefitDocumentService = {
         });
       
       if (relationError) {
-        console.error('❌ Relation creation error:', relationError);
+        // Log desabilitado: Relation creation error
         // This might fail if the table doesn't exist, but we'll continue
-        console.warn('⚠️ Could not create benefit-document relation, table might not exist');
+        // Could not create benefit-document relation, table might not exist
       }
       
       return {
@@ -99,7 +99,7 @@ export const benefitDocumentService = {
         employee_benefit_id: uploadData.employee_benefit_id
       };
     } catch (error) {
-      console.error('❌ Document upload failed:', error);
+      // Log desabilitado: Document upload failed
       throw error;
     }
   },
@@ -116,7 +116,7 @@ export const benefitDocumentService = {
         .eq('employee_benefit_id', employeeBenefitId);
       
       if (relationError && relationError.code !== 'PGRST116') {
-        console.error('Error fetching benefit documents:', relationError);
+        // Log desabilitado: Error fetching benefit documents
         throw relationError;
       }
       
@@ -130,7 +130,7 @@ export const benefitDocumentService = {
       // Fallback: return empty array if no relations found
       return [];
     } catch (error) {
-      console.error('Error fetching benefit documents:', error);
+      // Log desabilitado: Error fetching benefit documents
       throw error;
     }
   },
@@ -145,7 +145,7 @@ export const benefitDocumentService = {
         .single();
       
       if (docError) {
-        console.error('Error fetching document:', docError);
+        // Log desabilitado: Error fetching document
         throw docError;
       }
       
@@ -155,13 +155,13 @@ export const benefitDocumentService = {
         .createSignedUrl(document.file_path, 3600); // 1 hour expiry
       
       if (urlError) {
-        console.error('Error creating download URL:', urlError);
+        // Log desabilitado: Error creating download URL
         throw urlError;
       }
       
       return urlData.signedUrl;
     } catch (error) {
-      console.error('Error downloading document:', error);
+      // Log desabilitado: Error downloading document
       throw error;
     }
   },
@@ -176,7 +176,7 @@ export const benefitDocumentService = {
         .single();
       
       if (docError) {
-        console.error('Error fetching document for deletion:', docError);
+        // Log desabilitado: Error fetching document for deletion
         throw docError;
       }
       
@@ -186,7 +186,7 @@ export const benefitDocumentService = {
         .remove([document.file_path]);
       
       if (storageError) {
-        console.error('Error deleting from storage:', storageError);
+        // Log desabilitado: Error deleting from storage
         // Continue with database deletion even if storage fails
       }
       
@@ -203,13 +203,13 @@ export const benefitDocumentService = {
         .eq('id', documentId);
       
       if (deleteError) {
-        console.error('Error deleting document record:', deleteError);
+        // Log desabilitado: Error deleting document record
         throw deleteError;
       }
       
-      console.log('✅ Document deleted successfully:', documentId);
+      // Log desabilitado: Document deleted successfully
     } catch (error) {
-      console.error('Error deleting document:', error);
+      // Log desabilitado: Error deleting document
       throw error;
     }
   },
@@ -224,13 +224,13 @@ export const benefitDocumentService = {
         .single();
       
       if (error) {
-        console.error('Error updating document:', error);
+        // Log desabilitado: Error updating document
         throw error;
       }
       
       return document;
     } catch (error) {
-      console.error('Error updating document:', error);
+      // Log desabilitado: Error updating document
       throw error;
     }
   }

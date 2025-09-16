@@ -90,7 +90,7 @@ export function RateEvaluationDialog({
       setHoveredRating(0);
       setComments('');
     } catch (error) {
-      console.error('Error rating evaluation:', error);
+      // Log desabilitado: Error rating evaluation
       toast({
         title: "Erro ao avaliar",
         description: "Ocorreu um erro ao registrar a nota. Tente novamente.",

@@ -17,7 +17,7 @@ interface EmailTestDialogProps {
 
 export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) => {
   const [open, setOpen] = useState(false);
-  const [emailType, setEmailType] = useState<'general' | 'notification' | 'birthday' | 'vacation' | 'document'>('general');
+  const [emailType, setEmailType] = useState<'general' | 'notification' | 'birthday' | 'ferias' | 'documento'>('general');
   const [to, setTo] = useState('hugogmilesi@gmail.com');
   const [subject, setSubject] = useState('Teste de Email - LA Music RH');
   const [message, setMessage] = useState('Este é um email de teste do sistema LA Music RH.');
@@ -38,19 +38,19 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
       return;
     }
 
-    console.log('🚀 Iniciando envio de email de teste...');
-    console.log('📧 Tipo:', emailType);
-    console.log('📬 Destinatário:', to);
-    console.log('📝 Assunto:', subject);
-    console.log('💬 Mensagem:', message);
-    console.log('🔑 API Key Resend:', import.meta.env.VITE_RESEND_API_KEY ? 'Configurada' : 'NÃO CONFIGURADA');
+    
+    // console.log('📧 Tipo:', emailType);
+    // console.log('📬 Destinatário:', to);
+    // console.log('📝 Assunto:', subject);
+    // console.log('💬 Mensagem:', message);
+    // console.log('🔑 API Key Resend:', import.meta.env.VITE_RESEND_API_KEY ? 'Configurada' : 'NÃO CONFIGURADA');
 
     try {
       let result;
       
       switch (emailType) {
         case 'general':
-          console.log('📤 Enviando email geral...');
+          // console.log('📤 Enviando email geral...');
           result = await sendEmail({
             to: [to],
             subject,
@@ -59,17 +59,17 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           break;
           
         case 'birthday':
-          console.log('🎂 Enviando notificações de aniversário...');
+          // console.log('🎂 Enviando notificações de aniversário...');
           result = await sendBirthdayNotifications();
           break;
           
-        case 'vacation':
-          console.log('🏖️ Enviando alertas de férias...');
+        case 'ferias':
+          // console.log('🏖️ Enviando alertas de férias...');
           result = await sendVacationAlerts();
           break;
           
-        case 'document':
-          console.log('📄 Enviando email com documento...');
+        case 'documento':
+          // console.log('📄 Enviando email com documento...');
           result = await sendDocumentEmail({
             to: [to],
             employeeName: 'Colaborador Teste',
@@ -79,7 +79,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           break;
           
         default:
-          console.log('📤 Enviando email padrão...');
+          // console.log('📤 Enviando email padrão...');
           result = await sendEmail({
             to: [to],
             subject,
@@ -87,10 +87,10 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           });
       }
 
-      console.log('📊 Resultado do envio:', result);
+
 
       if (result.success) {
-        console.log('✅ Email enviado com sucesso!');
+
         toast.success(`✅ Email ${emailType} enviado com sucesso para ${to}!`, {
           description: 'Verifique sua caixa de entrada e spam.',
           duration: 5000
@@ -99,14 +99,14 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           toast.info(`📊 ${result.sent} email(s) enviado(s).`);
         }
       } else {
-        console.error('❌ Erro ao enviar email:', result.error);
+        // console.error('❌ Erro ao enviar email:', result.error);
         toast.error(`❌ Falha no envio: ${result.error || 'Erro desconhecido'}`, {
           description: 'Verifique as configurações de email e tente novamente.',
           duration: 7000
         });
       }
     } catch (err) {
-      console.error('💥 Erro inesperado ao enviar email de teste:', err);
+      // console.error('💥 Erro inesperado ao enviar email de teste:', err);
       toast.error('💥 Erro inesperado ao enviar email.', {
         description: err instanceof Error ? err.message : 'Erro desconhecido',
         duration: 7000
@@ -137,14 +137,14 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           description: 'Envio automático de aniversários do dia',
           color: 'bg-pink-500'
         };
-      case 'vacation':
+      case 'ferias':
         return {
           icon: <Calendar className="w-4 h-4" />,
           title: 'Alertas de Férias',
           description: 'Alertas de férias próximas (próximos 7 dias)',
           color: 'bg-green-500'
         };
-      case 'document':
+      case 'documento':
         return {
           icon: <FileText className="w-4 h-4" />,
           title: 'Documento',
@@ -203,13 +203,13 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
                       Aniversários do Dia
                     </div>
                   </SelectItem>
-                  <SelectItem value="vacation">
+                  <SelectItem value="ferias">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       Alertas de Férias
                     </div>
                   </SelectItem>
-                  <SelectItem value="document">
+                  <SelectItem value="documento">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4" />
                       Email com Documento
@@ -229,7 +229,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           </Card>
 
           {/* Email Configuration */}
-          {(emailType === 'general' || emailType === 'document') && (
+          {(emailType === 'general' || emailType === 'documento') && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Configuração do Email</CardTitle>
@@ -271,7 +271,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           )}
 
           {/* Automatic Email Info */}
-          {(emailType === 'birthday' || emailType === 'vacation') && (
+          {(emailType === 'birthday' || emailType === 'ferias') && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Email Automático</CardTitle>
@@ -291,7 +291,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
                     </div>
                   )}
                   
-                  {emailType === 'vacation' && (
+                  {emailType === 'ferias' && (
                     <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                       <div className="flex items-center gap-2 mb-2">
                         <Calendar className="w-4 h-4 text-green-600" />
@@ -335,7 +335,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
             </Button>
             <Button 
               onClick={handleSendTestEmail} 
-              disabled={isLoading || ((emailType === 'general' || emailType === 'document') && (!to || !subject || !message))}
+              disabled={isLoading || ((emailType === 'general' || emailType === 'documento') && (!to || !subject || !message))}
               className="min-w-[120px]"
             >
               {isLoading ? (

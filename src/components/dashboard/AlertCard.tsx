@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Calendar, Award, CheckCircle, X, Music, Piano, Mic, Volume2, Bell } from 'lucide-react';
+import '@/styles/card-animations.css';
 
 interface Alert {
   id: string;
-  type: 'document' | 'evaluation' | 'recognition';
+  type: 'documento' | 'avaliacao' | 'reconhecimento';
   title: string;
   description: string;
   priority: 'high' | 'medium' | 'low';
@@ -22,7 +23,7 @@ export const AlertCard: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([
     {
       id: '1',
-      type: 'document',
+      type: 'documento',
       title: 'Instrumentos Precisam Manutenção',
       description: '5 pianos e 3 violões precisam de afinação',
       priority: 'high',
@@ -32,7 +33,7 @@ export const AlertCard: React.FC = () => {
     },
     {
       id: '2',
-      type: 'evaluation',
+      type: 'avaliacao',
       title: 'Avaliações Musicais Próximas',
       description: '12 alunos têm recitais em 7 dias',
       priority: 'medium',
@@ -42,7 +43,7 @@ export const AlertCard: React.FC = () => {
     },
     {
       id: '3',
-      type: 'recognition',
+      type: 'reconhecimento',
       title: 'Conquistas Musicais',
       description: '4 alunos ganharam competições',
       priority: 'low',
@@ -62,22 +63,22 @@ export const AlertCard: React.FC = () => {
 
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
-      case 'document':
+      case 'documento':
         return <Piano className="w-5 h-5 text-red-500 animate-pulse" />;
-      case 'evaluation':
+      case 'avaliacao':
         return <Mic className="w-5 h-5 text-orange-500 animate-bounce" />;
-      case 'recognition':
+      case 'reconhecimento':
         return <Award className="w-5 h-5 text-blue-500 animate-pulse" />;
     }
   };
 
   const getAlertColor = (type: Alert['type']) => {
     switch (type) {
-      case 'document':
+      case 'documento':
         return 'bg-gradient-to-r from-red-50 to-pink-50 border-red-400 shadow-red-100';
-      case 'evaluation':
+      case 'avaliacao':
         return 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-400 shadow-orange-100';
-      case 'recognition':
+      case 'reconhecimento':
         return 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-400 shadow-blue-100';
     }
   };
@@ -95,7 +96,7 @@ export const AlertCard: React.FC = () => {
 
   return (
     <>
-      <Card className="hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative overflow-hidden border-orange-200 bg-gradient-to-br from-white to-orange-50/30" onClick={() => setShowModal(true)}>
+      <Card className="dashboard-card cursor-pointer group relative overflow-hidden border-orange-200 bg-gradient-to-br from-white to-orange-50/30" onClick={() => setShowModal(true)}>
         {/* Musical background decoration */}
         <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
           <div className="absolute top-4 right-4 text-3xl animate-pulse">🎵</div>
@@ -106,7 +107,7 @@ export const AlertCard: React.FC = () => {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-3">
             <div className="relative">
-              <Bell className="w-6 h-6 text-orange-600 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+              <Bell className="w-6 h-6 text-orange-600 card-icon" />
               <Volume2 className="w-3 h-3 text-red-500 absolute -top-1 -right-1 animate-pulse" />
             </div>
             <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent font-bold">
@@ -114,7 +115,7 @@ export const AlertCard: React.FC = () => {
             </span>
             <Badge 
               variant="destructive" 
-              className="bg-gradient-to-r from-red-500 to-orange-500 group-hover:scale-105 transition-transform duration-300 animate-pulse"
+              className="bg-gradient-to-r from-red-500 to-orange-500 card-badge animate-pulse"
             >
               <Music className="w-3 h-3 mr-1" />
               {activeAlerts.length}

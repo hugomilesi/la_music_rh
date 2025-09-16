@@ -41,7 +41,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
       setRequests(requestsData);
       setBalances(balancesData);
     } catch (error) {
-      console.error('Error loading vacation data:', error);
+      // Log desabilitado: Error loading vacation data
       toast({
         title: "Erro",
         description: "Erro ao carregar dados de férias",
@@ -65,10 +65,9 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
         description: "Solicitação de férias criada com sucesso",
       });
     } catch (error) {
-      console.error('Error adding vacation request:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar solicitação de férias",
+        description: error instanceof Error ? error.message : "Erro ao criar solicitação de férias",
         variant: "destructive",
       });
       throw error;
@@ -84,7 +83,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
         description: "Solicitação de férias atualizada com sucesso",
       });
     } catch (error) {
-      console.error('Error updating vacation request:', error);
+      // Log desabilitado: Error updating vacation request
       toast({
         title: "Erro",
         description: "Erro ao atualizar solicitação de férias",
@@ -96,20 +95,26 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const deleteVacationRequest = async (id: string) => {
     try {
+      setIsLoading(true);
+      
       await vacationService.deleteVacationRequest(id);
+      
+      // Remove from state
       setRequests(prev => prev.filter(req => req.id !== id));
+      
       toast({
         title: "Sucesso",
-        description: "Solicitação de férias removida com sucesso",
+        description: "Solicitação excluída com sucesso!",
       });
     } catch (error) {
-      console.error('Error deleting vacation request:', error);
       toast({
         title: "Erro",
-        description: "Erro ao remover solicitação de férias",
+        description: error instanceof Error ? error.message : "Erro ao excluir solicitação",
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,7 +133,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
         description: "Solicitação aprovada com sucesso!",
       });
     } catch (error) {
-      console.error('Error approving vacation request:', error);
+      // Log desabilitado: Error approving vacation request
       toast({
         title: "Erro",
         description: "Erro ao aprovar solicitação",
@@ -140,7 +145,7 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
   const rejectVacationRequest = async (id: string, reason: string, rejectedBy: string) => {
     try {
       // Reject the request first
-      await vacationService.rejectVacationRequest(id, reason);
+      await vacationService.rejectVacationRequest(id, reason, rejectedBy);
       
       // Then delete it automatically
       await vacationService.deleteVacationRequest(id);
@@ -155,10 +160,9 @@ export const VacationProvider: React.FC<{ children: ReactNode }> = ({ children }
         description: "Solicitação rejeitada e removida automaticamente!",
       });
     } catch (error) {
-      console.error('Error rejecting vacation request:', error);
       toast({
         title: "Erro",
-        description: "Erro ao rejeitar solicitação",
+        description: error instanceof Error ? error.message : "Erro ao rejeitar solicitação",
         variant: "destructive",
       });
     }

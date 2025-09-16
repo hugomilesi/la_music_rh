@@ -28,7 +28,7 @@ export const evaluationService = {
       .order('date', { ascending: false });
     
     if (error) {
-      console.error('Error fetching evaluations:', error);
+      // Log desabilitado: Error getting evaluations
       throw error;
     }
     
@@ -37,14 +37,14 @@ export const evaluationService = {
       return {
         id: evaluation.id,
         employeeId: evaluation.employee_id,
-        employee: evaluation.users?.full_name || 'Unknown',
-        role: evaluation.users?.position || 'Unknown',
+        employee: evaluation.employee?.full_name || 'Unknown',
+        role: evaluation.employee?.position || 'Unknown',
         evaluator: evaluation.evaluator?.full_name || 'Unknown',
         evaluatorId: evaluation.evaluator_id,
         type: this.mapEvaluationType(evaluation.type),
         period: evaluation.period,
         status: this.mapEvaluationStatus(evaluation.status),
-        score: evaluation.score || 0,
+        score: parseFloat(evaluation.score) || 0,
         date: evaluation.date,
         comments: evaluation.comments,
         location: evaluation.location,
@@ -102,7 +102,7 @@ export const evaluationService = {
       .single();
 
     if (error) {
-      console.error('Error creating evaluation:', error);
+      // Log desabilitado: Error creating evaluation
       throw error;
     }
 
@@ -110,14 +110,14 @@ export const evaluationService = {
     return {
       id: data.id,
       employeeId: data.employee_id,
-      employee: data.users?.full_name || 'Unknown',
-      role: data.users?.position || 'Unknown',
+      employee: data.employee?.full_name || 'Unknown',
+      role: data.employee?.position || 'Unknown',
       evaluator: data.evaluator?.full_name || 'Unknown',
       evaluatorId: data.evaluator_id,
       type: this.mapEvaluationType(data.type),
       period: data.period,
       status: this.mapEvaluationStatus(data.status),
-      score: data.score || 0,
+      score: parseFloat(data.score) || 0,
       date: data.date,
       comments: data.comments,
       location: data.location,
@@ -197,7 +197,7 @@ export const evaluationService = {
       .single();
     
     if (error) {
-      console.error('Error updating evaluation:', error);
+      // Log desabilitado: Error updating evaluation
       throw error;
     }
 
@@ -243,7 +243,7 @@ export const evaluationService = {
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting evaluation:', error);
+      // Log desabilitado: Error deleting evaluation
       throw error;
     }
   },

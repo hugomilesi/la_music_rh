@@ -55,14 +55,14 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             score: evaluation.score
           }));
       } catch (evalError) {
-        console.warn('Error loading evaluation events:', evalError);
+        // Error loading evaluation events logging disabled
       }
       
       // Combinar eventos da agenda e avaliações
       const allEvents = [...scheduleEvents, ...evaluationEvents];
       setEvents(allEvents);
     } catch (error) {
-      console.error('Error loading schedule events:', error);
+      // Error loading schedule events logging disabled
       toast({
         title: "Erro",
         description: "Erro ao carregar eventos",
@@ -92,7 +92,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Alertas (implementação simples via console, seria integrado com serviço de notificações)
       if (data.emailAlert || data.whatsappAlert) {
-        console.log('Enviando alertas para o evento:', newEvent.title);
+        // Sending alerts for event logging disabled
       }
       
       toast({
@@ -100,7 +100,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: "Evento criado com sucesso",
       });
     } catch (error) {
-      console.error('Error adding event:', error);
+      // Error adding event logging disabled
       toast({
         title: "Erro",
         description: "Erro ao criar evento",
@@ -123,7 +123,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: "Evento atualizado com sucesso",
       });
     } catch (error) {
-      console.error('Error updating event:', error);
+      // Error updating event logging disabled
       toast({
         title: "Erro",
         description: "Erro ao atualizar evento",
@@ -142,7 +142,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: "Evento removido com sucesso",
       });
     } catch (error) {
-      console.error('Error deleting event:', error);
+      // Error deleting event logging disabled
       toast({
         title: "Erro",
         description: "Erro ao remover evento",

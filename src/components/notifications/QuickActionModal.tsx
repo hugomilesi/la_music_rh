@@ -68,7 +68,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [channel, setChannel] = useState<'email' | 'whatsapp' | 'ambos'>('whatsapp');
-  const [sendMode, setSendMode] = useState<'draft' | 'send' | 'schedule'>('send');
+  const [sendMode, setSendMode] = useState<'draft' | 'send' | 'agenda'>('send');
   const [scheduledDate, setScheduledDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -137,8 +137,8 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
         recipientNames: selectedRecipientData.map(r => r.name),
         channel,
         status: sendMode === 'draft' ? 'rascunho' as const : 
-                sendMode === 'schedule' ? 'programado' as const : 'enviado' as const,
-        scheduledFor: sendMode === 'schedule' ? scheduledDate : undefined,
+                sendMode === 'agenda' ? 'programado' as const : 'enviado' as const,
+        scheduledFor: sendMode === 'agenda' ? scheduledDate : undefined,
         createdBy: 'Admin'
       };
 
@@ -156,7 +156,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
       }
 
       const actionText = sendMode === 'draft' ? 'salvo como rascunho' : 
-                        sendMode === 'schedule' ? 'programado' : 'enviado';
+                        sendMode === 'agenda' ? 'programado' : 'enviado';
 
       toast({
         title: "Sucesso",
@@ -361,9 +361,9 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
               </Button>
               <Button
                 type="button"
-                variant={sendMode === 'schedule' ? 'default' : 'outline'}
+                variant={sendMode === 'agenda' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSendMode('schedule')}
+                onClick={() => setSendMode('agenda')}
               >
                 <Calendar className="w-4 h-4 mr-1" />
                 Programar
@@ -378,7 +378,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
               </Button>
             </div>
 
-            {sendMode === 'schedule' && (
+            {sendMode === 'agenda' && (
               <div className="mt-3">
                 <Label>Data e Hora</Label>
                 <Input
@@ -415,8 +415,8 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
               className="min-w-[120px]"
             >
               {isLoading ? 'Processando...' : 
-               sendMode === 'send' ? 'Enviar' :
-               sendMode === 'schedule' ? 'Programar' : 'Salvar'}
+               (sendMode === 'send' ? 'Enviar' :
+               sendMode === 'agenda' ? 'Programar' : 'Salvar')}
             </Button>
           </div>
         </div>
@@ -424,3 +424,5 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
     </Dialog>
   );
 };
+
+export default QuickActionModal;

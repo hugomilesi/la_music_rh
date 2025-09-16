@@ -1,0 +1,441 @@
+/* Mobile-Optimized Forms */
+
+/* Base form improvements */
+.mobile-form {
+  width: 100%;
+  max-width: none;
+}
+
+/* Input improvements for mobile */
+@media (max-width: 768px) {
+  /* Prevent zoom on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Focus states */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+  }
+
+  /* Error states */
+  input.error,
+  textarea.error,
+  select.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+
+  /* Success states */
+  input.success,
+  textarea.success,
+  select.success {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+
+  /* Labels */
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* Form groups */
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Form grid for mobile */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Buttons in forms */
+  .form-button {
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .form-button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  /* Checkboxes and radios */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+  }
+
+  .checkbox-group,
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .checkbox-item,
+  .radio-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .checkbox-item:hover,
+  .radio-item:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+  }
+
+  .checkbox-item.selected,
+  .radio-item.selected {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+  }
+
+  /* Select dropdowns */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23666' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 40px;
+  }
+
+  /* File inputs */
+  input[type="file"] {
+    padding: 8px;
+    border: 2px dashed #d1d5db;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  input[type="file"]:hover {
+    border-color: #9ca3af;
+    background-color: #f3f4f6;
+  }
+
+  /* Textarea specific */
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  /* Form sections */
+  .form-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f3f4f6;
+  }
+
+  /* Error messages */
+  .error-message {
+    color: #ef4444;
+    font-size: 14px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Success messages */
+  .success-message {
+    color: #10b981;
+    font-size: 14px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Helper text */
+  .helper-text {
+    color: #6b7280;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* Required indicator */
+  .required::after {
+    content: " *";
+    color: #ef4444;
+  }
+
+  /* Form progress */
+  .form-progress {
+    width: 100%;
+    height: 4px;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .form-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    transition: width 0.3s ease-in-out;
+  }
+
+  /* Floating labels */
+  .floating-label {
+    position: relative;
+  }
+
+  .floating-label input,
+  .floating-label textarea {
+    padding-top: 20px;
+    padding-bottom: 8px;
+  }
+
+  .floating-label label {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    color: #9ca3af;
+    font-size: 16px;
+    font-weight: 400;
+    transition: all 0.2s ease-in-out;
+    pointer-events: none;
+  }
+
+  .floating-label input:focus + label,
+  .floating-label input:not(:placeholder-shown) + label,
+  .floating-label textarea:focus + label,
+  .floating-label textarea:not(:placeholder-shown) + label {
+    top: 8px;
+    font-size: 12px;
+    color: #3b82f6;
+    font-weight: 600;
+  }
+
+  /* Input groups */
+  .input-group {
+    display: flex;
+    align-items: stretch;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e5e7eb;
+  }
+
+  .input-group input {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+  }
+
+  .input-group-prepend,
+  .input-group-append {
+    background-color: #f9fafb;
+    padding: 12px 16px;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #6b7280;
+  }
+
+  .input-group-prepend {
+    border-left: none;
+    border-right: 1px solid #e5e7eb;
+  }
+
+  /* Toggle switches */
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: 0.3s;
+    border-radius: 28px;
+  }
+
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  input:checked + .toggle-slider {
+    background-color: #3b82f6;
+  }
+
+  input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+  }
+
+  /* Form validation states */
+  .form-valid {
+    border-color: #10b981 !important;
+  }
+
+  .form-invalid {
+    border-color: #ef4444 !important;
+  }
+
+  /* Loading states */
+  .form-loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .form-loading input,
+  .form-loading textarea,
+  .form-loading select {
+    background-color: #f9fafb;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .form-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .form-button-group {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .form-button {
+    width: auto;
+    min-width: 120px;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1025px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .form-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .form-button-group {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 32px;
+  }
+
+  .form-button {
+    width: auto;
+    min-width: 140px;
+  }
+
+  .form-section {
+    padding: 32px;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .floating-label label,
+  .toggle-slider,
+  .toggle-slider:before,
+  input,
+  textarea,
+  select {
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  input,
+  textarea,
+  select {
+    border-width: 3px;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  }
+}

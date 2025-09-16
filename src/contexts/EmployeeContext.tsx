@@ -37,12 +37,12 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Loading employees...');
+      // Log desabilitado: Loading employees
       const data = await employeeService.getEmployees();
-      console.log('Employees loaded:', data.length);
+      // Log desabilitado: Employees loaded
       setEmployees(data);
     } catch (error) {
-      console.error('Error loading employees:', error);
+      // Log desabilitado: Error loading employees
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setError(errorMessage);
       toast({
@@ -71,23 +71,23 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
       
       return matchesSearch && matchesDepartment && matchesStatus;
     } catch (error) {
-      console.error('Error filtering employee:', employee, error);
+      // Log desabilitado: Error filtering employee
       return false;
     }
   });
 
   const addEmployee = async (employeeData: NewEmployeeData) => {
     try {
-      console.log('Adding employee:', employeeData);
+      // Log desabilitado: Adding employee
       const newEmployee = await employeeService.createEmployee(employeeData);
-      console.log('Employee added:', newEmployee);
+      // Log desabilitado: Employee added
       setEmployees(prev => [...prev, newEmployee]);
       toast({
         title: "Sucesso",
         description: "Funcionário adicionado com sucesso",
       });
     } catch (error) {
-      console.error('Error adding employee:', error);
+      // Log desabilitado: Error adding employee
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -100,16 +100,16 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const updateEmployee = async (id: string, updates: Partial<Employee>) => {
     try {
-      console.log('Updating employee:', id, updates);
+      // Log desabilitado: Updating employee
       const updatedEmployee = await employeeService.updateEmployee(id, updates);
-      console.log('Employee updated:', updatedEmployee);
+      // Log desabilitado: Employee updated
       setEmployees(prev => prev.map(emp => emp.id === id ? updatedEmployee : emp));
       toast({
         title: "Sucesso",
         description: "Funcionário atualizado com sucesso",
       });
     } catch (error) {
-      console.error('Error updating employee:', error);
+      // Log desabilitado: Error updating employee
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -129,7 +129,7 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
         description: "Funcionário removido com sucesso",
       });
     } catch (error) {
-      console.error('Error deleting employee:', error);
+      // Log desabilitado: Error deleting employee
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -144,7 +144,7 @@ export const EmployeeProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       return employees.filter(employee => employee.units.includes(unit as any));
     } catch (error) {
-      console.error('Error filtering employees by unit:', error);
+      // Log desabilitado: Error filtering employees by unit
       return [];
     }
   };

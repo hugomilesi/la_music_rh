@@ -11,54 +11,26 @@ interface UpdateUserData {
 
 /**
  * Update a user profile with admin privileges
- * This function uses a direct API call to bypass RLS restrictions
+ * This function uses the centralized Supabase client
  */
 export const updateUserAsAdmin = async (userId: string, updates: UpdateUserData): Promise<void> => {
   try {
-    console.log('updateUserAsAdmin called with:', { userId, updates });
-    
-    // Get the current session to include the auth token
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error('No active session found');
-    }
-
-    // Get Supabase URL from environment
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL not found in environment variables');
-    }
-
     // Prepare the update data
     const updateData = {
       ...updates,
       updated_at: new Date().toISOString()
     };
 
-    console.log('Sending direct API request to update user:', updateData);
+    // Use the centralized Supabase client to update the user
+    const { error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('auth_user_id', userId);
 
-    // Make a direct API call to Supabase REST API
-    const response = await fetch(`${supabaseUrl}/rest/v1/users?auth_user_id=eq.${userId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(updateData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API request failed:', response.status, errorText);
-      throw new Error(`Failed to update user: ${response.status} ${errorText}`);
+    if (error) {
+      throw new Error(`Failed to update user: ${error.message}`);
     }
-
-    console.log('User updated successfully via direct API call');
   } catch (error) {
-    console.error('Error in updateUserAsAdmin:', error);
     throw error;
   }
 };
@@ -81,7 +53,7 @@ export const checkAdminPrivileges = async (): Promise<boolean> => {
       .single();
 
     if (error) {
-      console.error('Error checking admin privileges:', error);
+      // Error checking admin privileges logging disabled
       return false;
     }
 
@@ -93,15 +65,15 @@ export const checkAdminPrivileges = async (): Promise<boolean> => {
       .single();
 
     if (permError) {
-      console.error('Error checking role permissions:', permError);
+      // Error checking role permissions logging disabled
       return false;
     }
 
-    // User has admin privileges if they can manage everything or access settings
-    const permissions = rolePermissions?.permissions || [];
-    return permissions.includes('canManageEverything') || permissions.includes('canAccessSettings');
+    // User has admin privileges if they can access settings
+    const permissions = rolePermissions?.permissions || {};
+    return permissions.configuracoes?.can_view || false;
   } catch (error) {
-    console.error('Error in checkAdminPrivileges:', error);
+    // Error in checkAdminPrivileges logging disabled
     return false;
   }
 };
@@ -121,9 +93,9 @@ export const updateSystemUserAsAdmin = async (userId: string, updates: UpdateUse
     // Try the direct API approach first
     await updateUserAsAdmin(userId, updates);
     
-    console.log('User profile updated successfully by admin');
+    // User profile updated successfully logging disabled
   } catch (error) {
-    console.error('Error in updateSystemUserAsAdmin:', error);
+    // Error in updateSystemUserAsAdmin logging disabled
     throw error;
   }
 };

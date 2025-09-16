@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Gift, Music, Cake, Star, Sparkles } from 'lucide-react';
+import '@/styles/card-animations.css';
 import { Birthday, MonthlyBirthday } from './birthday/types';
 import { BirthdayItem } from './birthday/BirthdayItem';
 import { MonthlyBirthdayPreview } from './birthday/MonthlyBirthdayPreview';
@@ -40,7 +41,7 @@ export const BirthdayCard: React.FC = () => {
 
   return (
     <>
-      <Card className="hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative overflow-hidden border-purple-200 bg-gradient-to-br from-white to-purple-50/30" onClick={() => setShowModal(true)}>
+      <Card className="dashboard-card cursor-pointer group relative overflow-hidden border-purple-200 bg-gradient-to-br from-white to-purple-50/30" onClick={() => setShowModal(true)}>
         {/* Musical background decoration */}
         <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
           <div className="absolute top-4 right-4 text-3xl animate-pulse">🎂</div>
@@ -51,7 +52,7 @@ export const BirthdayCard: React.FC = () => {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-3">
             <div className="relative">
-              <Cake className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+              <Cake className="w-6 h-6 text-purple-600 card-icon" />
               <Sparkles className="w-3 h-3 text-yellow-400 absolute -top-1 -right-1 animate-pulse" />
             </div>
             <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">
@@ -59,7 +60,7 @@ export const BirthdayCard: React.FC = () => {
             </span>
             <Badge 
               variant="secondary" 
-              className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200 group-hover:scale-105 transition-transform duration-300"
+              className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-200 card-badge"
             >
               <Music className="w-3 h-3 mr-1" />
               {birthdays.length} hoje

@@ -28,8 +28,6 @@ import { AvatarUpload } from './AvatarUpload';
 const profileFormSchema = z.object({
   full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   phone: z.string().optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
   bio: z.string().optional(),
   birth_date: z.string().optional(),
   address: z.string().optional(),
@@ -57,8 +55,6 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     defaultValues: {
       full_name: profile?.full_name || '',
       phone: (profile as any)?.phone || '',
-      department: (profile as any)?.department || '',
-      position: (profile as any)?.position || '',
       bio: (profile as any)?.bio || '',
       birth_date: (profile as any)?.birth_date || '',
       address: (profile as any)?.address || '',
@@ -73,8 +69,6 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       form.reset({
         full_name: profile.full_name || '',
         phone: (profile as any)?.phone || '',
-        department: (profile as any)?.department || '',
-        position: (profile as any)?.position || '',
         bio: (profile as any)?.bio || '',
         birth_date: (profile as any)?.birth_date || '',
         address: (profile as any)?.address || '',
@@ -90,8 +84,6 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       const updates = {
         full_name: data.full_name,
         ...(data.phone && { phone: data.phone }),
-        ...(data.department && { department: data.department }),
-        ...(data.position && { position: data.position }),
         ...(data.bio && { bio: data.bio }),
         ...(data.birth_date && { birth_date: data.birth_date }),
         ...(data.address && { address: data.address }),
@@ -118,7 +110,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      // Log desabilitado: Error updating profile
       toast({
         title: 'Erro',
         description: 'Erro inesperado ao atualizar perfil.',
@@ -186,33 +178,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Departamento</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Recursos Humanos" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="position"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cargo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Analista de RH" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

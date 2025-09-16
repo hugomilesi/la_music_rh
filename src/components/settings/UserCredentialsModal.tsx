@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Copy, Eye, EyeOff, CheckCircle, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface UserCredentialsModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export const UserCredentialsModal: React.FC<UserCredentialsModalProps> = ({
   onClose,
   userCredentials
 }) => {
-  const { canCreateUsers } = usePermissions();
+  const { canCreateInModule } = usePermissionsV2();
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState<{ [key: string]: boolean }>({});
 
@@ -66,7 +66,7 @@ Departamento: ${userCredentials.department}` : ''}`;
   };
 
   // Verificação de permissão
-  if (!canCreateUsers) {
+  if (!canCreateInModule('usuarios')) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">

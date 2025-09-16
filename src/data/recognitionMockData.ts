@@ -5,7 +5,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'fideliza',
     name: 'Fideliza+',
-    description: 'Programa de fidelização para colaboradores administrativos',
+    description: 'Programa de Incentivos e Reconhecimento das Farmers da LA Music.',
     color: '#3B82F6',
     icon: 'Star',
     totalPossibleStars: 50,
@@ -13,40 +13,40 @@ export const recognitionPrograms: RecognitionProgram[] = [
     criteria: [
       {
         id: 'retention-rate',
-        title: 'Taxa de Retenção',
-        description: 'Manter taxa de retenção acima de 85%',
+        title: 'Excelência em Retenção',
+        description: 'Manter taxa de retenção de alunos acima de 85% através de estratégias eficazes',
         type: 'checkbox',
         weight: 15,
         isRequired: true
       },
       {
         id: 'student-satisfaction',
-        title: 'Satisfação dos Alunos',
-        description: 'Receber feedback positivo dos alunos',
+        title: 'Satisfação e Engajamento',
+        description: 'Obter avaliações positivas consistentes dos alunos e responsáveis',
         type: 'checkbox',
         weight: 10,
         isRequired: false
       },
       {
         id: 'proactive-contact',
-        title: 'Contato Proativo',
-        description: 'Realizar contatos proativos com alunos em risco',
+        title: 'Relacionamento Proativo',
+        description: 'Identificar e contatar proativamente alunos em risco de evasão',
         type: 'checkbox',
         weight: 8,
         isRequired: true
       },
       {
         id: 'improvement-actions',
-        title: 'Ações de Melhoria',
-        description: 'Implementar ações para melhorar a experiência do aluno',
+        title: 'Inovação no Atendimento',
+        description: 'Desenvolver e implementar melhorias na experiência educacional dos alunos',
         type: 'observation',
         weight: 12,
         maxStars: 12
       },
       {
         id: 'exceptional-service',
-        title: 'Atendimento Excepcional',
-        description: 'Casos de atendimento que superaram expectativas',
+        title: 'Momentos Especiais',
+        description: 'Criar experiências memoráveis que excedem as expectativas dos alunos',
         type: 'stars',
         weight: 5,
         maxStars: 5
@@ -56,7 +56,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'matriculador',
     name: 'Matriculador+ LA',
-    description: 'Programa de incentivo para equipe de vendas',
+    description: 'Programa de Incentivos e Reconhecimento dos Hunters da LA Music.',
     color: '#10B981',
     icon: 'DollarSign',
     totalPossibleStars: 60,
@@ -64,32 +64,32 @@ export const recognitionPrograms: RecognitionProgram[] = [
     criteria: [
       {
         id: 'monthly-target',
-        title: 'Meta Mensal',
-        description: 'Atingir meta mensal de matrículas',
+        title: 'Superação de Metas',
+        description: 'Alcançar ou superar as metas mensais de matrículas estabelecidas',
         type: 'checkbox',
         weight: 15,
         isRequired: true
       },
       {
         id: 'conversion-rate',
-        title: 'Taxa de Conversão',
-        description: 'Manter taxa de conversão acima de 30%',
+        title: 'Eficiência Comercial',
+        description: 'Manter taxa de conversão de leads em matrículas acima de 30%',
         type: 'checkbox',
         weight: 10,
         isRequired: true
       },
       {
         id: 'follow-up-quality',
-        title: 'Qualidade do Follow-up',
-        description: 'Realizar follow-up efetivo com leads',
+        title: 'Relacionamento Estratégico',
+        description: 'Executar follow-up personalizado e efetivo com prospects qualificados',
         type: 'checkbox',
         weight: 8,
         isRequired: false
       },
       {
         id: 'sales-strategy',
-        title: 'Estratégia de Vendas',
-        description: 'Descrever estratégias utilizadas para conquistar matrículas',
+        title: 'Inovação Comercial',
+        description: 'Desenvolver e aplicar técnicas inovadoras de vendas e relacionamento',
         type: 'observation',
         weight: 7,
         maxStars: 7
@@ -99,7 +99,7 @@ export const recognitionPrograms: RecognitionProgram[] = [
   {
     id: 'professor',
     name: 'Professor+ LA',
-    description: 'Programa de reconhecimento para professores',
+    description: 'Programa de Incentivos e Reconhecimento dos Professores da LA Music.',
     color: '#8B5CF6',
     icon: 'Award',
     totalPossibleStars: 45,
@@ -107,40 +107,40 @@ export const recognitionPrograms: RecognitionProgram[] = [
     criteria: [
       {
         id: 'class-preparation',
-        title: 'Preparação das Aulas',
-        description: 'Demonstrar preparação adequada para as aulas',
+        title: 'Excelência Pedagógica',
+        description: 'Demonstrar preparação meticulosa e planejamento estratégico das aulas',
         type: 'checkbox',
         weight: 12,
         isRequired: true
       },
       {
         id: 'student-engagement',
-        title: 'Engajamento dos Alunos',
-        description: 'Manter alunos engajados durante as aulas',
+        title: 'Inspiração Musical',
+        description: 'Manter alunos motivados e engajados no aprendizado musical',
         type: 'checkbox',
         weight: 10,
         isRequired: true
       },
       {
         id: 'innovative-methods',
-        title: 'Métodos Inovadores',
-        description: 'Utilizar métodos de ensino inovadores',
+        title: 'Metodologia Inovadora',
+        description: 'Aplicar técnicas de ensino criativas e adaptadas ao perfil de cada aluno',
         type: 'checkbox',
         weight: 8,
         isRequired: false
       },
       {
         id: 'student-progress',
-        title: 'Progresso dos Alunos',
-        description: 'Acompanhar e documentar o progresso individual dos alunos',
+        title: 'Desenvolvimento Individual',
+        description: 'Acompanhar e potencializar o crescimento musical de cada estudante',
         type: 'observation',
         weight: 10,
         maxStars: 10
       },
       {
         id: 'extra-activities',
-        title: 'Atividades Extras',
-        description: 'Participação em atividades extras e projetos especiais',
+        title: 'Engajamento Institucional',
+        description: 'Participar ativamente em eventos, apresentações e projetos da LA Music',
         type: 'stars',
         weight: 5,
         maxStars: 5

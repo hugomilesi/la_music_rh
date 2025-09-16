@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, CheckCircle, FileText, Award, Edit, Lock } from 'lucide-react';
 import { RecognitionProgram, CriterionEvaluation } from '@/types/recognition';
 import { EditCriteriaModal } from './EditCriteriaModal';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface CriteriaModalProps {
   open: boolean;
@@ -27,8 +27,8 @@ export const CriteriaModal: React.FC<CriteriaModalProps> = ({
   onSaveEvaluation,
   onSaveProgram
 }) => {
-  const { checkPermission } = usePermissions();
-  const canManageEvaluations = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
+  const { canEditInModule } = usePermissionsV2();
+  const canManageEvaluations = useMemo(() => canEditInModule('avaliacoes'), [canEditInModule]);
   
   const [currentProgram, setCurrentProgram] = useState<RecognitionProgram>(program);
   const [evaluations, setEvaluations] = useState<CriterionEvaluation[]>(

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployees } from '@/hooks/useEmployees';
 import { payrollService } from '@/services/payrollService';
@@ -41,6 +41,7 @@ import { ResponsivePayrollTable } from '@/components/payroll/ResponsivePayrollTa
 import { PayrollTable } from '@/components/payroll/PayrollTable';
 import { NewPayrollEntryDialog } from '@/components/payroll/NewPayrollEntryDialog';
 import { formatCurrency } from '@/utils/formatters';
+import '@/styles/card-animations.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import PayrollDetailsModal from '@/components/PayrollDetailsModal';
 import UnitDetailsModal from '@/components/UnitDetailsModal';
@@ -98,8 +99,6 @@ interface ChartData {
 }
 
 export default function PayrollPage() {
-  const { checkPermission, getPermissionLevel } = usePermissions();
-
   // Função para converter Employee para PayrollEmployee
   const convertToPayrollEmployee = (employee: Employee) => ({
     id: employee.id.toString(),
@@ -129,7 +128,7 @@ export default function PayrollPage() {
   // Função para atualizar funcionário
   const handleEmployeeUpdate = async (id: string, updates: Partial<any>) => {
     try {
-      console.log('Atualizando funcionário:', id, updates);
+      // Updating employee logging disabled
       
       // Atualizar no banco de dados
       await payrollService.updatePayrollEntry(String(id), {
@@ -152,26 +151,27 @@ export default function PayrollPage() {
       const entries = await payrollService.getPayrollEntries(month, year);
       setPayrollEntries(entries);
       
-      console.log('Funcionário atualizado com sucesso');
+      // Employee updated successfully logging disabled
     } catch (error) {
-      console.error('Erro ao atualizar funcionário:', error);
+      // Error updating employee logging disabled
       setPayrollError('Erro ao atualizar funcionário: ' + error.message);
     }
   };
   const { profile } = useAuth();
   
   // Verificar permissões de acesso
-  const canManageEmployees = checkPermission('canManageEmployees', false);
-  const canViewReports = checkPermission('canViewReports', false);
-  const canAccessSettings = checkPermission('canAccessSettings', false);
+  const { canViewModule, getPermissionLevel } = usePermissionsV2();
+  const canViewEmployees = canViewModule('usuarios');
+  const canViewReports = canViewModule('folha_pagamento');
+  const canAccessSettings = canViewModule('configuracoes');
   const userPermissionLevel = getPermissionLevel();
   
   // Determinar nível de acesso do usuário
   const getUserAccessLevel = () => {
     if (!profile) return 'user';
     
-    if (canManageEmployees && canAccessSettings) return 'admin';
-    if (canManageEmployees) return 'collaborator';
+    if (canViewEmployees && canAccessSettings) return 'admin';
+    if (canViewEmployees) return 'collaborator';
     if (canViewReports) return 'professor';
     return 'user';
   };
@@ -242,9 +242,9 @@ export default function PayrollPage() {
       const entries = await payrollService.getPayrollEntries(month, year);
       setPayrollEntries(entries);
       
-      console.log('Funcionário atualizado com sucesso:', employee.name);
+      // Employee updated successfully logging disabled
     } catch (error) {
-      console.error('Erro ao atualizar funcionário:', error);
+      // Error updating employee logging disabled
       setPayrollError('Erro ao atualizar funcionário: ' + error.message);
     }
   };
@@ -327,9 +327,9 @@ export default function PayrollPage() {
       const entries = await payrollService.getPayrollEntries(month, year);
       setPayrollEntries(entries);
       
-      console.log('Folha duplicada com sucesso do mês anterior');
+      // Log desabilitado - Folha duplicada com sucesso do mês anterior
     } catch (error) {
-      console.error('Erro ao duplicar folha:', error);
+      // Log desabilitado - Erro ao duplicar folha
       setPayrollError('Erro ao duplicar folha do mês anterior: ' + error.message);
     } finally {
       setPayrollLoading(false);
@@ -345,10 +345,10 @@ export default function PayrollPage() {
       const payrolls = await payrollService.getPayrolls(month, year);
       if (payrolls.length > 0) {
         await payrollService.updatePayrollStatus(payrolls[0].id, 'APPROVED');
-        console.log('Folha aprovada com sucesso');
+        // Log desabilitado - Folha aprovada com sucesso
       }
     } catch (error) {
-      console.error('Erro ao aprovar folha:', error);
+      // Log desabilitado - Erro ao aprovar folha
       setPayrollError('Erro ao aprovar folha: ' + error.message);
     } finally {
       setPayrollLoading(false);
@@ -367,9 +367,9 @@ export default function PayrollPage() {
         await payrollService.exportToPDF(entries, month, year);
       }
       
-      console.log(`Dados exportados em ${format} com sucesso`);
+      // Log desabilitado - Dados exportados com sucesso
     } catch (error) {
-      console.error('Erro ao exportar:', error);
+      // Log desabilitado - Erro ao exportar
       setPayrollError('Erro ao exportar dados: ' + error.message);
     }
   };
@@ -381,42 +381,12 @@ export default function PayrollPage() {
       const entries = await payrollService.getPayrollEntries(month, year);
       setPayrollEntries(entries);
     } catch (error) {
-      console.error('Erro ao recarregar dados:', error);
+      // Log desabilitado - Erro ao recarregar dados
       setPayrollError('Erro ao recarregar dados: ' + error.message);
     }
   };
 
-  // Função para criar nova folha de pagamento
-  const handleCreateNewPayroll = async () => {
-    try {
-      setPayrollLoading(true);
-      
-      const [year, month] = selectedMonth.split('-').map(Number);
-      
-      // Verificar se já existe uma folha para o mês/ano selecionado
-      const existingPayroll = await payrollService.getPayroll(month, year);
-      
-      if (existingPayroll) {
-        alert('Já existe uma folha de pagamento para este mês/ano.');
-        setPayrollLoading(false);
-        return;
-      }
 
-      // Criar nova folha de pagamento
-      const newPayroll = await payrollService.createPayroll(month, year);
-      
-      // Recarregar os dados
-      const updatedEntries = await payrollService.getPayrollEntries(month, year);
-      setPayrollEntries(updatedEntries);
-      
-      alert('Nova folha de pagamento criada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao criar nova folha:', error);
-      alert('Erro ao criar nova folha de pagamento. Por favor, tente novamente.');
-    } finally {
-      setPayrollLoading(false);
-    }
-  };
 
   // Carregar dados da folha de pagamento do Supabase
   useEffect(() => {
@@ -426,34 +396,34 @@ export default function PayrollPage() {
       setPayrollLoading(true);
       try {
         const [year, month] = selectedMonth.split('-').map(Number);
-        console.log('🔍 Carregando dados para:', { month, year });
+    
         
         // Verificar se existe folha para o mês
         const existingPayroll = await payrollService.getPayroll(month, year);
-        console.log('📋 Folha existente:', existingPayroll);
+
         let entries = [];
         
         if (existingPayroll) {
           // Folha existe, carregar entradas
           entries = await payrollService.getPayrollEntries(month, year);
-          console.log('📊 Entradas carregadas:', entries);
+
         } else {
           // Criar automaticamente uma nova folha se não existir
           try {
-            console.log('🆕 Criando nova folha...');
+
             await payrollService.createPayroll(month, year);
             entries = await payrollService.getPayrollEntries(month, year);
-            console.log('📊 Entradas após criação:', entries);
+
           } catch (createError) {
-            console.log('❌ Folha não existe e não foi possível criar automaticamente:', createError);
+    
           }
         }
         
-        console.log('✅ Total de entradas encontradas:', entries.length);
+  
         setPayrollEntries(entries);
         setPayrollError(null);
       } catch (error) {
-        console.error('❌ Erro ao carregar dados da folha:', error);
+        // Log desabilitado - Erro ao carregar dados da folha
         setPayrollError(error.message);
       } finally {
         setPayrollLoading(false);
@@ -466,15 +436,19 @@ export default function PayrollPage() {
   // Mapear dados do Supabase para o formato esperado pela interface
   const mapPayrollEntryToEmployee = (entry: any): Employee => {
     // Debug: Log da entrada bruta
-    console.log('🔍 Entrada bruta do banco:', entry);
-    console.log('👥 Dados do usuário:', entry.users);
+    
+
     
     // Garantir que units seja sempre um array de strings
     const units = Array.isArray(entry.users?.units) ? entry.users.units.filter(u => typeof u === 'string') : [];
     
     // Garantir que unit seja sempre uma string
     let unit = 'Unidade não informada';
-    if (units.length > 0) {
+    
+    // Priorizar dados de colaborador não cadastrado
+    if (entry.unidade && typeof entry.unidade === 'string') {
+      unit = entry.unidade;
+    } else if (units.length > 0) {
       unit = String(units[0]);
     } else if (entry.users?.unit && typeof entry.users.unit === 'string') {
       unit = entry.users.unit;
@@ -482,7 +456,7 @@ export default function PayrollPage() {
     
     return {
       id: entry.id || entry.collaborator_id,
-      name: entry.collaborator_name || entry.full_name || 'Nome não informado',
+      name: entry.nome_colaborador || entry.collaborator_name || entry.full_name || 'Nome não informado',
       unit: unit,
       units: units,
       position: entry.role || entry.position || 'Cargo não informado',
@@ -499,11 +473,11 @@ export default function PayrollPage() {
       advance: entry.advance || entry.salary_advance || 0,
       discount: entry.other_discounts || 0,
       total: entry.total_amount || (entry.base_salary + entry.bonus + entry.commission + entry.reimbursement - entry.inss - entry.transport - entry.store_discount - entry.bistro_discount - entry.advance - entry.other_discounts) || 0,
-      bank: entry.users?.bank || 'Não informado',
-      agency: entry.users?.agency || 'Não informado',
-      account: entry.users?.account || 'Não informado',
-      cpf: entry.users?.cpf || 'Não informado',
-      pix: entry.users?.pix || 'Não informado',
+      bank: entry.banco || entry.users?.bank || 'Não informado',
+      agency: entry.agencia || entry.users?.agency || 'Não informado',
+      account: entry.conta || entry.users?.account || 'Não informado',
+      cpf: entry.cpf_colaborador || entry.users?.cpf || 'Não informado',
+      pix: entry.pix || entry.users?.pix || 'Não informado',
       date: selectedMonth
     };
   };
@@ -526,16 +500,8 @@ export default function PayrollPage() {
     const mappedEmployees = entries.map(mapPayrollEntryToEmployee);
     
     // Debug: Log dos funcionários mapeados
-    console.log('🔍 Funcionários mapeados:', mappedEmployees);
-    mappedEmployees.forEach((emp, index) => {
-      console.log(`👤 Funcionário ${index + 1}:`, {
-        name: emp.name,
-        unit: emp.unit,
-        units: emp.units,
-        classification: emp.classification,
-        role: emp.role
-      });
-    });
+
+
     
     return {
       recreio: mappedEmployees.filter(emp => {
@@ -588,9 +554,7 @@ export default function PayrollPage() {
   // Organizar dados por unidade usando dados reais do Supabase
   const allEmployees = organizeDataByUnit(payrollEntries);
   
-  // Debug: Log dos dados organizados
-  console.log('🏢 Dados organizados por unidade:', allEmployees);
-  console.log('📋 Total de entradas brutas:', payrollEntries?.length || 0);
+  // Log desabilitado - Dados organizados por unidade
 
   // Funcionários da aba ativa
   const currentEmployees = allEmployees[activeTab as keyof typeof allEmployees] || [];
@@ -784,7 +748,7 @@ export default function PayrollPage() {
                 PDF
               </Button>
 
-              {/* Botões removidos conforme solicitação do usuário */}
+
             </div>
           </div>
 
@@ -792,7 +756,7 @@ export default function PayrollPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
             {/* Total Geral */}
             <div 
-              className="bg-white rounded-lg shadow-sm border border-blue-200 p-2 transition-all duration-300 group relative overflow-hidden hover:shadow-lg hover:scale-102 cursor-pointer hover:shadow-blue-500/20"
+              className="bg-white rounded-lg shadow-sm border border-blue-200 p-2 group relative overflow-hidden payroll-card cursor-pointer hover:shadow-blue-500/20"
               onClick={() => handleOpenDetailsModal()}
             >
               {/* Subtle background gradient on hover */}
@@ -801,11 +765,11 @@ export default function PayrollPage() {
               <div className="flex items-start justify-between relative z-10">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-600 mb-1 group-hover:text-gray-700 transition-colors truncate">Total Geral</p>
-                  <p className="text-lg font-bold text-gray-900 mb-1 group-hover:scale-105 transition-transform origin-left truncate">{formatCurrency(totalGeneral)}</p>
+                  <p className="text-lg font-bold text-gray-900 mb-1 payroll-value origin-left truncate">{formatCurrency(totalGeneral)}</p>
                   <p className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors truncate">{getFilteredEmployees().length} func.</p>
                 </div>
                 
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-all duration-300 ml-1">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-md payroll-icon ml-1">
                   <DollarSign className="w-4 h-4 text-white" />
                 </div>
               </div>
@@ -841,7 +805,7 @@ export default function PayrollPage() {
               return (
                 <div 
                   key={unit.name}
-                  className={`bg-white rounded-lg shadow-sm border p-2 transition-all duration-300 group relative overflow-hidden ${colorStyle.border} ${colorStyle.shadow} hover:shadow-lg hover:scale-102 cursor-pointer`}
+                  className={`bg-white rounded-lg shadow-sm border p-2 group relative overflow-hidden payroll-card ${colorStyle.border} ${colorStyle.shadow} cursor-pointer`}
                   onClick={() => {
                     setActiveTab(unitKey);
                     handleOpenUnitModal(unit.name);
@@ -853,11 +817,11 @@ export default function PayrollPage() {
                   <div className="flex items-start justify-between relative z-10">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-600 mb-1 group-hover:text-gray-700 transition-colors truncate">{unit.name.replace('Campo Grande ', 'CG ')}</p>
-                      <p className="text-lg font-bold text-gray-900 mb-1 group-hover:scale-105 transition-transform origin-left truncate">{formatCurrency(unit.total)}</p>
+                      <p className="text-lg font-bold text-gray-900 mb-1 payroll-value origin-left truncate">{formatCurrency(unit.total)}</p>
                       <p className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors truncate">{unit.employees} func.</p>
                     </div>
                     
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${colorStyle.gradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-all duration-300 ml-1`}>
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${colorStyle.gradient} flex items-center justify-center shadow-md payroll-icon ml-1`}>
                       <Building2 className="w-4 h-4 text-white" />
                     </div>
                   </div>
@@ -1104,7 +1068,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiário">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1129,13 +1093,6 @@ export default function PayrollPage() {
                    <PayrollTable 
                      employees={allEmployees.recreio.map(convertToPayrollEmployee)}
                      selectedUnit="recreio"
-                     onEmployeeUpdate={handleEmployeeUpdate}
-                     onEmployeeAdd={(employee) => {
-                       // Atualizar a lista de funcionários após adicionar
-                       loadEmployees();
-                     }}
-                     defaultMonth={selectedMonth.split('-')[1]}
-                     defaultYear={selectedMonth.split('-')[0]}
                    />
                  </CardContent>
                </Card>
@@ -1165,7 +1122,7 @@ export default function PayrollPage() {
                      <SelectItem value="Estagiário">Estagiário</SelectItem>
                    </SelectContent>
                  </Select>
-                 {canManageEmployees && (
+                 {canViewEmployees && (
                    <NewPayrollEntryDialog 
                      onSuccess={handlePayrollEntrySuccess}
                      defaultMonth={selectedMonth.split('-')[1]}
@@ -1189,13 +1146,6 @@ export default function PayrollPage() {
                    <PayrollTable 
                      employees={(allEmployees['campo-grande'] || []).map(convertToPayrollEmployee)}
                      selectedUnit="campo-grande"
-                     onEmployeeUpdate={handleEmployeeUpdate}
-                     onEmployeeAdd={(employee) => {
-                       // Atualizar a lista de funcionários após adicionar
-                       loadEmployees();
-                     }}
-                     defaultMonth={selectedMonth.split('-')[1]}
-                     defaultYear={selectedMonth.split('-')[0]}
                    />
                  </CardContent>
                </Card>
@@ -1225,7 +1175,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiário">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1249,13 +1199,6 @@ export default function PayrollPage() {
                   <PayrollTable 
                     employees={(allEmployees['campo-grande'] || []).map(convertToPayrollEmployee)}
                     selectedUnit="campo-grande"
-                    onEmployeeUpdate={handleEmployeeUpdate}
-                    onEmployeeAdd={(employee) => {
-                      // Atualizar a lista de funcionários após adicionar
-                      loadEmployees();
-                    }}
-                    defaultMonth={selectedMonth.split('-')[1]}
-                    defaultYear={selectedMonth.split('-')[0]}
                   />
                 </CardContent>
               </Card>
@@ -1285,7 +1228,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiario">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1310,13 +1253,6 @@ export default function PayrollPage() {
                   <PayrollTable 
                     employees={(allEmployees['barra'] || []).map(convertToPayrollEmployee)}
                     selectedUnit="barra"
-                    onEmployeeUpdate={handleEmployeeUpdate}
-                    onEmployeeAdd={(employee) => {
-                      // Atualizar a lista de funcionários após adicionar
-                      loadEmployees();
-                    }}
-                    defaultMonth={selectedMonth.split('-')[1]}
-                    defaultYear={selectedMonth.split('-')[0]}
                   />
                 </CardContent>
               </Card>
@@ -1345,7 +1281,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiário">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1370,13 +1306,6 @@ export default function PayrollPage() {
                   <PayrollTable 
                     employees={(allEmployees['staff-rateado'] || []).map(convertToPayrollEmployee)}
                     selectedUnit="staff-rateado"
-                    onEmployeeUpdate={handleEmployeeUpdate}
-                    onEmployeeAdd={(employee) => {
-                      // Atualizar a lista de funcionários após adicionar
-                      loadEmployees();
-                    }}
-                    defaultMonth={selectedMonth.split('-')[1]}
-                    defaultYear={selectedMonth.split('-')[0]}
                   />
                 </CardContent>
               </Card>
@@ -1406,7 +1335,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiário">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1431,13 +1360,6 @@ export default function PayrollPage() {
                   <PayrollTable
                     employees={allEmployees['professores-multi'].map(convertToPayrollEmployee)}
                     selectedUnit="professores-multi"
-                    onEmployeeUpdate={handleEmployeeUpdate}
-                    onEmployeeAdd={(employee) => {
-                      // Atualizar a lista de funcionários após adicionar
-                      loadEmployees();
-                    }}
-                    defaultMonth={selectedMonth.split('-')[1]}
-                    defaultYear={selectedMonth.split('-')[0]}
                   />
                 </CardContent>
               </Card>
@@ -1467,7 +1389,7 @@ export default function PayrollPage() {
                     <SelectItem value="Estagiário">Estagiário</SelectItem>
                   </SelectContent>
                 </Select>
-                {canManageEmployees && (
+                {canViewEmployees && (
                   <NewPayrollEntryDialog 
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
@@ -1490,13 +1412,6 @@ export default function PayrollPage() {
                       employees.map((employee) => convertToPayrollEmployee({...employee, unit}))
                     )}
                     selectedUnit="multi-unidade"
-                    onEmployeeUpdate={handleEmployeeUpdate}
-                    onEmployeeAdd={(employee) => {
-                      // Atualizar a lista de funcionários após adicionar
-                      loadEmployees();
-                    }}
-                    defaultMonth={selectedMonth.split('-')[1]}
-                    defaultYear={selectedMonth.split('-')[0]}
                   />
                 </CardContent>
               </Card>

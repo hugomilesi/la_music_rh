@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,19 +22,27 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-const Index = () => {
+const Index = React.memo(() => {
   const navigate = useNavigate();
   const { user, loading, session } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
 
-  useEffect(() => {
-    // Only redirect if we have a valid authenticated user with session and haven't redirected yet
-    if (user && session && !loading && !hasRedirected && window.location.pathname === '/') {
-      console.log('Authenticated user with valid session detected, redirecting to dashboard');
+  // Memoize the redirect condition to prevent unnecessary recalculations
+  const shouldRedirect = useMemo(() => {
+    return user && session && !loading && !hasRedirected && window.location.pathname === '/';
+  }, [user, session, loading, hasRedirected]);
+
+  // Use useCallback to prevent unnecessary re-renders
+  const handleRedirect = useCallback(() => {
+    if (shouldRedirect) {
       setHasRedirected(true);
       navigate('/dashboard', { replace: true });
     }
-  }, [user, session, loading, navigate, hasRedirected]);
+  }, [shouldRedirect, navigate]);
+
+  useEffect(() => {
+    handleRedirect();
+  }, [handleRedirect]);
 
   const features = [
     {
@@ -396,6 +404,8 @@ const Index = () => {
       </footer>
     </div>
   );
-};
+});
+
+Index.displayName = 'Index';
 
 export default Index;

@@ -1,0 +1,238 @@
+/* Mobile Responsive - Adaptação Sutil para Dispositivos Móveis */
+/* Mantém a identidade visual da aplicação desktop com ajustes mínimos */
+
+:root {
+  --mobile-padding: 1rem;
+  --mobile-margin: 0.75rem;
+  --mobile-touch-target: 44px;
+}
+
+/* Smartphones pequenos - ajustes mínimos */
+@media (max-width: 480px) {
+  /* Prevenir overflow horizontal */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ajustar padding dos containers principais */
+  .container,
+  main {
+    padding-left: var(--mobile-padding);
+    padding-right: var(--mobile-padding);
+  }
+
+  /* Touch targets mínimos para botões */
+  button,
+  [role="button"],
+  .btn {
+    min-height: var(--mobile-touch-target);
+    min-width: var(--mobile-touch-target);
+    touch-action: manipulation;
+  }
+
+  /* Inputs com tamanho adequado para iOS */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Previne zoom no iOS */
+  }
+
+  /* Grid responsivo simples */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--mobile-margin);
+  }
+
+  /* Tabelas com scroll horizontal */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards com margem adequada */
+  .card {
+    margin: var(--mobile-margin);
+  }
+
+  /* Header com padding adequado */
+  .header,
+  [role="banner"] {
+    padding: 0.75rem var(--mobile-padding);
+  }
+
+  /* Ajustar espaçamento do main */
+  main {
+    padding: var(--mobile-padding);
+  }
+}
+
+/* Smartphones médios - ajustes de layout */
+@media (max-width: 768px) {
+  /* Container com padding adequado */
+  .container {
+    padding-left: var(--mobile-padding);
+    padding-right: var(--mobile-padding);
+  }
+
+  /* Navegação em coluna */
+  .nav {
+    flex-direction: column;
+  }
+
+  /* Formulários responsivos */
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Imagens responsivas */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Utilitários mobile */
+  .hidden-mobile {
+    display: none;
+  }
+
+  .visible-mobile {
+    display: block;
+  }
+
+  /* Scroll suave */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablets - ajustes intermediários */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Container com padding maior */
+  .container {
+    padding: 0 2rem;
+  }
+
+  /* Grid com 2 colunas */
+  .grid-tablet-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  /* Cards com mais espaço */
+  .card {
+    padding: 1.5rem;
+  }
+}
+
+/* Correções específicas para componentes da aplicação */
+@media (max-width: 768px) {
+  /* Prevenir overflow no layout principal */
+  .min-h-screen {
+    overflow-x: hidden;
+  }
+
+  /* Sidebar mobile - manter funcionalidade existente */
+  .sidebar {
+    width: 280px;
+    max-width: 85vw;
+  }
+
+  /* Header com padding adequado */
+  .glass-subtle {
+    backdrop-filter: blur(8px);
+  }
+
+  /* Flex com wrap para botões */
+  .flex {
+    flex-wrap: wrap;
+  }
+
+  /* Dropdowns responsivos */
+  .dropdown {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* Cards com padding adequado */
+  .card-content {
+    padding: var(--mobile-padding);
+  }
+
+  /* Listas com espaçamento adequado */
+  ul, ol {
+    padding-left: 1.5rem;
+  }
+}
+
+/* Melhorias de acessibilidade */
+@media (max-width: 768px) {
+  /* Focus visível para navegação por teclado */
+  button:focus,
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Touch targets adequados */
+  .touch-target {
+    min-height: var(--mobile-touch-target);
+    min-width: var(--mobile-touch-target);
+    touch-action: manipulation;
+  }
+}
+
+/* Suporte a movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Suporte a alto contraste */
+@media (prefers-contrast: high) {
+  button,
+  input,
+  textarea,
+  select {
+    border: 2px solid currentColor;
+  }
+}
+
+
+
+/* Otimizações de performance */
+@media (max-width: 768px) {
+  /* Scroll suave em dispositivos touch */
+  .scroll-smooth {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Carregamento lazy de imagens */
+  img {
+    loading: lazy;
+  }
+}
+
+/* Utilitários finais */
+@media (max-width: 768px) {
+  /* Ocultar elementos desktop */
+  .desktop-only {
+    display: none;
+  }
+
+  /* Mostrar elementos mobile */
+  .mobile-only {
+    display: block;
+  }
+
+  /* Prevenir scroll horizontal */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+}

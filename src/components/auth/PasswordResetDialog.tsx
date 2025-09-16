@@ -56,7 +56,7 @@ export const PasswordResetDialog: React.FC<PasswordResetDialogProps> = ({
         description: 'Verifique sua caixa de entrada para redefinir sua senha',
       });
     } catch (error: any) {
-      console.error('Error sending reset email:', error);
+      // Log desabilitado: Error sending reset email
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao enviar email de redefinição',

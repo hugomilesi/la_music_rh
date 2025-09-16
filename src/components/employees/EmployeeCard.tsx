@@ -24,7 +24,7 @@ import {
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { EditEmployeeDialog } from './EditEmployeeDialog';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { PermissionAlert } from '@/components/ui/PermissionAlert';
 
 interface EmployeeCardProps {
@@ -40,12 +40,12 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
 }) => {
   const { updateEmployee, deleteEmployee } = useEmployees();
   const { toast } = useToast();
-  const { checkPermission } = usePermissions();
+  const { canEditInModule, canDeleteInModule } = usePermissionsV2();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showPermissionAlert, setShowPermissionAlert] = useState(false);
   
-  const canEdit = useMemo(() => checkPermission('canManageEmployees', false), [checkPermission]);
-  const canDelete = useMemo(() => checkPermission('canDeleteEmployees', false), [checkPermission]);
+  const canManageEmployees = useMemo(() => canEditInModule('usuarios'), [canEditInModule]);
+  const canDelete = useMemo(() => canDeleteInModule('usuarios'), [canDeleteInModule]);
 
   // Auto-open edit dialog when autoOpenEdit prop is true
   useEffect(() => {
@@ -71,7 +71,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   const handleStatusToggle = async () => {
-    if (!canEdit) {
+    if (!canManageEmployees) {
       setShowPermissionAlert(true);
       return;
     }
@@ -89,7 +89,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
     try {
       await deleteEmployee(employee.id);
     } catch (error) {
-      console.error('Error deleting employee:', error);
+      // Log desabilitado: Erro ao deletar funcionário
     }
   };
 
@@ -133,7 +133,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white">
               <DropdownMenuItem onClick={() => {
-                if (!canEdit) {
+                if (!canManageEmployees) {
                   setShowPermissionAlert(true);
                   return;
                 }

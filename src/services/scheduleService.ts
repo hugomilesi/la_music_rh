@@ -14,7 +14,7 @@ export const scheduleService = {
       .order('event_date', { ascending: false });
     
     if (error) {
-      console.error('Error fetching schedule events:', error);
+      // Error fetching events logging disabled
       throw error;
     }
     
@@ -68,7 +68,7 @@ export const scheduleService = {
       .single();
     
     if (error) {
-      console.error('Error creating schedule event:', error);
+      // Error creating event logging disabled
       throw error;
     }
     
@@ -123,7 +123,7 @@ export const scheduleService = {
       .single();
     
     if (error) {
-      console.error('Error updating schedule event:', error);
+      // Error updating event logging disabled
       throw error;
     }
     
@@ -161,7 +161,7 @@ export const scheduleService = {
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting schedule event:', error);
+      // Error deleting event logging disabled
       throw error;
     }
   },
@@ -177,7 +177,7 @@ export const scheduleService = {
       .order('event_date', { ascending: false });
     
     if (error) {
-      console.error('Error fetching events for units:', error);
+      // Error fetching events logging disabled
       throw error;
     }
     

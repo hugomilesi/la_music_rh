@@ -68,7 +68,7 @@ export const NotificationDropdown: React.FC = () => {
     try {
       await updateNotification(id, { status: 'lido' });
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // Log desabilitado: Error marking notification as read
     }
   };
 
@@ -81,7 +81,7 @@ export const NotificationDropdown: React.FC = () => {
         )
       );
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      // Log desabilitado: Error marking all notifications as read
     }
   };
 

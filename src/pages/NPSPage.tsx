@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Filter, TrendingUp, TrendingDown, Users, MessageSquare, Settings, Send, Smile } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Filter, TrendingUp, TrendingDown, Users, MessageSquare, Settings, Send, Smile, TestTube } from 'lucide-react';
 import { useNPS } from '@/contexts/NPSContext';
 import { NPSDetailsModal } from '@/components/nps/NPSDetailsModal';
 import { SurveyManagementModal } from '@/components/nps/SurveyManagementModal';
@@ -15,10 +16,17 @@ import { DetractorsModal } from '@/components/nps/DetractorsModal';
 import { SatisfactionModal } from '@/components/nps/SatisfactionModal';
 import { NewSurveyModal } from '@/components/nps/NewSurveyModal';
 import { PeriodFilterModal } from '@/components/nps/PeriodFilterModal';
-import { AutoSendModal } from '@/components/nps/AutoSendModal';
+
+import { NPSWhatsAppTestModal } from '@/components/nps/NPSWhatsAppTestModal';
+import NPSScheduler from '@/components/nps/NPSScheduler';
+import TestController from '@/components/TestController';
+import ButtonTest from '@/components/debug/ButtonTest';
+import NPSButtonDebug from '@/components/debug/NPSButtonDebug';
+import useMessageScheduler from '@/hooks/useMessageScheduler';
 
 const NPSPage: React.FC = () => {
   const { stats, responses } = useNPS();
+  const { schedules, statistics } = useMessageScheduler();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [surveyModalOpen, setSurveyModalOpen] = useState(false);
   const [commentsModalOpen, setCommentsModalOpen] = useState(false);
@@ -28,12 +36,13 @@ const NPSPage: React.FC = () => {
   const [satisfactionModalOpen, setSatisfactionModalOpen] = useState(false);
   const [newSurveyModalOpen, setNewSurveyModalOpen] = useState(false);
   const [periodFilterModalOpen, setPeriodFilterModalOpen] = useState(false);
-  const [autoSendModalOpen, setAutoSendModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [whatsappTestModalOpen, setWhatsappTestModalOpen] = useState(false);
 
   const recentComments = responses.slice(0, 3);
 
   const handlePeriodFilter = (filter: { startDate: string; endDate: string; period: string }) => {
-    console.log('Aplicando filtro de período:', filter);
+    // Log desabilitado: Aplicando filtro de período
     // Aqui seria implementada a lógica de filtro real
   };
 
@@ -64,6 +73,15 @@ const NPSPage: React.FC = () => {
             Gerenciar
           </Button>
           <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => setWhatsappTestModalOpen(true)}
+            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            WhatsApp NPS
+          </Button>
+          <Button 
             size="sm"
             onClick={() => setNewSurveyModalOpen(true)}
           >
@@ -73,7 +91,17 @@ const NPSPage: React.FC = () => {
         </div>
       </div>
 
-      {/* NPS Score Cards - Agora com modais específicos */}
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="scheduling">Agendamento</TabsTrigger>
+          <TabsTrigger value="tests">Testes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* NPS Score Cards - Agora com modais específicos */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -171,7 +199,7 @@ const NPSPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setAutoSendModalOpen(true)}
+          onClick={() => setActiveTab('scheduling')}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -179,8 +207,8 @@ const NPSPage: React.FC = () => {
                 <Send className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold">Envio Automático</h3>
-                <p className="text-sm text-gray-600">WhatsApp integrado</p>
+                <h3 className="font-semibold">Agendamento Unificado</h3>
+                <p className="text-sm text-gray-600">Sistema integrado</p>
               </div>
             </div>
           </CardContent>
@@ -269,6 +297,41 @@ const NPSPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analytics Avançado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NPSEvolutionChart />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="scheduling" className="space-y-6">
+          <NPSScheduler 
+            onScheduleCreated={(scheduleId) => {
+              // Aqui você pode adicionar lógica adicional, como mostrar uma notificação
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="tests" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <TestTube className="w-5 h-5 inline mr-2" />
+                Controle de Testes NPS
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TestController scheduleType="nps" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <NPSDetailsModal 
@@ -317,9 +380,11 @@ const NPSPage: React.FC = () => {
         onApplyFilter={handlePeriodFilter}
       />
 
-      <AutoSendModal
-        open={autoSendModalOpen}
-        onOpenChange={setAutoSendModalOpen}
+
+
+      <NPSWhatsAppTestModal
+        open={whatsappTestModalOpen}
+        onOpenChange={setWhatsappTestModalOpen}
       />
     </div>
   );

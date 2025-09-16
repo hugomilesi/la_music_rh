@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DollarSign, Gift, Star, User, MapPin, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Unit } from '@/types/employee';
 
 interface NewBonusDialogProps {
@@ -26,8 +26,8 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
   onSaveBonus
 }) => {
   const { employees } = useEmployees();
-  const { checkPermission } = usePermissions();
-  const canManagePayroll = useMemo(() => checkPermission('canManageEvaluations', false), [checkPermission]);
+  const { canCreateInModule } = usePermissionsV2();
+  const canManagePayroll = useMemo(() => canCreateInModule('folha_pagamento'), [canCreateInModule]);
   
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [bonusType, setBonusType] = useState('');
@@ -57,7 +57,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
       status: 'pending'
     };
 
-    console.log('Novo bônus:', bonus);
+    // Novo bônus criado
     
     if (onSaveBonus) {
       onSaveBonus(bonus);

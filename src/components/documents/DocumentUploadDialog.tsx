@@ -100,7 +100,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
       setUploadError(null);
       onOpenChange(false);
     } catch (error) {
-      console.error('Error uploading document:', error);
+      // Log desabilitado: Error uploading document
       setUploadError('Erro ao enviar documento. Tente novamente.');
     }
   };
