@@ -44,7 +44,7 @@ Quando o funcionário clica no link:
 - N8N instalado e configurado
 - Supabase configurado com as tabelas e funções necessárias
 - Evolution API configurada para WhatsApp
-- Edge Function `whatsapp-nps` configurada
+- Edge Function `whatsapp-nps-v2` configurada
 - Funções do banco implementadas:
   - `generate_nps_link_token`
   - `validate_simple_nps_token`
@@ -68,7 +68,7 @@ Quando o funcionário clica no link:
 - **Função:** Valida se token NPS é válido e ativo
 - **Parâmetros:** `token` - Token UUID a ser validado
 - **Retorna:** Dados do token se válido, null se inválido
-- **Uso:** Chamada pela Edge Function `whatsapp-nps`
+- **Uso:** Chamada pela Edge Function `whatsapp-nps-v2`
 
 ### 3. `process_nps_response(token, score, comment)`
 - **Função:** Processa resposta NPS via token
@@ -77,7 +77,7 @@ Quando o funcionário clica no link:
   - `score`: Nota NPS (0-10)
   - `comment`: Comentário opcional
 - **Retorna:** ID da resposta criada
-- **Uso:** Chamada pela Edge Function `whatsapp-nps`
+- **Uso:** Chamada pela Edge Function `whatsapp-nps-v2`
 
 ## Configuração dos Nós
 
@@ -200,7 +200,7 @@ for (const item of items) {
   const token = item.json.nps_token;
   
   // Cria URL personalizada que aponta para a Edge Function
-  const npsUrl = `https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps/${token}`;
+  const npsUrl = `https://dzmatfnltgtgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps-v2/survey/${token}`;
   
   // Adiciona dados necessários para os próximos nós
   item.json.nps_url = npsUrl;
@@ -433,8 +433,8 @@ SUPABASE_URL=https://dzmatfnltgtgjvbputtb.supabase.co
 ## Arquitetura de URLs
 
 ### URLs Geradas:
-- **Formato:** `https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps/{token}`
-- **Exemplo:** `https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps/d6865232-1729-4273-b665-1843dcc9e67d`
+- **Formato:** `https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps-v2/survey/{token}`
+- **Exemplo:** `https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1/whatsapp-nps-v2/survey/d6865232-1729-4273-b665-1843dcc9e67d`
 
 ### Vantagens desta Arquitetura:
 1. **URLs Diretas:** Apontam diretamente para a Edge Function
@@ -579,7 +579,7 @@ WHERE ms.message_type = 'nps'
 #### 4. Links NPS não funcionam:
 **Sintomas:** Usuário clica no link mas não carrega
 **Soluções:**
-- Verificar se Edge Function `whatsapp-nps` está deployada
+- Verificar se Edge Function `whatsapp-nps-v2` está deployada
 - Confirmar se token existe: `SELECT * FROM nps_tokens WHERE token = 'xxx'`
 - Verificar logs da Edge Function no Supabase
 - Testar URL diretamente no navegador

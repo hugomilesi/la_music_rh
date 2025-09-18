@@ -5,59 +5,71 @@ import { emailService } from './emailService';
 
 export const notificationService = {
   async getNotifications(): Promise<Notification[]> {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      // Log desabilitado: Error fetching notifications
+    try {
+      console.log('🔄 NotificationService: Buscando notificações');
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ NotificationService: Erro ao buscar notificações:', error);
+        throw error;
+      }
+      
+      console.log('✅ NotificationService: Notificações encontradas:', data?.length || 0);
+      return data?.map(notification => ({
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type as Notification['type'],
+        recipients: notification.recipients,
+        recipientNames: notification.recipient_names,
+        channel: notification.channel as Notification['channel'],
+        status: notification.status as Notification['status'],
+        scheduledFor: notification.scheduled_for,
+        sentAt: notification.sent_at,
+        createdAt: notification.created_at,
+        createdBy: notification.created_by,
+        templateId: notification.template_id,
+        metadata: notification.metadata as Notification['metadata']
+      })) || [];
+    } catch (error) {
+      console.error('❌ NotificationService: Erro em getNotifications:', error);
       throw error;
     }
-    
-    return data?.map(notification => ({
-      id: notification.id,
-      title: notification.title,
-      message: notification.message,
-      type: notification.type as Notification['type'],
-      recipients: notification.recipients,
-      recipientNames: notification.recipient_names,
-      channel: notification.channel as Notification['channel'],
-      status: notification.status as Notification['status'],
-      scheduledFor: notification.scheduled_for,
-      sentAt: notification.sent_at,
-      createdAt: notification.created_at,
-      createdBy: notification.created_by,
-      templateId: notification.template_id,
-      metadata: notification.metadata as Notification['metadata']
-    })) || [];
   },
 
   async createNotification(notificationData: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
-    const { data, error } = await supabase
-      .from('notifications')
-      .insert([{
-        title: notificationData.title,
-        message: notificationData.message,
-        type: notificationData.type,
-        recipients: notificationData.recipients,
-        recipient_names: notificationData.recipientNames,
-        channel: notificationData.channel,
-        status: notificationData.status,
-        scheduled_for: notificationData.scheduledFor,
-        sent_at: notificationData.sentAt,
-        created_by: notificationData.createdBy,
-        template_id: notificationData.templateId,
+    try {
+      console.log('🔄 NotificationService: Criando notificação:', notificationData.title);
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert([{
+          title: notificationData.title,
+          message: notificationData.message,
+          type: notificationData.type,
+          recipients: notificationData.recipients,
+          recipient_names: notificationData.recipientNames,
+          channel: notificationData.channel,
+          status: notificationData.status,
+          scheduled_for: notificationData.scheduledFor,
+          sent_at: notificationData.sentAt,
+          created_by: notificationData.createdBy,
+          template_id: notificationData.templateId,
         metadata: notificationData.metadata
       }])
       .select()
       .single();
     
     if (error) {
-      // Log desabilitado: Error creating notification
+      console.error('❌ NotificationService: Erro ao criar notificação:', error);
       throw error;
     }
     
+    console.log('✅ NotificationService: Notificação criada com sucesso:', data.id);
     return {
       id: data.id,
       title: data.title,
@@ -74,33 +86,41 @@ export const notificationService = {
       templateId: data.template_id,
       metadata: data.metadata as Notification['metadata']
     };
+    } catch (error) {
+      console.error('❌ NotificationService: Erro em createNotification:', error);
+      throw error;
+    }
   },
 
   async updateNotification(id: string, updates: Partial<Notification>): Promise<Notification> {
-    const { data, error } = await supabase
-      .from('notifications')
-      .update({
-        title: updates.title,
-        message: updates.message,
-        type: updates.type,
-        recipients: updates.recipients,
-        recipient_names: updates.recipientNames,
-        channel: updates.channel,
-        status: updates.status,
-        scheduled_for: updates.scheduledFor,
-        sent_at: updates.sentAt,
-        template_id: updates.templateId,
-        metadata: updates.metadata
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      console.log('🔄 NotificationService: Atualizando notificação:', id);
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .update({
+          title: updates.title,
+          message: updates.message,
+          type: updates.type,
+          recipients: updates.recipients,
+          recipient_names: updates.recipientNames,
+          channel: updates.channel,
+          status: updates.status,
+          scheduled_for: updates.scheduledFor,
+          sent_at: updates.sentAt,
+          template_id: updates.templateId,
+          metadata: updates.metadata
+        })
+        .eq('id', id)
+        .select()
+        .single();
     
     if (error) {
-      // Log desabilitado: Error updating notification
+      console.error('❌ NotificationService: Erro ao atualizar notificação:', error);
       throw error;
     }
     
+    console.log('✅ NotificationService: Notificação atualizada com sucesso:', data.id);
     return {
       id: data.id,
       title: data.title,
@@ -117,6 +137,10 @@ export const notificationService = {
       templateId: data.template_id,
       metadata: data.metadata as Notification['metadata']
     };
+    } catch (error) {
+      console.error('❌ NotificationService: Erro em updateNotification:', error);
+      throw error;
+    }
   },
 
   /**
@@ -124,14 +148,16 @@ export const notificationService = {
    */
   async sendNotificationEmail(notification: Notification): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('🔄 NotificationService: Enviando notificação por email:', notification.title);
+      
       // Get recipient emails from users table
       const { data: employees, error: employeesError } = await supabase
         .from('users')
-        .select('email, full_name')
+        .select('email, username')
         .in('id', notification.recipients);
 
       if (employeesError) {
-        // Log desabilitado: Error fetching employee emails
+        console.error('❌ NotificationService: Erro ao buscar emails dos destinatários:', employeesError);
         return { success: false, error: 'Erro ao buscar emails dos destinatários' };
       }
 
@@ -150,7 +176,7 @@ export const notificationService = {
       
       if (notification.type === 'aniversario') {
         // For birthday notifications, we need to get the birthday info
-        const employeeName = employees[0]?.full_name || 'Colaborador';
+        const employeeName = employees[0]?.username || 'Colaborador';
         emailResult = await emailService.sendBirthdayEmail({
           to: emailAddresses,
           employeeName,
@@ -201,7 +227,7 @@ export const notificationService = {
         .from('vacation_requests')
         .select(`
           *,
-          users(full_name, email)
+          users(username, email)
         `)
         .eq('status', 'aprovado')
         .gte('start_date', new Date().toISOString().split('T')[0])
@@ -239,7 +265,7 @@ export const notificationService = {
 
         const emailResult = await emailService.sendVacationAlertEmail({
           to: hrEmails,
-          employeeName: vacation.users?.full_name || 'Colaborador',
+          employeeName: vacation.users?.username || 'Colaborador',
           startDate: vacation.start_date,
           endDate: vacation.end_date,
           daysRemaining
@@ -248,7 +274,7 @@ export const notificationService = {
         if (emailResult.success) {
           sent++;
         } else {
-          errors.push(`Erro ao enviar alerta para ${vacation.users?.full_name}: ${emailResult.error}`);
+          errors.push(`Erro ao enviar alerta para ${vacation.users?.username}: ${emailResult.error}`);
         }
       }
 
@@ -271,7 +297,7 @@ export const notificationService = {
       // Get employees with birthday today
       const { data: employees, error } = await supabase
         .from('users')
-        .select('id, full_name, email, birth_date')
+        .select('id, username, email, birth_date')
         .eq('status', 'ativo')
         .not('birth_date', 'is', null);
 
@@ -314,7 +340,7 @@ export const notificationService = {
       for (const employee of birthdayEmployees) {
         const emailResult = await emailService.sendBirthdayEmail({
           to: allEmails,
-          employeeName: employee.full_name,
+          employeeName: employee.username,
           birthdayDate: employee.birth_date
         });
 
@@ -323,11 +349,11 @@ export const notificationService = {
           
           // Create notification record
           await this.createNotification({
-            title: `🎉 Aniversário de ${employee.full_name}`,
-            message: `Hoje é aniversário de ${employee.full_name}! Não esqueça de parabenizar.`,
+            title: `🎉 Aniversário de ${employee.username}`,
+            message: `Hoje é aniversário de ${employee.username}! Não esqueça de parabenizar.`,
             type: 'aniversario',
             recipients: [employee.id],
-            recipientNames: [employee.full_name],
+            recipientNames: [employee.username],
             channel: 'email',
             status: 'enviado',
             sentAt: new Date().toISOString(),
@@ -338,7 +364,7 @@ export const notificationService = {
             }
           });
         } else {
-          errors.push(`Erro ao enviar aniversário de ${employee.full_name}: ${emailResult.error}`);
+          errors.push(`Erro ao enviar aniversário de ${employee.username}: ${emailResult.error}`);
         }
       }
 

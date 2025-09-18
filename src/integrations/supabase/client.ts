@@ -27,6 +27,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: {
       eventsPerSecond: 10
-    }
+    },
+    heartbeatIntervalMs: 30000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000),
+    timeout: 20000
   }
 })

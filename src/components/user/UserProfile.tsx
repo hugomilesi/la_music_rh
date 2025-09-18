@@ -169,7 +169,7 @@ export const UserProfile: React.FC = () => {
             <div className="flex items-center gap-6">
               <AvatarUpload size="lg" showUploadButton={false} showDeleteButton={false} />
               <div>
-                <CardTitle className="text-2xl">{profile?.full_name || 'Usuário'}</CardTitle>
+                <CardTitle className="text-2xl">{profile?.username || 'Usuário'}</CardTitle>
                 <CardDescription className="text-base">{user?.email}</CardDescription>
                 <div className="flex items-center gap-2 mt-2">
                   {profile?.role && (

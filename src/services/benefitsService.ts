@@ -5,162 +5,184 @@ import { benefitDocumentService, BenefitDocumentUpload } from './benefitDocument
 export const benefitsService = {
   // Benefit Types
   async getBenefitTypes(): Promise<BenefitType[]> {
-    // Benefit types fetch logging disabled
-    
-    const { data, error } = await supabase
-      .from('benefit_types')
-      .select('*')
-      .order('name');
+    try {
+      console.log('BenefitsService: Buscando tipos de benefícios...');
+      
+      const { data, error } = await supabase
+        .from('benefit_types')
+        .select('*')
+        .order('name');
 
-    if (error) {
-      // Error fetching benefit types logging disabled
+      if (error) {
+        console.error('BenefitsService: Erro ao buscar tipos de benefícios:', error);
+        throw error;
+      }
+
+      console.log('BenefitsService: Tipos de benefícios encontrados:', data?.length || 0);
+      
+      const mappedData = data.map(type => ({
+        id: type.id,
+        name: type.name,
+        category: type.category,
+        icon: benefitsService.getCategoryIcon(type.category),
+        color: benefitsService.getCategoryColor(type.category)
+      }));
+      
+      return mappedData;
+    } catch (error) {
+      console.error('BenefitsService: Erro em getBenefitTypes:', error);
       throw error;
     }
-
-
-    
-    const mappedData = data.map(type => ({
-      id: type.id,
-      name: type.name,
-      category: type.category,
-      icon: benefitsService.getCategoryIcon(type.category),
-      color: benefitsService.getCategoryColor(type.category)
-    }));
-    
-
-    return mappedData;
   },
 
   // Benefits
   async getBenefits(): Promise<Benefit[]> {
-    // Log desabilitado: Getting benefits
-    
-    const { data, error } = await supabase
-      .from('benefits')
-      .select(`
-        *,
-        benefit_types(*)
-      `)
-      .order('nome');
+    try {
+      console.log('BenefitsService: Buscando benefícios...');
+      
+      const { data, error } = await supabase
+        .from('benefits')
+        .select(`
+          *,
+          benefit_types(*)
+        `)
+        .order('name'); // Corrigido: banco usa 'name' não 'nome'
 
-    if (error) {
-      // Log desabilitado: Error getting benefits
+      if (error) {
+        console.error('BenefitsService: Erro ao buscar benefícios:', error);
+        throw error;
+      }
+      
+      console.log('BenefitsService: Benefícios encontrados:', data?.length || 0);
+
+      // Map benefits and load documents for each
+      const benefitsWithDocuments = await Promise.all(
+        data.map(async (benefit) => {
+          // For now, we'll load documents based on benefit ID
+          // Note: This assumes documents are linked to benefits directly
+          // In the future, this might need to be adjusted based on the actual relationship
+          let documents: string[] = [];
+          try {
+            // Try to get documents for this benefit
+            // Since benefitDocumentService expects employee_benefit_id, 
+            // we'll implement a simpler approach for now
+            documents = [];
+          } catch (error) {
+            // Document loading warning disabled
+            documents = [];
+          }
+
+          return {
+            id: benefit.id,
+            name: benefit.name,
+            type: benefit.benefit_types ? {
+              id: benefit.benefit_types.id,
+              name: benefit.benefit_types.name,
+              category: benefit.benefit_types.category,
+              icon: benefitsService.getCategoryIcon(benefit.benefit_types.category),
+              color: benefitsService.getCategoryColor(benefit.benefit_types.category)
+            } : {
+              id: '',
+              name: 'Tipo não encontrado',
+              category: 'other',
+              icon: 'help-circle',
+              color: '#gray'
+            },
+            description: benefit.description || '',
+            value: parseFloat(benefit.cost) || 0,
+            coverage: (() => {
+              const coverageData = benefit.coverage_details;
+              if (!coverageData) return [];
+              if (typeof coverageData === 'object' && coverageData.items) {
+                return Array.isArray(coverageData.items) ? coverageData.items : [];
+              }
+              if (typeof coverageData === 'object' && coverageData.description) {
+                return [coverageData.description];
+              }
+              return [];
+            })(),
+            eligibilityRules: benefit.eligibility_rules || [],
+            provider: benefit.provider || '',
+            isActive: benefit.is_active !== undefined ? benefit.is_active : true,
+            startDate: benefit.effective_date || '',
+            endDate: benefit.expiration_date || '',
+            documents, // Now properly loaded
+            performanceGoals: benefit.performance_goals || [],
+            renewalSettings: benefit.renewal_settings || null,
+            createdAt: benefit.created_at,
+            updatedAt: benefit.updated_at
+          };
+        })
+      );
+      
+      return benefitsWithDocuments;
+    } catch (error) {
+      console.error('BenefitsService: Erro em getBenefits:', error);
       throw error;
     }
-    
-
-
-    // Map benefits and load documents for each
-    const benefitsWithDocuments = await Promise.all(
-      data.map(async (benefit) => {
-        // For now, we'll load documents based on benefit ID
-        // Note: This assumes documents are linked to benefits directly
-        // In the future, this might need to be adjusted based on the actual relationship
-        let documents: string[] = [];
-        try {
-          // Try to get documents for this benefit
-          // Since benefitDocumentService expects employee_benefit_id, 
-          // we'll implement a simpler approach for now
-          documents = [];
-        } catch (error) {
-          // Document loading warning disabled
-          documents = [];
-        }
-
-        return {
-          id: benefit.id,
-          name: benefit.nome,
-          type: benefit.benefit_types ? {
-            id: benefit.benefit_types.id,
-            name: benefit.benefit_types.name,
-            category: benefit.benefit_types.category,
-            icon: benefitsService.getCategoryIcon(benefit.benefit_types.category),
-            color: benefitsService.getCategoryColor(benefit.benefit_types.category)
-          } : {
-            id: '',
-            name: 'Tipo não encontrado',
-            category: 'other',
-            icon: 'help-circle',
-            color: '#gray'
-          },
-          description: benefit.descricao || '',
-          value: parseFloat(benefit.valor) || 0,
-          coverage: (() => {
-            if (!benefit.coverage) return [];
-            if (Array.isArray(benefit.coverage)) return benefit.coverage;
-            try {
-              const parsed = JSON.parse(benefit.coverage);
-              return Array.isArray(parsed) ? parsed : [parsed];
-            } catch {
-              return typeof benefit.coverage === 'string' ? [benefit.coverage] : [];
-            }
-          })(),
-          eligibilityRules: benefit.eligibility_rules || [],
-          provider: benefit.provider || '',
-          isActive: benefit.ativo,
-          startDate: benefit.start_date || '',
-          endDate: benefit.end_date || '',
-          documents, // Now properly loaded
-          performanceGoals: benefit.performance_goals || [],
-          renewalSettings: benefit.renewal_settings || null,
-          createdAt: benefit.created_at,
-          updatedAt: benefit.updated_at
-        };
-      })
-    );
-    
-
-
-    return benefitsWithDocuments;
   },
 
   async createBenefit(benefitData: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>): Promise<Benefit> {
-    // Map category to tipo field based on benefit type category
-    const tipoMapping: Record<string, string> = {
-      'health': 'saude',
-      'dental': 'odontologico',
-      'food': 'alimentacao',
-      'transport': 'transporte',
-      'education': 'educacao',
-      'life': 'seguro',
-      'performance': 'performance',
-      'other': 'outros'
-    };
+    let data: any;
     
-    // Defensive validation to ensure tipo is always defined
-    const category = benefitData.type?.category || 'other';
-    const tipo = tipoMapping[category] || 'outros';
-    
-    const { data, error } = await supabase
-      .from('benefits')
-      .insert({
-        nome: benefitData.name,
-        tipo: tipo, // Map category to tipo field
-        type_id: benefitData.type.id,
-        descricao: benefitData.description,
-        valor: benefitData.value,
-        coverage: Array.isArray(benefitData.coverage) 
-          ? JSON.stringify(benefitData.coverage)
-          : benefitData.coverage,
-        provider: benefitData.provider,
-        ativo: benefitData.isActive,
-        start_date: benefitData.startDate,
-        end_date: benefitData.endDate
-      })
-      .select(`
-        *,
-        benefit_types(*)
-      `)
-      .single();
+    try {
+      console.log('BenefitsService: 🔄 Criando novo benefício:', benefitData.name);
+      
+      // Map category to tipo field based on benefit type category
+      const tipoMapping: Record<string, string> = {
+        'health': 'saude',
+        'dental': 'odontologico',
+        'food': 'alimentacao',
+        'transport': 'transporte',
+        'education': 'educacao',
+        'life': 'seguro',
+        'performance': 'performance',
+        'other': 'outros'
+      };
+      
+      // Defensive validation to ensure tipo is always defined
+      const category = benefitData.type?.category || 'other';
+      const tipo = tipoMapping[category] || 'outros';
+      
+      const { data: insertData, error } = await supabase
+        .from('benefits')
+        .insert({
+          name: benefitData.name,
+          description: benefitData.description,
+          benefit_type_id: benefitData.type.id,
+          provider: benefitData.provider,
+          cost: benefitData.value,
+          employee_contribution: 0,
+          employer_contribution: benefitData.value,
+          eligibility_rules: benefitData.eligibilityRules || {},
+          coverage_details: Array.isArray(benefitData.coverage) 
+            ? { items: benefitData.coverage }
+            : { description: benefitData.coverage },
+          is_active: benefitData.isActive,
+          effective_date: benefitData.startDate,
+          expiration_date: benefitData.endDate
+        })
+        .select(`
+          *,
+          benefit_types(*)
+        `)
+        .single();
 
-    if (error) {
-      // Log desabilitado: Error creating benefit
+      if (error) {
+        console.error('BenefitsService: ❌ Erro ao criar benefício:', error);
+        throw error;
+      }
+
+      console.log('BenefitsService: ✅ Benefício criado com sucesso:', insertData.id);
+      data = insertData;
+    } catch (error) {
+      console.error('BenefitsService: ❌ Erro em createBenefit:', error);
       throw error;
     }
 
     return {
       id: data.id,
-      name: data.nome,
+      name: data.name,
       type: data.benefit_types ? {
         id: data.benefit_types.id,
         name: data.benefit_types.name,
@@ -174,23 +196,23 @@ export const benefitsService = {
         icon: 'help-circle',
         color: '#gray'
       },
-      description: data.descricao || '',
-      value: parseFloat(data.valor) || 0,
+      description: data.description || '',
+      value: parseFloat(data.cost) || 0,
       coverage: (() => {
-        if (!data.coverage) return [];
-        if (Array.isArray(data.coverage)) return data.coverage;
-        try {
-          const parsed = JSON.parse(data.coverage);
-          return Array.isArray(parsed) ? parsed : [parsed];
-        } catch {
-          return typeof data.coverage === 'string' ? [data.coverage] : [];
+        if (!data.coverage_details) return [];
+        if (typeof data.coverage_details === 'object' && data.coverage_details.items) {
+          return Array.isArray(data.coverage_details.items) ? data.coverage_details.items : [];
         }
+        if (typeof data.coverage_details === 'object' && data.coverage_details.description) {
+          return [data.coverage_details.description];
+        }
+        return [];
       })(),
       eligibilityRules: data.eligibility_rules || [],
       provider: data.provider || '',
-      isActive: data.ativo,
-      startDate: data.start_date || '',
-      endDate: data.end_date || '',
+      isActive: data.is_active,
+      startDate: data.effective_date || '',
+      endDate: data.expiration_date || '',
       documents: [], // Will be implemented later if needed
       performanceGoals: data.performance_goals || [],
       renewalSettings: data.renewal_settings || null,
@@ -200,64 +222,73 @@ export const benefitsService = {
   },
 
   async updateBenefit(id: string, benefitData: Partial<Benefit>): Promise<Benefit> {
-    const updateData: any = {};
-    
-    // Map category to tipo field based on benefit type category
-    const tipoMapping: Record<string, string> = {
-      'health': 'saude',
-      'dental': 'odontologico',
-      'food': 'alimentacao',
-      'transport': 'transporte',
-      'education': 'educacao',
-      'life': 'seguro',
-      'performance': 'performance',
-      'other': 'outros'
-    };
-    
-    // Map frontend fields to database fields
-    if (benefitData.name !== undefined) updateData.nome = benefitData.name;
-    if (benefitData.type !== undefined) {
-      updateData.type_id = benefitData.type.id;
-      // Defensive validation to ensure tipo is always defined
-      const category = benefitData.type?.category || 'other';
-      updateData.tipo = tipoMapping[category] || 'outros';
-    }
-    if (benefitData.description !== undefined) updateData.descricao = benefitData.description;
-    if (benefitData.value !== undefined) updateData.valor = benefitData.value;
-    if (benefitData.coverage !== undefined) {
-      // Serialize coverage array as JSON string for database storage
-      updateData.coverage = Array.isArray(benefitData.coverage) 
-        ? JSON.stringify(benefitData.coverage)
-        : benefitData.coverage;
-    }
-    if (benefitData.isActive !== undefined) updateData.ativo = benefitData.isActive;
-    if (benefitData.startDate !== undefined) {
-      // Only set start_date if it's a valid date string, not empty
-      updateData.start_date = benefitData.startDate && benefitData.startDate.trim() !== '' ? benefitData.startDate : null;
-    }
-    if (benefitData.endDate !== undefined) {
-      // Only set end_date if it's a valid date string, not empty
-      updateData.end_date = benefitData.endDate && benefitData.endDate.trim() !== '' ? benefitData.endDate : null;
-    }
-    
-    // Handle new fields that now exist in database
-    if (benefitData.provider !== undefined) updateData.provider = benefitData.provider;
-    if (benefitData.eligibilityRules !== undefined) updateData.eligibility_rules = benefitData.eligibilityRules;
-    if (benefitData.performanceGoals !== undefined) updateData.performance_goals = benefitData.performanceGoals;
-    if (benefitData.renewalSettings !== undefined) updateData.renewal_settings = benefitData.renewalSettings;
+    try {
+      console.log('BenefitsService: 🔄 Atualizando benefício:', id);
+      
+      const updateData: any = {};
+      
+      // Map category to tipo field based on benefit type category
+      const tipoMapping: Record<string, string> = {
+        'health': 'saude',
+        'dental': 'odontologico',
+        'food': 'alimentacao',
+        'transport': 'transporte',
+        'education': 'educacao',
+        'life': 'seguro',
+        'performance': 'performance',
+        'other': 'outros'
+      };
+      
+      // Map frontend fields to database fields
+      if (benefitData.name !== undefined) updateData.nome = benefitData.name;
+      if (benefitData.type !== undefined) {
+        updateData.type_id = benefitData.type.id;
+        // Defensive validation to ensure tipo is always defined
+        const category = benefitData.type?.category || 'other';
+        updateData.tipo = tipoMapping[category] || 'outros';
+      }
+      if (benefitData.description !== undefined) updateData.descricao = benefitData.description;
+      if (benefitData.value !== undefined) updateData.valor = benefitData.value;
+      if (benefitData.coverage !== undefined) {
+        // Serialize coverage array as JSON string for database storage
+        updateData.coverage = Array.isArray(benefitData.coverage) 
+          ? JSON.stringify(benefitData.coverage)
+          : benefitData.coverage;
+      }
+      if (benefitData.isActive !== undefined) updateData.ativo = benefitData.isActive;
+      if (benefitData.startDate !== undefined) {
+        // Only set start_date if it's a valid date string, not empty
+        updateData.start_date = benefitData.startDate && benefitData.startDate.trim() !== '' ? benefitData.startDate : null;
+      }
+      if (benefitData.endDate !== undefined) {
+        // Only set end_date if it's a valid date string, not empty
+        updateData.end_date = benefitData.endDate && benefitData.endDate.trim() !== '' ? benefitData.endDate : null;
+      }
+      
+      // Handle new fields that now exist in database
+      if (benefitData.provider !== undefined) updateData.provider = benefitData.provider;
+      if (benefitData.eligibilityRules !== undefined) updateData.eligibility_rules = benefitData.eligibilityRules;
+      if (benefitData.performanceGoals !== undefined) updateData.performance_goals = benefitData.performanceGoals;
+      if (benefitData.renewalSettings !== undefined) updateData.renewal_settings = benefitData.renewalSettings;
 
-    const { data, error } = await supabase
-      .from('benefits')
-      .update(updateData)
-      .eq('id', id)
-      .select(`
-        *,
-        benefit_types(*)
-      `)
-      .single();
+      const { data, error } = await supabase
+        .from('benefits')
+        .update(updateData)
+        .eq('id', id)
+        .select(`
+          *,
+          benefit_types(*)
+        `)
+        .single();
 
-    if (error) {
-      // Log desabilitado: Error updating benefit
+      if (error) {
+        console.error('BenefitsService: ❌ Erro ao atualizar benefício:', error);
+        throw error;
+      }
+
+      console.log('BenefitsService: ✅ Benefício atualizado com sucesso:', id);
+    } catch (error) {
+      console.error('BenefitsService: ❌ Erro em updateBenefit:', error);
       throw error;
     }
 
@@ -348,34 +379,44 @@ export const benefitsService = {
   },
 
   async deleteBenefit(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('benefits')
-      .delete()
-      .eq('id', id);
+    try {
+      console.log('BenefitsService: 🔄 Deletando benefício:', id);
+      
+      const { error } = await supabase
+        .from('benefits')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      // Log desabilitado: Error deleting benefit
+      if (error) {
+        console.error('BenefitsService: ❌ Erro ao deletar benefício:', error);
+        throw error;
+      }
+
+      console.log('BenefitsService: ✅ Benefício deletado com sucesso:', id);
+    } catch (error) {
+      console.error('BenefitsService: ❌ Erro em deleteBenefit:', error);
       throw error;
     }
   },
 
   // Employee Benefits
   async getEmployeeBenefits(): Promise<EmployeeBenefit[]> {
-    // Log desabilitado
-    
     try {
+      console.log('BenefitsService: 🔄 Buscando benefícios de funcionários...');
+      
       // First get employee benefits with user and benefit info
       const { data: employeeBenefitsData, error } = await supabase
         .from('employee_benefits')
         .select(`
           *,
-          users(full_name),
-          benefits(nome)
+          users(username),
+          benefits(nome),
+          dependents:benefit_dependents(*)
         `)
         .order('enrollment_date', { ascending: false });
       
       if (error) {
-        // Log desabilitado
+        console.error('BenefitsService: ❌ Erro ao buscar benefícios de funcionários:', error);
         throw error;
       }
       
@@ -387,7 +428,7 @@ export const benefitsService = {
         .in('employee_benefit_id', employeeBenefitIds);
       
       if (dependentsError) {
-        // Log desabilitado
+        console.warn('BenefitsService: ⚠️ Erro ao buscar dependentes:', dependentsError);
         // Don't throw, just log and continue without dependents
       }
       
@@ -405,77 +446,80 @@ export const benefitsService = {
         benefit_dependents: dependentsByEmployeeBenefit[eb.id] || []
       }));
       
-  
-       // Log desabilitado
-       
-       return data.map(eb => ({
-      id: eb.id,
-      employeeId: eb.employee_id,
-      employeeName: eb.users?.full_name || 'Funcionário não encontrado',
-      benefitId: eb.benefit_id,
-      benefitName: eb.benefits?.nome || 'Benefício não encontrado',
-      enrollmentDate: eb.enrollment_date,
-      // Status is determined by dates: active if no end date or future end date
-      dependents: eb.benefit_dependents?.map((dep: any) => ({
-        id: dep.id,
-        name: dep.name,
-        relationship: dep.relationship,
-        birthDate: dep.birth_date,
-        documentNumber: dep.document_number,
-        isActive: dep.is_active
-      })) || [],
-      documents: [], // Will be implemented later if needed
-      lastUpdate: eb.updated_at,
-      nextRenewalDate: eb.termination_date,
-      renewalStatus: eb.status || 'active'
-    }));
+      console.log('BenefitsService: ✅ Benefícios de funcionários encontrados:', data.length);
+      
+      return data.map(eb => ({
+        id: eb.id,
+        employeeId: eb.employee_id,
+        employeeName: eb.users?.username || 'Funcionário não encontrado',
+        benefitId: eb.benefit_id,
+        benefitName: eb.benefits?.nome || 'Benefício não encontrado',
+        enrollmentDate: eb.enrollment_date,
+        // Status is determined by dates: active if no end date or future end date
+        dependents: eb.benefit_dependents?.map((dep: any) => ({
+          id: dep.id,
+          name: dep.name,
+          relationship: dep.relationship,
+          birthDate: dep.birth_date,
+          documentNumber: dep.document_number,
+          isActive: dep.is_active
+        })) || [],
+        documents: [], // Will be implemented later if needed
+        lastUpdate: eb.updated_at,
+        nextRenewalDate: eb.termination_date,
+        renewalStatus: eb.status || 'active'
+      }));
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em getEmployeeBenefits:', error);
       throw error;
     }
   },
 
   async createEmployeeBenefit(data: { employeeId: string; benefitId: string; dependents?: any[]; documents?: any[] }): Promise<EmployeeBenefit> {
-    // Log desabilitado
-    
-    // UUID validation
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    if (!uuidRegex.test(data.employeeId)) {
-      // Log desabilitado
-      throw new Error(`Invalid employeeId format: ${data.employeeId}. Expected UUID format.`);
-    }
-    
-    if (!uuidRegex.test(data.benefitId)) {
-      // Log desabilitado
-      throw new Error(`Invalid benefitId format: ${data.benefitId}. Expected UUID format.`);
-    }
-    
+    try {
+      console.log('BenefitsService: 🔄 Iniciando createEmployeeBenefit', { employeeId: data.employeeId, benefitId: data.benefitId });
+      
+      // UUID validation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      if (!uuidRegex.test(data.employeeId)) {
+        console.log('BenefitsService: ❌ Formato inválido de employeeId', { employeeId: data.employeeId });
+        throw new Error(`Invalid employeeId format: ${data.employeeId}. Expected UUID format.`);
+      }
+      
+      if (!uuidRegex.test(data.benefitId)) {
+        console.log('BenefitsService: ❌ Formato inválido de benefitId', { benefitId: data.benefitId });
+        throw new Error(`Invalid benefitId format: ${data.benefitId}. Expected UUID format.`);
+      }
 
-    
-    return this.enrollEmployee(data.employeeId, data.benefitId, data.dependents);
+      const result = await this.enrollEmployee(data.employeeId, data.benefitId, data.dependents);
+      console.log('BenefitsService: ✅ createEmployeeBenefit concluído com sucesso', { id: result.id });
+      return result;
+    } catch (error) {
+      console.log('BenefitsService: ❌ Erro em createEmployeeBenefit:', error);
+      throw error;
+    }
   },
 
   async enrollEmployee(employeeId: string, benefitId: string, dependents: any[] = []): Promise<EmployeeBenefit> {
-    // Log desabilitado
-    
-    // UUID validation
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    if (!uuidRegex.test(employeeId)) {
-      // Log desabilitado
-      throw new Error(`Invalid employeeId format: ${employeeId}. Expected UUID format.`);
-    }
-    
-    if (!uuidRegex.test(benefitId)) {
-      // Log desabilitado
-      throw new Error(`Invalid benefitId format: ${benefitId}. Expected UUID format.`);
-    }
+    try {
+      console.log('BenefitsService: 🔄 Iniciando enrollEmployee', { employeeId, benefitId, dependentsCount: dependents.length });
+      
+      // UUID validation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      if (!uuidRegex.test(employeeId)) {
+        console.log('BenefitsService: ❌ Formato inválido de employeeId em enrollEmployee', { employeeId });
+        throw new Error(`Invalid employeeId format: ${employeeId}. Expected UUID format.`);
+      }
+      
+      if (!uuidRegex.test(benefitId)) {
+        console.log('BenefitsService: ❌ Formato inválido de benefitId em enrollEmployee', { benefitId });
+        throw new Error(`Invalid benefitId format: ${benefitId}. Expected UUID format.`);
+      }
 
-
-    
-    // Check if enrollment already exists
-    const { data: existingEnrollment, error: checkError } = await supabase
+      // Check if enrollment already exists
+      const { data: existingEnrollment, error: checkError } = await supabase
       .from('employee_benefits')
       .select('id')
       .eq('employee_id', employeeId)
@@ -483,7 +527,7 @@ export const benefitsService = {
       .maybeSingle();
 
     if (checkError) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro ao verificar inscrição existente em enrollEmployee:', checkError);
       throw checkError;
     }
 
@@ -502,7 +546,7 @@ export const benefitsService = {
       })
       .select(`
         *,
-        users(full_name),
+        users(username),
         benefits(nome)
       `)
       .single();
@@ -531,15 +575,15 @@ export const benefitsService = {
         .insert(dependentData);
 
       if (dependentsError) {
-        // Log desabilitado
+        console.log('BenefitsService: ⚠️ Erro ao inserir dependentes, mas inscrição foi bem-sucedida:', dependentsError);
         // Don't throw here, enrollment was successful
       }
     }
 
-    return {
+    const result = {
       id: enrollment.id,
       employeeId: enrollment.employee_id,
-      employeeName: enrollment.users?.full_name || 'Funcionário não encontrado',
+      employeeName: enrollment.users?.username || 'Funcionário não encontrado',
       benefitId: enrollment.benefit_id,
       benefitName: enrollment.benefits?.nome || 'Benefício não encontrado',
       enrollmentDate: enrollment.enrollment_date,
@@ -550,32 +594,40 @@ export const benefitsService = {
       nextRenewalDate: enrollment.termination_date,
       renewalStatus: 'pending'
     };
+
+    console.log('BenefitsService: ✅ enrollEmployee concluído com sucesso', { id: result.id });
+    return result;
+    } catch (error) {
+      console.log('BenefitsService: ❌ Erro em enrollEmployee:', error);
+      throw error;
+    }
   },
 
   async updateEmployeeBenefit(id: string, data: Partial<EmployeeBenefit>): Promise<EmployeeBenefit> {
-    // Log desabilitado
-    
-    const updateData: any = {};
-    
-    // Map frontend fields to database fields (only use existing columns)
-    if (data.nextRenewalDate !== undefined) updateData.next_renewal_date = data.nextRenewalDate;
-    if (data.customValue !== undefined) updateData.valor_personalizado = data.customValue;
-    if (data.notes !== undefined) updateData.observacoes = data.notes;
-    if (data.renewalStatus !== undefined) updateData.renewal_status = data.renewalStatus;
-    // Note: performance_data column doesn't exist in the database
-    // This is handled in the frontend logic based on other data
-    
-    // Log desabilitado
-    
-    // Check if there's actually data to update
-    if (Object.keys(updateData).length === 0) {
-      // Log desabilitado
-      // If no data to update, just fetch the current record
-      const { data: current, error: fetchError } = await supabase
+    try {
+      console.log('BenefitsService: 🔄 Iniciando updateEmployeeBenefit', { id, data });
+      
+      const updateData: any = {};
+      
+      // Map frontend fields to database fields (only use existing columns)
+      if (data.nextRenewalDate !== undefined) updateData.next_renewal_date = data.nextRenewalDate;
+      if (data.customValue !== undefined) updateData.valor_personalizado = data.customValue;
+      if (data.notes !== undefined) updateData.observacoes = data.notes;
+      if (data.renewalStatus !== undefined) updateData.renewal_status = data.renewalStatus;
+      // Note: performance_data column doesn't exist in the database
+      // This is handled in the frontend logic based on other data
+      
+      console.log('BenefitsService: 🔄 Dados mapeados para atualização:', updateData);
+      
+      // Check if there's actually data to update
+      if (Object.keys(updateData).length === 0) {
+        console.log('BenefitsService: ⚠️ Nenhum dado para atualizar, buscando registro atual');
+        // If no data to update, just fetch the current record
+        const { data: current, error: fetchError } = await supabase
         .from('employee_benefits')
         .select(`
           *,
-          users(full_name),
+          users(username),
         benefits(nome),
           dependents:benefit_dependents(*)
         `)
@@ -583,18 +635,61 @@ export const benefitsService = {
         .single();
         
       if (fetchError) {
-        // Log desabilitado
-        throw fetchError;
+          console.log('BenefitsService: ❌ Erro ao buscar registro atual:', fetchError);
+          throw fetchError;
+        }
+        
+        const result = {
+          id: current.id,
+          employeeId: current.employee_id,
+          employeeName: current.users?.username || 'Funcionário não encontrado',
+          benefitId: current.benefit_id,
+          benefitName: current.benefits?.nome || 'Benefício não encontrado',
+          enrollmentDate: current.data_inicio,
+          dependents: current.dependents?.map((dep: any) => ({
+            id: dep.id,
+            name: dep.name,
+            relationship: dep.relationship,
+            birthDate: dep.birth_date,
+            documentNumber: dep.document_number,
+            isActive: dep.is_active
+          })) || [],
+          documents: [],
+          lastUpdate: current.updated_at,
+          nextRenewalDate: current.next_renewal_date || current.data_fim,
+          renewalStatus: 'active' // Determined by frontend logic based on dates
+        };
+        
+        console.log('BenefitsService: ✅ Registro atual retornado (sem atualizações)');
+        return result;
+      }
+
+      const { data: updated, error } = await supabase
+        .from('employee_benefits')
+        .update(updateData)
+        .eq('id', id)
+        .select(`
+          *,
+          users(username),
+          benefits(nome),
+          dependents:benefit_dependents(*)
+        `)
+        .single();
+
+      if (error) {
+        console.log('BenefitsService: ❌ Erro ao atualizar employee benefit:', error);
+        throw error;
       }
       
-      return {
-        id: current.id,
-        employeeId: current.employee_id,
-        employeeName: current.users?.full_name || 'Funcionário não encontrado',
-        benefitId: current.benefit_id,
-        benefitName: current.benefits?.nome || 'Benefício não encontrado',
-        enrollmentDate: current.data_inicio,
-        dependents: current.dependents?.map((dep: any) => ({
+      const result = {
+        id: updated.id,
+        employeeId: updated.employee_id,
+        employeeName: updated.users?.username || 'Funcionário não encontrado',
+        benefitId: updated.benefit_id,
+        benefitName: updated.benefits?.nome || 'Benefício não encontrado',
+        enrollmentDate: updated.data_inicio,
+        // Status determined by dates
+        dependents: updated.dependents?.map((dep: any) => ({
           id: dep.id,
           name: dep.name,
           relationship: dep.relationship,
@@ -603,62 +698,36 @@ export const benefitsService = {
           isActive: dep.is_active
         })) || [],
         documents: [],
-        lastUpdate: current.updated_at,
-        nextRenewalDate: current.next_renewal_date || current.data_fim,
-        renewalStatus: 'active' // Determined by frontend logic based on dates
-      };
-    }
-
-    const { data: updated, error } = await supabase
-      .from('employee_benefits')
-      .update(updateData)
-      .eq('id', id)
-      .select(`
-        *,
-        users(full_name),
-        benefits(nome),
-        dependents:benefit_dependents(*)
-      `)
-      .single();
-
-    if (error) {
-      // Log desabilitado
-      throw error;
-    }
-    
-
-
-    return {
-      id: updated.id,
-      employeeId: updated.employee_id,
-      employeeName: updated.users?.full_name || 'Funcionário não encontrado',
-      benefitId: updated.benefit_id,
-      benefitName: updated.benefits?.nome || 'Benefício não encontrado',
-      enrollmentDate: updated.data_inicio,
-      // Status determined by dates
-      dependents: updated.dependents?.map((dep: any) => ({
-        id: dep.id,
-        name: dep.name,
-        relationship: dep.relationship,
-        birthDate: dep.birth_date,
-        documentNumber: dep.document_number,
-        isActive: dep.is_active
-      })) || [],
-      documents: [],
-      lastUpdate: updated.updated_at,
-      nextRenewalDate: updated.next_renewal_date || updated.data_fim,
+        lastUpdate: updated.updated_at,
+        nextRenewalDate: updated.next_renewal_date || updated.data_fim,
       renewalStatus: 'active' // Determined by frontend logic based on dates
     };
+    
+    console.log('BenefitsService: ✅ updateEmployeeBenefit concluído com sucesso', { id: result.id });
+    return result;
+    } catch (error) {
+      console.log('BenefitsService: ❌ Erro em updateEmployeeBenefit:', error);
+      throw error;
+    }
   },
 
   async cancelEmployeeBenefit(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('employee_benefits')
-      .delete()
-      .eq('id', id);
+    try {
+      console.log('BenefitsService: 🔄 Iniciando cancelEmployeeBenefit', { id });
+      
+      const { error } = await supabase
+        .from('employee_benefits')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      // Log desabilitado
+      if (error) {
+        console.log('BenefitsService: ❌ Erro ao cancelar employee benefit:', error);
+        throw error;
+      }
+      
+      console.log('BenefitsService: ✅ cancelEmployeeBenefit concluído com sucesso', { id });
+    } catch (error) {
+      console.log('BenefitsService: ❌ Erro em cancelEmployeeBenefit:', error);
       throw error;
     }
   },
@@ -763,7 +832,7 @@ export const benefitsService = {
         usage
       };
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em getStats:', error);
       throw error;
     }
   },
@@ -771,47 +840,59 @@ export const benefitsService = {
   // Document management methods
   async uploadBenefitDocument(uploadData: BenefitDocumentUpload) {
     try {
-      // Log desabilitado
-      return await benefitDocumentService.uploadDocument(uploadData);
+      console.log('BenefitsService: 🔄 Iniciando uploadBenefitDocument', { uploadData });
+      const result = await benefitDocumentService.uploadDocument(uploadData);
+      console.log('BenefitsService: ✅ uploadBenefitDocument concluído com sucesso');
+      return result;
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em uploadBenefitDocument:', error);
       throw error;
     }
   },
 
   async getBenefitDocuments(employeeBenefitId: string) {
     try {
-      return await benefitDocumentService.getDocumentsByBenefitId(employeeBenefitId);
+      console.log('BenefitsService: 🔄 Iniciando getBenefitDocuments', { employeeBenefitId });
+      const result = await benefitDocumentService.getDocumentsByBenefitId(employeeBenefitId);
+      console.log('BenefitsService: ✅ getBenefitDocuments concluído com sucesso');
+      return result;
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em getBenefitDocuments:', error);
       throw error;
     }
   },
 
   async downloadBenefitDocument(documentId: string) {
     try {
-      return await benefitDocumentService.downloadDocument(documentId);
+      console.log('BenefitsService: 🔄 Iniciando downloadBenefitDocument', { documentId });
+      const result = await benefitDocumentService.downloadDocument(documentId);
+      console.log('BenefitsService: ✅ downloadBenefitDocument concluído com sucesso');
+      return result;
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em downloadBenefitDocument:', error);
       throw error;
     }
   },
 
   async deleteBenefitDocument(documentId: string) {
     try {
+      console.log('BenefitsService: 🔄 Iniciando deleteBenefitDocument', { documentId });
       await benefitDocumentService.deleteDocument(documentId);
-  
+      console.log('BenefitsService: ✅ deleteBenefitDocument concluído com sucesso');
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em deleteBenefitDocument:', error);
       throw error;
     }
   },
 
   async updateBenefitDocument(documentId: string, updates: any) {
     try {
-      return await benefitDocumentService.updateDocument(documentId, updates);
+      console.log('BenefitsService: 🔄 Iniciando updateBenefitDocument', { documentId, updates });
+      const result = await benefitDocumentService.updateDocument(documentId, updates);
+      console.log('BenefitsService: ✅ updateBenefitDocument concluído com sucesso');
+      return result;
     } catch (error) {
-      // Log desabilitado
+      console.log('BenefitsService: ❌ Erro em updateBenefitDocument:', error);
       throw error;
     }
   },

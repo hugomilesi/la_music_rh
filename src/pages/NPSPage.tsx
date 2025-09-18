@@ -22,11 +22,8 @@ import NPSScheduler from '@/components/nps/NPSScheduler';
 import TestController from '@/components/TestController';
 import ButtonTest from '@/components/debug/ButtonTest';
 import NPSButtonDebug from '@/components/debug/NPSButtonDebug';
-import useMessageScheduler from '@/hooks/useMessageScheduler';
-
 const NPSPage: React.FC = () => {
   const { stats, responses } = useNPS();
-  const { schedules, statistics } = useMessageScheduler();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [surveyModalOpen, setSurveyModalOpen] = useState(false);
   const [commentsModalOpen, setCommentsModalOpen] = useState(false);

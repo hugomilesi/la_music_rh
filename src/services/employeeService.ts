@@ -5,133 +5,164 @@ import { Unit } from '@/types/unit';
 
 export const employeeService = {
   async getEmployees(): Promise<Employee[]> {
-    // Get all users from the unified users table
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .is('deleted_at', null)
-      .order('full_name');
-    
-    if (error) {
-      // Log desabilitado: Error getting employees
+    try {
+      console.log('EmployeeService: Buscando funcionários...');
+      
+      // Get all users from the unified users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .is('deleted_at', null)
+        .order('username');
+      
+      if (error) {
+        console.error('EmployeeService: Erro ao buscar funcionários:', error);
+        throw error;
+      }
+      
+      console.log('EmployeeService: Funcionários encontrados:', data?.length || 0);
+      
+      return data?.map(user => ({
+        ...user,
+        name: user.username,
+        status: user.status === 'ativo' ? 'active' : 'inactive',
+        units: Array.isArray(user.units) ? user.units.map((unit: string) => unit as Unit) : []
+      })) || [];
+    } catch (error) {
+      console.error('EmployeeService: Erro em getEmployees:', error);
       throw error;
     }
-    
-    return data?.map(user => ({
-      ...user,
-      name: user.full_name,
-      status: user.status === 'ativo' ? 'active' : 'inactive',
-      units: Array.isArray(user.units) ? user.units.map((unit: string) => unit as Unit) : []
-    })) || [];
   },
 
   async getEmployeeById(id: string): Promise<Employee | null> {
-    const { data, error } = await supabase
-      .from('users') 
-      .select('*')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single();
-    
-    if (error) {
-      // Log desabilitado: Error fetching user
-      return null;
+    try {
+      console.log('EmployeeService: Buscando funcionário por ID:', id);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single();
+      
+      if (error) {
+        console.error('EmployeeService: Erro ao buscar funcionário por ID:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.log('EmployeeService: Funcionário não encontrado');
+        return null;
+      }
+      
+      console.log('EmployeeService: Funcionário encontrado:', data.username);
+      
+      return {
+        ...data,
+        name: data.username,
+        status: data.status === 'ativo' ? 'active' : 'inactive',
+        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
+      };
+    } catch (error) {
+      console.error('EmployeeService: Erro em getEmployeeById:', error);
+      throw error;
     }
-    
-    return data ? {
-      ...data,
-      name: data.full_name,
-      status: data.status === 'ativo' ? 'active' : 'inactive',
-      units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
-    } : null;
   },
 
   async createEmployee(employeeData: NewEmployeeData): Promise<Employee> {
-    const userData = {
-      full_name: employeeData.full_name || employeeData.name,
-      email: employeeData.email,
-      phone: employeeData.phone,
-      position: employeeData.position,
-      department: employeeData.department,
-      units: employeeData.units,
-      start_date: employeeData.start_date,
-      birth_date: employeeData.birth_date,
-      address: employeeData.address,
-      emergency_contact: employeeData.emergency_contact,
-      emergency_phone: employeeData.emergency_phone,
-      bio: employeeData.bio,
-      avatar_url: employeeData.avatar_url,
-      role: employeeData.role || 'usuario',
-      nivel: employeeData.nivel,
-      status: 'ativo',
-      preferences: employeeData.preferences || {}
-    };
-
-    const { data, error } = await supabase
-      .from('users')
-      .insert([userData])
-      .select()
-      .single();
-    
-    if (error) {
-      // Log desabilitado: Error creating employee
+    try {
+      console.log('EmployeeService: Criando funcionário:', employeeData.name);
+      
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          username: employeeData.name,
+          email: employeeData.email,
+          phone: employeeData.phone,
+          position: employeeData.position,
+          department: employeeData.department,
+          status: employeeData.status === 'active' ? 'ativo' : 'inativo',
+          units: employeeData.units || []
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('EmployeeService: Erro ao criar funcionário:', error);
+        throw error;
+      }
+      
+      console.log('EmployeeService: Funcionário criado com sucesso:', data.username);
+      
+      return {
+        ...data,
+        name: data.username,
+        status: data.status === 'ativo' ? 'active' : 'inactive',
+        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
+      };
+    } catch (error) {
+      console.error('EmployeeService: Erro em createEmployee:', error);
       throw error;
     }
-    
-    return {
-      ...data,
-      name: data.full_name,
-      status: data.status === 'ativo' ? 'active' : 'inactive',
-      units: employeeData.units
-    };
   },
 
-  async updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee> {
-    // Map frontend field names to database field names
-    const { name, ...otherUpdates } = updates;
-    const updatesWithMappedFields = {
-      ...otherUpdates,
-      ...(name && { full_name: name }),
-      ...(updates.status && { status: updates.status === 'active' ? 'ativo' : 'inativo' })
-    };
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updatesWithMappedFields)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      // Log desabilitado: Error updating employee
+  async updateEmployee(id: string, employeeData: Partial<NewEmployeeData>): Promise<Employee> {
+    try {
+      console.log('EmployeeService: Atualizando funcionário:', id);
+      
+      const updateData: any = {};
+      
+      if (employeeData.name) updateData.username = employeeData.name;
+      if (employeeData.email) updateData.email = employeeData.email;
+      if (employeeData.phone) updateData.phone = employeeData.phone;
+      if (employeeData.position) updateData.position = employeeData.position;
+      if (employeeData.department) updateData.department = employeeData.department;
+      if (employeeData.status) updateData.status = employeeData.status === 'active' ? 'ativo' : 'inativo';
+      if (employeeData.units) updateData.units = employeeData.units;
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('EmployeeService: Erro ao atualizar funcionário:', error);
+        throw error;
+      }
+      
+      console.log('EmployeeService: Funcionário atualizado com sucesso:', data.username);
+      
+      return {
+        ...data,
+        name: data.username,
+        status: data.status === 'ativo' ? 'active' : 'inactive',
+        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
+      };
+    } catch (error) {
+      console.error('EmployeeService: Erro em updateEmployee:', error);
       throw error;
     }
-    
-    return {
-      ...data,
-      name: data.full_name,
-      status: data.status === 'ativo' ? 'active' : 'inactive',
-      units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
-    };
   },
 
   async deleteEmployee(id: string): Promise<void> {
     try {
-      // Soft delete the user by setting deleted_at timestamp
+      console.log('EmployeeService: Deletando funcionário:', id);
+      
       const { error } = await supabase
         .from('users')
-        .update({ 
-          deleted_at: new Date().toISOString(),
-          status: 'inativo'
-        })
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
       
       if (error) {
-        // Log desabilitado: Error deleting employee
+        console.error('EmployeeService: Erro ao deletar funcionário:', error);
         throw error;
       }
+      
+      console.log('EmployeeService: Funcionário deletado com sucesso');
     } catch (error) {
-      // Log desabilitado: Error in delete user
+      console.error('EmployeeService: Erro em deleteEmployee:', error);
       throw error;
     }
   }

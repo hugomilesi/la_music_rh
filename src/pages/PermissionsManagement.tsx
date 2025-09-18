@@ -29,6 +29,10 @@ interface Role {
 interface RolePermission {
   permission_name: string;
   permission_description: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
 }
 
 const PermissionsManagement: React.FC = () => {
@@ -85,29 +89,42 @@ const PermissionsManagement: React.FC = () => {
   // Buscar permissões de um role específico
   const fetchRolePermissions = async (roleId: string) => {
     try {
+      // Primeiro, buscar o nome do role pelo ID
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('name')
+        .eq('id', roleId)
+        .single();
+      
+      if (roleError) throw roleError;
+      
+      // Buscar as permissões do role usando o nome
       const { data, error } = await supabase
         .from('role_permissions')
         .select(`
-          permission_id,
-          permissions!inner(
-            id,
-            name,
-            description
-          )
+          module_name,
+          can_view,
+          can_create,
+          can_edit,
+          can_delete
         `)
-        .eq('role_id', roleId);
+        .eq('role_name', roleData.name);
       
       if (error) throw error;
       
       const perms = data?.map(rp => ({
-        permission_name: rp.permissions.name,
-        permission_description: rp.permissions.description
+        permission_name: rp.module_name,
+        permission_description: `Permissões para o módulo ${rp.module_name}`,
+        can_view: rp.can_view,
+        can_create: rp.can_create,
+        can_edit: rp.can_edit,
+        can_delete: rp.can_delete
       })) || [];
       
       setRolePermissions(perms);
-      setSelectedPermissions(new Set(data?.map(rp => rp.permission_id) || []));
+      setSelectedPermissions(new Set(data?.map(rp => rp.module_name) || []));
     } catch (err) {
-      // Log desabilitado: Error fetching role permissions
+      console.error('Error fetching role permissions:', err);
       setError('Erro ao carregar permissões do role');
     }
   };
@@ -118,19 +135,32 @@ const PermissionsManagement: React.FC = () => {
     
     setSaving(true);
     try {
-      // Primeiro, remover todas as permissões existentes do role
+      // Primeiro, buscar o nome do role pelo ID
+      const { data: roleData, error: roleError } = await supabase
+        .from('roles')
+        .select('name')
+        .eq('id', selectedRole)
+        .single();
+      
+      if (roleError) throw roleError;
+      
+      // Remover todas as permissões existentes do role
       const { error: deleteError } = await supabase
         .from('role_permissions')
         .delete()
-        .eq('role_id', selectedRole);
+        .eq('role_name', roleData.name);
       
       if (deleteError) throw deleteError;
       
-      // Depois, adicionar as novas permissões selecionadas
+      // Adicionar as novas permissões selecionadas
       if (selectedPermissions.size > 0) {
-        const rolePermissionsData = Array.from(selectedPermissions).map(permissionId => ({
-          role_id: selectedRole,
-          permission_id: permissionId
+        const rolePermissionsData = Array.from(selectedPermissions).map(moduleName => ({
+          role_name: roleData.name,
+          module_name: moduleName,
+          can_view: true,
+          can_create: false,
+          can_edit: false,
+          can_delete: false
         }));
         
         const { error: insertError } = await supabase
@@ -155,7 +185,7 @@ const PermissionsManagement: React.FC = () => {
       // Recarregar permissões do role
       await fetchRolePermissions(selectedRole);
     } catch (err: any) {
-      // Log desabilitado: Error saving permissions
+      console.error('Error saving permissions:', err);
       toast({
         title: 'Erro',
         description: err.message || 'Erro ao salvar permissões',
@@ -202,43 +232,20 @@ const PermissionsManagement: React.FC = () => {
     return acc;
   }, {} as Record<string, Permission[]>);
 
-  // Manipular seleção de permissão
-  const handlePermissionToggle = (permissionId: string, checked: boolean) => {
+  // Manipular seleção de módulo
+  const handleModuleToggle = (moduleName: string, checked: boolean) => {
     const newSelected = new Set(selectedPermissions);
     if (checked) {
-      newSelected.add(permissionId);
+      newSelected.add(moduleName);
     } else {
-      newSelected.delete(permissionId);
+      newSelected.delete(moduleName);
     }
     setSelectedPermissions(newSelected);
   };
 
-  // Selecionar/deselecionar todas as permissões de um módulo
-  const handleModuleToggle = (moduleName: string, checked: boolean) => {
-    const modulePermissions = groupedPermissions[moduleName] || [];
-    const newSelected = new Set(selectedPermissions);
-    
-    modulePermissions.forEach(perm => {
-      if (checked) {
-        newSelected.add(perm.id);
-      } else {
-        newSelected.delete(perm.id);
-      }
-    });
-    
-    setSelectedPermissions(newSelected);
-  };
-
-  // Verificar se todas as permissões de um módulo estão selecionadas
-  const isModuleFullySelected = (moduleName: string): boolean => {
-    const modulePermissions = groupedPermissions[moduleName] || [];
-    return modulePermissions.every(perm => selectedPermissions.has(perm.id));
-  };
-
-  // Verificar se algumas permissões de um módulo estão selecionadas
-  const isModulePartiallySelected = (moduleName: string): boolean => {
-    const modulePermissions = groupedPermissions[moduleName] || [];
-    return modulePermissions.some(perm => selectedPermissions.has(perm.id)) && !isModuleFullySelected(moduleName);
+  // Verificar se um módulo está selecionado
+  const isModuleSelected = (moduleName: string): boolean => {
+    return selectedPermissions.has(moduleName);
   };
 
   if (permLoading || loading) {
@@ -365,8 +372,7 @@ const PermissionsManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id={`module-${moduleName}`}
-                        checked={isModuleFullySelected(moduleName)}
-                        className={isModulePartiallySelected(moduleName) ? 'data-[state=checked]:bg-orange-500' : ''}
+                        checked={isModuleSelected(moduleName)}
                         onCheckedChange={(checked) => handleModuleToggle(moduleName, checked as boolean)}
                       />
                       <label
@@ -379,27 +385,8 @@ const PermissionsManagement: React.FC = () => {
                         {modulePermissions.length} permissões
                       </Badge>
                     </div>
-                    <div className="ml-6 space-y-2">
-                      {modulePermissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={permission.id}
-                            checked={selectedPermissions.has(permission.id)}
-                            onCheckedChange={(checked) => 
-                              handlePermissionToggle(permission.id, checked as boolean)
-                            }
-                          />
-                          <label
-                            htmlFor={permission.id}
-                            className="text-sm cursor-pointer flex-1"
-                          >
-                            <span className="font-medium">{permission.name}</span>
-                            <span className="text-muted-foreground ml-2">
-                              {permission.description}
-                            </span>
-                          </label>
-                        </div>
-                      ))}
+                    <div className="ml-6 text-sm text-muted-foreground">
+                      Módulo com {modulePermissions.length} permissões disponíveis
                     </div>
                   </div>
                 ))}

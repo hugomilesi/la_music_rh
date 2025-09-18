@@ -12,7 +12,7 @@ export const securityService = {
    */
   async applySecurityFixes(): Promise<SecurityFixResult> {
     try {
-      // console.log('🔒 Iniciando aplicação das correções de segurança...');
+      console.log('🔄 SecurityService: Aplicando correções de segurança');
       
       // Fase 1: Correção das funções críticas com SECURITY DEFINER
       const functionsToFix = [
@@ -50,22 +50,23 @@ export const securityService = {
             });
             
             if (error) {
-              // console.warn(`⚠️ Erro ao corrigir função ${funcName}:`, error);
+              console.error(`❌ SecurityService: Erro ao corrigir função ${funcName}:`, error);
               results.push({ function: funcName, status: 'error', error: error.message });
             } else {
-              // console.log(`✅ Função ${funcName} corrigida com sucesso`);
+              console.log(`✅ SecurityService: Função ${funcName} corrigida com sucesso`);
               results.push({ function: funcName, status: 'success' });
             }
           } else {
-            // console.log(`ℹ️ Função ${funcName} não encontrada, pulando...`);
+            console.log(`⚠️ SecurityService: Função ${funcName} não encontrada`);
             results.push({ function: funcName, status: 'not_found' });
           }
         } catch (error) {
-          // console.error(`❌ Erro ao processar função ${funcName}:`, error);
+          console.error(`❌ SecurityService: Erro ao processar função ${funcName}:`, error);
           results.push({ function: funcName, status: 'error', error: error });
         }
       }
       
+      console.log('✅ SecurityService: Correções de segurança aplicadas');
       return {
         success: true,
         message: 'Correções de segurança aplicadas',
@@ -73,7 +74,7 @@ export const securityService = {
       };
       
     } catch (error) {
-      // console.error('❌ Erro geral ao aplicar correções de segurança:', error);
+      console.error('❌ SecurityService: Erro ao aplicar correções de segurança:', error);
       return {
         success: false,
         message: 'Erro ao aplicar correções de segurança',
@@ -87,13 +88,13 @@ export const securityService = {
    */
   async optimizeRLSPolicies(): Promise<SecurityFixResult> {
     try {
-      // console.log('⚡ Iniciando otimização das políticas RLS...');
+      console.log('🔄 SecurityService: Otimizando políticas RLS');
       
       // Executar otimizações de RLS usando função SQL
       const { error } = await supabase.rpc('optimize_rls_policies');
       
       if (error) {
-        // console.error('❌ Erro ao otimizar políticas RLS:', error);
+        console.error('❌ SecurityService: Erro ao otimizar políticas RLS:', error);
         return {
           success: false,
           message: 'Erro ao otimizar políticas RLS',
@@ -101,14 +102,14 @@ export const securityService = {
         };
       }
       
-      // console.log('✅ Políticas RLS otimizadas com sucesso');
+
       return {
         success: true,
         message: 'Políticas RLS otimizadas com sucesso'
       };
       
     } catch (error) {
-      // console.error('❌ Erro ao otimizar políticas RLS:', error);
+
       return {
         success: false,
         message: 'Erro ao otimizar políticas RLS',
@@ -122,7 +123,7 @@ export const securityService = {
    */
   async removeUnusedIndexes(): Promise<SecurityFixResult> {
     try {
-      // console.log('🗑️ Iniciando remoção de índices não utilizados...');
+
       
       // Lista de índices identificados como não utilizados
       const unusedIndexes = [
@@ -154,14 +155,14 @@ export const securityService = {
           });
           
           if (error) {
-            // console.warn(`⚠️ Erro ao remover índice ${indexName}:`, error);
+
             results.push({ index: indexName, status: 'error', error: error.message });
           } else {
-            // console.log(`✅ Índice ${indexName} removido com sucesso`);
+
             results.push({ index: indexName, status: 'removed' });
           }
         } catch (error) {
-          // console.error(`❌ Erro ao processar índice ${indexName}:`, error);
+
           results.push({ index: indexName, status: 'error', error: error });
         }
       }
@@ -173,7 +174,7 @@ export const securityService = {
       };
       
     } catch (error) {
-      // console.error('❌ Erro ao remover índices não utilizados:', error);
+
       return {
         success: false,
         message: 'Erro ao remover índices não utilizados',
@@ -187,12 +188,12 @@ export const securityService = {
    */
   async verifySecurityConfiguration(): Promise<SecurityFixResult> {
     try {
-      // console.log('🔍 Verificando configurações de segurança...');
+
       
       const { data, error } = await supabase.rpc('verify_security_configuration');
       
       if (error) {
-        // console.error('❌ Erro ao verificar configurações:', error);
+
         return {
           success: false,
           message: 'Erro ao verificar configurações de segurança',
@@ -200,7 +201,7 @@ export const securityService = {
         };
       }
       
-      // console.log('✅ Verificação de segurança concluída:', data);
+
       return {
         success: true,
         message: 'Verificação de segurança concluída',
@@ -208,7 +209,7 @@ export const securityService = {
       };
       
     } catch (error) {
-      // console.error('❌ Erro na verificação de segurança:', error);
+
       return {
         success: false,
         message: 'Erro na verificação de segurança',
@@ -221,31 +222,31 @@ export const securityService = {
    * Executa todas as correções de segurança em sequência
    */
   async executeFullSecurityPlan(): Promise<SecurityFixResult[]> {
-    // console.log('🚀 Iniciando execução completa do plano de segurança...');
+
     
     const results: SecurityFixResult[] = [];
     
     // Fase 1: Correções críticas de segurança
-    // console.log('📋 Fase 1: Aplicando correções críticas de segurança...');
+
     const securityFixes = await this.applySecurityFixes();
     results.push(securityFixes);
     
     // Fase 2: Otimização de políticas RLS
-    // console.log('📋 Fase 2: Otimizando políticas RLS...');
+
     const rlsOptimization = await this.optimizeRLSPolicies();
     results.push(rlsOptimization);
     
     // Fase 3: Remoção de índices não utilizados
-    // console.log('📋 Fase 3: Removendo índices não utilizados...');
+
     const indexCleanup = await this.removeUnusedIndexes();
     results.push(indexCleanup);
     
     // Fase 4: Verificação final
-    // console.log('📋 Fase 4: Verificação final de segurança...');
+
     const verification = await this.verifySecurityConfiguration();
     results.push(verification);
     
-    // console.log('🎉 Execução completa do plano de segurança finalizada!');
+
     return results;
   }
 };

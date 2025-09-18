@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +31,12 @@ import {
 } from 'recharts';
 
 interface Employee {
-  id: string;
+  id: string | number;
   name: string;
   position: string;
   classification: string;
   unit: string;
+  units: string[];
   salary: number;
   transport: number;
   bonus: number;
@@ -46,11 +48,20 @@ interface Employee {
   bistro: number;
   advance: number;
   discount: number;
+  total: number;
   bank: string;
   agency: string;
   account: string;
   cpf: string;
   pix: string;
+  notes: string;
+  date: string;
+  // Campos adicionais para professores multi-unidade
+  salaryRecreio?: number;
+  salaryCampoGrande?: number;
+  salaryBarra?: number;
+  lalita?: number;
+  passagens?: number;
 }
 
 interface UnitSummary {
@@ -62,22 +73,40 @@ interface UnitSummary {
 }
 
 interface PayrollDetailsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   totalGeneral: number;
-  allEmployees: Employee[];
-  unitSummaries: UnitSummary[];
+  allEmployees: any[];
+  unitSummaries: any[];
   formatCurrency: (value: number) => string;
 }
 
 const PayrollDetailsModal: React.FC<PayrollDetailsModalProps> = ({
-  isOpen,
-  onClose,
+  open,
+  onOpenChange,
   totalGeneral,
   allEmployees,
   unitSummaries,
   formatCurrency,
 }) => {
+
+
+  // Verificar se temos dados válidos
+  if (!allEmployees || allEmployees.length === 0) {
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Folha de Pagamento</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center">
+            <p className="text-gray-500">Nenhum dado de folha de pagamento encontrado.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
   // Calcular estatísticas detalhadas
   const totalEmployees = allEmployees.length;
   const averageSalary = totalEmployees > 0 ? totalGeneral / totalEmployees : 0;
@@ -131,13 +160,16 @@ const PayrollDetailsModal: React.FC<PayrollDetailsModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="w-6 h-6 text-blue-600" />
             Detalhes da Folha de Pagamento - Total Geral
           </DialogTitle>
+          <DialogDescription>
+            Visualização detalhada dos dados da folha de pagamento com estatísticas, gráficos e resumos por unidade.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -325,6 +357,141 @@ const PayrollDetailsModal: React.FC<PayrollDetailsModalProps> = ({
                         Média: {formatCurrency(item.value / item.count)}
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Detalhes dos Funcionários */}
+          <Card className="bg-white/60 backdrop-blur-md border border-white/30 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Detalhes dos Funcionários
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {allEmployees.map((employee) => (
+                  <div key={employee.id} className="p-4 border rounded-lg bg-white/40">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold text-lg">{employee.name}</h4>
+                        <p className="text-sm text-gray-600">{employee.position}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="outline">{employee.classification}</Badge>
+                          <Badge variant="secondary">{employee.unit}</Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg">{formatCurrency(employee.total)}</div>
+                        <div className="text-sm text-gray-500">Total</div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-600">Salário:</span>
+                        <div className="font-medium">{formatCurrency(employee.salary)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Vale Transporte:</span>
+                        <div className="font-medium">{formatCurrency(employee.transport)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">13º Salário:</span>
+                        <div className="font-medium">{formatCurrency(employee.thirteenth)}</div>
+                      </div>
+                      {employee.bonus > 0 && (
+                        <div>
+                          <span className="text-gray-600">Bônus:</span>
+                          <div className="font-medium">{formatCurrency(employee.bonus)}</div>
+                        </div>
+                      )}
+                      {employee.commission > 0 && (
+                        <div>
+                          <span className="text-gray-600">Comissão:</span>
+                          <div className="font-medium">{formatCurrency(employee.commission)}</div>
+                        </div>
+                      )}
+                      {employee.reimbursement > 0 && (
+                        <div>
+                          <span className="text-gray-600">Reembolso:</span>
+                          <div className="font-medium">{formatCurrency(employee.reimbursement)}</div>
+                        </div>
+                      )}
+                      {employee.inss > 0 && (
+                        <div>
+                          <span className="text-gray-600">INSS:</span>
+                          <div className="font-medium text-red-600">-{formatCurrency(employee.inss)}</div>
+                        </div>
+                      )}
+                      {employee.store > 0 && (
+                        <div>
+                          <span className="text-gray-600">Loja:</span>
+                          <div className="font-medium text-red-600">-{formatCurrency(employee.store)}</div>
+                        </div>
+                      )}
+                      {employee.bistro > 0 && (
+                        <div>
+                          <span className="text-gray-600">Bistrô:</span>
+                          <div className="font-medium text-red-600">-{formatCurrency(employee.bistro)}</div>
+                        </div>
+                      )}
+                      {employee.advance > 0 && (
+                        <div>
+                          <span className="text-gray-600">Adiantamento:</span>
+                          <div className="font-medium text-red-600">-{formatCurrency(employee.advance)}</div>
+                        </div>
+                      )}
+                      {employee.discount > 0 && (
+                        <div>
+                          <span className="text-gray-600">Desconto:</span>
+                          <div className="font-medium text-red-600">-{formatCurrency(employee.discount)}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Informações Bancárias */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">Banco:</span>
+                          <div className="font-medium">{employee.bank || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Agência:</span>
+                          <div className="font-medium">{employee.agency || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Conta:</span>
+                          <div className="font-medium">{employee.account || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">PIX:</span>
+                          <div className="font-medium">{employee.pix || 'N/A'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notas e Data */}
+                    {(employee.notes || employee.date) && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        {employee.date && (
+                          <div className="mb-2">
+                            <span className="text-gray-600 text-sm">Data:</span>
+                            <div className="font-medium">{employee.date}</div>
+                          </div>
+                        )}
+                        {employee.notes && (
+                          <div>
+                            <span className="text-gray-600 text-sm">Notas:</span>
+                            <div className="font-medium bg-yellow-50 p-2 rounded mt-1">{employee.notes}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

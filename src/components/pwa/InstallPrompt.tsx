@@ -71,7 +71,7 @@ export const InstallPrompt: React.FC = () => {
         setTimeout(() => setShowPrompt(false), 300);
       }
     } catch (error) {
-      console.log('Erro ao instalar PWA:', error);
+
     }
   };
 

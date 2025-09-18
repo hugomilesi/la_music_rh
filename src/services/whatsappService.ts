@@ -32,32 +32,34 @@ export class WhatsAppService {
   // Enviar mensagem via Evolution API
   static async sendMessage(phoneNumber: string, message: string): Promise<boolean> {
     try {
-      console.log(`📞 WhatsAppService.sendMessage iniciado para: ${phoneNumber}`);
+      console.log('WhatsAppService: Enviando mensagem para:', phoneNumber);
       
       // Validar número de telefone
       const cleanPhone = this.cleanPhoneNumber(phoneNumber);
       if (!cleanPhone) {
-        console.error('❌ Número de telefone inválido:', phoneNumber);
+        console.error('WhatsAppService: Número de telefone inválido:', phoneNumber);
         return false;
       }
-      console.log(`✅ Número limpo: ${cleanPhone}`);
+      
+      console.log('WhatsAppService: Número limpo:', cleanPhone);
 
       // Preparar dados da mensagem
       const messageData = {
         number: cleanPhone,
         text: message
       };
-      console.log(`📝 Dados da mensagem:`, messageData);
+      
+      console.log('WhatsAppService: Dados da mensagem preparados');
 
       // Validar configuração antes de enviar
       if (!validateEvolutionApiConfig(this.config)) {
-        console.error('❌ Configuração da Evolution API inválida');
+    
         return false;
       }
 
       // Fazer requisição para Evolution API
       const fullUrl = formatApiUrl(this.config.apiUrl, `/message/sendText/${this.config.instanceName}`);
-      console.log(`🌐 URL da API: ${fullUrl}`);
+    
       
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -65,23 +67,23 @@ export class WhatsAppService {
         body: JSON.stringify(messageData)
       });
       
-      console.log(`📡 Resposta da API - Status: ${response.status}`);
+    
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erro na Evolution API:', response.status, errorText);
+    
         return false;
       }
 
       const result = await response.json();
-      console.log('✅ Mensagem enviada com sucesso:', result);
+    
 
       // Registrar mensagem no banco
       await this.logMessage(cleanPhone, message, 'sent', result.key?.id);
 
       return true;
     } catch (error) {
-      console.error('Erro ao enviar mensagem WhatsApp:', error);
+  
       
       // Registrar erro no banco
       await this.logMessage(phoneNumber, message, 'failed', undefined, error instanceof Error ? error.message : 'Erro desconhecido');
@@ -325,7 +327,7 @@ export class WhatsAppService {
           .eq('id', send.id);
 
         if (updateError) {
-          console.error('Erro ao atualizar resposta:', updateError);
+    
           return;
         }
 

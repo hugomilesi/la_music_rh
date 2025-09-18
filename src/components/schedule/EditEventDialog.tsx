@@ -31,12 +31,12 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { ScheduleEvent } from '@/types/schedule';
-import { Unit, UNITS } from '@/types/unit';
+import { ScheduleUnit, SCHEDULE_UNITS } from '@/types/unit';
 
 const editEventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.nativeEnum(Unit, { required_error: 'Unidade é obrigatória' }),
+  unit: z.nativeEnum(ScheduleUnit, { required_error: 'Unidade é obrigatória' }),
   date: z.date({ required_error: 'Data é obrigatória' }),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de fim é obrigatório'),
@@ -70,7 +70,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
     defaultValues: {
       title: '',
       employeeId: '',
-      unit: Unit.CAMPO_GRANDE,
+      unit: ScheduleUnit.CAMPO_GRANDE,
       startTime: '',
       endTime: '',
       type: 'outro',
@@ -87,7 +87,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
       form.reset({
         title: event.title,
         employeeId: event.employeeId,
-        unit: event.unit as Unit,
+        unit: event.unit as ScheduleUnit,
         date: new Date(event.date),
         startTime: event.startTime,
         endTime: event.endTime,
@@ -238,7 +238,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {UNITS.map((unit) => (
+                        {SCHEDULE_UNITS.map((unit) => (
                           <SelectItem key={unit.id} value={unit.id}>
                             <div className="flex items-center gap-2">
                               <div className={`w-3 h-3 rounded-full ${unit.color}`}></div>

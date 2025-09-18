@@ -45,7 +45,7 @@ export const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao excluir usuário:', error);
+
       toast({
         title: "Erro ao remover usuário",
         description: "Tente novamente em alguns instantes",

@@ -32,9 +32,9 @@ export default function ProfilePage() {
   
   // Profile form state
   const [profileData, setProfileData] = useState({
-    full_name: profile?.full_name || '',
+    username: profile?.username || '',
     phone: profile?.phone || '',
-    department: profile?.departamento || '',
+    department: profile?.department || '',
     position: profile?.position || '',
     bio: profile?.bio || '',
     address: profile?.address || '',
@@ -203,7 +203,7 @@ export default function ProfilePage() {
               <div className="flex flex-col items-center space-y-4">
                 <AvatarUpload size="lg" />
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold">{profile?.full_name || 'Usuário'}</h3>
+                  <h3 className="text-lg font-semibold">{profile?.username || 'Usuário'}</h3>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                   {profile?.role && (
                     <Badge className={`mt-2 ${getRoleColor(profile.role)}`}>
@@ -254,12 +254,12 @@ export default function ProfilePage() {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">Nome Completo</Label>
+                    <Label htmlFor="username">Nome de Usuário</Label>
                     <Input
-                      id="full_name"
-                      value={profileData.full_name}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
-                      placeholder="Seu nome completo"
+                      id="username"
+                      value={profileData.username}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder="Seu nome de usuário"
                     />
                   </div>
                   

@@ -9,7 +9,7 @@ import { useSchedule } from '@/contexts/ScheduleContext';
 import { useUnit } from '@/contexts/UnitContext';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleEvent } from '@/types/schedule';
-import { getUnitInfo } from '@/types/unit';
+import { getScheduleUnitInfo } from '@/types/unit';
 import NewEventDialog from '@/components/schedule/NewEventDialog';
 import EventDetailsModal from '@/components/schedule/EventDetailsModal';
 import EditEventDialog from '@/components/schedule/EditEventDialog';
@@ -390,7 +390,7 @@ const SchedulePage: React.FC = () => {
                           
                           <div className="space-y-2 mt-2">
                             {dayEvents.slice(0, 2).map(event => {
-                              const unitInfo = getUnitInfo(event.unit);
+                              const unitInfo = getScheduleUnitInfo(event.unit);
                               return (
                                 <Tooltip key={event.id}>
                                   <TooltipTrigger asChild>
@@ -503,7 +503,7 @@ const SchedulePage: React.FC = () => {
                     </div>
                   ) : (
                     filteredEvents.slice(0, 5).map(event => {
-                      const unitInfo = getUnitInfo(event.unit);
+                      const unitInfo = getScheduleUnitInfo(event.unit);
                       return (
                         <div 
                           key={event.id} 

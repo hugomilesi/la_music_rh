@@ -13,51 +13,99 @@ import type {
 export class RecognitionService {
   // Programas de Reconhecimento
   static async getPrograms(): Promise<RecognitionProgram[]> {
-    const { data, error } = await supabase
-      .from('recognition_programs')
-      .select('*')
-      .eq('is_active', true)
-      .order('name')
+    try {
+      console.log('RecognitionService: Buscando programas de reconhecimento...');
+      
+      const { data, error } = await supabase
+        .from('recognition_programs')
+        .select('*')
+        .eq('is_active', true)
+        .order('name')
 
-    if (error) throw error
-    return data || []
+      if (error) {
+        console.error('RecognitionService: Erro ao buscar programas:', error);
+        throw error;
+      }
+      
+      console.log('RecognitionService: Programas encontrados:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('RecognitionService: Erro em getPrograms:', error);
+      throw error;
+    }
   }
 
   static async getProgramById(id: string): Promise<RecognitionProgram | null> {
-    const { data, error } = await supabase
-      .from('recognition_programs')
-      .select('*')
-      .eq('id', id)
-      .single()
+    try {
+      console.log('RecognitionService: Buscando programa por ID:', id);
+      
+      const { data, error } = await supabase
+        .from('recognition_programs')
+        .select('*')
+        .eq('id', id)
+        .single()
 
-    if (error) throw error
-    return data
+      if (error) {
+        console.error('RecognitionService: Erro ao buscar programa:', error);
+        throw error;
+      }
+      
+      console.log('RecognitionService: Programa encontrado:', data ? 'Sim' : 'Não');
+      return data;
+    } catch (error) {
+      console.error('RecognitionService: Erro em getProgramById:', error);
+      throw error;
+    }
   }
 
   // Critérios de Reconhecimento
   static async getCriteriaByProgram(programId: string): Promise<RecognitionCriterion[]> {
-    const { data, error } = await supabase
-      .from('recognition_criteria')
-      .select('*')
-      .eq('program_id', programId)
-      .order('order_index')
+    try {
+      console.log('RecognitionService: Buscando critérios do programa:', programId);
+      
+      const { data, error } = await supabase
+        .from('recognition_criteria')
+        .select('*')
+        .eq('program_id', programId)
+        .order('order_index')
 
-    if (error) throw error
-    return data || []
+      if (error) {
+        console.error('RecognitionService: Erro ao buscar critérios:', error);
+        throw error;
+      }
+      
+      console.log('RecognitionService: Critérios encontrados:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('RecognitionService: Erro em getCriteriaByProgram:', error);
+      throw error;
+    }
   }
 
   // Avaliações de Funcionários
   static async createEmployeeEvaluation(
     evaluation: Omit<EmployeeEvaluation, 'id' | 'created_at' | 'updated_at'>
   ): Promise<EmployeeEvaluation> {
-    const { data, error } = await supabase
-      .from('employee_evaluations')
-      .insert(evaluation)
-      .select()
-      .single()
+    try {
+      console.log('RecognitionService: Criando avaliação do funcionário:', evaluation.employee_id);
+      
+      const { data, error } = await supabase
+        .from('employee_evaluations')
+        .insert(evaluation)
+        .select()
+        .single()
 
-    if (error) throw error
-    return data
+      if (error) {
+        console.error('RecognitionService: Erro ao criar avaliação:', error);
+        throw error;
+      }
+      
+      console.log('RecognitionService: Avaliação criada com sucesso:', data.id);
+      return data;
+    } catch (error) {
+      console.error('RecognitionService: Erro em createEmployeeEvaluation:', error);
+      throw error;
+    }
   }
 
   static async getEmployeeEvaluations(
@@ -65,23 +113,35 @@ export class RecognitionService {
     programId?: string,
     evaluationPeriod?: string
   ): Promise<EmployeeEvaluation[]> {
-    let query = supabase
-      .from('employee_evaluations')
-      .select('*')
-      .eq('employee_id', employeeId)
+    try {
+      console.log('RecognitionService: Buscando avaliações do funcionário:', employeeId);
+      
+      let query = supabase
+        .from('employee_evaluations')
+        .select('*')
+        .eq('employee_id', employeeId)
 
-    if (programId) {
-      query = query.eq('program_id', programId)
+      if (programId) {
+        query = query.eq('program_id', programId)
+      }
+
+      if (evaluationPeriod) {
+        query = query.eq('evaluation_period', evaluationPeriod)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('RecognitionService: Erro ao buscar avaliações:', error);
+        throw error;
+      }
+      
+      console.log('RecognitionService: Avaliações encontradas:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('RecognitionService: Erro em getEmployeeEvaluations:', error);
+      throw error;
     }
-
-    if (evaluationPeriod) {
-      query = query.eq('evaluation_period', evaluationPeriod)
-    }
-
-    const { data, error } = await query.order('evaluation_date', { ascending: false })
-
-    if (error) throw error
-    return data || []
   }
 
   // Avaliações de Critérios
@@ -126,7 +186,7 @@ export class RecognitionService {
       .from('employee_achievements')
       .select(`
         *,
-        users(full_name)
+        users(username)
       `)
       .order('achievement_date', { ascending: false })
       .limit(10)
@@ -338,7 +398,7 @@ export class RecognitionService {
 
       // 1. Atualizar a avaliação do funcionário
       const { data: evaluation, error: evalError } = await supabase
-        .from('employee_evaluations')
+        .from('evaluations')
         .update({
           program_id: data.programId,
           evaluation_period: data.evaluationPeriod,
@@ -380,7 +440,7 @@ export class RecognitionService {
 
       return evaluation;
     } catch (error) {
-      // Log desabilitado: Error updating evaluation
+      console.log('RecognitionService: ❌ Erro em updateEmployeeEvaluation:', error);
       throw error;
     }
   }
@@ -388,14 +448,19 @@ export class RecognitionService {
   // Função para deletar uma avaliação
   static async deleteEmployeeEvaluation(evaluationId: string) {
     try {
+      console.log('🔄 RecognitionService: Deletando avaliação do funcionário:', evaluationId);
+      
       // 1. Buscar dados da avaliação antes de deletar
       const { data: evaluation, error: fetchError } = await supabase
-        .from('employee_evaluations')
+        .from('evaluations')
         .select('employee_id, evaluation_period')
         .eq('id', evaluationId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ RecognitionService: Erro ao buscar dados da avaliação:', fetchError);
+        throw fetchError;
+      }
 
       // 2. Deletar avaliações de critérios
       const { error: criteriaError } = await supabase
@@ -403,7 +468,10 @@ export class RecognitionService {
         .delete()
         .eq('evaluation_id', evaluationId);
 
-      if (criteriaError) throw criteriaError;
+      if (criteriaError) {
+        console.error('❌ RecognitionService: Erro ao deletar avaliações de critérios:', criteriaError);
+        throw criteriaError;
+      }
 
       // 3. Deletar a avaliação
       const { error: evalError } = await supabase
@@ -411,16 +479,19 @@ export class RecognitionService {
         .delete()
         .eq('id', evaluationId);
 
-      if (evalError) throw evalError;
+      if (evalError) {
+        console.error('❌ RecognitionService: Erro ao deletar avaliação:', evalError);
+        throw evalError;
+      }
 
       // 4. Atualizar o progresso mensal
       await this.updateMonthlyProgress(evaluation.employee_id, evaluation.evaluation_period);
 
+      console.log('✅ RecognitionService: Avaliação deletada com sucesso:', evaluationId);
       return true;
     } catch (error) {
-       // Log desabilitado: Error deleting evaluation
-       throw error;
-     }
-   }
-
- }
+      console.error('❌ RecognitionService: Erro em deleteEmployeeEvaluation:', error);
+      throw error;
+    }
+  }
+}

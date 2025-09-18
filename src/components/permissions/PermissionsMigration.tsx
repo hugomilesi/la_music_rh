@@ -160,12 +160,12 @@ const PermissionsMigration: React.FC = () => {
         });
         
         if (error) {
-          console.warn(`Warning testing permission ${permission}:`, error);
+  
         } else {
           // Log desabilitado: Permission test result
         }
       } catch (err) {
-        console.warn(`Error testing permission ${permission}:`, err);
+
       }
     }
   };

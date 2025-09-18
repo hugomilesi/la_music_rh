@@ -39,7 +39,7 @@ export default function PermissionsDebug() {
           <CardTitle>Perfil do Usuário</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div><strong>Nome:</strong> {profile?.full_name || 'N/A'}</div>
+          <div><strong>Nome:</strong> {profile?.username || 'N/A'}</div>
           <div><strong>Email:</strong> {profile?.email || 'N/A'}</div>
           <div><strong>Role:</strong> <Badge>{profile?.role || 'N/A'}</Badge></div>
           <div><strong>Status:</strong> <Badge>{profile?.status || 'N/A'}</Badge></div>

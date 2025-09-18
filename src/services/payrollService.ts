@@ -5,143 +5,274 @@ import type { Payroll, PayrollEntry, Unit, PayrollAllocation, PayrollFilters } f
 export const payrollService = {
   // Payroll Cycles
   async getPayrolls(): Promise<Payroll[]> {
-    const { data, error } = await supabase
-      .from('payrolls')
-      .select('*')
-      .order('year', { ascending: false })
-      .order('month', { ascending: false });
+    try {
+      console.log('🔄 PayrollService: Buscando folhas de pagamento');
+      
+      const { data, error } = await supabase
+        .from('payrolls')
+        .select('*')
+        .order('year', { ascending: false })
+        .order('month', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        console.error('❌ PayrollService: Erro ao buscar folhas:', error);
+        throw error;
+      }
+
+      console.log(`✅ PayrollService: ${data?.length || 0} folhas encontradas`);
+      return data || [];
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao buscar folhas de pagamento:', error);
+      throw error;
+    }
   },
 
   async getPayroll(month: number, year: number): Promise<Payroll | null> {
-    const { data, error } = await supabase
-      .from('payrolls')
-      .select('*')
-      .eq('month', month)
-      .eq('year', year)
-      .maybeSingle();
+    try {
+      console.log('🔄 PayrollService: Buscando folha específica:', { month, year });
+      
+      const { data, error } = await supabase
+        .from('payrolls')
+        .select('*')
+        .eq('month', month)
+        .eq('year', year)
+        .maybeSingle();
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao buscar folha específica:', error);
+        throw error;
+      }
+      
+      console.log('✅ PayrollService: Folha encontrada:', data ? 'Sim' : 'Não');
+      return data;
+    } catch (error) {
+      console.error('❌ PayrollService: Erro em getPayroll:', error);
+      throw error;
+    }
   },
 
   async createPayroll(month: number, year: number, duplicateFrom?: { month: number; year: number }): Promise<Payroll> {
-    const { data, error } = await supabase
-      .from('payrolls')
-      .insert({ month, year })
-      .select()
-      .single();
+    try {
+      console.log('🔄 PayrollService: Criando nova folha de pagamento:', { month, year });
+      
+      const { data, error } = await supabase
+        .from('payrolls')
+        .insert({ month, year })
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao criar folha:', error);
+        throw error;
+      }
 
-    // Create payroll entries
-    if (duplicateFrom) {
-      await this.duplicatePayrollEntries(data.id, duplicateFrom);
-    } else {
-      await this.createPayrollEntries(data.id, month, year);
+      console.log('✅ PayrollService: Folha criada com sucesso:', data.id);
+
+      // Create payroll entries
+      if (duplicateFrom) {
+        await this.duplicatePayrollEntries(data.id, duplicateFrom);
+      } else {
+        await this.createPayrollEntries(data.id, month, year);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao criar folha de pagamento:', error);
+      throw error;
     }
-
-    return data;
   },
 
   async updatePayrollStatus(id: string, status: 'draft' | 'approved' | 'paid'): Promise<void> {
-    const { error } = await supabase
-      .from('payrolls')
-      .update({ status })
-      .eq('id', id);
+    try {
+      console.log('🔄 PayrollService: Atualizando status da folha:', { id, status });
+      
+      const { error } = await supabase
+        .from('payrolls')
+        .update({ status })
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao atualizar status:', error);
+        throw error;
+      }
+
+      console.log('✅ PayrollService: Status atualizado com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao atualizar status da folha:', error);
+      throw error;
+    }
   },
 
   async deletePayroll(id: string): Promise<void> {
-    // First delete related entries
-    const { error: entriesError } = await supabase
-      .from('folha_pagamento')
-      .delete()
-      .eq('payroll_id', id);
+    try {
+      console.log('🔄 PayrollService: Deletando folha de pagamento:', id);
+      
+      // First delete related entries
+      const { error: entriesError } = await supabase
+        .from('folha_pagamento')
+        .delete()
+        .eq('payroll_id', id);
 
-    if (entriesError) throw entriesError;
+      if (entriesError) {
+        console.error('❌ PayrollService: Erro ao deletar entradas:', entriesError);
+        throw entriesError;
+      }
 
-    // Then delete the payroll
-    const { error } = await supabase
-      .from('payrolls')
-      .delete()
-      .eq('id', id);
+      // Then delete the payroll
+      const { error } = await supabase
+        .from('payrolls')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao deletar folha:', error);
+        throw error;
+      }
+
+      console.log('✅ PayrollService: Folha deletada com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao deletar folha de pagamento:', error);
+      throw error;
+    }
   },
 
   // Payroll Entries
+  async getAllPayrollEntries(filters?: PayrollFilters): Promise<PayrollEntry[]> {
+    try {
+      console.log('🔄 PayrollService: Buscando entradas da folha de pagamento', filters);
+      
+      // Get ALL payroll entries from folha_pagamento table without month/year filter
+      let payrollQuery = supabase
+        .from('folha_pagamento')
+        .select('*')
+        .order('ano', { ascending: false })
+        .order('mes', { ascending: false })
+        .order('id');
+
+      if (filters?.classification) {
+        payrollQuery = payrollQuery.eq('classificacao', filters.classification);
+      }
+
+      if (filters?.role) {
+        payrollQuery = payrollQuery.ilike('funcao', `%${filters.role}%`);
+      }
+
+      if (filters?.name) {
+        payrollQuery = payrollQuery.ilike('nome_colaborador', `%${filters.name}%`);
+      }
+
+      const { data: payrollData, error: payrollError } = await payrollQuery;
+      
+      if (payrollError) {
+        console.error('❌ PayrollService: Erro ao buscar entradas:', payrollError);
+        throw payrollError;
+      }
+
+      if (!payrollData || payrollData.length === 0) {
+        console.log('⚠️ PayrollService: Nenhuma entrada encontrada');
+        return [];
+      }
+
+      console.log(`✅ PayrollService: ${payrollData.length} entradas encontradas`);
+
+      // Map data directly from folha_pagamento table
+      const mappedData = payrollData.map(entry => ({
+        id: entry.id,
+        collaborator_id: entry.colaborador_id,
+        collaborator_name: entry.nome_colaborador || '',
+        month: entry.mes,
+        year: entry.ano,
+        classification: entry.classificacao || '',
+        role: entry.funcao || '',
+        base_salary: entry.salario_base || 0,
+        bonus: entry.bonus || 0,
+        commission: entry.comissao || 0,
+        transport: entry.passagem || 0,
+        reimbursement: entry.reembolso || 0,
+        inss: entry.inss || 0,
+        store_discount: entry.lojinha || 0,
+        bistro_discount: entry.bistro || 0,
+        advance: entry.adiantamento || 0,
+        other_discounts: entry.outros_descontos || 0,
+        transport_voucher: entry.transport_voucher || 0,
+        salary_advance: entry.salary_advance || 0,
+        observations: entry.observacoes || '',
+      status: entry.status || 'pendente',
+      approved_by: entry.aprovado_por,
+      approved_at: entry.aprovado_em,
+      created_at: entry.created_at,
+      updated_at: entry.updated_at,
+      payroll_id: entry.payroll_id,
+      // Use data from folha_pagamento table
+      unidade: entry.unidade || '',
+      nome_colaborador: entry.nome_colaborador || '',
+      cpf_colaborador: entry.cpf_colaborador || '',
+      banco: entry.banco || '',
+      agencia: entry.agencia || '',
+      conta: entry.conta || '',
+      pix: entry.pix || '',
+      salario_base: entry.salario_base || 0,
+      comissao: entry.comissao || 0,
+      passagem: entry.passagem || 0,
+      reembolso: entry.reembolso || 0,
+      lojinha: entry.lojinha || 0,
+      bistro: entry.bistro || 0,
+      adiantamento: entry.adiantamento || 0,
+      outros_descontos: entry.outros_descontos || 0,
+      funcao: entry.funcao || '',
+      classificacao: entry.classificacao || '',
+    }));
+
+    return mappedData;
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao buscar entradas da folha de pagamento:', error);
+      throw error;
+    }
+  },
+
   async getPayrollEntries(month: number, year: number, filters?: PayrollFilters): Promise<PayrollEntry[]> {
-    // First get the payroll entries
-    let payrollQuery = supabase
-      .from('folha_pagamento')
-      .select('*')
-      .eq('mes', month)
-      .eq('ano', year)
-      .order('id');
+    try {
+      console.log('🔄 PayrollService: Buscando entradas da folha para:', { month, year, filters });
+      
+      // Get payroll entries directly from folha_pagamento table
+      let payrollQuery = supabase
+        .from('folha_pagamento')
+        .select('*')
+        .eq('mes', month)
+        .eq('ano', year)
+        .order('id');
 
-    if (filters?.classification) {
-      payrollQuery = payrollQuery.eq('classificacao', filters.classification);
-    }
+      if (filters?.classification) {
+        payrollQuery = payrollQuery.eq('classificacao', filters.classification);
+      }
 
-    if (filters?.role) {
-      payrollQuery = payrollQuery.ilike('funcao', `%${filters.role}%`);
-    }
+      if (filters?.role) {
+        payrollQuery = payrollQuery.ilike('funcao', `%${filters.role}%`);
+      }
 
-    const { data: payrollData, error: payrollError } = await payrollQuery;
-    if (payrollError) throw payrollError;
+      if (filters?.name) {
+        payrollQuery = payrollQuery.ilike('nome_colaborador', `%${filters.name}%`);
+      }
 
-    if (!payrollData || payrollData.length === 0) {
-      return [];
-    }
+      const { data: payrollData, error: payrollError } = await payrollQuery;
+      
+      if (payrollError) {
+        console.error('❌ PayrollService: Erro ao buscar entradas:', payrollError);
+        throw payrollError;
+      }
 
-    // Get user data for all collaborators
-    const collaboratorIds = payrollData.map(entry => entry.colaborador_id).filter(Boolean);
-    // Log desabilitado: Collaborator IDs
-    
-    let usersQuery = supabase
-      .from('users')
-      .select('auth_user_id, full_name, cpf, units, department, bank, agency, account, pix')
-      .in('auth_user_id', collaboratorIds);
+      if (!payrollData || payrollData.length === 0) {
+        console.log('⚠️ PayrollService: Nenhuma entrada encontrada para o período');
+        return [];
+      }
 
-    if (filters?.name) {
-      usersQuery = usersQuery.ilike('full_name', `%${filters.name}%`);
-    }
+      console.log(`✅ PayrollService: ${payrollData.length} entradas encontradas`);
 
-    const { data: usersData, error: usersError } = await usersQuery;
-    if (usersError) {
-      // Log desabilitado: Users query error
-      throw usersError;
-    }
-    // Log desabilitado: Users data retrieved
-    // Log desabilitado: Users query details
-
-    // Create a map of users by auth_user_id for quick lookup
-    const usersMap = new Map();
-    usersData?.forEach(user => {
-      usersMap.set(user.auth_user_id, user);
-    });
-
-    // Combine the data
-    const data = payrollData.map(entry => {
-      const user = usersMap.get(entry.colaborador_id);
-      return {
-        ...entry,
-        users: user || null
-      };
-    }).filter(entry => {
-      // Filter out entries where user data is missing (if name filter was applied)
-      return !filters?.name || entry.users;
-    });
-    
-    // Mapear os dados para o formato esperado pelo frontend
-    const mappedData = data?.map(entry => ({
+      // Map data directly from folha_pagamento table
+      const mappedData = payrollData.map(entry => ({
       id: entry.id,
       collaborator_id: entry.colaborador_id,
-      collaborator_name: entry.users?.full_name || '',
+      collaborator_name: entry.nome_colaborador || '',
       month: entry.mes,
       year: entry.ano,
       classification: entry.classificacao || '',
@@ -165,19 +296,42 @@ export const payrollService = {
       created_at: entry.created_at,
       updated_at: entry.updated_at,
       payroll_id: entry.payroll_id,
-      // Preserve users object for PayrollPage compatibility
-      users: entry.users,
-      // Dados pessoais otimizados - agora vêm da tabela users
-      units: entry.users?.units || [],
-      department: entry.users?.department || '',
-      bank: entry.users?.bank || '',
-      agency: entry.users?.agency || '',
-      account: entry.users?.account || '',
-      cpf: entry.users?.cpf || '',
-      pix: entry.users?.pix || ''
-    })) || [];
+      // Use data from folha_pagamento table
+      unidade: entry.unidade || '',
+      nome_colaborador: entry.nome_colaborador || '',
+      cpf_colaborador: entry.cpf_colaborador || '',
+      banco: entry.banco || '',
+      agencia: entry.agencia || '',
+      conta: entry.conta || '',
+      pix: entry.pix || '',
+      salario_base: entry.salario_base || 0,
+      comissao: entry.comissao || 0,
+      passagem: entry.passagem || 0,
+      reembolso: entry.reembolso || 0,
+      lojinha: entry.lojinha || 0,
+      bistro: entry.bistro || 0,
+      adiantamento: entry.adiantamento || 0,
+      outros_descontos: entry.outros_descontos || 0,
+      funcao: entry.funcao || '',
+      classificacao: entry.classificacao || '',
+      // Create a mock users object for compatibility with existing PayrollPage code
+      users: {
+        username: entry.nome_colaborador || '',
+        cpf: entry.cpf_colaborador || '',
+        units: entry.unidade ? [entry.unidade.toLowerCase()] : [],
+        unit: entry.unidade || '',
+        bank: entry.banco || '',
+        agency: entry.agencia || '',
+        account: entry.conta || '',
+        pix: entry.pix || ''
+      }
+    }));
     
     return mappedData;
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao buscar entradas da folha de pagamento:', error);
+      throw error;
+    }
   },
 
   async createPayrollEntry(entry: {
@@ -328,264 +482,347 @@ export const payrollService = {
   },
 
   async updatePayrollEntry(id: string, updates: Partial<PayrollEntry>): Promise<void> {
-    const updateData: any = {};
-    
-    // Map frontend fields to database fields
-    if (updates.base_salary !== undefined) updateData.salario_base = updates.base_salary;
-    if (updates.bonus !== undefined) updateData.bonus = updates.bonus;
-    if (updates.commission !== undefined) updateData.comissao = updates.commission;
-    if (updates.reimbursement !== undefined) updateData.reembolso = updates.reimbursement;
-    if (updates.transport !== undefined) updateData.passagem = updates.transport;
-    if (updates.transport_voucher !== undefined) updateData.passagem = updates.transport_voucher;
-    if (updates.inss !== undefined) updateData.inss = updates.inss;
-    if (updates.store_discount !== undefined) updateData.lojinha = updates.store_discount;
-    if (updates.store_expenses !== undefined) updateData.lojinha = updates.store_expenses;
-    if (updates.bistro_discount !== undefined) updateData.bistro = updates.bistro_discount;
-    if (updates.bistro_expenses !== undefined) updateData.bistro = updates.bistro_expenses;
-    if (updates.advance !== undefined) updateData.adiantamento = updates.advance;
-    if (updates.salary_advance !== undefined) updateData.adiantamento = updates.salary_advance;
-    if (updates.other_discounts !== undefined) updateData.outros_descontos = updates.other_discounts;
-    if (updates.notes !== undefined) updateData.observacoes = updates.notes;
-    if (updates.classification !== undefined) updateData.classificacao = updates.classification;
-    if (updates.role !== undefined) updateData.funcao = updates.role;
-    if (updates.status !== undefined) updateData.status = updates.status;
-    
-    // Add updated timestamp
-    updateData.updated_at = new Date().toISOString();
+    try {
+      console.log('🔄 PayrollService: Atualizando entrada da folha:', id);
+      
+      const updateData: any = {};
+      
+      // Map frontend fields to database fields
+      if (updates.base_salary !== undefined) updateData.salario_base = updates.base_salary;
+      if (updates.bonus !== undefined) updateData.bonus = updates.bonus;
+      if (updates.commission !== undefined) updateData.comissao = updates.commission;
+      if (updates.reimbursement !== undefined) updateData.reembolso = updates.reimbursement;
+      
+      // Handle transport fields - prioritize transport over transport_voucher
+      if (updates.transport !== undefined) {
+        updateData.passagem = updates.transport;
+      } else if (updates.transport_voucher !== undefined) {
+        updateData.transport_voucher = updates.transport_voucher;
+      }
+      
+      if (updates.inss !== undefined) updateData.inss = updates.inss;
+      
+      // Handle store fields - prioritize store_discount over store_expenses
+      if (updates.store_discount !== undefined) {
+        updateData.lojinha = updates.store_discount;
+      } else if (updates.store_expenses !== undefined) {
+        updateData.lojinha = updates.store_expenses;
+      }
+      
+      // Handle bistro fields - prioritize bistro_discount over bistro_expenses
+      if (updates.bistro_discount !== undefined) {
+        updateData.bistro = updates.bistro_discount;
+      } else if (updates.bistro_expenses !== undefined) {
+        updateData.bistro = updates.bistro_expenses;
+      }
+      
+      // Handle advance fields - prioritize advance over salary_advance
+      if (updates.advance !== undefined) {
+        updateData.adiantamento = updates.advance;
+      } else if (updates.salary_advance !== undefined) {
+        updateData.salary_advance = updates.salary_advance;
+      }
+      
+      if (updates.other_discounts !== undefined) updateData.outros_descontos = updates.other_discounts;
+      if (updates.notes !== undefined) updateData.observacoes = updates.notes;
+      if (updates.classification !== undefined) updateData.classificacao = updates.classification;
+      if (updates.role !== undefined) updateData.funcao = updates.role;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      
+      // Add updated timestamp
+      updateData.updated_at = new Date().toISOString();
 
-    const { error } = await supabase
-      .from('folha_pagamento')
-      .update(updateData)
-      .eq('id', id);
+      const { error } = await supabase
+        .from('folha_pagamento')
+        .update(updateData)
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao atualizar entrada:', error);
+        throw error;
+      }
+      
+      console.log('✅ PayrollService: Entrada atualizada com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao atualizar entrada da folha:', error);
+      throw error;
+    }
   },
 
   async deletePayrollEntry(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('folha_pagamento')
-      .delete()
-      .eq('id', id);
+    try {
+      console.log('🔄 PayrollService: Deletando entrada da folha:', id);
+      
+      const { error } = await supabase
+        .from('folha_pagamento')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao deletar entrada:', error);
+        throw error;
+      }
+      
+      console.log('✅ PayrollService: Entrada deletada com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao deletar entrada da folha:', error);
+      throw error;
+    }
   },
 
   async getPayrollEntry(id: string): Promise<PayrollEntry | null> {
-    const { data, error } = await supabase
-      .from('folha_pagamento')
-      .select(`
-        *,
-        users!folha_pagamento_colaborador_id_fkey(
-          auth_user_id,
-          full_name,
-          cpf,
-          units,
-          department,
-          bank,
-          agency,
-          account,
-          pix
-        )
-      `)
-      .eq('id', id)
-      .maybeSingle();
+    try {
+      console.log('🔄 PayrollService: Buscando entrada da folha:', id);
+      
+      const { data, error } = await supabase
+        .from('folha_pagamento')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
 
-    if (error) throw error;
-    if (!data) return null;
+      if (error) {
+        console.error('❌ PayrollService: Erro ao buscar entrada:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.log('⚠️ PayrollService: Entrada não encontrada');
+        return null;
+      }
 
-    // Map the data to the expected format
-    return {
-      id: data.id,
-      collaborator_id: data.colaborador_id,
-      collaborator_name: data.users?.full_name || '',
-      month: data.mes,
-      year: data.ano,
-      classification: data.classificacao || '',
-      role: data.funcao || '',
-      base_salary: data.salario_base || 0,
-      bonus: data.bonus || 0,
-      commission: data.comissao || 0,
-      transport: data.passagem || 0,
-      reimbursement: data.reembolso || 0,
-      inss: data.inss || 0,
-      store_discount: data.lojinha || 0,
-      bistro_discount: data.bistro || 0,
-      advance: data.adiantamento || 0,
-      other_discounts: data.outros_descontos || 0,
-      notes: data.observacoes || '',
-      status: data.status || 'pendente',
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      payroll_id: data.payroll_id,
-      units: data.users?.units ? [data.users.units] : [],
-      department: data.users?.department || '',
-      bank: data.users?.bank || '',
-      agency: data.users?.agency || '',
-      account: data.users?.account || '',
-      cpf: data.users?.cpf || '',
-      pix: data.users?.pix || ''
-    };
+      // Get user data separately if colaborador_id exists
+      let userData = null;
+      if (data.colaborador_id) {
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('auth_user_id, username, cpf, units, department, bank, agency, account, pix')
+          .eq('auth_user_id', data.colaborador_id)
+          .maybeSingle();
+        
+        if (!userError) {
+          userData = user;
+        }
+      }
+
+      console.log('✅ PayrollService: Entrada encontrada');
+      
+      // Map the data to the expected format
+      return {
+        id: data.id,
+        collaborator_id: data.colaborador_id,
+        collaborator_name: userData?.username || data.nome_colaborador || '',
+        month: data.mes,
+        year: data.ano,
+        classification: data.classificacao || '',
+        role: data.funcao || '',
+        base_salary: data.salario_base || 0,
+        bonus: data.bonus || 0,
+        commission: data.comissao || 0,
+        transport: data.passagem || 0,
+        reimbursement: data.reembolso || 0,
+        inss: data.inss || 0,
+        store_discount: data.lojinha || 0,
+        bistro_discount: data.bistro || 0,
+        advance: data.adiantamento || 0,
+        other_discounts: data.outros_descontos || 0,
+        notes: data.observacoes || '',
+        status: data.status || 'pendente',
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        payroll_id: data.payroll_id,
+        units: userData?.units ? [userData.units] : [],
+        department: userData?.department || '',
+        bank: userData?.bank || '',
+        agency: userData?.agency || '',
+        account: userData?.account || '',
+        cpf: userData?.cpf || data.cpf_colaborador || '',
+        pix: userData?.pix || ''
+      };
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao buscar entrada da folha:', error);
+      throw error;
+    }
   },
 
   async createPayrollEntries(payrollId: string, month?: number, year?: number): Promise<void> {
-    // Get payroll info if month/year not provided
-    let targetMonth = month;
-    let targetYear = year;
-    
-    if (!targetMonth || !targetYear) {
-      const { data: payroll, error: payrollError } = await supabase
-        .from('payrolls')
-        .select('month, year')
-        .eq('id', payrollId)
-        .single();
+    try {
+      console.log('🔄 PayrollService: Criando entradas da folha de pagamento');
       
-      if (payrollError) throw payrollError;
-      targetMonth = payroll.month;
-      targetYear = payroll.year;
+      // Get payroll info if month/year not provided
+      let targetMonth = month;
+      let targetYear = year;
+      
+      if (!targetMonth || !targetYear) {
+        const { data: payroll, error: payrollError } = await supabase
+          .from('payrolls')
+          .select('month, year')
+          .eq('id', payrollId)
+          .single();
+        
+        if (payrollError) throw payrollError;
+        targetMonth = payroll.month;
+        targetYear = payroll.year;
+      }
+
+      // Get all active users to create payroll entries
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('auth_user_id, position')
+        .eq('active', true);
+
+      if (usersError) throw usersError;
+
+      if (!users || users.length === 0) {
+        throw new Error('Nenhum usuário ativo encontrado para criar entradas da folha');
+      }
+
+      // Check for existing entries to avoid duplicates
+      const { data: existingEntries, error: existingError } = await supabase
+        .from('folha_pagamento')
+        .select('colaborador_id')
+        .eq('mes', targetMonth)
+        .eq('ano', targetYear);
+
+      if (existingError) throw existingError;
+
+      const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
+
+      // Filter out users who already have entries for this month/year
+      const usersToCreate = users.filter(user => !existingUserIds.has(user.auth_user_id));
+
+      if (usersToCreate.length === 0) {
+        console.log('⚠️ PayrollService: Nenhuma entrada nova para criar');
+        return;
+      }
+
+      // Create payroll entries for each user (dados pessoais vêm da tabela users)
+      const entries = usersToCreate.map(user => ({
+        payroll_id: payrollId,
+        colaborador_id: user.auth_user_id,
+        mes: targetMonth,
+        ano: targetYear,
+        classificacao: user.position || '',
+        funcao: user.position || '',
+        salario_base: 0,
+        bonus: 0,
+        comissao: 0,
+        passagem: 0,
+        reembolso: 0,
+        inss: 0,
+        lojinha: 0,
+        bistro: 0,
+        adiantamento: 0,
+        outros_descontos: 0,
+        observacoes: '',
+        status: 'pendente'
+      }));
+
+      const { error } = await supabase
+        .from('folha_pagamento')
+        .insert(entries);
+
+      if (error) throw error;
+      
+      console.log('✅ PayrollService: Entradas da folha criadas com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao criar entradas da folha:', error);
+      throw error;
     }
-
-    // Get all active users to create payroll entries
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('auth_user_id, position')
-      .eq('active', true);
-
-    if (usersError) throw usersError;
-
-    if (!users || users.length === 0) {
-      throw new Error('Nenhum usuário ativo encontrado para criar entradas da folha');
-    }
-
-    // Check for existing entries to avoid duplicates
-    const { data: existingEntries, error: existingError } = await supabase
-      .from('folha_pagamento')
-      .select('colaborador_id')
-      .eq('mes', targetMonth)
-      .eq('ano', targetYear);
-
-    if (existingError) throw existingError;
-
-    const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
-
-    // Filter out users who already have entries for this month/year
-    const usersToCreate = users.filter(user => !existingUserIds.has(user.auth_user_id));
-
-    if (usersToCreate.length === 0) {
-      return;
-    }
-
-    // Create payroll entries for each user (dados pessoais vêm da tabela users)
-    const entries = usersToCreate.map(user => ({
-      payroll_id: payrollId,
-      colaborador_id: user.auth_user_id,
-      mes: targetMonth,
-      ano: targetYear,
-      classificacao: user.position || '',
-      funcao: user.position || '',
-      salario_base: 0,
-      bonus: 0,
-      comissao: 0,
-      passagem: 0,
-      reembolso: 0,
-      inss: 0,
-      lojinha: 0,
-      bistro: 0,
-      adiantamento: 0,
-      outros_descontos: 0,
-      observacoes: '',
-      status: 'pendente'
-    }));
-
-    const { error } = await supabase
-      .from('folha_pagamento')
-      .insert(entries);
-
-    if (error) throw error;
   },
 
   async duplicatePayrollEntries(newPayrollId: string, duplicateFrom: { month: number; year: number }): Promise<void> {
-    // Get the target payroll info to determine the correct month/year
-    const { data: targetPayroll, error: targetError } = await supabase
-      .from('payrolls')
-      .select('month, year')
-      .eq('id', newPayrollId)
-      .single();
+    try {
+      console.log('🔄 PayrollService: Duplicando entradas da folha de pagamento');
+      
+      // Get the target payroll info to determine the correct month/year
+      const { data: targetPayroll, error: targetError } = await supabase
+        .from('payrolls')
+        .select('month, year')
+        .eq('id', newPayrollId)
+        .single();
 
-    if (targetError) throw targetError;
+      if (targetError) throw targetError;
 
-    // Get existing entries from the source month/year
-    const { data: sourceEntries, error: sourceError } = await supabase
-      .from('folha_pagamento')
-      .select(`
-        colaborador_id,
-        classificacao,
-        funcao,
-        salario_base,
-        bonus,
-        comissao,
-        passagem,
-        reembolso,
-        inss,
-        lojinha,
-        bistro,
-        adiantamento,
-        outros_descontos,
-        observacoes
-      `)
-      .eq('mes', duplicateFrom.month)
-      .eq('ano', duplicateFrom.year);
+      // Get existing entries from the source month/year
+      const { data: sourceEntries, error: sourceError } = await supabase
+        .from('folha_pagamento')
+        .select(`
+          colaborador_id,
+          classificacao,
+          funcao,
+          salario_base,
+          bonus,
+          comissao,
+          passagem,
+          reembolso,
+          inss,
+          lojinha,
+          bistro,
+          adiantamento,
+          outros_descontos,
+          observacoes
+        `)
+        .eq('mes', duplicateFrom.month)
+        .eq('ano', duplicateFrom.year);
 
-    if (sourceError) throw sourceError;
+      if (sourceError) throw sourceError;
 
-    if (!sourceEntries || sourceEntries.length === 0) {
-      throw new Error('Nenhuma entrada encontrada para duplicar');
+      if (!sourceEntries || sourceEntries.length === 0) {
+        throw new Error('Nenhuma entrada encontrada para duplicar');
+      }
+
+      // Check for existing entries in the target month/year to avoid duplicates
+      const { data: existingEntries, error: existingError } = await supabase
+        .from('folha_pagamento')
+        .select('colaborador_id')
+        .eq('mes', targetPayroll.month)
+        .eq('ano', targetPayroll.year);
+
+      if (existingError) throw existingError;
+
+      const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
+
+      // Filter out entries for users who already have entries in the target month/year
+      const entriesToCreate = sourceEntries.filter(entry => !existingUserIds.has(entry.colaborador_id));
+
+      if (entriesToCreate.length === 0) {
+        console.log('⚠️ PayrollService: Nenhuma entrada nova para duplicar');
+        return;
+      }
+
+      // Create new entries with the new payroll_id and target month/year
+      const newEntries = entriesToCreate.map(entry => ({
+        payroll_id: newPayrollId,
+        colaborador_id: entry.colaborador_id,
+        mes: targetPayroll.month,
+        ano: targetPayroll.year,
+        classificacao: entry.classificacao,
+        funcao: entry.funcao,
+        salario_base: entry.salario_base,
+        bonus: entry.bonus,
+        comissao: entry.comissao,
+        passagem: entry.passagem,
+        reembolso: entry.reembolso,
+        inss: entry.inss,
+        lojinha: entry.lojinha,
+        bistro: entry.bistro,
+        adiantamento: entry.adiantamento,
+        outros_descontos: entry.outros_descontos,
+        observacoes: entry.observacoes,
+        status: 'pendente'
+      }));
+
+      const { error } = await supabase
+        .from('folha_pagamento')
+        .insert(newEntries);
+
+      if (error) throw error;
+      
+      console.log('✅ PayrollService: Entradas duplicadas com sucesso');
+    } catch (error) {
+      console.error('❌ PayrollService: Erro ao duplicar entradas da folha:', error);
+      throw error;
     }
-
-    // Check for existing entries in the target month/year to avoid duplicates
-    const { data: existingEntries, error: existingError } = await supabase
-      .from('folha_pagamento')
-      .select('colaborador_id')
-      .eq('mes', targetPayroll.month)
-      .eq('ano', targetPayroll.year);
-
-    if (existingError) throw existingError;
-
-    const existingUserIds = new Set(existingEntries?.map(entry => entry.colaborador_id) || []);
-
-    // Filter out entries for users who already have entries in the target month/year
-    const entriesToCreate = sourceEntries.filter(entry => !existingUserIds.has(entry.colaborador_id));
-
-    if (entriesToCreate.length === 0) {
-      return;
-    }
-
-    // Create new entries with the new payroll_id and target month/year
-    const newEntries = entriesToCreate.map(entry => ({
-      payroll_id: newPayrollId,
-      colaborador_id: entry.colaborador_id,
-      mes: targetPayroll.month,
-      ano: targetPayroll.year,
-      classificacao: entry.classificacao,
-      funcao: entry.funcao,
-      salario_base: entry.salario_base,
-      bonus: entry.bonus,
-      comissao: entry.comissao,
-      passagem: entry.passagem,
-      reembolso: entry.reembolso,
-      inss: entry.inss,
-      lojinha: entry.lojinha,
-      bistro: entry.bistro,
-      adiantamento: entry.adiantamento,
-      outros_descontos: entry.outros_descontos,
-      observacoes: entry.observacoes,
-      status: 'pendente'
-    }));
-
-    const { error } = await supabase
-      .from('folha_pagamento')
-      .insert(newEntries);
-
-    if (error) throw error;
   },
 
   // Units
@@ -781,10 +1018,49 @@ export const payrollService = {
     };
   },
 
+  // Analytics
+  async getEvolutionData(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('folha_pagamento')
+      .select('mes, ano, salario_base, bonus, comissao');
+
+    if (error) throw error;
+    
+    // Agrupar por mês/ano e somar os custos
+    const groupedData = data?.reduce((acc: any[], item: any) => {
+      const key = `${item.ano}-${item.mes}`;
+      const existingItem = acc.find(i => `${i.ano}-${i.mes}` === key);
+      
+      const totalCusto = (item.salario_base || 0) + (item.bonus || 0) + (item.comissao || 0);
+      
+      if (existingItem) {
+        existingItem.total_custos = (parseFloat(existingItem.total_custos) + totalCusto).toString();
+      } else {
+        acc.push({
+          mes: item.mes,
+          ano: item.ano,
+          total_custos: totalCusto.toString()
+        });
+      }
+      
+      return acc;
+    }, []) || [];
+
+    // Ordenar por ano e mês (mais recente primeiro) e pegar apenas os últimos 6 meses
+    const sortedData = groupedData
+      .sort((a, b) => {
+        if (a.ano !== b.ano) return b.ano - a.ano;
+        return b.mes - a.mes;
+      })
+      .slice(0, 6);
+
+    return sortedData;
+  },
+
   mapEmployee(data: any): Employee {
     return {
       id: data.id,
-      name: data.nome_colaborador || data.users?.full_name || 'Nome não disponível',
+      name: data.nome_colaborador || data.users?.username || 'Nome não disponível',
       unit: data.unidade || data.users?.units || 'Unidade não disponível',
       units: data.users?.units ? 1 : 0,
       position: data.funcao || data.users?.position || 'Posição não disponível',

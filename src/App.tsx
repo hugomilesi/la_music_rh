@@ -20,7 +20,6 @@ import { EvaluationProvider } from './contexts/EvaluationContext';
 import { BenefitsProvider } from './contexts/BenefitsContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
 import Index from '@/pages/Index';
-
 import DashboardPage from '@/pages/DashboardPage';
 
 import BenefitsPage from '@/pages/BenefitsPage';
@@ -45,6 +44,7 @@ import RedirectDebug from '@/components/debug/RedirectDebug';
 import NotFound from '@/pages/NotFound';
 import { PublicSurveyPage } from '@/pages/PublicSurveyPage';
 import { NPSResponsePage } from '@/components/nps/NPSResponsePage';
+import LocalNPSSurveyPage from './pages/LocalNPSSurveyPage';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import './index.css';
@@ -137,6 +137,18 @@ function App() {
           </PublicPageWrapper>
         } />
         
+        <Route path="/local-nps/:token" element={
+          <PublicPageWrapper>
+            <LocalNPSSurveyPage />
+          </PublicPageWrapper>
+        } />
+        
+        <Route path="/local-nps" element={
+          <PublicPageWrapper>
+            <LocalNPSSurveyPage />
+          </PublicPageWrapper>
+        } />
+        
         {/* Routes with auth context */}
         <Route path="/*" element={
           <AuthProvider>
@@ -160,91 +172,91 @@ function App() {
 
                 {/* Protected routes with permission checks */}
                 <Route path="/dashboard" element={
-                  <ProtectedPageWrapper requiredPermission="dashboard.view">
+                  <ProtectedPageWrapper requiredPermission="dashboard">
                     <DashboardPage />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/beneficios" element={
-                    <ProtectedPageWrapper requiredPermission="beneficios.view">
+                    <ProtectedPageWrapper requiredPermission="beneficios">
                       <BenefitsPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/documentos" element={
-                    <ProtectedPageWrapper requiredPermission="documentos.view">
+                    <ProtectedPageWrapper requiredPermission="documentos">
                       <DocumentsPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/avaliacoes" element={
-                    <ProtectedPageWrapper requiredPermission="avaliacoes.view">
+                    <ProtectedPageWrapper requiredPermission="dashboard">
                       <EvaluationsPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/folha-pagamento" element={
-                    <ProtectedPageWrapper requiredPermission="folha_pagamento.view">
+                    <ProtectedPageWrapper requiredPermission="folha_pagamento">
                       <PayrollPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/reconhecimento" element={
-                    <ProtectedPageWrapper requiredPermission="reconhecimento.view">
+                    <ProtectedPageWrapper requiredPermission="dashboard">
                       <RecognitionPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/agenda" element={
-                    <ProtectedPageWrapper requiredPermission="agenda.view">
+                    <ProtectedPageWrapper requiredPermission="agenda">
                       <SchedulePage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/ferias" element={
-                    <ProtectedPageWrapper requiredPermission="ferias.view">
+                    <ProtectedPageWrapper requiredPermission="ferias">
                       <VacationPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/whatsapp" element={
-                  <ProtectedPageWrapper requiredPermission="whatsapp.view">
+                  <ProtectedPageWrapper requiredPermission="dashboard">
                     <WhatsAppPage />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/configuracoes" element={
-                    <ProtectedPageWrapper requiredPermission="configuracoes.view">
+                    <ProtectedPageWrapper requiredPermission="configuracoes">
                       <SettingsPage />
                     </ProtectedPageWrapper>
                   } />
                 
                 <Route path="/ocorrencias" element={
-                  <ProtectedPageWrapper requiredPermission="ocorrencias.view">
+                  <ProtectedPageWrapper requiredPermission="dashboard">
                     <IncidentsIndexPage />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/nps" element={
-                  <ProtectedPageWrapper requiredPermission="nps.view">
+                  <ProtectedPageWrapper requiredPermission="dashboard">
                     <NPSPage />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/notificacoes" element={
-                  <ProtectedPageWrapper requiredPermission="notificacoes.view">
+                  <ProtectedPageWrapper requiredPermission="dashboard">
                     <NotificationsPage />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/gerenciar-permissoes" element={
-                  <ProtectedPageWrapper requiredPermission="permissoes.manage">
+                  <ProtectedPageWrapper requiredPermission="permissoes">
                     <PermissionsManagement />
                   </ProtectedPageWrapper>
                 } />
                 
                 <Route path="/migrar-permissoes" element={
-                  <ProtectedPageWrapper requiredPermission="permissoes.manage">
+                  <ProtectedPageWrapper requiredPermission="permissoes">
                     <PermissionsMigration />
                   </ProtectedPageWrapper>
                 } />

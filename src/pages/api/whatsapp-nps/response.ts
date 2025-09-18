@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     );
 
   } catch (error) {
-    console.error('Erro ao buscar dados da pesquisa:', error);
+    
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

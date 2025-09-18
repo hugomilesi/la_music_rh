@@ -7,33 +7,39 @@ export const incidentService = {
    */
   async getAll(): Promise<Incident[]> {
     try {
+      console.log('IncidentService: Buscando todos os incidentes...');
       const { data, error } = await supabase
         .from('incidents')
         .select(`
           *,
-          employee:users!employee_id(id, full_name),
-        reporter:users!reporter_id(id, full_name)
+          employee:users!employee_id(id, username),
+          reporter:users!reporter_id(id, username)
         `)
-        .order('incident_date', { ascending: false });
+        .order('date_occurred', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('IncidentService: Erro ao buscar incidentes:', error);
+        throw error;
+      }
+
+      console.log('IncidentService: Dados brutos dos incidentes:', data);
 
       return data?.map(incident => ({
         id: incident.id,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.full_name || '',
-        type: incident.type,
+        employeeName: incident.employee?.username || '',
+        type: incident.incident_type,
         severity: incident.severity,
         description: incident.description,
-        incidentDate: incident.incident_date,
+        incidentDate: incident.date_occurred,
         reporterId: incident.reporter_id,
-        reporterName: incident.reporter?.full_name || '',
+        reporterName: incident.reporter?.username || '',
         status: incident.status,
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      // Error fetching incidents logging disabled
+      console.error('IncidentService: Erro em getAll:', error);
       throw error;
     }
   },
@@ -50,19 +56,20 @@ export const incidentService = {
     endDate?: string;
   }): Promise<Incident[]> {
     try {
+      console.log('IncidentService: Buscando incidentes filtrados:', filters);
       let query = supabase
         .from('incidents')
         .select(`
           *,
-          employee:users!employee_id(id, full_name),
-        reporter:users!reporter_id(id, full_name)
+          employee:users!employee_id(id, username),
+          reporter:users!reporter_id(id, username)
         `);
 
       if (filters.employeeId) {
         query = query.eq('employee_id', filters.employeeId);
       }
       if (filters.type) {
-        query = query.eq('type', filters.type);
+        query = query.eq('incident_type', filters.type);
       }
       if (filters.severity) {
         query = query.eq('severity', filters.severity);
@@ -71,34 +78,39 @@ export const incidentService = {
         query = query.eq('status', filters.status);
       }
       if (filters.startDate) {
-        query = query.gte('incident_date', filters.startDate);
+        query = query.gte('date_occurred', filters.startDate);
       }
       if (filters.endDate) {
-        query = query.lte('incident_date', filters.endDate);
+        query = query.lte('date_occurred', filters.endDate);
       }
 
-      query = query.order('incident_date', { ascending: false });
+      query = query.order('date_occurred', { ascending: false });
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('IncidentService: Erro ao buscar incidentes filtrados:', error);
+        throw error;
+      }
+
+      console.log('IncidentService: Dados dos incidentes filtrados:', data);
 
       return data?.map(incident => ({
         id: incident.id,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.full_name || '',
-        type: incident.type,
+        employeeName: incident.employee?.username || '',
+        type: incident.incident_type,
         severity: incident.severity,
         description: incident.description,
-        incidentDate: incident.incident_date,
+        incidentDate: incident.date_occurred,
         reporterId: incident.reporter_id,
-        reporterName: incident.reporter?.full_name || '',
+        reporterName: incident.reporter?.username || '',
         status: incident.status,
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      // Error fetching filtered incidents logging disabled
+      console.error('IncidentService: Erro em getFiltered:', error);
       throw error;
     }
   },
@@ -108,44 +120,48 @@ export const incidentService = {
    */
   async add(incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>): Promise<Incident> {
     try {
-      const insertData = {
-        employee_id: incident.employeeId,
-        type: incident.type,
-        severity: incident.severity,
-        description: incident.description,
-        incident_date: incident.incidentDate,
-        reporter_id: incident.reporterId,
-        status: incident.status || 'ativo'
-      };
-
+      console.log('IncidentService: Adicionando novo incidente:', incident);
       const { data, error } = await supabase
         .from('incidents')
-        .insert(insertData)
+        .insert({
+          employee_id: incident.employeeId,
+          incident_type: incident.type,
+          severity: incident.severity,
+          description: incident.description,
+          date_occurred: incident.incidentDate,
+          reporter_id: incident.reporterId,
+          status: incident.status || 'open'
+        })
         .select(`
           *,
-          employee:users!employee_id(id, full_name),
-        reporter:users!reporter_id(id, full_name)
+          employee:users!employee_id(id, username),
+          reporter:users!reporter_id(id, username)
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('IncidentService: Erro ao adicionar incidente:', error);
+        throw error;
+      }
+
+      console.log('Added incident data:', data);
 
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.full_name || '',
-        type: data.type,
+        employeeName: data.employee?.username || '',
+        type: data.incident_type,
         severity: data.severity,
         description: data.description,
-        incidentDate: data.incident_date,
+        incidentDate: data.date_occurred,
         reporterId: data.reporter_id,
-        reporterName: data.reporter?.full_name || '',
+        reporterName: data.reporter?.username || '',
         status: data.status,
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
     } catch (error) {
-      // Error adding incident logging disabled
+      console.error('IncidentService: Erro em add:', error);
       throw error;
     }
   },
@@ -155,13 +171,14 @@ export const incidentService = {
    */
   async update(id: string, incident: Partial<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Incident> {
     try {
+      console.log('IncidentService: Atualizando incidente:', id, incident);
       const updateData: any = {};
       
-      if (incident.type !== undefined) updateData.type = incident.type;
+      if (incident.employeeId !== undefined) updateData.employee_id = incident.employeeId;
+      if (incident.type !== undefined) updateData.incident_type = incident.type;
       if (incident.severity !== undefined) updateData.severity = incident.severity;
       if (incident.description !== undefined) updateData.description = incident.description;
-      if (incident.incidentDate !== undefined) updateData.incident_date = incident.incidentDate;
-      if (incident.employeeId !== undefined) updateData.employee_id = incident.employeeId;
+      if (incident.incidentDate !== undefined) updateData.date_occurred = incident.incidentDate;
       if (incident.reporterId !== undefined) updateData.reporter_id = incident.reporterId;
       if (incident.status !== undefined) updateData.status = incident.status;
 
@@ -171,29 +188,34 @@ export const incidentService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!employee_id(id, full_name),
-        reporter:users!reporter_id(id, full_name)
+          employee:users!employee_id(id, username),
+          reporter:users!reporter_id(id, username)
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('IncidentService: Erro ao atualizar incidente:', error);
+        throw error;
+      }
+
+      console.log('IncidentService: Dados do incidente atualizado:', data);
 
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.full_name || '',
-        type: data.type,
+        employeeName: data.employee?.username || '',
+        type: data.incident_type,
         severity: data.severity,
         description: data.description,
-        incidentDate: data.incident_date,
+        incidentDate: data.date_occurred,
         reporterId: data.reporter_id,
-        reporterName: data.reporter?.full_name || '',
+        reporterName: data.reporter?.username || '',
         status: data.status,
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
     } catch (error) {
-      // Error updating incident logging disabled
+      console.error('IncidentService: Erro em update:', error);
       throw error;
     }
   },
@@ -202,13 +224,21 @@ export const incidentService = {
    * Remove um incidente
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('incidents')
-      .delete()
-      .eq('id', id);
+    try {
+      console.log('IncidentService: Deletando incidente:', id);
+      const { error } = await supabase
+        .from('incidents')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      // Error deleting incident logging disabled
+      if (error) {
+        console.error('IncidentService: Erro ao deletar incidente:', error);
+        throw error;
+      }
+
+      console.log('IncidentService: Incidente deletado com sucesso:', id);
+    } catch (error) {
+      console.error('IncidentService: Erro em delete:', error);
       throw error;
     }
   },
@@ -218,11 +248,17 @@ export const incidentService = {
    */
   async getStats(): Promise<IncidentStats> {
     try {
+      console.log('IncidentService: Buscando estatísticas dos incidentes...');
       const { data, error } = await supabase
         .from('incidents')
-        .select('type, severity, status, incident_date');
+        .select('incident_type, severity, status, date_occurred');
 
-      if (error) throw error;
+      if (error) {
+        console.error('IncidentService: Erro ao buscar estatísticas:', error);
+        throw error;
+      }
+
+      console.log('IncidentService: Dados das estatísticas encontrados:', data?.length || 0);
 
       const stats: IncidentStats = {
         total: data?.length || 0,
@@ -242,8 +278,10 @@ export const incidentService = {
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
       data?.forEach(incident => {
+        const incidentType = incident.incident_type;
+        
         // Count by type
-        stats.byType[incident.type] = (stats.byType[incident.type] || 0) + 1;
+        stats.byType[incidentType] = (stats.byType[incidentType] || 0) + 1;
         
         // Count by severity
         stats.bySeverity[incident.severity] = (stats.bySeverity[incident.severity] || 0) + 1;
@@ -252,14 +290,14 @@ export const incidentService = {
         stats.byStatus[incident.status] = (stats.byStatus[incident.status] || 0) + 1;
         
         // Count active and resolved
-        if (incident.status === 'ativo') {
+        if (incident.status === 'open') {
           stats.active = (stats.active || 0) + 1;
-        } else if (incident.status === 'resolvido') {
+        } else if (incident.status === 'resolved') {
           stats.resolved = (stats.resolved || 0) + 1;
         }
         
         // Count by month
-        const incidentDate = new Date(incident.incident_date);
+        const incidentDate = new Date(incident.date_occurred);
         const incidentMonth = incidentDate.getMonth();
         const incidentYear = incidentDate.getFullYear();
         
@@ -272,7 +310,7 @@ export const incidentService = {
 
       return stats;
     } catch (error) {
-      // Error fetching incident statistics logging disabled
+      console.error('IncidentService: Erro em getStats:', error);
       throw error;
     }
   },
@@ -281,7 +319,7 @@ export const incidentService = {
    * Inscreve-se para atualizações em tempo real de incidentes
    */
   subscribeToIncidents(callback: (payload: any) => void) {
-    
+    console.log('IncidentService: Inscrevendo-se para atualizações em tempo real...');
     const channel = supabase
       .channel('incidents-changes')
       .on(
@@ -304,12 +342,12 @@ export const incidentService = {
    * Remove inscrição de atualizações em tempo real de incidentes
    */
   unsubscribeFromIncidents(channel: any) {
-    
+    console.log('IncidentService: Removendo inscrição de atualizações em tempo real...');
     if (channel) {
       try {
         supabase.removeChannel(channel);
       } catch (error) {
-        // Channel não existe para remoção
+        console.error('IncidentService: Erro ao remover canal:', error);
       }
     }
   }

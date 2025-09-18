@@ -24,7 +24,7 @@ export function useIsMobile() {
   }, [])
 
   const result = !!isMobile
-  console.log('useIsMobile returning:', result, 'raw isMobile:', isMobile)
+
   return result
 }
 

@@ -7,6 +7,8 @@ import { updateSystemUserAsAdmin } from './adminService';
  */
 export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
   try {
+    console.log('🔄 SettingsService: Buscando usuários do sistema');
+    
     // Get all users from the unified users table (excluding soft deleted ones)
     const { data: usersData, error: usersError } = await supabase
       .from('users')
@@ -14,7 +16,7 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
         id,
         auth_user_id,
         email,
-        full_name,
+        username,
         role,
         position,
         department,
@@ -28,11 +30,12 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
       .order('created_at', { ascending: false });
 
     if (usersError) {
-      // console.error('Error fetching users:', usersError);
+      console.error('❌ SettingsService: Erro ao buscar usuários:', usersError);
       throw usersError;
     }
 
     if (!usersData) {
+      console.log('⚠️ SettingsService: Nenhum usuário encontrado');
       return [];
     }
 
@@ -40,7 +43,7 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
     const systemUsers: SystemUser[] = usersData.map((user: any) => ({
       id: user.id,
       auth_user_id: user.auth_user_id, // Include auth_user_id in the response
-      name: user.full_name || 'Usuário sem nome',
+      name: user.username || 'Usuário sem nome',
       email: user.email,
       role: user.role || 'usuario',
       position: user.position || 'Não informado',
@@ -57,12 +60,13 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
     const validUsers = systemUsers.filter(user => user.auth_user_id);
     
     if (validUsers.length !== systemUsers.length) {
-      // console.warn(`Found ${systemUsers.length - validUsers.length} users without auth_user_id. These users will not be shown in the interface.`);
+      console.log(`⚠️ SettingsService: ${systemUsers.length - validUsers.length} usuários legados filtrados`);
     }
     
+    console.log(`✅ SettingsService: ${validUsers.length} usuários válidos encontrados`);
     return validUsers;
   } catch (error) {
-    // console.error('Error in fetchSystemUsers:', error);
+    console.error('❌ SettingsService: Erro ao buscar usuários do sistema:', error);
     throw error;
   }
 };
@@ -72,6 +76,8 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
  */
 export const fetchRolesData = async (): Promise<RoleData[]> => {
   try {
+    console.log('🔄 SettingsService: Buscando dados de cargos');
+    
     const { data, error } = await supabase
       .from('users')
       .select('position, department')
@@ -79,11 +85,12 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
       .is('deleted_at', null);
 
     if (error) {
-      // console.error('Error fetching roles data:', error);
+      console.error('❌ SettingsService: Erro ao buscar dados de cargos:', error);
       throw error;
     }
 
     if (!data) {
+      console.log('⚠️ SettingsService: Nenhum dado de cargo encontrado');
       return [];
     }
 
@@ -115,7 +122,7 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
       };
     });
   } catch (error) {
-    // Log desabilitado: Error in fetchRolesData
+    console.error('SettingsService: ❌ Erro em fetchRolesData:', error);
     throw error;
   }
 };
@@ -125,6 +132,8 @@ export const fetchRolesData = async (): Promise<RoleData[]> => {
  */
 export const fetchSystemStats = async (): Promise<SystemStats> => {
   try {
+    console.log('SettingsService: 🔄 Buscando estatísticas do sistema');
+    
     // Get total users from unified table
     const { count: userCount, error: userError } = await supabase
       .from('users')
@@ -133,7 +142,7 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
       .is('deleted_at', null);
 
     if (userError) {
-      // Log desabilitado: Error fetching user count
+      console.error('SettingsService: ❌ Erro ao buscar contagem de usuários:', userError);
     }
 
     // Get unique departments count as "units"
@@ -152,16 +161,21 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
         }
       });
       activeUnits = allDepartments.size;
+    } else if (departmentsError) {
+      console.error('SettingsService: ❌ Erro ao buscar departamentos:', departmentsError);
     }
 
-    return {
+    const stats = {
       totalEmployees: userCount || 0, // Using same count for both since we unified the tables
       totalUsers: userCount || 0,
       activeUnits,
       lastBackup: new Date().toLocaleDateString('pt-BR') + ' 02:00'
     };
+
+    console.log('SettingsService: ✅ Estatísticas do sistema obtidas com sucesso');
+    return stats;
   } catch (error) {
-    // Log desabilitado: Error in fetchSystemStats
+    console.error('SettingsService: ❌ Erro em fetchSystemStats:', error);
     return {
       totalEmployees: 0,
       totalUsers: 0,
@@ -179,7 +193,7 @@ export const fetchSystemStats = async (): Promise<SystemStats> => {
  */
 export const listAllSystemUsers = async () => {
   try {
-    // console.log('📋 Fetching all system users...');
+
     
     // Use fetchSystemUsers directly since list-all-users edge function doesn't exist
     const users = await fetchSystemUsers();
@@ -194,7 +208,7 @@ export const listAllSystemUsers = async () => {
           id: user.id,
           auth_user_id: user.auth_user_id,
           email: user.email,
-          full_name: user.name,
+          username: user.name,
           role: user.role,
           position: user.position,
           department: user.department,
@@ -224,7 +238,7 @@ export const listAllSystemUsers = async () => {
       }
     };
   } catch (error) {
-    // Log desabilitado: Error in listAllSystemUsers, falling back to fetchSystemUsers
+    console.error('SettingsService: ❌ Erro em listAllSystemUsers, usando fallback:', error);
     try {
       // Fallback to regular fetchSystemUsers
       const users = await fetchSystemUsers();
@@ -239,7 +253,7 @@ export const listAllSystemUsers = async () => {
             id: user.id,
             auth_user_id: user.auth_user_id,
             email: user.email,
-            full_name: user.name,
+            username: user.name,
             role: user.role,
             position: user.position,
             department: user.department,
@@ -269,7 +283,7 @@ export const listAllSystemUsers = async () => {
         }
       };
     } catch (fallbackError) {
-      // Log desabilitado: Error in fallback fetchSystemUsers
+      console.error('SettingsService: ❌ Erro no fallback fetchSystemUsers:', fallbackError);
       throw fallbackError;
     }
   }
@@ -280,7 +294,7 @@ export const listAllSystemUsers = async () => {
  */
 export const deleteSystemUser = async (userId: string): Promise<void> => {
   try {
-    // Log desabilitado: deleteSystemUser called with userId
+    console.log('SettingsService: 🔄 Deletando usuário do sistema:', userId);
     
     // Validate that userId is not empty or null
     if (!userId || userId === 'null' || userId === 'undefined') {
@@ -295,18 +309,18 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
     });
 
     if (error) {
-      // Log desabilitado: Error calling delete-user function
+      console.error('SettingsService: ❌ Erro ao chamar função delete-user:', error);
       throw new Error(`Erro ao deletar usuário: ${error.message}`);
     }
 
     if (!data.success) {
-      // Log desabilitado: Delete user function returned error
+      console.error('SettingsService: ❌ Função delete-user retornou erro:', data.error);
       throw new Error(data.error || 'Erro desconhecido ao deletar usuário');
     }
 
-    // console.log('✅ User deleted successfully from all tables:', data.deletedFrom);
+    console.log('SettingsService: ✅ Usuário deletado com sucesso');
   } catch (error) {
-    // Log desabilitado: Error in deleteSystemUser
+    console.error('SettingsService: ❌ Erro em deleteSystemUser:', error);
     throw error;
   }
 };
@@ -316,11 +330,11 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
  */
 export const updateSystemUser = async (userId: string, updates: Partial<SystemUser>): Promise<void> => {
   try {
-    // Log desabilitado: updateSystemUser called with userId and updates
+    console.log('SettingsService: 🔄 Atualizando usuário do sistema:', userId);
     
     // Update user data in the unified users table
     const userUpdateData = {
-      full_name: updates.name,
+      username: updates.name,
       role: updates.role,
       department: updates.department,
       position: updates.position,
@@ -343,17 +357,17 @@ export const updateSystemUser = async (userId: string, updates: Partial<SystemUs
         .eq('id', parseInt(userId));
       
       if (idError) {
-        // Log desabilitado: Error updating user by id
+        console.error('SettingsService: ❌ Erro ao atualizar usuário por id:', idError);
         throw idError;
       }
     } else if (userError) {
-      // Log desabilitado: Error updating user by auth_user_id
+      console.error('SettingsService: ❌ Erro ao atualizar usuário por auth_user_id:', userError);
       throw userError;
     }
 
-    // Log desabilitado: User updated successfully
+    console.log('SettingsService: ✅ Usuário atualizado com sucesso');
   } catch (error) {
-    // Log desabilitado: Error in updateSystemUser
+    console.error('SettingsService: ❌ Erro em updateSystemUser:', error);
     throw error;
   }
 };

@@ -57,9 +57,9 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
     <div className="flex flex-col items-center gap-3">
       <div className="relative">
         <Avatar className={sizeClasses[size]}>
-          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || ''} />
-          <AvatarFallback className="text-lg">
-            {getInitials(profile?.full_name)}
+          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || ''} />
+          <AvatarFallback className="bg-blue-100 text-blue-600 font-medium">
+            {getInitials(profile?.username)}
           </AvatarFallback>
         </Avatar>
         

@@ -2,8 +2,8 @@
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
-  name: z.string()
-    .min(1, 'Nome completo é obrigatório')
+  username: z.string()
+    .min(1, 'Nome de usuário é obrigatório')
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
     .max(100, 'Nome não pode ter mais de 100 caracteres')
     .refine(val => val.trim().length > 0, 'Nome não pode estar vazio'),
@@ -24,7 +24,7 @@ export const createUserSchema = z.object({
 });
 
 export const updateUserSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  username: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   role: z.enum(['admin', 'gestor_rh', 'gerente']),
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().optional(),

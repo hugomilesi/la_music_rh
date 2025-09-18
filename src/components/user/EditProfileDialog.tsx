@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AvatarUpload } from './AvatarUpload';
 
 const profileFormSchema = z.object({
-  full_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  username: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   phone: z.string().optional(),
   bio: z.string().optional(),
   birth_date: z.string().optional(),
@@ -53,7 +53,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      full_name: profile?.full_name || '',
+      username: profile?.username || '',
       phone: (profile as any)?.phone || '',
       bio: (profile as any)?.bio || '',
       birth_date: (profile as any)?.birth_date || '',
@@ -67,7 +67,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   React.useEffect(() => {
     if (profile && open) {
       form.reset({
-        full_name: profile.full_name || '',
+        username: profile.username || '',
         phone: (profile as any)?.phone || '',
         bio: (profile as any)?.bio || '',
         birth_date: (profile as any)?.birth_date || '',
@@ -82,7 +82,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   const onSubmit = async (data: ProfileFormData) => {
     try {
       const updates = {
-        full_name: data.full_name,
+        username: data.username,
         ...(data.phone && { phone: data.phone }),
         ...(data.bio && { bio: data.bio }),
         ...(data.birth_date && { birth_date: data.birth_date }),
@@ -138,12 +138,12 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="full_name"
+                name="username"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Nome Completo *</FormLabel>
+                    <FormLabel>Nome de Usuário *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome completo" {...field} />
+                      <Input placeholder="Seu nome de usuário" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -130,7 +130,7 @@ export function ResponsivePayrollTable({
         minimumFractionDigits: 2 
       });
     } catch (error) {
-      console.warn('Error formatting currency:', error, 'value:', value);
+
       return 'R$ 0,00';
     }
   };

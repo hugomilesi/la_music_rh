@@ -45,7 +45,7 @@ const NPSResponsePage: React.FC<NPSResponsePageProps> = ({ token }) => {
         .single();
 
       if (error) {
-        console.error('Erro ao validar token:', error);
+  
         setError('Erro interno do servidor');
         return;
       }
@@ -81,7 +81,7 @@ const NPSResponsePage: React.FC<NPSResponsePageProps> = ({ token }) => {
         .single();
 
       if (error) {
-        console.error('Erro ao processar resposta:', error);
+  
         setError('Erro ao processar resposta. Tente novamente.');
         return;
       }

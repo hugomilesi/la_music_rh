@@ -30,7 +30,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
         setRoles(rolesData);
         setDepartments(departmentsData);
       } catch (error) {
-        console.error('Erro ao carregar cargos e departamentos:', error);
+  
       } finally {
         setLoadingRoles(false);
       }

@@ -15,12 +15,10 @@ import { NotificationDetailsModal } from '@/components/notifications/Notificatio
 import UnifiedScheduler from '@/components/UnifiedScheduler';
 import TestController from '@/components/TestController';
 import { useNotifications } from '@/contexts/NotificationContext';
-import useMessageScheduler from '@/hooks/useMessageScheduler';
 import { Notification } from '@/types/notification';
 
 const NotificationsPage: React.FC = () => {
   const { notifications, stats, deleteNotification } = useNotifications();
-  const { schedules, statistics } = useMessageScheduler();
   const [activeTab, setActiveTab] = useState('overview');
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);

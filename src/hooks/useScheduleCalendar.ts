@@ -1,7 +1,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { ScheduleEvent } from '@/types/schedule';
-import { Unit } from '@/types/unit';
+import { ScheduleUnit } from '@/types/unit';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,7 +12,7 @@ export const useScheduleCalendar = () => {
   const { toast } = useToast();
 
   // Para compatibilidade temporária, usando todas as unidades
-  const allUnits: Unit[] = [Unit.CAMPO_GRANDE, Unit.RECREIO, Unit.BARRA];
+  const allUnits: ScheduleUnit[] = [ScheduleUnit.CAMPO_GRANDE, ScheduleUnit.RECREIO, ScheduleUnit.BARRA];
 
   const filteredEvents = useMemo(() => {
     return getEventsForUnits(allUnits);

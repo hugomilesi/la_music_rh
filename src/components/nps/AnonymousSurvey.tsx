@@ -98,34 +98,36 @@ export const AnonymousSurvey: React.FC<AnonymousSurveyProps> = ({
 
     setSubmitting(true);
     try {
-      // Se temos responseToken e userId, atualizar o status no whatsapp_sends
-      if (responseToken && userId) {
-        await supabase
-          .from('whatsapp_sends')
-          .update({ 
-            status: 'responded',
-            responded_at: new Date().toISOString()
-          })
-          .eq('response_token', responseToken)
-          .eq('user_id', userId);
-      }
-
-      // Criar resposta NPS oficial
-      const response: Omit<NPSResponse, 'id' | 'createdAt'> = {
-        surveyId: survey.id,
-        employeeId: userId || 'anonymous',
+      // Usar o novo método simplificado do NPSService
+      const result = await NPSService.submitNPSResponse({
+        survey_id: survey.id,
+        employee_id: userId || 'anonymous',
         score: selectedScore,
-        comment: comment.trim(),
-        category: getScoreLabel(selectedScore).toLowerCase() as 'promoter' | 'neutral' | 'detractor',
-        department: userId ? 'employee' : 'anonymous',
-        responseDate: new Date().toISOString().split('T')[0],
-      };
+        comment: comment.trim() || '',
+        user_name: 'Usuário Anônimo',
+        department: 'Não informado'
+      });
 
-      await NPSService.createResponse(response);
-      setSubmitted(true);
-      onComplete?.();
+      if (result.success) {
+        // Se temos responseToken e userId, atualizar o status no whatsapp_sends
+        if (responseToken && userId) {
+          await supabase
+            .from('whatsapp_sends')
+            .update({ 
+              status: 'responded',
+              responded_at: new Date().toISOString()
+            })
+            .eq('response_token', responseToken)
+            .eq('user_id', userId);
+        }
+
+        setSubmitted(true);
+        onComplete?.();
+      } else {
+        throw new Error(result.error || 'Erro ao enviar resposta');
+      }
     } catch (error) {
-      // Error handling for response submission
+      console.error('Erro ao enviar resposta:', error);
     } finally {
       setSubmitting(false);
     }

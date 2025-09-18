@@ -28,6 +28,9 @@ export interface NPSSurvey {
   frequencyDays?: number;
   lastSentAt?: string;
   nextSendDate?: string;
+  surveyLink?: string; // Link completo da pesquisa para n8n
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface NPSQuestion {

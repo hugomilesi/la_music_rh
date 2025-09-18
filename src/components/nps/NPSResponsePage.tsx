@@ -81,7 +81,7 @@ export const NPSResponsePage: React.FC<NPSResponsePageProps> = ({
          setError('Dados da pesquisa não encontrados.');
        }
     } catch (error) {
-      console.error('Erro ao carregar dados da pesquisa:', error);
+
       setError('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export const NPSResponsePage: React.FC<NPSResponsePageProps> = ({
       await new Promise(resolve => setTimeout(resolve, 200));
       setSubmitted(true);
     } catch (error) {
-      console.error('Erro ao enviar resposta:', error);
+
       setError('Erro ao enviar resposta. Tente novamente.');
     } finally {
       setSubmitting(false);

@@ -20,14 +20,14 @@ export const useUsers = () => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, full_name, email, phone, department, role, status')
-        .order('full_name');
+        .select('id, username, email, phone, department, role, status')
+      .order('username');
 
       if (error) throw error;
 
       setUsers(data?.map(user => ({
         id: user.id,
-        name: user.full_name,
+        name: user.username,
         email: user.email,
         phone: user.phone,
         department: user.department,

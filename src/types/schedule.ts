@@ -1,10 +1,10 @@
 
-import { Unit } from './unit';
+import { ScheduleUnit } from './unit';
 
 export interface EventFormData {
   title: string;
   employeeId: string;
-  unit: Unit;
+  unit: ScheduleUnit;
   type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   date: string;
   startTime: string;
@@ -18,7 +18,7 @@ export interface EventFormData {
 export interface NewScheduleEventData {
   title: string;
   employeeId: string;
-  unit: Unit;
+  unit: ScheduleUnit;
   type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   date: string;
   startTime: string;
@@ -35,7 +35,7 @@ export interface ScheduleEvent {
   employee_id: string;
   employeeId: string; // alias for compatibility
   employee: string; // employee name
-  unit: Unit;
+  unit: ScheduleUnit;
   type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
   event_date: string;
   date: string; // alias for compatibility

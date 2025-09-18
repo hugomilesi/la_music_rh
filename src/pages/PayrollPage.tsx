@@ -13,6 +13,7 @@ import { payrollService } from '@/services/payrollService';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { 
   Plus, 
   FileText, 
@@ -42,7 +43,7 @@ import { PayrollTable } from '@/components/payroll/PayrollTable';
 import { NewPayrollEntryDialog } from '@/components/payroll/NewPayrollEntryDialog';
 import { formatCurrency } from '@/utils/formatters';
 import '@/styles/card-animations.css';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, PieChart as RechartsPieChart, Pie, Cell, LabelList } from 'recharts';
 import PayrollDetailsModal from '@/components/PayrollDetailsModal';
 import UnitDetailsModal from '@/components/UnitDetailsModal';
 import PayrollEntryModal from '@/components/PayrollEntryModal';
@@ -93,12 +94,16 @@ interface UnitSummary {
 // Interface para dados de gráficos
 interface ChartData {
   distributionByUnit: { name: string; value: number; color: string }[];
-  costByClassification: { name: string; value: number }[];
+  costByClassification: { name: string; value: number; color: string }[];
   evolutionLast6Months: { month: string; value: number }[];
   costComposition: { name: string; value: number; color: string }[];
 }
 
 export default function PayrollPage() {
+  // Estados para o AlertDialog de confirmação de remoção
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<{id: string, name: string} | null>(null);
+
   // Função para converter Employee para PayrollEmployee
   const convertToPayrollEmployee = (employee: Employee) => ({
     id: employee.id.toString(),
@@ -125,10 +130,92 @@ export default function PayrollPage() {
     unit: employee.unit
   });
 
+  // Função para editar funcionário
+  const handleEditEmployee = (employee: any) => {
+    
+    // Converter os dados do funcionário para o formato PayrollEntry
+    const payrollEntry = {
+      id: employee.id,
+      colaborador_id: employee.id,
+      mes: parseInt(selectedMonth.split('-')[1]),
+      ano: parseInt(selectedMonth.split('-')[0]),
+      classificacao: employee.classification,
+      funcao: employee.position,
+      salario_base: employee.salary || 0,
+      bonus: employee.bonus || 0,
+      comissao: employee.commission || 0,
+      passagem: employee.transport || 0,
+      reembolso: employee.reimbursement || 0,
+      inss: employee.inss || 0,
+      lojinha: employee.store || 0,
+      bistro: employee.bistro || 0,
+      adiantamento: employee.advance || 0,
+      outros_descontos: employee.discount || 0,
+      observacoes: '',
+      nome_colaborador: employee.name,
+      cpf_colaborador: employee.cpf,
+      unidade: employee.unit
+    };
+    
+    // Abrir modal de edição
+    setSelectedEntry(payrollEntry);
+    setIsEntryModalOpen(true);
+    clearError();
+  };
+
+  // Função para deletar funcionário
+  const handleDeleteEmployee = async (employeeId: string) => {
+    console.log('Tentando deletar funcionário com ID:', employeeId);
+    
+    // Verificar se o ID existe
+    if (!employeeId) {
+      console.error('ID do funcionário não encontrado:', employeeId);
+      setPayrollError('Erro: ID do funcionário não encontrado');
+      return;
+    }
+    
+    // Encontrar o funcionário na lista para obter o nome para confirmação
+    const employee = payrollEntries.find(entry => entry.id === employeeId);
+    const employeeName = employee ? employee.nome_colaborador || 'Funcionário' : 'Funcionário';
+    
+    // Configurar dados para o AlertDialog
+    setEmployeeToDelete({ id: employeeId, name: employeeName });
+    setDeleteDialogOpen(true);
+  };
+
+  // Função para confirmar a exclusão
+  const confirmDeleteEmployee = async () => {
+    if (!employeeToDelete) return;
+    
+    try {
+      console.log('Chamando payrollService.deletePayrollEntry com ID:', employeeToDelete.id);
+      
+      // Deletar entrada da folha de pagamento
+      await payrollService.deletePayrollEntry(employeeToDelete.id);
+      
+      console.log('Entrada deletada com sucesso');
+      
+      // Recarregar dados após exclusão
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const entries = await payrollService.getPayrollEntries(month, year);
+      setPayrollEntries(entries);
+      
+      // Fechar dialog e limpar estado
+      setDeleteDialogOpen(false);
+      setEmployeeToDelete(null);
+
+    } catch (error) {
+      console.error('Erro ao deletar funcionário:', error);
+      setPayrollError('Erro ao excluir funcionário: ' + error.message);
+      setDeleteDialogOpen(false);
+      setEmployeeToDelete(null);
+    }
+  };
+
   // Função para atualizar funcionário
   const handleEmployeeUpdate = async (id: string, updates: Partial<any>) => {
     try {
-      // Updating employee logging disabled
+
       
       // Atualizar no banco de dados
       await payrollService.updatePayrollEntry(String(id), {
@@ -151,9 +238,9 @@ export default function PayrollPage() {
       const entries = await payrollService.getPayrollEntries(month, year);
       setPayrollEntries(entries);
       
-      // Employee updated successfully logging disabled
+
     } catch (error) {
-      // Error updating employee logging disabled
+
       setPayrollError('Erro ao atualizar funcionário: ' + error.message);
     }
   };
@@ -179,7 +266,7 @@ export default function PayrollPage() {
   const userAccessLevel = getUserAccessLevel();
   
   const [activeTab, setActiveTab] = useState('recreio');
-  const [selectedMonth, setSelectedMonth] = useState('2025-08');
+  const [selectedMonth, setSelectedMonth] = useState('2025-09');
   const [searchTerm, setSearchTerm] = useState('');
   const [classificationFilter, setClassificationFilter] = useState('Todos');
   
@@ -219,37 +306,9 @@ export default function PayrollPage() {
   const [selectedEntry, setSelectedEntry] = useState<PayrollEntry | undefined>(undefined);
   const { deleteEntry, loading: crudLoading, error: crudError, clearError } = usePayrollCrud();
 
-  // Função para editar funcionário
-  const handleEditEmployee = async (employee: Employee) => {
-    try {
-      await payrollService.updatePayrollEntry(String(employee.id), {
-        base_salary: employee.salary,
-        bonus: employee.bonus,
-        commission: employee.commission,
-        transport_voucher: employee.transport,
-        reimbursement: employee.reimbursement,
-        inss: employee.inss,
-        store_expenses: employee.store,
-        bistro_expenses: employee.bistro,
-        salary_advance: employee.advance,
-        other_discounts: employee.discount,
-        classification: employee.classification,
-        role: employee.position,
-      });
-      
-      // Recarregar dados após edição
-      const [year, month] = selectedMonth.split('-').map(Number);
-      const entries = await payrollService.getPayrollEntries(month, year);
-      setPayrollEntries(entries);
-      
-      // Employee updated successfully logging disabled
-    } catch (error) {
-      // Error updating employee logging disabled
-      setPayrollError('Erro ao atualizar funcionário: ' + error.message);
-    }
-  };
 
-  // Função para abrir o modal de detalhes
+
+  // Função para abrir modal de detalhes
   const handleOpenDetailsModal = () => {
     setIsDetailsModalOpen(true);
   };
@@ -386,61 +445,58 @@ export default function PayrollPage() {
     }
   };
 
+  // Função para buscar dados de evolução dos últimos 6 meses
+  const fetchEvolutionData = async () => {
+    try {
+      // Usar o payrollService para buscar dados de evolução
+      const response = await payrollService.getEvolutionData();
+      
+      if (response && response.length > 0) {
+        // Mapear os dados para o formato do gráfico
+        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return response.reverse().map((item: any) => ({
+          month: monthNames[item.mes - 1],
+          value: parseFloat(item.total_custos) || 0
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de evolução:', error);
+      return [];
+    }
+  };
+
 
 
   // Carregar dados da folha de pagamento do Supabase
   useEffect(() => {
     const loadPayrollData = async () => {
-      if (!selectedMonth) return;
-      
       setPayrollLoading(true);
       try {
-        const [year, month] = selectedMonth.split('-').map(Number);
-    
+        // Buscar TODOS os dados da folha de pagamento
+        const entries = await payrollService.getAllPayrollEntries();
         
-        // Verificar se existe folha para o mês
-        const existingPayroll = await payrollService.getPayroll(month, year);
-
-        let entries = [];
-        
-        if (existingPayroll) {
-          // Folha existe, carregar entradas
-          entries = await payrollService.getPayrollEntries(month, year);
-
-        } else {
-          // Criar automaticamente uma nova folha se não existir
-          try {
-
-            await payrollService.createPayroll(month, year);
-            entries = await payrollService.getPayrollEntries(month, year);
-
-          } catch (createError) {
-    
-          }
-        }
-        
-  
+        // Definir as entradas da folha de pagamento
         setPayrollEntries(entries);
-        setPayrollError(null);
+        
       } catch (error) {
-        // Log desabilitado - Erro ao carregar dados da folha
-        setPayrollError(error.message);
+        console.error('Erro ao carregar dados da folha de pagamento:', error);
+        setPayrollError('Erro ao carregar dados: ' + error.message);
       } finally {
         setPayrollLoading(false);
       }
     };
 
     loadPayrollData();
-  }, [selectedMonth, allEmployeesFromDB]);
+  }, []); // Remover dependência do selectedMonth
 
   // Mapear dados do Supabase para o formato esperado pela interface
   const mapPayrollEntryToEmployee = (entry: any): Employee => {
-    // Debug: Log da entrada bruta
-    
-
     
     // Garantir que units seja sempre um array de strings
-    const units = Array.isArray(entry.users?.units) ? entry.users.units.filter(u => typeof u === 'string') : [];
+    const units = Array.isArray(entry.users?.units) ? entry.users.units.filter(u => typeof u === 'string') : 
+                  Array.isArray(entry.units) ? entry.units.filter(u => typeof u === 'string') : [];
     
     // Garantir que unit seja sempre uma string
     let unit = 'Unidade não informada';
@@ -454,32 +510,43 @@ export default function PayrollPage() {
       unit = entry.users.unit;
     }
     
-    return {
-      id: entry.id || entry.collaborator_id,
-      name: entry.nome_colaborador || entry.collaborator_name || entry.full_name || 'Nome não informado',
+
+    
+    // Mapear corretamente os campos da base de dados
+    const mappedEmployee = {
+      id: entry.id, // ID da entrada da folha de pagamento (necessário para operações CRUD)
+      name: entry.nome_colaborador || entry.collaborator_name || entry.users?.username || 'Nome não informado',
       unit: unit,
       units: units,
-      position: entry.role || entry.position || 'Cargo não informado',
-      classification: entry.classification || 'Não informado',
-      salary: entry.base_salary || 0,
-      transport: entry.transport || entry.transport_voucher || 0,
-      bonus: entry.bonus || 0,
-      commission: entry.commission || 0,
-      reimbursement: entry.reimbursement || 0,
+      position: entry.funcao || entry.role || entry.position || 'Cargo não informado',
+      classification: entry.classificacao || entry.classification || 'Não informado',
+      salary: parseFloat(entry.salario_base) || parseFloat(entry.base_salary) || 0,
+      transport: parseFloat(entry.passagem) || parseFloat(entry.transport) || parseFloat(entry.transport_voucher) || 0,
+      bonus: parseFloat(entry.bonus) || 0,
+      commission: parseFloat(entry.comissao) || parseFloat(entry.commission) || 0,
+      reimbursement: parseFloat(entry.reembolso) || parseFloat(entry.reimbursement) || 0,
       thirteenth: 0, // Campo não mapeado ainda
-      inss: entry.inss || 0,
-      store: entry.store_discount || entry.store_expenses || 0,
-      bistro: entry.bistro_discount || entry.bistro_expenses || 0,
-      advance: entry.advance || entry.salary_advance || 0,
-      discount: entry.other_discounts || 0,
-      total: entry.total_amount || (entry.base_salary + entry.bonus + entry.commission + entry.reimbursement - entry.inss - entry.transport - entry.store_discount - entry.bistro_discount - entry.advance - entry.other_discounts) || 0,
-      bank: entry.banco || entry.users?.bank || 'Não informado',
-      agency: entry.agencia || entry.users?.agency || 'Não informado',
-      account: entry.conta || entry.users?.account || 'Não informado',
-      cpf: entry.cpf_colaborador || entry.users?.cpf || 'Não informado',
+      inss: parseFloat(entry.inss) || 0,
+      store: parseFloat(entry.lojinha) || parseFloat(entry.store_discount) || parseFloat(entry.store_expenses) || 0,
+      bistro: parseFloat(entry.bistro) || parseFloat(entry.bistro_discount) || parseFloat(entry.bistro_expenses) || 0,
+      advance: parseFloat(entry.adiantamento) || parseFloat(entry.advance) || parseFloat(entry.salary_advance) || 0,
+      discount: parseFloat(entry.outros_descontos) || parseFloat(entry.other_discounts) || 0,
+      total: 0, // Será calculado abaixo
+      bank: entry.banco || entry.bank || entry.users?.bank || 'Não informado',
+      agency: entry.agencia || entry.agency || entry.users?.agency || 'Não informado',
+      account: entry.conta || entry.account || entry.users?.account || 'Não informado',
+      cpf: entry.cpf_colaborador || entry.cpf || entry.users?.cpf || 'Não informado',
       pix: entry.pix || entry.users?.pix || 'Não informado',
+      notes: entry.observacoes || entry.observations || '',
       date: selectedMonth
     };
+    
+    // Calcular o total corretamente
+    mappedEmployee.total = mappedEmployee.salary + mappedEmployee.bonus + mappedEmployee.commission + mappedEmployee.reimbursement - mappedEmployee.inss - mappedEmployee.transport - mappedEmployee.store - mappedEmployee.bistro - mappedEmployee.advance - mappedEmployee.discount;
+    
+
+    
+    return mappedEmployee;
   };
 
   // Organizar dados por unidade e classificação
@@ -488,71 +555,67 @@ export default function PayrollPage() {
     if (!entries || !Array.isArray(entries)) {
       return {
         recreio: [],
-        'campo-grande': [],
         'cg-emla': [],
         'cg-lamk': [],
         barra: [],
         'staff-rateado': [],
-        'professores-multi': []
+        'professores-multi-unidade': []
       };
     }
     
-    const mappedEmployees = entries.map(mapPayrollEntryToEmployee);
-    
-    // Debug: Log dos funcionários mapeados
-
-
+    const mappedEmployees = entries.map(entry => mapPayrollEntryToEmployee(entry));
     
     return {
       recreio: mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('recreio') || unit.includes('recreio') || role.includes('recreio');
-      }),
-      'campo-grande': mappedEmployees.filter(emp => {
-        const units = emp.units || [];
-        const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
-        const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('campo-grande') || unit.includes('campo') || role.includes('campo');
+        
+        return unit.includes('recreio');
       }),
       'cg-emla': mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('cg-emla') || unit.includes('emla') || role.includes('emla');
+        
+        return unit.includes('cg emla') || unit.includes('emla');
       }),
       'cg-lamk': mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('cg-lamk') || units.includes('lamk') || unit.includes('lamk') || role.includes('lamk');
+        
+        return unit.includes('cg lamk') || unit.includes('lamk');
       }),
       barra: mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('barra') || unit.includes('barra') || role.includes('barra');
+        
+        return unit.includes('barra');
       }),
       'staff-rateado': mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const classification = typeof emp.classification === 'string' ? emp.classification.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('staff-rateado') || unit.includes('staff') || classification.includes('staff') || role.includes('staff');
+        
+        return unit.includes('staff') || classification.includes('staff');
       }),
-      'professores-multi': mappedEmployees.filter(emp => {
+      'professores-multi-unidade': mappedEmployees.filter(emp => {
         const units = emp.units || [];
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const classification = typeof emp.classification === 'string' ? emp.classification.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
-        return units.includes('professores-multi') || unit.includes('professor') || classification.includes('professor') || role.includes('professor');
+        
+        return unit.includes('professores') || unit.includes('multi') || classification.includes('professor');
       })
     };
   };
 
   // Organizar dados por unidade usando dados reais do Supabase
   const allEmployees = organizeDataByUnit(payrollEntries);
+
   
   // Log desabilitado - Dados organizados por unidade
 
@@ -608,8 +671,8 @@ export default function PayrollPage() {
 
   // Cálculo do resumo geral
   const calculateSummary = (): UnitSummary[] => {
-    const units = ['recreio', 'campo-grande', 'barra', 'staff-rateado'] as const;
-    const colors = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+    const units = ['recreio', 'cg-emla', 'cg-lamk', 'barra', 'staff-rateado', 'professores-multi-unidade'] as const;
+    const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
     
     const unitSummary = units.map((unitKey, index) => {
       const unitEmployees = allEmployees[unitKey] || [];
@@ -618,8 +681,11 @@ export default function PayrollPage() {
       
       return {
         name: unitKey === 'recreio' ? 'Recreio' : 
-              unitKey === 'campo-grande' ? 'Campo Grande' :
-              unitKey === 'barra' ? 'Barra' : 'Staff Rateado',
+              unitKey === 'cg-emla' ? 'CG EMLA' :
+              unitKey === 'cg-lamk' ? 'CG LAMK' :
+              unitKey === 'barra' ? 'Barra' : 
+              unitKey === 'staff-rateado' ? 'Staff Rateado' :
+              'Professores Multi-Unidade',
         total,
         employees,
         averagePerEmployee: employees > 0 ? total / employees : 0,
@@ -665,6 +731,26 @@ export default function PayrollPage() {
   const summaryData = calculateSummary();
   const totalGeneral = calculateTotalGeneral();
   
+  // Estado para dados de evolução
+  const [evolutionData, setEvolutionData] = useState<{ month: string; value: number }[]>([]);
+
+  // Buscar dados de evolução quando necessário
+  useEffect(() => {
+    const loadEvolutionData = async () => {
+      try {
+        const data = await fetchEvolutionData();
+        setEvolutionData(data);
+      } catch (error) {
+        console.error('Erro ao carregar dados de evolução:', error);
+        setEvolutionData([]);
+      }
+    };
+
+    if (!isLoading && payrollEntries.length > 0) {
+      loadEvolutionData();
+    }
+  }, [isLoading, payrollEntries.length, selectedMonth]);
+
   // Usar useMemo para otimizar o cálculo dos gráficos baseado nos filtros
   const chartData = useMemo(() => {
     if (isLoading || !payrollEntries.length) {
@@ -695,21 +781,23 @@ export default function PayrollPage() {
         color: unit.color
       })),
       costByClassification: [
-        { name: 'CLT', value: filteredEmployees.filter(e => e.classification === 'CLT').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0) },
-        { name: 'PJ', value: filteredEmployees.filter(e => e.classification === 'PJ').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0) },
-        { name: 'Horista', value: filteredEmployees.filter(e => e.classification === 'Horista').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0) },
-        { name: 'Estagiário', value: filteredEmployees.filter(e => e.classification === 'Estagiário').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0) },
-        { name: 'Staff', value: filteredEmployees.filter(e => e.classification === 'Staff').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0) }
+        { name: 'CLT', value: filteredEmployees.filter(e => e.classification === 'CLT').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-1))' },
+        { name: 'PJ', value: filteredEmployees.filter(e => e.classification === 'PJ').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-2))' },
+        { name: 'Horista', value: filteredEmployees.filter(e => e.classification === 'Horista').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-3))' },
+        { name: 'Estagiário', value: filteredEmployees.filter(e => e.classification === 'Estagiário').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-4))' },
+        { name: 'Staff', value: filteredEmployees.filter(e => e.classification === 'Staff').reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-5))' }
       ],
-      evolutionLast6Months: [], // Será implementado quando tivermos dados históricos
+      evolutionLast6Months: evolutionData,
       costComposition: [
-        { name: 'Recreio', value: applyGraphFilters(allEmployees.recreio || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: '#10B981' },
-        { name: 'Campo Grande', value: applyGraphFilters(allEmployees['campo-grande'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: '#F59E0B' },
-        { name: 'Barra', value: applyGraphFilters(allEmployees.barra || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: '#EF4444' },
-        { name: 'Staff', value: applyGraphFilters(allEmployees['staff-rateado'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: '#8B5CF6' }
-      ]
+        { name: 'Recreio', value: applyGraphFilters(allEmployees.recreio || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-1))' },
+        { name: 'CG EMLA', value: applyGraphFilters(allEmployees['cg-emla'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-2))' },
+        { name: 'CG LAMK', value: applyGraphFilters(allEmployees['cg-lamk'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-3))' },
+        { name: 'Barra', value: applyGraphFilters(allEmployees.barra || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-4))' },
+        { name: 'Staff', value: applyGraphFilters(allEmployees['staff-rateado'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-5))' },
+        { name: 'Professores Multi-Unidade', value: applyGraphFilters(allEmployees['professores-multi-unidade'] || []).reduce((sum, e) => sum + calculateEmployeeTotal(e), 0), color: 'hsl(var(--chart-6))' }
+      ].sort((a, b) => b.value - a.value)
     };
-  }, [payrollEntries, activeTab, graphClassificationFilter, isLoading]);
+  }, [payrollEntries, activeTab, graphClassificationFilter, isLoading, evolutionData]);
 
 
 
@@ -782,7 +870,15 @@ export default function PayrollPage() {
 
             {/* Cards das Unidades - Filtrar para remover o card de rateador */}
             {summaryData.filter(unit => unit.name !== 'Rateador').map((unit, index) => {
-              const unitKey = index === 0 ? 'recreio' : index === 1 ? 'campo-grande' : index === 2 ? 'barra' : 'staff-rateado';
+              const unitKeyMap = {
+                'Recreio': 'recreio',
+                'Campo Grande EMLA': 'cg-emla',
+                'Campo Grande LAMK': 'cg-lamk',
+                'Barra': 'barra',
+                'Staff Rateado': 'staff-rateado',
+                'Professores Multi-Unidade': 'professores-multi-unidade'
+              };
+              const unitKey = unitKeyMap[unit.name] || 'recreio';
               const unitEmployees = allEmployees[unitKey] || [];
               const colorMap = {
                 'Recreio': 'green',
@@ -896,19 +992,19 @@ export default function PayrollPage() {
                       }}
                     />
                     <Pie
-                      data={chartData.distributionByUnit.filter(item => item.name !== 'Rateador')}
+                      data={chartData?.distributionByUnit?.filter(item => item.name !== 'Rateador') || []}
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
                       innerRadius={30}
-                      fill="#8884d8"
+                      fill="hsl(var(--chart-1))"
                       dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                       stroke="#fff"
                       strokeWidth={2}
                     >
-                      {chartData.distributionByUnit.filter(item => item.name !== 'Rateador').map((entry, index) => (
+                      {(chartData?.distributionByUnit?.filter(item => item.name !== 'Rateador') || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -927,12 +1023,42 @@ export default function PayrollPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData.costByClassification}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                  <BarChart 
+                    data={chartData?.costByClassification || []}
+                    margin={{
+                      top: 20,
+                    }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <Tooltip 
+                      cursor={false}
+                      formatter={(value) => formatCurrency(Number(value))}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Bar dataKey="value" radius={8}>
+                      <LabelList
+                        position="top"
+                        offset={12}
+                        className="fill-foreground"
+                        fontSize={12}
+                        formatter={(value) => formatCurrency(Number(value))}
+                      />
+                      {(chartData?.costByClassification || []).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -948,19 +1074,94 @@ export default function PayrollPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={chartData.evolutionLast6Months}>
+                  <LineChart 
+                    data={chartData?.evolutionLast6Months || []}
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: 10,
+                      bottom: 10,
+                    }}
+                  >
                     <defs>
-                      <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-                      </linearGradient>
+                      <pattern id="dotGridDark" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+                        <circle cx="15" cy="15" r="1.5" fill="hsl(var(--chart-2))" fillOpacity="0.1" />
+                      </pattern>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Area type="monotone" dataKey="value" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorGradient)" strokeWidth={2} />
-                  </AreaChart>
+
+                    <rect
+                      x="10px"
+                      y="-30px"
+                      width="100%"
+                      height="100%"
+                      fill="url(#dotGridDark)"
+                      style={{ pointerEvents: 'none' }}
+                    />
+
+                    <CartesianGrid vertical={false} />
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, strokeWidth: 0.5, stroke: 'hsl(var(--foreground))', opacity: 0.6 }}
+                      tickMargin={20}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis hide domain={['dataMin - 1000', 'dataMax + 1000']} />
+                    
+                    <Tooltip 
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="rounded-lg border border-border bg-background p-3 shadow-md min-w-[120px]">
+                              <div className="text-xs font-medium text-muted-foreground tracking-wide mb-2">{label}</div>
+                              <div className="text-sm font-semibold text-foreground">{formatCurrency(payload[0].value)}</div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                      cursor={{ strokeDasharray: '2 2', stroke: 'hsl(var(--chart-2))', strokeOpacity: 0.6 }}
+                    />
+
+                    {/* Main line with glow effect */}
+                    <Line
+                      type="linear"
+                      dataKey="value"
+                      stroke="hsl(var(--chart-2))"
+                      strokeWidth={3}
+                      dot={{
+                        r: 4,
+                        fill: 'hsl(var(--chart-2))',
+                        stroke: 'hsl(var(--chart-2))',
+                        strokeWidth: 2,
+                        filter: 'drop-shadow(0 0 6px hsl(var(--chart-2)))',
+                      }}
+                      activeDot={{
+                        r: 6,
+                        stroke: 'hsl(var(--chart-2))',
+                        strokeWidth: 3,
+                        fill: 'hsl(var(--chart-2))',
+                        filter: 'drop-shadow(0 0 8px hsl(var(--chart-2)))',
+                      }}
+                    />
+
+                    {/* Endpoint dot with enhanced glow */}
+                    <Line
+                      type="linear"
+                      dataKey="value"
+                      stroke="transparent"
+                      strokeWidth={0}
+                      dot={false}
+                      activeDot={{
+                        r: 7,
+                        stroke: 'hsl(var(--chart-2))',
+                        strokeWidth: 4,
+                        fill: 'hsl(var(--chart-2))',
+                        filter: 'drop-shadow(0 0 10px hsl(var(--chart-2)))',
+                      }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -975,13 +1176,58 @@ export default function PayrollPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData.costComposition}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                    <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]}>
-                      {chartData.costComposition.map((entry, index) => (
+                  <BarChart
+                    data={chartData?.costComposition || []}
+                    layout="vertical"
+                    margin={{
+                      top: 20,
+                      right: 120,
+                      bottom: 20,
+                      left: 20,
+                    }}
+                  >
+                    <CartesianGrid horizontal={false} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => value.length > 15 ? value.slice(0, 15) + '...' : value}
+                      hide
+                    />
+                    <XAxis dataKey="value" type="number" hide />
+                    <Tooltip
+                      cursor={false}
+                      formatter={(value) => formatCurrency(Number(value))}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      layout="vertical"
+                      radius={4}
+                    >
+                      <LabelList
+                        dataKey="name"
+                        position="insideLeft"
+                        offset={8}
+                        className="fill-background"
+                        fontSize={12}
+                      />
+                      <LabelList
+                        dataKey="value"
+                        position="right"
+                        offset={12}
+                        className="fill-foreground"
+                        fontSize={12}
+                        formatter={(value) => formatCurrency(Number(value))}
+                      />
+                      {(chartData?.costComposition || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Bar>
@@ -1037,7 +1283,7 @@ export default function PayrollPage() {
                 <UserCheck className="w-4 h-4" />
                 Staff Rateado
               </TabsTrigger>
-              <TabsTrigger value="professores-multi" className="flex items-center gap-2">
+              <TabsTrigger value="professores-multi-unidade" className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 <UserCheck className="w-4 h-4" />
                 Professores Multi-Unidade
@@ -1093,6 +1339,8 @@ export default function PayrollPage() {
                    <PayrollTable 
                      employees={allEmployees.recreio.map(convertToPayrollEmployee)}
                      selectedUnit="recreio"
+                     onEdit={handleEditEmployee}
+                     onDelete={handleDeleteEmployee}
                    />
                  </CardContent>
                </Card>
@@ -1144,8 +1392,10 @@ export default function PayrollPage() {
                  </CardHeader>
                  <CardContent>
                    <PayrollTable 
-                     employees={(allEmployees['campo-grande'] || []).map(convertToPayrollEmployee)}
-                     selectedUnit="campo-grande"
+                     employees={(allEmployees['cg-emla'] || []).map(convertToPayrollEmployee)}
+                     selectedUnit="cg-emla"
+                     onEdit={handleEditEmployee}
+                     onDelete={handleDeleteEmployee}
                    />
                  </CardContent>
                </Card>
@@ -1197,8 +1447,10 @@ export default function PayrollPage() {
                 </CardHeader>
                 <CardContent>
                   <PayrollTable 
-                    employees={(allEmployees['campo-grande'] || []).map(convertToPayrollEmployee)}
-                    selectedUnit="campo-grande"
+                    employees={(allEmployees['cg-lamk'] || []).map(convertToPayrollEmployee)}
+                    selectedUnit="cg-lamk"
+                    onEdit={handleEditEmployee}
+                    onDelete={handleDeleteEmployee}
                   />
                 </CardContent>
               </Card>
@@ -1253,6 +1505,8 @@ export default function PayrollPage() {
                   <PayrollTable 
                     employees={(allEmployees['barra'] || []).map(convertToPayrollEmployee)}
                     selectedUnit="barra"
+                    onEdit={handleEditEmployee}
+                    onDelete={handleDeleteEmployee}
                   />
                 </CardContent>
               </Card>
@@ -1306,13 +1560,15 @@ export default function PayrollPage() {
                   <PayrollTable 
                     employees={(allEmployees['staff-rateado'] || []).map(convertToPayrollEmployee)}
                     selectedUnit="staff-rateado"
+                    onEdit={handleEditEmployee}
+                    onDelete={handleDeleteEmployee}
                   />
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Professores Multi-Unidade */}
-            <TabsContent value="professores-multi" className="space-y-4">
+            <TabsContent value="professores-multi-unidade" className="space-y-4">
               {/* Filtros para Professores Multi-Unidade */}
               <div className="flex flex-col sm:flex-row gap-4 mb-4">
                 <div className="flex-1">
@@ -1340,7 +1596,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="professores-multi"
+                    defaultUnit="professores-multi-unidade"
                   />
                 )}
               </div>
@@ -1358,8 +1614,10 @@ export default function PayrollPage() {
                 </CardHeader>
                 <CardContent>
                   <PayrollTable
-                    employees={allEmployees['professores-multi'].map(convertToPayrollEmployee)}
-                    selectedUnit="professores-multi"
+                    employees={allEmployees['professores-multi-unidade'].map(convertToPayrollEmployee)}
+                    selectedUnit="professores-multi-unidade"
+                    onEdit={handleEditEmployee}
+                    onDelete={handleDeleteEmployee}
                   />
                 </CardContent>
               </Card>
@@ -1412,6 +1670,8 @@ export default function PayrollPage() {
                       employees.map((employee) => convertToPayrollEmployee({...employee, unit}))
                     )}
                     selectedUnit="multi-unidade"
+                    onEdit={handleEditEmployee}
+                    onDelete={handleDeleteEmployee}
                   />
                 </CardContent>
               </Card>
@@ -1424,8 +1684,8 @@ export default function PayrollPage() {
       
       {/* Modal de Detalhes */}
         <PayrollDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={handleCloseDetailsModal}
+          open={isDetailsModalOpen}
+          onOpenChange={handleCloseDetailsModal}
           totalGeneral={calculateTotalGeneral()}
           allEmployees={allEmployeesList}
           unitSummaries={calculateSummary()}
@@ -1440,8 +1700,10 @@ export default function PayrollPage() {
           unitName={selectedUnitForModal}
           employees={(() => {
             const unitKey = selectedUnitForModal === 'Recreio' ? 'recreio' :
-                           selectedUnitForModal === 'Campo Grande' ? 'campo-grande' :
+                           selectedUnitForModal === 'Campo Grande EMLA' ? 'cg-emla' :
+                           selectedUnitForModal === 'Campo Grande LAMK' ? 'cg-lamk' :
                            selectedUnitForModal === 'Barra' ? 'barra' :
+                           selectedUnitForModal === 'Professores Multi-Unidade' ? 'professores-multi-unidade' :
                            selectedUnitForModal === 'Staff Rateado' ? 'staff-rateado' : 'recreio';
             return allEmployees[unitKey] || [];
           })()}
@@ -1457,6 +1719,34 @@ export default function PayrollPage() {
         entry={selectedEntry}
         loading={crudLoading}
       />
+
+      {/* AlertDialog para confirmação de remoção */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a entrada de folha de pagamento de <strong>{employeeToDelete?.name}</strong>?
+              <br />
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setEmployeeToDelete(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteEmployee}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }

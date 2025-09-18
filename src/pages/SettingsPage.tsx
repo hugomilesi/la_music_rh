@@ -91,7 +91,7 @@ const SettingsPage: React.FC = () => {
            return {
              id: user.id, // This is the auth_user_id
              auth_user_id: user.id, // Store auth_user_id explicitly
-             name: userData?.full_name || user.email || 'Usuário sem nome',
+             name: userData?.username || user.email || 'Usuário sem nome',
              email: user.email,
              role: userData?.role || 'usuario',
              position: userData?.position || 'Não informado',

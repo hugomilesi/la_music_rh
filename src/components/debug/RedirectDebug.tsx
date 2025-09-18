@@ -32,7 +32,7 @@ const RedirectDebug: React.FC = () => {
             <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
             <p><strong>Profile ID:</strong> {profile?.id || 'N/A'}</p>
             <p><strong>Role:</strong> {profile?.role || 'N/A'}</p>
-            <p><strong>Nome:</strong> {profile?.full_name || 'N/A'}</p>
+            <p><strong>Nome:</strong> {profile?.username || 'N/A'}</p>
           </div>
         </div>
 

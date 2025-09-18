@@ -101,7 +101,7 @@ export function EditPayrollDialog({
   useEffect(() => {
     if (payroll) {
       setFormData({
-        nome_funcionario: payroll.employee?.name || '',
+        nome_funcionario: payroll.employee?.username || '',
         cpf_funcionario: payroll.employee?.cpf || '',
         unidade: payroll.unit || '',
         departamento: payroll.department || '',
@@ -222,7 +222,7 @@ export function EditPayrollDialog({
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nome_funcionario">Nome Completo *</Label>
+                <Label htmlFor="nome_funcionario">Nome de Usuário *</Label>
                 <Input
                   id="nome_funcionario"
                   value={formData.nome_funcionario}

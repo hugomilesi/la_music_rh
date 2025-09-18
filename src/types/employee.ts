@@ -7,7 +7,7 @@ export enum Unit {
 
 export interface Employee {
   id: string;
-  name: string; // mapped from full_name
+  name: string; // mapped from username
   email: string;
   phone: string;
   position: string;
@@ -15,7 +15,7 @@ export interface Employee {
   units: Unit[];
   start_date: string;
   status: 'ativo' | 'inativo'; // aligned with database values
-  avatar?: string; // mapped from avatar_url
+  avatar?: string; // mapped from avatar_url if available
   created_at: string;
   updated_at: string;
   last_login?: string;
@@ -24,7 +24,7 @@ export interface Employee {
 }
 
 export interface NewEmployeeData {
-  name: string; // will be mapped to full_name
+  name: string; // will be mapped to username
   email: string;
   phone: string;
   position: string;

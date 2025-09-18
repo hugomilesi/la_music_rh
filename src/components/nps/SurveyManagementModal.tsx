@@ -23,9 +23,8 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
   const [editingSurvey, setEditingSurvey] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     title: '',
-    description: '',
-    startDate: '',
-    endDate: ''
+    description: ''
+    // Removido: startDate e endDate - templates não precisam de datas específicas
   });
 
   const getStatusBadge = (status: string) => {
@@ -50,21 +49,20 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
     setEditingSurvey(survey.id);
     setEditForm({
       title: survey.title,
-      description: survey.description,
-      startDate: survey.startDate,
-      endDate: survey.endDate
+      description: survey.description
+      // Removido: startDate e endDate - templates não precisam de datas específicas
     });
   };
 
   const handleSaveEdit = (surveyId: string) => {
     updateSurvey(surveyId, editForm);
     setEditingSurvey(null);
-    setEditForm({ title: '', description: '', startDate: '', endDate: '' });
+    setEditForm({ title: '', description: '' });
   };
 
   const handleCancelEdit = () => {
     setEditingSurvey(null);
-    setEditForm({ title: '', description: '', startDate: '', endDate: '' });
+    setEditForm({ title: '', description: '' });
   };
 
   const handleSendToWhatsApp = async (surveyId: string) => {
@@ -117,24 +115,7 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
                             rows={2}
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label>Data Início</Label>
-                            <Input
-                              type="date"
-                              value={editForm.startDate}
-                              onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label>Data Fim</Label>
-                            <Input
-                              type="date"
-                              value={editForm.endDate}
-                              onChange={(e) => setEditForm({...editForm, endDate: e.target.value})}
-                            />
-                          </div>
-                        </div>
+                        {/* Removido: Campos de data - templates não precisam de datas específicas */}
                       </div>
                     ) : (
                       <>
@@ -152,14 +133,8 @@ export const SurveyManagementModal: React.FC<SurveyManagementModalProps> = ({
               </CardHeader>
               <CardContent>
                 {editingSurvey !== survey.id && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Período</p>
-                      <p className="font-medium">
-                        {new Date(survey.startDate).toLocaleDateString('pt-BR')} - {' '}
-                        {new Date(survey.endDate).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Removido: Exibição de período - templates não têm datas específicas */}
                     <div>
                       <p className="text-sm text-gray-600">Colaboradores</p>
                       <p className="font-medium flex items-center gap-1">

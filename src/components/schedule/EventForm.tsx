@@ -14,12 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Employee } from '@/types/employee';
-import { Unit, UNITS } from '@/types/unit';
+import { ScheduleUnit, SCHEDULE_UNITS } from '@/types/unit';
 
 interface EventFormData {
   title: string;
   employeeId: string;
-  unit: Unit;
+  unit: ScheduleUnit;
   date: string;
   startTime: string;
   endTime: string;
@@ -108,7 +108,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                     {...field}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {UNITS.map((unit) => (
+                    <option value="">Selecione uma unidade</option>
+                    {SCHEDULE_UNITS.map((unit) => (
                       <option key={unit.id} value={unit.id}>
                         {unit.name}
                       </option>

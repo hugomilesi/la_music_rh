@@ -39,18 +39,14 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
     }
 
     
-    // console.log('📧 Tipo:', emailType);
-    // console.log('📬 Destinatário:', to);
-    // console.log('📝 Assunto:', subject);
-    // console.log('💬 Mensagem:', message);
-    // console.log('🔑 API Key Resend:', import.meta.env.VITE_RESEND_API_KEY ? 'Configurada' : 'NÃO CONFIGURADA');
+
 
     try {
       let result;
       
       switch (emailType) {
         case 'general':
-          // console.log('📤 Enviando email geral...');
+  
           result = await sendEmail({
             to: [to],
             subject,
@@ -59,17 +55,17 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           break;
           
         case 'birthday':
-          // console.log('🎂 Enviando notificações de aniversário...');
+  
           result = await sendBirthdayNotifications();
           break;
           
         case 'ferias':
-          // console.log('🏖️ Enviando alertas de férias...');
+  
           result = await sendVacationAlerts();
           break;
           
         case 'documento':
-          // console.log('📄 Enviando email com documento...');
+  
           result = await sendDocumentEmail({
             to: [to],
             employeeName: 'Colaborador Teste',
@@ -79,7 +75,7 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           break;
           
         default:
-          // console.log('📤 Enviando email padrão...');
+  
           result = await sendEmail({
             to: [to],
             subject,
@@ -99,14 +95,14 @@ export const EmailTestDialog: React.FC<EmailTestDialogProps> = ({ children }) =>
           toast.info(`📊 ${result.sent} email(s) enviado(s).`);
         }
       } else {
-        // console.error('❌ Erro ao enviar email:', result.error);
+
         toast.error(`❌ Falha no envio: ${result.error || 'Erro desconhecido'}`, {
           description: 'Verifique as configurações de email e tente novamente.',
           duration: 7000
         });
       }
     } catch (err) {
-      // console.error('💥 Erro inesperado ao enviar email de teste:', err);
+
       toast.error('💥 Erro inesperado ao enviar email.', {
         description: err instanceof Error ? err.message : 'Erro desconhecido',
         duration: 7000

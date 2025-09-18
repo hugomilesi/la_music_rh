@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { NewScheduleEventData, EventFormData } from '@/types/schedule';
-import { Unit } from '@/types/unit';
+import { ScheduleUnit } from '@/types/unit';
 import { ConflictAlert } from './ConflictAlert';
 import { EventForm } from './EventForm';
 import { formatDateToLocal } from '@/utils/dateUtils';
@@ -27,7 +27,7 @@ import { formatDateToLocal } from '@/utils/dateUtils';
 const formSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  unit: z.nativeEnum(Unit),
+  unit: z.nativeEnum(ScheduleUnit),
   date: z.string().min(1, 'Data é obrigatória'),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
@@ -66,7 +66,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     defaultValues: {
       title: '',
       employeeId: '',
-      unit: Unit.CAMPO_GRANDE,
+      unit: ScheduleUnit.CAMPO_GRANDE,
       date: preselectedDate ? formatDateToLocal(preselectedDate) : '',
       startTime: '',
       endTime: '',
@@ -119,7 +119,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       const eventData: NewScheduleEventData = {
         title: data.title,
         employeeId: data.employeeId,
-        unit: data.unit as Unit,
+        unit: data.unit as ScheduleUnit,
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -149,7 +149,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
         description: 'O evento foi criado com sucesso.',
       });
     } catch (error) {
-      console.error('Error creating event:', error);
+
       toast({
         title: 'Erro',
         description: 'Erro ao criar evento.',
@@ -245,3 +245,4 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
 };
 
 export default NewEventDialog;
+

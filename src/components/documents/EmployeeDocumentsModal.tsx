@@ -48,7 +48,7 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
           setEmployeeDocuments(Array.isArray(docs) ? docs : []);
         })
         .catch((err) => {
-          console.error('Error fetching employee documents:', err);
+    
           setError('Erro ao carregar documentos do funcionário');
           setEmployeeDocuments([]);
         })

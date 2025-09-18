@@ -10,7 +10,6 @@ const permissionCheckCache = new Map<string, boolean>();
 // Função para limpar o cache de verificações
 export const clearPermissionCheckCache = () => {
   permissionCheckCache.clear();
-  console.log('🧹 [ProtectedPageRoute] Cache de verificações limpo');
 };
 
 interface ProtectedPageRouteProps {
@@ -24,21 +23,18 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 }) => {
   
   const { user, session, profile, loading, forceLogout } = useAuth();
-  const { hasPermission, canViewModule, canManagePermissions, loading: permissionsLoading } = usePermissionsV2();
+  const { hasPermission, canViewModule, canManagePermissions, loading: permissionsLoading, userPermissions, isSuperAdmin, isAdmin } = usePermissionsV2();
   const previousUserIdRef = useRef<string | null>(null);
 
   // Limpar cache quando o usuário muda
   useEffect(() => {
     if (user?.id !== previousUserIdRef.current) {
       if (previousUserIdRef.current !== null) {
-        console.log('👤 [ProtectedPageRoute] Usuário mudou, limpando cache de verificações');
         clearPermissionCheckCache();
       }
       previousUserIdRef.current = user?.id || null;
     }
   }, [user?.id]);
-  
-  // Estado atual para debug
   
   // Temporariamente desabilitado para evitar loop de redirecionamento
   // useDynamicRedirect();
@@ -60,34 +56,74 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
   // Memoize permission check to prevent unnecessary recalculations
   // Only check permissions when they are fully loaded
   const hasRequiredPermission = useMemo(() => {
-    if (!requiredPermission) return true;
+    console.log('🛡️ hasRequiredPermission called:', {
+      requiredPermission,
+      hasUser: !!user,
+      hasProfile: !!profile,
+      userRole: profile?.role,
+      loading,
+      permissionsLoading,
+      userPermissionsLength: userPermissions?.length || 0,
+      userPermissions: userPermissions?.map(p => p.name) || [],
+      isSuperAdmin,
+      isAdmin
+    });
     
-    // Don't check permissions while they're still loading
-    if (permissionsLoading) {
-      return null; // Return null to indicate loading state, not false
+    if (!requiredPermission) {
+      console.log('🛡️ hasRequiredPermission: No permission required');
+      return true;
     }
     
-    // Verificar cache primeiro para evitar verificações desnecessárias
-    if (cacheKey && permissionCheckCache.has(cacheKey)) {
-      const cachedResult = permissionCheckCache.get(cacheKey)!;
-      return cachedResult;
+    if (!user || !profile) {
+      console.log('🛡️ hasRequiredPermission: No user or profile');
+      return false;
     }
     
-    const hasPermissionResult = hasPermission(requiredPermission);
-    
-    // Salvar no cache apenas se a verificação foi bem-sucedida
-    if (cacheKey && hasPermissionResult) {
-      permissionCheckCache.set(cacheKey, hasPermissionResult);
+    if (loading || permissionsLoading) {
+      console.log('🛡️ hasRequiredPermission: Still loading');
+      return null; // Ainda carregando
     }
-    return hasPermissionResult;
-  }, [requiredPermission, hasPermission, permissionsLoading, cacheKey]);
+    
+    // Verificar cache primeiro
+    const cacheKey = `${user.id}-${requiredPermission}`;
+    if (permissionCheckCache.has(cacheKey)) {
+      const cached = permissionCheckCache.get(cacheKey);
+      console.log('🛡️ hasRequiredPermission: Using cached result:', cached);
+      return cached;
+    }
+    
+    // Super admin e admin têm acesso total
+    if (isSuperAdmin || isAdmin) {
+      console.log('🛡️ hasRequiredPermission: Super admin or admin access granted');
+      permissionCheckCache.set(cacheKey, true);
+      return true;
+    }
+    
+    // Verificar se as permissões foram carregadas
+    if (!userPermissions || userPermissions.length === 0) {
+      console.log('🛡️ hasRequiredPermission: No permissions loaded yet');
+      permissionCheckCache.set(cacheKey, false);
+      return false;
+    }
+    
+    // Verificar se a permissão específica existe
+    const hasAccess = userPermissions.some(p => p.name === requiredPermission);
+    
+    console.log('🛡️ hasRequiredPermission result:', {
+      requiredPermission,
+      hasAccess,
+      availablePermissions: userPermissions.map(p => p.name)
+    });
+    
+    permissionCheckCache.set(cacheKey, hasAccess);
+    return hasAccess;
+  }, [requiredPermission, user?.id, profile?.role, loading, permissionsLoading, userPermissions, isSuperAdmin, isAdmin]);
 
   useEffect(() => {
     // Check if we have a user but invalid session
     if (user && session) {
       const now = Math.floor(Date.now() / 1000);
       if (session.expires_at && session.expires_at < now) {
-
         forceLogout();
         return;
       }
@@ -114,11 +150,19 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 
   // Redirect to home if not authenticated or session expired
   if (!user || !session || !isSessionValid) {
+    console.log('❌ ProtectedPageRoute - Redirecionando para home:', {
+      hasUser: !!user,
+      hasSession: !!session,
+      isSessionValid,
+      requiredPermission,
+      currentPath: window.location.pathname
+    });
     return <Navigate to="/" replace />;
   }
 
   // Wait for profile to load
   if (!profile) {
+    console.log('⏳ ProtectedPageRoute - Aguardando perfil carregar...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -130,9 +174,22 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
   // Só redireciona se hasRequiredPermission for explicitamente false (não null)
   if (requiredPermission && hasRequiredPermission === false) {
     const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
+    console.log('❌ ProtectedPageRoute - Sem permissão, redirecionando:', {
+      requiredPermission,
+      hasRequiredPermission,
+      redirectingTo: firstAccessibleRoute,
+      currentPath: window.location.pathname,
+      userRole: profile?.role
+    });
     return <Navigate to={firstAccessibleRoute} replace />;
   }
 
+  console.log('✅ ProtectedPageRoute - Acesso autorizado:', {
+    requiredPermission,
+    hasRequiredPermission,
+    userRole: profile?.role,
+    currentPath: window.location.pathname
+  });
   return <>{children}</>;
 });
 

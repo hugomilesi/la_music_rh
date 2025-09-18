@@ -334,7 +334,7 @@ const RecognitionPage: React.FC = () => {
                   )}
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
-                  <p>Cargos elegíveis: {program.target_roles.join(', ')}</p>
+                  <p>Cargos elegíveis: {program.target_roles ? program.target_roles.join(', ') : 'N/A'}</p>
                 </div>
                 <Button 
                   variant="outline" 

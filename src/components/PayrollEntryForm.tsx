@@ -5,7 +5,7 @@ import { employeeService } from '../services/employeeService';
 
 interface Employee {
   auth_user_id: string;
-  full_name: string;
+  username: string;
   cpf: string;
   units: string;
   department: string;
@@ -75,12 +75,12 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
     if (entry) {
       setFormData({
         id: entry.id,
-        colaborador_id: entry.colaborador_id,
-        mes: entry.mes,
-        ano: entry.ano,
-        classificacao: entry.classificacao,
-        funcao: entry.funcao,
-        salario_base: entry.salario_base,
+        colaborador_id: entry.colaborador_id || '',
+        mes: entry.mes || month || new Date().getMonth() + 1,
+        ano: entry.ano || year || new Date().getFullYear(),
+        classificacao: entry.classificacao || '',
+        funcao: entry.funcao || '',
+        salario_base: entry.salario_base || 0,
         bonus: entry.bonus || 0,
         comissao: entry.comissao || 0,
         passagem: entry.passagem || 0,
@@ -91,10 +91,13 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
         adiantamento: entry.adiantamento || 0,
         outros_descontos: entry.outros_descontos || 0,
         observacoes: entry.observacoes || '',
-        payroll_id: entry.payroll_id
+        payroll_id: entry.payroll_id || payrollId,
+        nome_colaborador: entry.nome_colaborador || '',
+        cpf_colaborador: entry.cpf_colaborador || '',
+        unidade: entry.unidade || ''
       });
     }
-  }, [entry]);
+  }, [entry, month, year, payrollId]);
 
   const handleInputChange = (field: keyof PayrollEntryInput, value: string | number) => {
     setFormData(prev => ({
@@ -235,7 +238,7 @@ const PayrollEntryForm: React.FC<PayrollEntryFormProps> = ({
                 <option value="">Selecione um funcionário</option>
                 {employees.map(employee => (
                   <option key={employee.auth_user_id} value={employee.auth_user_id}>
-                    {employee.full_name} - {employee.units}
+                    {employee.username} - {employee.units}
                   </option>
                 ))}
               </select>

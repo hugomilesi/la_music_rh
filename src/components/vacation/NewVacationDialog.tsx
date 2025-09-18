@@ -78,7 +78,6 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Log desabilitado: Submitting vacation request
       const vacationData: NewVacationRequest = {
         employeeId: data.employeeId,
         startDate: data.startDate,
@@ -87,7 +86,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
         type: data.type,
       };
       
-      addVacationRequest(vacationData);
+      await addVacationRequest(vacationData);
       toast({
         title: 'Solicitação criada',
         description: 'A solicitação de férias foi criada com sucesso.',
@@ -95,10 +94,9 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      // Log desabilitado: Error creating vacation request
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao criar a solicitação.',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao criar a solicitação.',
         variant: 'destructive',
       });
     }

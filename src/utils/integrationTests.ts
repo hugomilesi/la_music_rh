@@ -9,7 +9,7 @@ export const integrationTests = {
     // Employee Service Integration Test logging disabled
     try {
       const employees = await employeeService.getEmployees();
-      // console.log(`✅ Employee Service: Loaded ${employees.length} employees`);
+
       
       // Test data structure
       if (employees.length > 0) {
@@ -42,7 +42,7 @@ export const integrationTests = {
     // Evaluation Service Integration Test logging disabled
     try {
       const evaluations = await evaluationService.getEvaluations();
-      // console.log(`✅ Evaluation Service: Loaded ${evaluations.length} evaluations`);
+
       
       // Test data structure
       if (evaluations.length > 0) {
@@ -68,10 +68,7 @@ export const integrationTests = {
     // Vacation Service Integration Test logging disabled
     try {
       const vacationRequests = await vacationService.getVacationRequests();
-      // console.log(`✅ Vacation Service: Loaded ${vacationRequests.length} vacation requests`);
-      
       const vacationBalances = await vacationService.getVacationBalances();
-      // console.log(`✅ Vacation Service: Loaded ${vacationBalances.length} vacation balances`);
       
       return true;
     } catch (error) {
@@ -84,7 +81,7 @@ export const integrationTests = {
     // Schedule Service Integration Test logging disabled
     try {
       const scheduleEvents = await scheduleService.getScheduleEvents();
-      // console.log(`✅ Schedule Service: Loaded ${scheduleEvents.length} schedule events`);
+
       
       // Test data structure
       if (scheduleEvents.length > 0) {
@@ -131,7 +128,7 @@ export const integrationTests = {
   },
 
   async runAllTests() {
-    // console.log('🚀 Starting Integration Tests...');
+
     const results = await Promise.all([
       this.testEmployeeService(),
       this.testEvaluationService(),
@@ -142,13 +139,7 @@ export const integrationTests = {
     const passedTests = results.filter(Boolean).length;
     const totalTests = results.length;
     
-    // console.log(`📊 Integration Tests Complete: ${passedTests}/${totalTests} passed`);
-  
-  // if (passedTests === totalTests) {
-  //   console.log('✅ All integration tests passed!');
-  // } else {
-  //   console.log('❌ Some integration tests failed. Check logs above.');
-  // }
+
     
     return passedTests === totalTests;
   }

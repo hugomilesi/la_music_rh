@@ -25,15 +25,15 @@ export function getEvolutionApiConfig(): EvolutionApiConfig {
 
   // Validação das configurações obrigatórias
   if (!config.apiKey) {
-    console.warn('⚠️ VITE_EVOLUTION_API_KEY não configurada no .env');
+  
   }
 
   if (!config.apiUrl) {
-    console.warn('⚠️ VITE_EVOLUTION_API_URL não configurada no .env');
+  
   }
 
   if (!config.instanceName) {
-    console.warn('⚠️ VITE_EVOLUTION_INSTANCE_NAME não configurada no .env');
+  
   }
 
   return config;
@@ -46,12 +46,7 @@ export function validateEvolutionApiConfig(config: EvolutionApiConfig): boolean 
   const isValid = !!(config.apiKey && config.apiUrl && config.instanceName && config.enabled);
   
   if (!isValid) {
-    console.error('❌ Configuração da Evolution API incompleta:', {
-      hasApiKey: !!config.apiKey,
-      hasApiUrl: !!config.apiUrl,
-      hasInstanceName: !!config.instanceName,
-      enabled: config.enabled
-    });
+
   }
 
   return isValid;
@@ -84,9 +79,3 @@ export const evolutionApiConfig = getEvolutionApiConfig();
 /**
  * Log das configurações carregadas (sem expor dados sensíveis)
  */
-console.log('🔧 Evolution API Config carregada:', {
-  apiUrl: evolutionApiConfig.apiUrl,
-  instanceName: evolutionApiConfig.instanceName,
-  hasApiKey: !!evolutionApiConfig.apiKey,
-  enabled: evolutionApiConfig.enabled
-});

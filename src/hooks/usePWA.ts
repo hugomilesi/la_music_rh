@@ -210,7 +210,7 @@ export const useInstallPWA = () => {
       const { outcome } = await installPromptEvent.userChoice;
       return outcome === 'accepted';
     } catch (error) {
-      console.error('Erro ao instalar PWA:', error);
+
       return false;
     }
   };

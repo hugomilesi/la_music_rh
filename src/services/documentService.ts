@@ -2,52 +2,91 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface Document {
   id: string;
-  employee_id: string;
-  document_name: string;
-  document_type: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
-  status: 'válido' | 'vencido' | 'vencendo' | 'pendente';
-  expiry_date?: string;
-  notes?: string;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
+  title: string;
+  description?: string;
+  document_type?: string;
+  category?: string;
+  file_path?: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  version?: string;
+  status?: string;
+  is_public?: boolean;
+  requires_acknowledgment?: boolean;
+  tags?: string[];
+  metadata?: any;
+  created_by?: string;
+  updated_by?: string;
+  approved_by?: string;
+  approved_at?: string;
+  expires_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DocumentUpload {
-  employee_id: string;
-  document_name: string;
-  document_type: string;
+  title: string;
+  description?: string;
+  document_type?: string;
+  category?: string;
   file: File;
-  expiry_date?: string;
-  notes?: string;
-  uploaded_by: string;
+  version?: string;
+  status?: string;
+  is_public?: boolean;
+  requires_acknowledgment?: boolean;
+  tags?: string[];
+  metadata?: any;
+  expires_at?: string;
+  created_by?: string;
 }
 
 export const documentService = {
   // Get all documents for an employee
   async getDocumentsByEmployeeId(employeeId: string): Promise<Document[]> {
     try {
+      console.log('DocumentService: Buscando documentos do funcionário:', employeeId);
+      
       const { data, error } = await supabase
         .from('documents')
-        .select(`
-          *,
-          employee:users!employee_id(full_name)
-        `)
+        .select('*')
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });
       
       if (error) {
-        // Error fetching documents logging disabled
+        console.error('DocumentService: Erro ao buscar documentos:', error);
         throw error;
       }
       
-      return data || [];
+      console.log('DocumentService: Documentos encontrados:', data?.length || 0);
+      
+      // Map database columns to frontend interface
+      return data?.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description,
+        document_type: doc.document_type,
+        category: doc.category,
+        file_path: doc.file_path,
+        file_name: doc.file_name,
+        file_size: doc.file_size,
+        mime_type: doc.mime_type,
+        version: doc.version,
+        status: doc.status,
+        is_public: doc.is_public,
+        requires_acknowledgment: doc.requires_acknowledgment,
+        tags: doc.tags,
+        metadata: doc.metadata,
+        expires_at: doc.expires_at,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        created_by: doc.created_by,
+        updated_by: doc.updated_by,
+        approved_by: doc.approved_by,
+        approved_at: doc.approved_at
+      })) || [];
     } catch (error) {
-      // Error fetching employee documents logging disabled
+      console.error('DocumentService: Erro em getDocumentsByEmployeeId:', error);
       throw error;
     }
   },
@@ -55,17 +94,47 @@ export const documentService = {
   // Get all documents
   async getAllDocuments(): Promise<Document[]> {
     try {
+      console.log('DocumentService: Buscando todos os documentos...');
+      
       const { data, error } = await supabase
-        .rpc('get_documents_with_employees');
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching documents:', error);
+        console.error('DocumentService: Erro ao buscar todos os documentos:', error);
         throw error;
       }
 
-      return data || [];
+      console.log('DocumentService: Documentos encontrados:', data?.length || 0);
+      
+      // Map database columns to frontend interface
+      return data?.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description,
+        document_type: doc.document_type,
+        category: doc.category,
+        file_path: doc.file_path,
+        file_name: doc.file_name,
+        file_size: doc.file_size,
+        mime_type: doc.mime_type,
+        version: doc.version,
+        status: doc.status,
+        is_public: doc.is_public,
+        requires_acknowledgment: doc.requires_acknowledgment,
+        tags: doc.tags,
+        metadata: doc.metadata,
+        expires_at: doc.expires_at,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        created_by: doc.created_by,
+        updated_by: doc.updated_by,
+        approved_by: doc.approved_by,
+        approved_at: doc.approved_at
+      })) || [];
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error('DocumentService: Erro em getAllDocuments:', error);
       throw error;
     }
   },
@@ -73,7 +142,7 @@ export const documentService = {
   // Upload a new document
   async uploadDocument(uploadData: DocumentUpload): Promise<Document> {
     try {
-      // Document upload start logging disabled
+      console.log('DocumentService: Iniciando upload do documento:', uploadData.title);
       
       // Generate unique file path
       const timestamp = Date.now();
@@ -85,14 +154,14 @@ export const documentService = {
         .replace(/_+/g, '_') // Replace multiple underscores with single
         .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
       
-      const sanitizedDocumentType = uploadData.document_type
+      const sanitizedDocumentType = (uploadData.document_type || 'general')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
         .replace(/[^a-zA-Z0-9_-]/g, '_')
         .replace(/_+/g, '_')
         .replace(/^_|_$/g, '');
       
-      const filePath = `employees/${uploadData.employee_id}/${sanitizedDocumentType}/${timestamp}_${sanitizedFileName}`;
+      const filePath = `documents/${sanitizedDocumentType}/${timestamp}_${sanitizedFileName}`;
       
       // Upload file to storage
       const { data: uploadResult, error: uploadError } = await supabase.storage
@@ -103,42 +172,48 @@ export const documentService = {
         });
       
       if (uploadError) {
-        // Storage upload error logging disabled
+        console.error('DocumentService: Erro no upload do arquivo:', uploadError);
         throw uploadError;
       }
       
-      // File upload success logging disabled
+      console.log('DocumentService: Arquivo enviado com sucesso para:', uploadResult.path);
       
       // Create document record in database
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
-          employee_id: uploadData.employee_id,
-          document_name: uploadData.document_name,
-          document_type: uploadData.document_type,
+          title: uploadData.title,
+          description: uploadData.description,
+          document_type: uploadData.document_type || 'policy',
+          category: uploadData.category,
           file_name: uploadData.file.name,
           file_path: uploadResult.path,
           file_size: uploadData.file.size,
           mime_type: uploadData.file.type,
-          status: 'válido',
-          expiry_date: uploadData.expiry_date || null,
-          notes: uploadData.notes || null,
-          uploaded_by: uploadData.uploaded_by
+          version: uploadData.version || '1.0',
+          status: uploadData.status || 'active',
+          is_public: uploadData.is_public || false,
+          requires_acknowledgment: uploadData.requires_acknowledgment || false,
+          tags: uploadData.tags || [],
+          metadata: uploadData.metadata || {},
+          expires_at: uploadData.expires_at,
+          created_by: uploadData.created_by,
+          updated_by: uploadData.created_by
         })
         .select()
         .single();
       
       if (dbError) {
-        // Database insert error logging disabled
+        console.error('DocumentService: Erro ao inserir no banco:', dbError);
         // Clean up uploaded file
         await supabase.storage.from('documents').remove([uploadResult.path]);
         throw dbError;
       }
       
-      // Document record creation logging disabled
+      console.log('DocumentService: Documento criado com sucesso:', document.id);
       return document;
     } catch (error) {
-      // Document upload failure logging disabled
+      console.error('DocumentService: Erro em uploadDocument:', error);
       throw error;
     }
   },
@@ -146,15 +221,17 @@ export const documentService = {
   // Download a document
   async downloadDocument(documentId: string): Promise<string> {
     try {
+      console.log('DocumentService: Iniciando download do documento:', documentId);
+      
       // Get document info
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('file_path, file_name')
+        .select('file_path, document_name')
         .eq('id', documentId)
         .single();
       
       if (docError) {
-        // Error fetching document logging disabled
+        console.error('DocumentService: Erro ao buscar documento:', docError);
         throw docError;
       }
       
@@ -164,35 +241,46 @@ export const documentService = {
         .createSignedUrl(document.file_path, 3600); // 1 hour expiry
       
       if (urlError) {
-        // Error creating download URL logging disabled
+        console.error('DocumentService: Erro ao criar URL de download:', urlError);
         throw urlError;
       }
       
+      console.log('DocumentService: URL de download criada com sucesso');
       return urlData.signedUrl;
     } catch (error) {
-      // Error downloading document logging disabled
+      console.error('DocumentService: Erro em downloadDocument:', error);
       throw error;
     }
   },
 
   // Update document metadata
-  async updateDocument(documentId: string, updates: Partial<Pick<Document, 'document_name' | 'status' | 'expiry_date' | 'notes'>>): Promise<Document> {
+  async updateDocument(documentId: string, updates: Partial<Pick<Document, 'title' | 'status' | 'expires_at' | 'description'>>): Promise<Document> {
     try {
+      console.log('DocumentService: Atualizando documento:', documentId);
+      
+      // Map frontend fields to database columns
+      const dbUpdates: any = {};
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.expires_at !== undefined) dbUpdates.expires_at = updates.expires_at;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      
       const { data: document, error } = await supabase
         .from('documents')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', documentId)
         .select()
         .single();
       
       if (error) {
-        // Error updating document logging disabled
+        console.error('DocumentService: Erro ao atualizar documento:', error);
         throw error;
       }
       
+      console.log('DocumentService: Documento atualizado com sucesso');
       return document;
     } catch (error) {
-      // Error updating document logging disabled
+      console.error('DocumentService: Erro em updateDocument:', error);
       throw error;
     }
   },
@@ -200,6 +288,8 @@ export const documentService = {
   // Delete a document
   async deleteDocument(documentId: string): Promise<void> {
     try {
+      console.log('DocumentService: Deletando documento:', documentId);
+      
       // Get document info first
       const { data: document, error: docError } = await supabase
         .from('documents')
@@ -208,7 +298,7 @@ export const documentService = {
         .single();
       
       if (docError) {
-        // Error fetching document for deletion logging disabled
+        console.error('DocumentService: Erro ao buscar documento para deletar:', docError);
         throw docError;
       }
       
@@ -218,7 +308,7 @@ export const documentService = {
         .remove([document.file_path]);
       
       if (storageError) {
-        // Error deleting from storage logging disabled
+        console.error('DocumentService: Erro ao deletar do storage:', storageError);
         // Continue with database deletion even if storage fails
       }
       
@@ -229,13 +319,13 @@ export const documentService = {
         .eq('id', documentId);
       
       if (deleteError) {
-        // Error deleting document record logging disabled
+        console.error('DocumentService: Erro ao deletar registro do documento:', deleteError);
         throw deleteError;
       }
       
-      // Document deletion success logging disabled
+      console.log('DocumentService: Documento deletado com sucesso');
     } catch (error) {
-      // Error deleting document logging disabled
+      console.error('DocumentService: Erro em deleteDocument:', error);
       throw error;
     }
   },
@@ -243,20 +333,22 @@ export const documentService = {
   // Test connection
   async testConnection(): Promise<boolean> {
     try {
+      console.log('DocumentService: Testando conexão...');
+      
       const { data, error } = await supabase
         .from('documents')
         .select('count')
         .limit(1);
       
       if (error) {
-        // Connection test failure logging disabled
+        console.error('DocumentService: Falha no teste de conexão:', error);
         return false;
       }
       
-      // Connection test success logging disabled
+      console.log('DocumentService: Teste de conexão bem-sucedido');
       return true;
     } catch (error) {
-      // Connection test error logging disabled
+      console.error('DocumentService: Erro no teste de conexão:', error);
       return false;
     }
   }

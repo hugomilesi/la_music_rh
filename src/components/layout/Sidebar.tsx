@@ -1,5 +1,5 @@
 
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Calendar, 
@@ -126,8 +126,11 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle, isOpen = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { canViewModule, loading: isLoading } = usePermissionsV2();
   const isMobile = useIsMobile();
+  const { canViewModule, isLoading } = usePermissionsV2();
+  
+  // Estado para forçar re-renderização quando o profile é atualizado
+  const [profileVersion, setProfileVersion] = useState(0);
   
   // Debug: Log props and state changes
   useEffect(() => {
@@ -160,11 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
 
   // Monitorar mudanças nas dependências do useMemo
   useEffect(() => {
-    console.log('🔧 [Sidebar] Dependências do useMemo mudaram:', {
-      canViewModuleType: typeof canViewModule,
-      isLoading,
-      timestamp: new Date().toISOString()
-    });
+    // Dependencies monitoring for useMemo
   }, [canViewModule, isLoading]);
 
   // Filtrar itens do menu baseado nas permissões do usuário
@@ -173,24 +172,36 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
       return [];
     }
     
+    console.log('🔍 Sidebar: Recalculating visible menu items', { profileVersion, isLoading });
+    
     const filtered = menuItems.filter(item => {
       const canView = canViewModule(item.module);
+      console.log(`📋 Sidebar: Module ${item.module} - canView: ${canView}`);
       return canView;
     });
     
+    console.log('✅ Sidebar: Visible menu items:', filtered.map(item => item.title));
     return filtered;
-  }, [canViewModule, isLoading]);
+  }, [canViewModule, isLoading, profileVersion]);
 
   // Listen for profile-loaded event to force sidebar re-render
   useEffect(() => {
     const handleProfileLoaded = () => {
-      // The useMemo above will automatically recalculate when canViewModule changes
+      console.log('🔄 Sidebar: Profile loaded event received, forcing re-render');
+      setProfileVersion(prev => prev + 1);
+    };
+
+    const handlePermissionsChanged = () => {
+      console.log('🔄 Sidebar: Permissions changed event received, forcing re-render');
+      setProfileVersion(prev => prev + 1);
     };
 
     window.addEventListener('profile-loaded', handleProfileLoaded);
+    window.addEventListener('permissions-changed', handlePermissionsChanged);
     
     return () => {
       window.removeEventListener('profile-loaded', handleProfileLoaded);
+      window.removeEventListener('permissions-changed', handlePermissionsChanged);
     };
   }, []);
 

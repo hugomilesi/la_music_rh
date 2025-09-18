@@ -99,7 +99,7 @@ export async function deleteEmployee(employeeId: string): Promise<{ success: boo
     };
     
   } catch (error) {
-    // Log desabilitado: Error deleting collaborator
+    console.error('❌ UserManagementService: Erro ao deletar colaborador:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -147,7 +147,7 @@ export async function updateEmployee(employeeId: string, updateData: Partial<Cre
     };
     
   } catch (error) {
-    // Log desabilitado: Error updating collaborator
+    console.error('❌ UserManagementService: Erro ao atualizar colaborador:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -244,7 +244,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
       .eq('auth_user_id', currentUser?.id)
       .single();
     
-    // Log desabilitado: Debug - Current user info
+    console.log('🔍 UserManagementService: Informações do usuário atual:', currentProfile);
     
     // Call the Edge Function to create user
     const { data, error } = await supabase.functions.invoke('create-user', {
@@ -260,7 +260,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     });
 
     if (error) {
-      // Log desabilitado: Edge Function error
+      console.error('❌ UserManagementService: Erro na Edge Function:', error);
       return {
         success: false,
         error: `Erro ao criar usuário: ${error.message}`
@@ -295,7 +295,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     };
     
   } catch (error) {
-    // Log desabilitado: Error creating collaborator
+    console.error('❌ UserManagementService: Erro em createCollaborator:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido'

@@ -121,7 +121,7 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: securityError
           });
         } else {
-          // console.log('✅ Correções de segurança aplicadas:', securityResult);
+
           updateStepStatus('functions', 'success', {
             success: true,
             message: 'Correções de segurança aplicadas com sucesso',
@@ -155,7 +155,7 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: rlsError
           });
         } else {
-          // console.log('✅ Políticas RLS otimizadas');
+
           updateStepStatus('rls', 'success', {
             success: true,
             message: 'Políticas RLS otimizadas com sucesso'
@@ -188,7 +188,7 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: cleanupError
           });
         } else {
-          // console.log('✅ Índices limpos:', cleanupResult);
+
           updateStepStatus('indexes', 'success', {
             success: true,
             message: 'Limpeza de índices concluída',
@@ -222,7 +222,7 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: verificationError
           });
         } else {
-          // console.log('✅ Verificação concluída:', verificationResult);
+
           updateStepStatus('verification', 'success', {
             success: true,
             message: 'Verificação de segurança concluída',

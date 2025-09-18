@@ -4,11 +4,16 @@ import { NPSResponse, NPSSurvey, NPSStats, NPSEvolution } from '@/types/nps';
 export interface DatabaseNPSResponse {
   id: string;
   survey_id: string;
-  respondente_id: string;
-  pontuacao: number;
-  comentario?: string;
+  score: number;
+  comment?: string;
+  category: string;
+  department?: string;
+  token?: string;
+  unit?: string;
+  user_name?: string;
+  user_phone?: string;
+  response_date: string;
   created_at: string;
-  updated_at: string;
 }
 
 export interface DatabaseNPSSurvey {
@@ -23,104 +28,334 @@ export interface DatabaseNPSSurvey {
   target_employees?: string[];
   target_departments?: string[];
   is_anonymous: boolean;
-  auto_send: boolean;
-  frequency_days: number;
-  last_sent_at?: string;
-  next_send_date?: string;
+  use_localhost: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export interface NPSAutomationConfig {
-  id: string;
-  survey_id: string;
-  is_active: boolean;
-  frequency_type: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  frequency_value: number;
-  send_time: string;
-  target_day_of_week?: number;
-  target_day_of_month?: number;
-  last_execution_date?: string;
-  next_execution_date?: string;
-  created_at: string;
-  updated_at: string;
+export interface NPSTokenData {
+  token: string;
+  nps_url: string;
+}
+
+export interface NPSValidationResult {
+  is_valid: boolean;
+  survey_id?: string;
+  user_name?: string;
+  user_phone?: string;
+  question?: string;
+  department?: string;
+  unit?: string;
+  error_message?: string;
+}
+
+export interface NPSSubmissionResult {
+  success: boolean;
+  message: string;
+  response_id?: string;
+}
+
+export interface NPSReportData {
+  survey_title: string;
+  total_responses: number;
+  promoters: number;
+  neutrals: number;
+  detractors: number;
+  nps_score: number;
+  average_score: number;
 }
 
 export class NPSService {
   // Buscar todas as pesquisas
   static async getSurveys(): Promise<NPSSurvey[]> {
     try {
+      console.log('🔄 NPSService: Buscando todas as pesquisas NPS');
+      
       const { data, error } = await supabase
         .from('nps_surveys')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ NPSService: Erro ao buscar pesquisas:', error);
+        throw error;
+      }
 
-      return data.map(this.mapDatabaseSurveyToNPSSurvey);
+      console.log(`✅ NPSService: ${data?.length || 0} pesquisas encontradas`);
+      return data?.map(this.mapDatabaseSurveyToNPSSurvey) || [];
     } catch (error) {
-      // Log desabilitado: Error fetching surveys
-      return [];
+      console.error('❌ NPSService: Erro ao buscar pesquisas:', error);
+      throw error;
     }
   }
 
   // Buscar todas as respostas
   static async getResponses(): Promise<NPSResponse[]> {
     try {
+      console.log('🔄 NPSService: Buscando todas as respostas NPS');
+      
       const { data, error } = await supabase
         .from('nps_responses')
         .select(`
           *,
-          nps_surveys(title),
-          users(full_name, department)
+          nps_surveys(title)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ NPSService: Erro ao buscar respostas:', error);
+        throw error;
+      }
 
-      return data.map(this.mapDatabaseResponseToNPSResponse);
+      console.log(`✅ NPSService: ${data?.length || 0} respostas encontradas`);
+      return data?.map(this.mapDatabaseResponseToNPSResponse) || [];
     } catch (error) {
-      // Log desabilitado: Error fetching responses
-      return [];
+      console.error('❌ NPSService: Erro ao buscar respostas NPS:', error);
+      throw error;
     }
   }
 
   // Criar nova pesquisa
-  static async createSurvey(survey: Omit<NPSSurvey, 'id'>): Promise<NPSSurvey | null> {
+  static async createSurvey(surveyData: Omit<NPSSurvey, 'id' | 'createdAt' | 'updatedAt'>): Promise<NPSSurvey> {
     try {
-      const dbSurvey = this.mapNPSSurveyToDatabaseSurvey(survey);
+      console.log('🔄 NPSService: Criando nova pesquisa:', surveyData);
       
+      // Ensure required dates are provided
+      const startDate = surveyData.startDate || new Date().toISOString().split('T')[0];
+      const endDate = surveyData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days from now
+      
+      const dbSurvey = {
+        title: surveyData.title,
+        description: surveyData.description || null,
+        survey_type: surveyData.surveyType || 'nps',
+        start_date: startDate,
+        end_date: endDate,
+        status: surveyData.status || 'draft',
+        question: surveyData.questions?.[0]?.question || 'Em uma escala de 0 a 10, o quanto você recomendaria nossa empresa como um lugar para trabalhar?',
+        target_departments: surveyData.targetDepartments || [],
+        target_employees: surveyData.targetEmployees || [],
+        is_anonymous: surveyData.isAnonymous !== undefined ? surveyData.isAnonymous : true
+      };
+
+      console.log('📤 NPSService: Dados formatados para o banco:', dbSurvey);
+
       const { data, error } = await supabase
         .from('nps_surveys')
         .insert([dbSurvey])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ NPSService: Erro do Supabase:', error);
+        throw error;
+      }
 
+      if (!data) {
+        throw new Error('Nenhum dado retornado ao criar pesquisa');
+      }
+
+      console.log('✅ NPSService: Pesquisa criada com sucesso:', data.id);
       return this.mapDatabaseSurveyToNPSSurvey(data);
     } catch (error) {
-    throw error;
+      console.error('❌ NPSService: Erro ao criar pesquisa:', error);
+      throw error;
+    }
   }
+
+  // Gerar token NPS para envio
+  static async generateNPSToken(
+    surveyId: string, 
+    userName: string, 
+    userPhone: string, 
+    department?: string, 
+    unit?: string
+  ): Promise<NPSTokenData> {
+    try {
+      console.log('🔄 NPSService: Gerando token NPS:', { surveyId, userName, userPhone });
+
+      const { data, error } = await supabase
+        .rpc('generate_simple_nps_token', {
+          p_survey_id: surveyId,
+          p_user_name: userName,
+          p_user_phone: userPhone,
+          p_department: department,
+          p_unit: unit
+        });
+
+      if (error) {
+        console.error('❌ NPSService: Erro ao gerar token:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Nenhum token gerado');
+      }
+
+      console.log('✅ NPSService: Token gerado com sucesso');
+      return data[0];
+    } catch (error) {
+      console.error('❌ NPSService: Erro ao gerar token NPS:', error);
+      throw error;
+    }
+  }
+
+  // Validar token NPS
+  static async validateNPSToken(token: string): Promise<NPSValidationResult> {
+    try {
+      console.log('🔄 NPSService: Validando token:', token);
+
+      const { data, error } = await supabase
+        .rpc('validate_nps_token_simple', {
+          p_token: token
+        });
+
+      if (error) {
+        console.error('❌ NPSService: Erro ao validar token:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          is_valid: false,
+          error_message: 'Token não encontrado'
+        };
+      }
+
+      console.log('✅ NPSService: Token validado');
+      return data[0];
+    } catch (error) {
+      console.error('❌ NPSService: Erro ao validar token:', error);
+      return {
+        is_valid: false,
+        error_message: 'Erro interno ao validar token'
+      };
+    }
+  }
+
+  // Submeter resposta NPS
+  static async submitNPSResponse(
+    token: string, 
+    score: number, 
+    comment?: string
+  ): Promise<NPSSubmissionResult> {
+    try {
+      console.log('🔄 NPSService: Submetendo resposta NPS:', { token, score, comment });
+
+      const { data, error } = await supabase
+        .rpc('submit_nps_response', {
+          p_token: token,
+          p_score: score,
+          p_comment: comment
+        });
+
+      if (error) {
+        console.error('❌ NPSService: Erro ao submeter resposta:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          message: 'Erro ao processar resposta'
+        };
+      }
+
+      console.log('✅ NPSService: Resposta submetida com sucesso');
+      return data[0];
+    } catch (error) {
+      console.error('❌ NPSService: Erro ao submeter resposta NPS:', error);
+      return {
+        success: false,
+        message: 'Erro interno ao processar resposta'
+      };
+    }
+  }
+
+  // Obter dados para n8n
+  static async getNPSDataForN8N(surveyId: string): Promise<any[]> {
+    try {
+      console.log('🔄 NPSService: Obtendo dados para n8n:', surveyId);
+
+      const { data, error } = await supabase
+        .rpc('get_nps_data_for_n8n', {
+          p_survey_id: surveyId
+        });
+
+      if (error) {
+        console.error('❌ NPSService: Erro ao obter dados para n8n:', error);
+        throw error;
+      }
+
+      console.log('✅ NPSService: Dados obtidos para n8n:', data?.length || 0, 'registros');
+      return data || [];
+    } catch (error) {
+      console.error('❌ NPSService: Erro ao obter dados para n8n:', error);
+      return [];
+    }
+  }
+
+  // Obter relatório NPS
+  static async getNPSReport(
+    surveyId?: string, 
+    startDate?: string, 
+    endDate?: string
+  ): Promise<NPSReportData[]> {
+    try {
+      console.log('🔄 NPSService: Obtendo relatório NPS:', { surveyId, startDate, endDate });
+
+      const { data, error } = await supabase
+        .rpc('get_nps_report', {
+          p_survey_id: surveyId || null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null
+        });
+
+      if (error) {
+        console.error('❌ NPSService: Erro ao obter relatório:', error);
+        throw error;
+      }
+
+      console.log('✅ NPSService: Relatório obtido com sucesso');
+      return data || [];
+    } catch (error) {
+      console.error('❌ NPSService: Erro ao obter relatório NPS:', error);
+      return [];
+    }
   }
 
   // Atualizar pesquisa
   static async updateSurvey(id: string, updates: Partial<NPSSurvey>): Promise<NPSSurvey | null> {
     try {
-      const dbUpdates = this.mapNPSSurveyToDatabaseSurvey(updates as NPSSurvey);
+      const dbUpdates = {
+        title: updates.title,
+        description: updates.description,
+        survey_type: updates.surveyType,
+        status: updates.status,
+        start_date: updates.startDate,
+        end_date: updates.endDate,
+        question: updates.questions?.[0]?.question,
+        target_departments: updates.targetDepartments,
+        target_employees: updates.targetEmployees,
+        is_anonymous: updates.isAnonymous,
+        updated_at: new Date().toISOString()
+      };
       
       const { data, error } = await supabase
         .from('nps_surveys')
-        .update({ ...dbUpdates, updated_at: new Date().toISOString() })
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ NPSService: Erro ao atualizar pesquisa:', error);
+        throw error;
+      }
 
+      console.log('✅ NPSService: Pesquisa atualizada com sucesso:', id);
       return this.mapDatabaseSurveyToNPSSurvey(data);
     } catch (error) {
-      // Log desabilitado: Error updating survey
+      console.error('❌ NPSService: Erro ao atualizar pesquisa:', error);
       return null;
     }
   }
@@ -133,35 +368,16 @@ export class NPSService {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ NPSService: Erro ao deletar pesquisa:', error);
+        throw error;
+      }
+      
+      console.log('✅ NPSService: Pesquisa deletada com sucesso:', id);
       return true;
     } catch (error) {
-      // Log desabilitado: Error deleting survey
+      console.error('❌ NPSService: Erro ao deletar pesquisa:', error);
       return false;
-    }
-  }
-
-  // Adicionar resposta
-  static async addResponse(response: Omit<NPSResponse, 'id'>): Promise<NPSResponse | null> {
-    try {
-      const dbResponse = this.mapNPSResponseToDatabaseResponse(response);
-      
-      const { data, error } = await supabase
-        .from('nps_responses')
-        .insert([dbResponse])
-        .select(`
-          *,
-          nps_surveys(title),
-          users(full_name, department)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      return this.mapDatabaseResponseToNPSResponse(data);
-    } catch (error) {
-      // Log desabilitado: Error adding response
-      return null;
     }
   }
 
@@ -185,22 +401,17 @@ export class NPSService {
         };
       }
 
+      // Filtrar respostas válidas
       const npsResponses = responses.filter(r => r.score >= 0 && r.score <= 10);
-      const satisfactionResponses = responses.filter(r => r.score >= 0 && r.score <= 5);
-
-      // Cálculos NPS
+      
+      // Calcular categorias NPS
       const promoters = npsResponses.filter(r => r.score >= 9).length;
       const neutrals = npsResponses.filter(r => r.score >= 7 && r.score <= 8).length;
       const detractors = npsResponses.filter(r => r.score <= 6).length;
-      
+
       const npsScore = npsResponses.length > 0 
         ? Math.round(((promoters - detractors) / npsResponses.length) * 100)
         : 0;
-
-      // Cálculos Satisfação
-      const satisfied = satisfactionResponses.filter(r => r.score >= 4).length;
-      const neutralSatisfaction = satisfactionResponses.filter(r => r.score === 3).length;
-      const dissatisfied = satisfactionResponses.filter(r => r.score <= 2).length;
 
       return {
         currentScore: npsScore,
@@ -210,12 +421,12 @@ export class NPSService {
         detractors: Math.round((detractors / npsResponses.length) * 100) || 0,
         totalResponses: responses.length,
         responseRate: 85, // TODO: Calcular baseado em funcionários ativos
-        satisfied: Math.round((satisfied / satisfactionResponses.length) * 100) || 0,
-        neutralSatisfaction: Math.round((neutralSatisfaction / satisfactionResponses.length) * 100) || 0,
-        dissatisfied: Math.round((dissatisfied / satisfactionResponses.length) * 100) || 0
+        satisfied: Math.round((promoters / npsResponses.length) * 100) || 0,
+        neutralSatisfaction: Math.round((neutrals / npsResponses.length) * 100) || 0,
+        dissatisfied: Math.round((detractors / npsResponses.length) * 100) || 0
       };
     } catch (error) {
-      // Log desabilitado: Error calculating statistics
+      console.error('Error calculating NPS stats:', error);
       return {
         currentScore: 0,
         previousScore: 0,
@@ -231,115 +442,13 @@ export class NPSService {
     }
   }
 
-  // Criar configuração de automação
-  static async createAutomationConfig(config: Omit<NPSAutomationConfig, 'id' | 'created_at' | 'updated_at'>): Promise<NPSAutomationConfig | null> {
-    try {
-      const { data, error } = await supabase
-        .from('nps_automation_config')
-        .insert([config])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      // Log desabilitado: Error creating automation config
-      return null;
-    }
-  }
-
-  // Atualizar configuração de automação
-  static async updateAutomationConfig(id: string, updates: Partial<NPSAutomationConfig>): Promise<NPSAutomationConfig | null> {
-    try {
-      const { data, error } = await supabase
-        .from('nps_automation_config')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      // Log desabilitado: Error updating automation config
-      return null;
-    }
-  }
-
-  // Buscar configurações de automação
-  static async getAutomationConfigs(surveyId?: string): Promise<NPSAutomationConfig[]> {
-    try {
-      let query = supabase
-        .from('nps_automation_config')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (surveyId) {
-        query = query.eq('survey_id', surveyId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      // Log desabilitado: Error fetching automation configs
-      return [];
-    }
-  }
-
-  // Buscar pesquisas ativas para automação
-  static async getActiveSurveysForAutomation(): Promise<(DatabaseNPSSurvey & { automation_config: NPSAutomationConfig })[]> {
-    try {
-      const { data, error } = await supabase
-        .from('nps_surveys')
-        .select(`
-          *,
-          nps_automation_config!inner(*)
-        `)
-        .eq('auto_send', true)
-        .eq('nps_automation_config.is_active', true)
-        .lte('nps_automation_config.next_execution_date', new Date().toISOString().split('T')[0]);
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      // Log desabilitado: Error fetching active surveys for automation
-      return [];
-    }
-  }
-
-  // Marcar pesquisa como enviada
-  static async markSurveyAsSent(surveyId: string, nextExecutionDate: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('nps_automation_config')
-        .update({
-          last_execution_date: new Date().toISOString().split('T')[0],
-          next_execution_date: nextExecutionDate,
-          updated_at: new Date().toISOString()
-        })
-        .eq('survey_id', surveyId);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      // Log desabilitado: Error marking survey as sent
-      return false;
-    }
-  }
-
-  // Buscar evolução do NPS
+  // Obter evolução do NPS
   static async getNPSEvolution(): Promise<NPSEvolution[]> {
     try {
-      // TODO: Implementar cálculo de evolução baseado em dados históricos
-      // Por enquanto, retorna dados mockados
-      return [
-        { date: '2024-01', score: 45, responses: 18 },
-        { date: '2024-02', score: 58, responses: 22 },
-        { date: '2024-03', score: 65, responses: 23 }
-      ];
+      // TODO: Implementar consulta real baseada em dados históricos
+      return [];
     } catch (error) {
-      // Log desabilitado: Error fetching evolution
+      console.error('❌ NPSService: Erro ao obter evolução NPS:', error);
       return [];
     }
   }
@@ -364,52 +473,22 @@ export class NPSService {
       targetDepartments: dbSurvey.target_departments || [],
       surveyType: dbSurvey.survey_type as 'nps' | 'satisfaction',
       isAnonymous: dbSurvey.is_anonymous,
-      autoSend: dbSurvey.auto_send,
-      frequencyDays: dbSurvey.frequency_days,
-      lastSentAt: dbSurvey.last_sent_at,
-      nextSendDate: dbSurvey.next_send_date
-    };
-  }
-
-  private static mapNPSSurveyToDatabaseSurvey(survey: NPSSurvey): Partial<DatabaseNPSSurvey> {
-    return {
-      title: survey.title,
-      description: survey.description,
-      survey_type: survey.surveyType || 'nps',
-      start_date: survey.startDate,
-      end_date: survey.endDate,
-      status: survey.status,
-      target_employees: survey.targetEmployees || [],
-      target_departments: survey.targetDepartments || [],
-      question: survey.questions[0]?.question || 'Como você avaliaria nossa empresa?',
-      is_anonymous: true,
-      auto_send: false,
-      frequency_days: 0,
-      last_sent_at: null,
-      next_send_date: null
+      createdAt: dbSurvey.created_at,
+      updatedAt: dbSurvey.updated_at
     };
   }
 
   private static mapDatabaseResponseToNPSResponse(dbResponse: any): NPSResponse {
     return {
       id: dbResponse.id,
-      employeeId: dbResponse.employee_id,
-      employeeName: dbResponse.users?.full_name || 'Anônimo',
+      employeeId: dbResponse.employee_id || 'anonymous',
+      employeeName: dbResponse.user_name || 'Anônimo',
       score: dbResponse.score,
       comment: dbResponse.comment || '',
-      date: dbResponse.created_at.split('T')[0],
+      date: dbResponse.response_date || dbResponse.created_at.split('T')[0],
       surveyId: dbResponse.survey_id,
-      category: this.categorizeResponse(dbResponse.score, 'nps'),
-      department: dbResponse.users?.department || 'Não informado'
-    };
-  }
-
-  private static mapNPSResponseToDatabaseResponse(response: Omit<NPSResponse, 'id'>): Partial<DatabaseNPSResponse> {
-    return {
-      survey_id: response.surveyId,
-      employee_id: response.employeeId,
-      score: response.score,
-      comment: response.comment
+      category: NPSService.categorizeResponse(dbResponse.score, 'nps'),
+      department: dbResponse.department || 'Não informado'
     };
   }
 

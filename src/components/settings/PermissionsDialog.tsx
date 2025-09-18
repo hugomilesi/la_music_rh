@@ -139,7 +139,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
 
       setModulePermissions(data || []);
     } catch (error) {
-      console.error('Error loading permissions:', error);
+
       toast({
         title: "Erro ao carregar permissões",
         description: "Não foi possível carregar as permissões do banco de dados.",
@@ -223,7 +223,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
         description: `Permissão ${value ? 'concedida' : 'removida'} com sucesso`
       });
     } catch (error) {
-      console.error('Error updating permission:', error);
+
       toast({
         title: "Erro",
         description: "Erro ao atualizar permissão",
@@ -296,7 +296,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
         description: "Permissões básicas foram definidas para o Gestor de RH"
       });
     } catch (error) {
-      console.error('Error resetting permissions:', error);
+
       toast({
         title: "Erro",
         description: "Erro ao resetar permissões",

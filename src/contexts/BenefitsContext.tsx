@@ -42,6 +42,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [benefitTypes, setBenefitTypes] = useState<BenefitType[]>([]);
   const [employeeBenefits, setEmployeeBenefits] = useState<EmployeeBenefit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<BenefitStats>({
     totalBenefits: 0,
     activeBenefits: 0,

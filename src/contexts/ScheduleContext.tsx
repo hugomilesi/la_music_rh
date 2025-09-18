@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ScheduleEvent, NewScheduleEventData } from '@/types/schedule';
-import { Unit } from '@/types/unit';
+import { ScheduleUnit } from '@/types/unit';
 import { scheduleService } from '@/services/scheduleService';
 import { evaluationService } from '@/services/evaluationService';
 import { useToast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ interface ScheduleContextType {
   addEvent: (data: NewScheduleEventData) => Promise<void>;
   updateEvent: (id: string, data: Partial<ScheduleEvent>) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
-  getEventsForUnits: (units: Unit[]) => ScheduleEvent[];
+  getEventsForUnits: (units: ScheduleUnit[]) => ScheduleEvent[];
   refreshEvents: () => Promise<void>;
 }
 
@@ -152,7 +152,7 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
 
-  const getEventsForUnits = useCallback((units: Unit[]) => {
+  const getEventsForUnits = useCallback((units: ScheduleUnit[]) => {
     if (units.length === 0) return [];
     return events.filter(event => units.includes(event.unit));
   }, [events]);

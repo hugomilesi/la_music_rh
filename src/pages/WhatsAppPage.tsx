@@ -16,11 +16,9 @@ import { TemplateManager } from '@/components/whatsapp/TemplateManager';
 import UnifiedScheduler from '@/components/UnifiedScheduler';
 import TestController from '@/components/TestController';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
-import useMessageScheduler from '@/hooks/useMessageScheduler';
 
 const WhatsAppPage: React.FC = () => {
   const { config } = useWhatsApp();
-  const { schedules, statistics } = useMessageScheduler();
 
   return (
     <div className="space-y-6">

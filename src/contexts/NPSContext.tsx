@@ -122,27 +122,49 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
 
   const addResponse = async (response: Omit<NPSResponse, 'id'>) => {
     try {
-      const newResponse = await NPSService.addResponse(response);
-      if (newResponse) {
-        setResponses(prev => [newResponse, ...prev]);
-        // Recalcular estatísticas
-        const newStats = await NPSService.calculateNPSStats();
-        setStats(newStats);
+      // Usar o novo método simplificado
+      const result = await NPSService.submitNPSResponse({
+        survey_id: response.surveyId,
+        employee_id: response.employeeId,
+        score: response.score,
+        comment: response.comment || '',
+        user_name: response.employeeName,
+        department: response.department
+      });
+      
+      if (result.success) {
+        // Recarregar dados para refletir a nova resposta
+        await refreshData();
+      } else {
+        throw new Error(result.error || 'Erro ao enviar resposta');
       }
     } catch (error) {
-      // Log desabilitado: Erro ao adicionar resposta
+      console.error('Erro ao adicionar resposta:', error);
       throw error;
     }
   };
 
-  const createSurvey = async (survey: Omit<NPSSurvey, 'id'>) => {
+  const createSurvey = async (surveyData: Omit<NPSSurvey, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const newSurvey = await NPSService.createSurvey(survey);
-      if (newSurvey) {
-        setSurveys(prev => [newSurvey, ...prev]);
-      }
+      console.log('🔄 NPSContext: Recebendo dados para criar pesquisa:', surveyData);
+      
+      const newSurvey = await NPSService.createSurvey(surveyData);
+      
+      console.log('✅ NPSContext: Pesquisa criada pelo serviço:', newSurvey);
+      
+      setSurveys(prev => [...prev, newSurvey]);
+      
+      console.log('✅ NPSContext: Estado atualizado com nova pesquisa');
+      
+      return newSurvey;
     } catch (error) {
-      // Log desabilitado: Erro ao criar pesquisa
+      console.error('❌ NPSContext: Erro ao criar pesquisa:', error);
+      console.error('❌ NPSContext: Tipo do erro:', typeof error);
+      console.error('❌ NPSContext: Detalhes:', error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error);
       throw error;
     }
   };
@@ -211,12 +233,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
           const { data: linkData, error: linkError } = await supabase
             .rpc('generate_nps_link_token', {
               p_survey_id: surveyId,
-              p_user_name: 'Usuário WhatsApp', // Nome genérico para usuários do WhatsApp
-              p_user_phone: cleanPhone
+              p_user_name: cleanPhone, // Nome baseado no telefone
+              p_user_phone: cleanPhone,
+              p_use_localhost: true // Usar localhost ao invés do Supabase
             });
 
           if (linkError || !linkData) {
-            console.error('Erro ao gerar link NPS:', linkError);
+      
             errors.push(`${phone}: Erro ao gerar link NPS`);
             failed++;
             continue;
@@ -240,7 +263,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
           await WhatsAppService.sendMessage(cleanPhone, message);
           sent++;
         } catch (error) {
-          console.error(`Erro ao enviar para ${phone}:`, error);
+  
           errors.push(`${phone}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
           failed++;
         }
@@ -253,7 +276,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         errors: errors.length > 0 ? errors : undefined
       };
     } catch (error) {
-      console.error('Erro ao enviar pesquisa via WhatsApp:', error);
+
       throw error;
     } finally {
       setWhatsappLoading(false);
@@ -281,7 +304,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
            .single();
         
         if (surveyError) {
-          console.error('Erro ao criar survey:', surveyError);
+    
           throw new Error(`Falha ao criar survey: ${surveyError.message}`);
         }
         surveyId = survey.id;
@@ -297,13 +320,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         });
 
       if (error) {
-        console.error('Erro ao criar agendamento:', error);
+  
         throw new Error(`Falha ao criar agendamento: ${error.message}`);
       }
 
       return { success: true, schedule_id: data };
     } catch (error) {
-      console.error('Erro ao criar agendamento WhatsApp:', error);
+
       throw error;
     }
   };
@@ -318,13 +341,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar agendamentos:', error);
+  
         throw new Error(`Falha ao buscar agendamentos: ${error.message}`);
       }
 
       return data || [];
     } catch (error) {
-      console.error('Erro ao buscar agendamentos WhatsApp:', error);
+
       throw error;
     }
   };
@@ -336,13 +359,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         .rpc('get_whatsapp_send_stats');
 
       if (error) {
-        console.error('Erro ao buscar estatísticas:', error);
+  
         throw new Error(`Falha ao buscar estatísticas: ${error.message}`);
       }
 
       return data?.[0] || { total_sent: 0, total_delivered: 0, total_failed: 0, success_rate: 0 };
     } catch (error) {
-      console.error('Erro ao buscar estatísticas WhatsApp:', error);
+
       throw error;
     }
   };
@@ -351,7 +374,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     try {
       return await WhatsAppService.checkConnection();
     } catch (error) {
-      console.error('Erro ao testar conexão WhatsApp:', error);
+
       return false;
     }
   };

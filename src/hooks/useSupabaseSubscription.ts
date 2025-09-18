@@ -20,13 +20,20 @@ export const useSupabaseSubscription = ({
   enabled = true 
 }: SubscriptionConfig) => {
   const isInitializedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   const cleanup = useCallback(() => {
     const existingChannel = activeSubscriptions.get(channelName);
     if (existingChannel) {
-      // Log desabilitado: Cleaning up subscription
-      supabase.removeChannel(existingChannel);
-      activeSubscriptions.delete(channelName);
+      try {
+        supabase.removeChannel(existingChannel);
+        activeSubscriptions.delete(channelName);
+        isInitializedRef.current = false;
+        retryCountRef.current = 0;
+      } catch (error) {
+        console.warn(`Error cleaning up subscription ${channelName}:`, error);
+      }
     }
   }, [channelName]);
 
@@ -37,43 +44,58 @@ export const useSupabaseSubscription = ({
 
     // Check if subscription already exists
     if (activeSubscriptions.has(channelName)) {
-      // Log desabilitado: Subscription already exists, skipping
       isInitializedRef.current = true;
       return;
     }
 
-    // Log desabilitado: Setting up subscription
-    
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table },
-        (payload) => {
-          // Log desabilitado: Real-time update
-          onDataChange();
-        }
-      )
-      .subscribe((status) => {
-        // Log desabilitado: Subscription status
-        if (status === 'SUBSCRIBED') {
-          activeSubscriptions.set(channelName, channel);
-          isInitializedRef.current = true;
-        }
-      });
-  }, [channelName, table, onDataChange, enabled]);
+    try {
+      const channel = supabase
+        .channel(channelName)
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table },
+          (payload) => {
+            onDataChange();
+            retryCountRef.current = 0; // Reset retry count on successful message
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            activeSubscriptions.set(channelName, channel);
+            isInitializedRef.current = true;
+            retryCountRef.current = 0;
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(`Subscription ${channelName} failed with status: ${status}`, err);
+            
+            // Retry logic
+            if (retryCountRef.current < maxRetries) {
+              retryCountRef.current++;
+              setTimeout(() => {
+                cleanup();
+                subscribe();
+              }, Math.min(retryCountRef.current * 2000, 10000)); // Exponential backoff
+            } else {
+              console.error(`Max retries reached for subscription ${channelName}`);
+            }
+          } else if (status === 'CLOSED') {
+            cleanup();
+          }
+        });
+    } catch (error) {
+      console.error(`Error setting up subscription ${channelName}:`, error);
+    }
+  }, [channelName, table, onDataChange, enabled, cleanup]);
 
   useEffect(() => {
     if (enabled) {
       subscribe();
+    } else {
+      cleanup();
     }
 
     return () => {
-      // Only cleanup when component unmounts, not on every re-render
-      if (!enabled) {
-        cleanup();
-      }
+      cleanup();
     };
-  }, [enabled, subscribe]); // Removed cleanup from dependencies to prevent re-subscriptions
+  }, [enabled, subscribe, cleanup]);
 
   return { cleanup };
 };

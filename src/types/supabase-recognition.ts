@@ -80,44 +80,7 @@ export interface Database {
           updated_at?: string
         }
       }
-      employee_evaluations: {
-        Row: {
-          id: string
-          employee_id: string
-          program_id: string
-          evaluation_period: string
-          total_stars: number
-          evaluator_id: string
-          evaluation_date: string
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          employee_id: string
-          program_id: string
-          evaluation_period: string
-          total_stars: number
-          evaluator_id: string
-          evaluation_date: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          employee_id?: string
-          program_id?: string
-          evaluation_period?: string
-          total_stars?: number
-          evaluator_id?: string
-          evaluation_date?: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
+
       criterion_evaluations: {
         Row: {
           id: string
@@ -327,7 +290,6 @@ export interface Database {
 
 export type RecognitionProgram = Database['public']['Tables']['recognition_programs']['Row']
 export type RecognitionCriterion = Database['public']['Tables']['recognition_criteria']['Row']
-export type EmployeeEvaluation = Database['public']['Tables']['employee_evaluations']['Row']
 export type CriterionEvaluation = Database['public']['Tables']['criterion_evaluations']['Row']
 export type EmployeeAchievement = Database['public']['Tables']['employee_achievements']['Row']
 export type MonthlyProgress = Database['public']['Tables']['monthly_progress']['Row']

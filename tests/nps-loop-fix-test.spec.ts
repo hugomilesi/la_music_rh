@@ -23,10 +23,10 @@ test.describe('NPS Loop Fix Test', () => {
       await route.continue();
     });
 
-    // Interceptar requisições POST para validate_user_schedule_permissions
-    page.route('**/rest/v1/rpc/validate_user_schedule_permissions', async (route) => {
-      requests.permissions++;
-      console.log(`POST validate_user_schedule_permissions - Count: ${requests.permissions}`);
+    // Interceptar requisições POST para validate_user_permissions_for_schedule
+  page.route('**/rest/v1/rpc/validate_user_permissions_for_schedule', async (route) => {
+    requests.permissions++;
+    console.log(`POST validate_user_permissions_for_schedule - Count: ${requests.permissions}`);
       await route.continue();
     });
 

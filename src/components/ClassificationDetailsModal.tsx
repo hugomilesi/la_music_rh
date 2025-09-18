@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Card,
@@ -132,6 +133,9 @@ export function ClassificationDetailsModal({
             <Users className="w-5 h-5" />
             Detalhes - {classification}
           </DialogTitle>
+          <DialogDescription>
+            Visualização detalhada dos funcionários e estatísticas da classificação {classification}.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

@@ -12,6 +12,7 @@ import { payrollService } from '@/services/payrollService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchDepartments, type Department } from '@/services/rolesService';
 
 interface NewPayrollEntryDialogProps {
   onSuccess?: () => void;
@@ -30,16 +31,6 @@ const UNITS = [
   'professores-multi-unidade'
 ];
 
-const DEPARTMENTS = [
-  'Coordenação',
-  'Gestão',
-  'Professores',
-  'Administrativo',
-  'Limpeza',
-  'Segurança',
-  'Recepção'
-];
-
 const CLASSIFICATIONS = [
   'CLT',
   'PJ',
@@ -52,9 +43,12 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{auth_user_id: string, full_name: string, cpf: string, units: string, department: string}>>([]);
+  const [employees, setEmployees] = useState<Array<{auth_user_id: string, username: string, cpf: string, units: string, department: string}>>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [isRegisteredEmployee, setIsRegisteredEmployee] = useState(true);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     // Dados pessoais
     colaborador_id: '',
@@ -99,10 +93,11 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     observacoes: ''
   });
 
-  // Carregar funcionários quando o diálogo abrir
+  // Carregar funcionários e departamentos quando o diálogo abrir
   useEffect(() => {
     if (open) {
       loadEmployees();
+      loadDepartments();
     }
   }, [open]);
 
@@ -111,16 +106,29 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('auth_user_id, full_name, cpf, units, department')
-        .order('full_name');
+        .select('auth_user_id, username, cpf, units, department')
+        .order('username');
       
       if (error) throw error;
       setEmployees(data || []);
     } catch (error) {
-      console.error('Erro ao carregar funcionários:', error);
+
       toast.error('Erro ao carregar lista de funcionários');
     } finally {
       setLoadingEmployees(false);
+    }
+  };
+
+  const loadDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const departmentsData = await fetchDepartments();
+      setDepartments(departmentsData);
+    } catch (error) {
+
+      toast.error('Erro ao carregar lista de departamentos');
+    } finally {
+      setLoadingDepartments(false);
     }
   };
 
@@ -130,7 +138,7 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
       setFormData(prev => ({
         ...prev,
         colaborador_id: employeeId,
-        nome_funcionario: selectedEmployee.full_name,
+        nome_funcionario: selectedEmployee.username,
         cpf_funcionario: selectedEmployee.cpf || '',
         unidade: selectedEmployee.units || defaultUnit || '',
         departamento: selectedEmployee.department || ''
@@ -141,36 +149,110 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Limpar erros anteriores
+    setFieldErrors({});
+    
+    const errors: Record<string, string> = {};
+    
+    // Validação de campos obrigatórios básicos
+    if (!formData.mes || !formData.ano) {
+
+      if (!formData.mes) errors.mes = 'Selecione o mês';
+      if (!formData.ano) errors.ano = 'Selecione o ano';
+      toast.error('Selecione o mês e ano da folha de pagamento');
+    }
+
     // Validação baseada no tipo de colaborador
     if (isRegisteredEmployee) {
       if (!formData.colaborador_id) {
-        toast.error('Por favor, selecione um funcionário');
-        return;
+
+        errors.colaborador_id = 'Selecione um funcionário';
+        toast.error('Por favor, selecione um funcionário da lista para continuar');
       }
-      if (!formData.nome_funcionario || !formData.cpf_funcionario) {
-        toast.error('Dados do funcionário são obrigatórios');
-        return;
+      if (!formData.nome_funcionario) {
+
+        errors.nome_funcionario = 'Nome do funcionário não encontrado';
+        toast.error('Não foi possível obter os dados do funcionário selecionado. Tente selecionar novamente');
       }
     } else {
-      if (!formData.nome_colaborador || !formData.cpf_colaborador || !formData.unidade) {
-        toast.error('Nome, CPF e unidade são obrigatórios para colaboradores não cadastrados');
-        return;
+      if (!formData.nome_colaborador?.trim()) {
+
+        errors.nome_colaborador = 'Nome é obrigatório';
+        toast.error('Informe o nome completo do colaborador');
+      }
+      if (!formData.cpf_colaborador?.trim()) {
+
+        errors.cpf_colaborador = 'CPF é obrigatório';
+        toast.error('Informe o CPF do colaborador');
+      } else {
+        // Validação básica de CPF (apenas formato)
+        const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/;
+        if (!cpfRegex.test(formData.cpf_colaborador)) {
+
+          errors.cpf_colaborador = 'CPF deve ter 11 dígitos ou formato 000.000.000-00';
+          toast.error('CPF deve estar no formato 000.000.000-00 ou conter 11 dígitos');
+        }
+      }
+      if (!formData.unidade) {
+
+        errors.unidade = 'Selecione uma unidade';
+        toast.error('Selecione a unidade do colaborador');
       }
     }
 
-    if (!formData.classificacao || !formData.funcao) {
-      toast.error('Classificação e função são obrigatórios');
-      return;
+    if (!formData.classificacao) {
+
+      errors.classificacao = 'Selecione uma classificação';
+      toast.error('Selecione a classificação do colaborador (CLT, PJ, etc.)');
+    }
+
+    if (!formData.funcao?.trim()) {
+
+      errors.funcao = 'Função é obrigatória';
+      toast.error('Informe a função/cargo do colaborador');
     }
 
     if (!user?.id) {
-      toast.error('Usuário não autenticado');
+
+      toast.error('Sua sessão expirou. Faça login novamente para continuar');
       return;
     }
+
+    // Validação de valores financeiros
+    if (formData.salario_base < 0) {
+
+      errors.salario_base = 'Valor não pode ser negativo';
+      toast.error('O salário base não pode ser negativo');
+    }
+
+    // Validação adicional de valores negativos
+    const financialFields = [
+      { field: 'bonus', name: 'Bônus' },
+      { field: 'comissao', name: 'Comissão' },
+      { field: 'passagem', name: 'Passagem' },
+      { field: 'reembolso', name: 'Reembolso' },
+      { field: 'transport_voucher', name: 'Vale Transporte' }
+    ];
+
+    for (const { field, name } of financialFields) {
+      if (formData[field as keyof typeof formData] < 0) {
+
+        errors[field] = 'Valor não pode ser negativo';
+        toast.error(`O valor de ${name} não pode ser negativo`);
+      }
+    }
+
+    // Se há erros, definir no estado e parar
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
 
     setLoading(true);
     
     try {
+
       const payrollData = {
         // Para colaborador cadastrado
         ...(isRegisteredEmployee && { colaborador_id: formData.colaborador_id }),
@@ -205,21 +287,45 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
         observacoes: formData.observacoes
       };
       
+
+      
       await payrollService.createPayrollEntry(payrollData);
-      toast.success('Registro de folha de pagamento salvo com sucesso!');
+      
+
+      toast.success('Folha de pagamento criada com sucesso!');
       resetForm();
       setOpen(false);
       onSuccess?.();
     } catch (error) {
-      console.error('Erro ao criar registro:', error);
-      toast.error('Erro ao criar registro de folha de pagamento');
+      // Tratamento de erros específicos de forma genérica
+      let errorMessage = 'Não foi possível criar a folha de pagamento';
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        if (errorMsg.includes('duplicate') || errorMsg.includes('already exists')) {
+          errorMessage = 'Já existe uma folha de pagamento para este colaborador no período selecionado';
+        } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente';
+        } else if (errorMsg.includes('permission') || errorMsg.includes('unauthorized')) {
+          errorMessage = 'Você não tem permissão para realizar esta operação';
+        } else if (errorMsg.includes('validation') || errorMsg.includes('invalid')) {
+          errorMessage = 'Alguns dados informados são inválidos. Verifique e tente novamente';
+        } else if (errorMsg.includes('timeout')) {
+          errorMessage = 'A operação demorou muito para ser concluída. Tente novamente';
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
+
       setLoading(false);
     }
   };
 
   const resetForm = () => {
     setIsRegisteredEmployee(true);
+    setFieldErrors({}); // Limpar erros ao resetar o formulário
     setFormData({
       // Dados pessoais
       colaborador_id: '',
@@ -358,17 +464,20 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                       onValueChange={handleEmployeeSelect}
                       disabled={loadingEmployees}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={fieldErrors.colaborador_id ? "border-red-500" : ""}>
                         <SelectValue placeholder={loadingEmployees ? "Carregando funcionários..." : "Selecione um funcionário"} />
                       </SelectTrigger>
                       <SelectContent>
                         {employees.map((employee) => (
                           <SelectItem key={employee.auth_user_id} value={employee.auth_user_id}>
-                            {employee.full_name} {employee.cpf ? `- ${employee.cpf}` : ''}
+                            {employee.username} {employee.cpf ? `- ${employee.cpf}` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.colaborador_id && (
+                      <p className="text-sm text-red-500 mt-1">{fieldErrors.colaborador_id}</p>
+                    )}
                   </div>
                   {formData.colaborador_id && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,7 +512,11 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                       value={formData.nome_colaborador}
                       onChange={(e) => setFormData(prev => ({ ...prev, nome_colaborador: e.target.value }))}
                       placeholder="Digite o nome completo"
+                      className={fieldErrors.nome_colaborador ? "border-red-500" : ""}
                     />
+                    {fieldErrors.nome_colaborador && (
+                      <p className="text-sm text-red-500 mt-1">{fieldErrors.nome_colaborador}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cpf_colaborador">CPF *</Label>
@@ -412,7 +525,11 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                       value={formData.cpf_colaborador}
                       onChange={(e) => setFormData(prev => ({ ...prev, cpf_colaborador: e.target.value }))}
                       placeholder="000.000.000-00"
+                      className={fieldErrors.cpf_colaborador ? "border-red-500" : ""}
                     />
+                    {fieldErrors.cpf_colaborador && (
+                      <p className="text-sm text-red-500 mt-1">{fieldErrors.cpf_colaborador}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -431,7 +548,7 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
               <div className="space-y-2">
                 <Label htmlFor="unidade">Unidade *</Label>
                 <Select value={formData.unidade} onValueChange={(value) => setFormData(prev => ({ ...prev, unidade: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldErrors.unidade ? "border-red-500" : ""}>
                     <SelectValue placeholder="Selecione a unidade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -442,17 +559,24 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.unidade && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.unidade}</p>
+                )}
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="departamento">Departamento</Label>
-                <Select value={formData.departamento} onValueChange={(value) => setFormData(prev => ({ ...prev, departamento: value }))}>
+                <Select 
+                  value={formData.departamento} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, departamento: value }))}
+                  disabled={loadingDepartments}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o departamento" />
+                    <SelectValue placeholder={loadingDepartments ? "Carregando departamentos..." : "Selecione o departamento"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -461,7 +585,7 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
               <div className="space-y-2">
                 <Label htmlFor="classificacao">Classificação *</Label>
                 <Select value={formData.classificacao} onValueChange={(value) => setFormData(prev => ({ ...prev, classificacao: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldErrors.classificacao ? "border-red-500" : ""}>
                     <SelectValue placeholder="Selecione a classificação" />
                   </SelectTrigger>
                   <SelectContent>
@@ -470,6 +594,9 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.classificacao && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.classificacao}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -480,13 +607,17 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   onChange={(e) => setFormData(prev => ({ ...prev, funcao: e.target.value }))}
                   placeholder="Digite a função"
                   required
+                  className={fieldErrors.funcao ? "border-red-500" : ""}
                 />
+                {fieldErrors.funcao && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.funcao}</p>
+                )}
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="mes">Mês</Label>
                 <Select value={formData.mes.toString()} onValueChange={(value) => setFormData(prev => ({ ...prev, mes: parseInt(value) }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldErrors.mes ? "border-red-500" : ""}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -497,6 +628,9 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.mes && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.mes}</p>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -508,7 +642,11 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   onChange={(e) => setFormData(prev => ({ ...prev, ano: parseInt(e.target.value) || new Date().getFullYear() }))}
                   min={2020}
                   max={2030}
+                  className={fieldErrors.ano ? "border-red-500" : ""}
                 />
+                {fieldErrors.ano && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.ano}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -531,7 +669,11 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   value={formData.salario_base}
                   onChange={(e) => setFormData(prev => ({ ...prev, salario_base: parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
+                  className={fieldErrors.salario_base ? "border-red-500" : ""}
                 />
+                {fieldErrors.salario_base && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.salario_base}</p>
+                )}
               </div>
               
               <div className="space-y-2">

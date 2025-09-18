@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ScheduleEvent } from '@/types/schedule';
-import { getUnitInfo, Unit } from '@/types/unit';
+import { getUnitInfo, ScheduleUnit } from '@/types/unit';
 
 interface WeekEventProps {
   event: ScheduleEvent;
@@ -38,7 +38,7 @@ const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
   };
 
   const { top, height } = getEventPosition();
-  const unitInfo = getUnitInfo(event.unit as Unit);
+  const unitInfo = getUnitInfo(event.unit as ScheduleUnit);
 
   return (
     <div

@@ -75,6 +75,8 @@ export const UserProfileDropdown: React.FC = () => {
       .join('');
   };
 
+  const displayName = profile?.username || user?.email?.split('@')[0] || 'Usuário';
+  const initials = getInitials(displayName);
   const getRoleColor = (role: string | null) => {
     switch (role?.toLowerCase()) {
       case 'admin':
@@ -112,13 +114,13 @@ export const UserProfileDropdown: React.FC = () => {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 p-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || ''} />
+              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || ''} />
               <AvatarFallback className="text-sm">
-                {getInitials(profile?.full_name)}
+                {getInitials(profile?.username)}
               </AvatarFallback>
             </Avatar>
             <div className="hidden md:block text-left">
-              <p className="text-sm font-medium">{profile?.full_name || 'Usuário'}</p>
+              <p className="text-sm font-medium">{profile?.username || 'Usuário'}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </Button>
@@ -128,13 +130,13 @@ export const UserProfileDropdown: React.FC = () => {
           <DropdownMenuLabel className="space-y-2">
             <div className="flex items-center gap-2">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || ''} />
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || ''} />
                 <AvatarFallback>
-                  {getInitials(profile?.full_name)}
+                  {getInitials(profile?.username)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="font-medium">{profile?.full_name || 'Usuário'}</p>
+                <p className="font-medium">{profile?.username || 'Usuário'}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </div>

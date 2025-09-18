@@ -42,7 +42,7 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
       if (!groups.has(doc.employee_id)) {
         groups.set(doc.employee_id, {
           employeeId: doc.employee_id,
-          employeeName: doc.employee?.full_name || 'Nome não encontrado',
+          employeeName: doc.employee?.username || 'Nome não encontrado',
           documents: [],
           totalDocuments: 0,
           validDocuments: 0,

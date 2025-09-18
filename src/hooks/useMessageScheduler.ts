@@ -133,34 +133,73 @@ export const useMessageScheduler = (): UseMessageSchedulerReturn => {
     if (!user?.id) return;
 
     try {
-      const { data, error: permError } = await supabase
-        .rpc('validate_user_schedule_permissions', {
-          user_id: user.id
-        });
+      console.log('🔍 Validando permissões para usuário:', user.id);
+      
+      // Buscar dados do usuário
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('auth_user_id', user.id)
+        .single();
 
-      if (permError) throw permError;
-      setPermissions(data);
+      if (userError) throw userError;
+      
+      console.log('👤 Role do usuário:', userData?.role);
+      
+      // Criar permissões baseadas no role
+      const userPermissions: UserPermissions = {
+        isAdmin: userData?.role === 'super_admin' || userData?.role === 'admin',
+        canManageNotifications: ['super_admin', 'admin', 'gestor_rh'].includes(userData?.role),
+        canViewNotifications: ['super_admin', 'admin', 'gestor_rh', 'funcionario'].includes(userData?.role),
+        canManageNPS: ['super_admin', 'admin', 'gestor_rh'].includes(userData?.role),
+        canViewNPS: ['super_admin', 'admin', 'gestor_rh', 'funcionario'].includes(userData?.role),
+        canManageWhatsApp: ['super_admin', 'admin', 'gestor_rh'].includes(userData?.role),
+        canViewWhatsApp: ['super_admin', 'admin', 'gestor_rh', 'funcionario'].includes(userData?.role),
+        canManageEmail: ['super_admin', 'admin', 'gestor_rh'].includes(userData?.role),
+        canViewEmail: ['super_admin', 'admin', 'gestor_rh', 'funcionario'].includes(userData?.role),
+        availableTypes: ['super_admin', 'admin', 'gestor_rh'].includes(userData?.role) 
+          ? ['notification', 'nps', 'whatsapp', 'email']
+          : ['notification']
+      };
+      
+      console.log('✅ Permissões criadas:', userPermissions);
+      setPermissions(userPermissions);
     } catch (err) {
+      console.error('❌ Erro ao validar permissões:', err);
       setError('Erro ao validar permissões do usuário');
     }
   }, [user?.id]);
 
   // Função para verificar se pode gerenciar um tipo
   const canManageType = useCallback((type: string): boolean => {
-    if (!permissions) return false;
+    console.log('🔍 Verificando permissão para gerenciar tipo:', type);
+    console.log('📋 Permissões atuais:', permissions);
     
+    if (!permissions) {
+      console.log('❌ Nenhuma permissão carregada');
+      return false;
+    }
+    
+    let canManage = false;
     switch (type) {
       case 'notification':
-        return permissions.canManageNotifications;
+        canManage = Boolean(permissions.canManageNotifications);
+        break;
       case 'nps':
-        return permissions.canManageNPS;
+        canManage = Boolean(permissions.canManageNPS);
+        break;
       case 'whatsapp':
-        return permissions.canManageWhatsApp;
+        canManage = Boolean(permissions.canManageWhatsApp);
+        break;
       case 'email':
-        return permissions.canManageEmail;
+        canManage = Boolean(permissions.canManageEmail);
+        break;
       default:
-        return false;
+        canManage = false;
     }
+    
+    console.log(`✅ Pode gerenciar ${type}:`, canManage);
+    return canManage;
   }, [permissions]);
 
   // Função para verificar se pode visualizar um tipo

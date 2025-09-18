@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Plus, Trash2, Calendar, Users, Target, Clock } from 'lucide-react';
+import { RiCheckboxCircleFill } from '@remixicon/react';
 import { useNPS } from '@/contexts/NPSContext';
 import { NPSQuestion } from '@/types/nps';
 
@@ -22,12 +24,16 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
   onOpenChange
 }) => {
   const { createSurvey } = useNPS();
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: '',
-    endDate: '',
-    surveyType: 'nps' as 'nps' | 'satisfaction'
+    surveyType: 'nps' as 'nps' | 'satisfaction',
+    // Removendo campos de data - templates não precisam de datas específicas
+    targetEmployees: [] as string[],
+    targetDepartments: [] as string[],
+    isAnonymous: true
   });
 
   const [questions, setQuestions] = useState<NPSQuestion[]>([
@@ -57,42 +63,77 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
 
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.startDate || !formData.endDate) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+    if (!formData.title.trim()) {
+      alert('Por favor, preencha o título da pesquisa');
       return;
     }
 
-    const newSurvey = {
-      ...formData,
-      questions,
-      status: 'active' as const,
-      responses: [],
-      targetEmployees: [],
-      targetDepartments: []
-    };
+    if (questions.length === 0) {
+      alert('Por favor, adicione pelo menos uma pergunta');
+      return;
+    }
 
-    createSurvey(newSurvey);
-    
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      startDate: '',
-      endDate: '',
-      surveyType: 'nps'
-    });
-    setQuestions([{
-      id: 'q1',
-      type: 'nps',
-      question: 'Em uma escala de 0 a 10, o quanto você recomendaria nossa empresa como um lugar para trabalhar?',
-      required: true
-    }]);
-    
-    onOpenChange(false);
-    alert('Pesquisa criada com sucesso!');
+    setIsSubmitting(true);
+
+    try {
+      console.log('🔄 NewSurveyModal: Iniciando criação de pesquisa');
+      
+      const newSurvey = {
+        title: formData.title,
+        description: formData.description,
+        surveyType: formData.surveyType,
+        // Templates são criados como draft por padrão
+        status: 'draft' as const,
+        // Datas padrão para templates - serão definidas no agendamento
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 ano no futuro
+        questions,
+        targetEmployees: formData.targetEmployees,
+        targetDepartments: formData.targetDepartments,
+        isAnonymous: formData.isAnonymous
+      };
+
+      console.log('📤 Enviando pesquisa para criação:', newSurvey);
+      
+      await createSurvey(newSurvey);
+      
+      console.log('✅ Pesquisa criada com sucesso!');
+      
+      // Mostrar alert de sucesso
+      setShowSuccessAlert(true);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        surveyType: 'nps'
+      });
+      setQuestions([{
+        id: 'q1',
+        type: 'nps',
+        question: 'Em uma escala de 0 a 10, o quanto você recomendaria nossa empresa como um lugar para trabalhar?',
+        required: true
+      }]);
+
+      // Fechar modal após 2 segundos
+      setTimeout(() => {
+        setShowSuccessAlert(false);
+        onOpenChange(false);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Erro detalhado ao criar pesquisa:', error);
+      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'Sem stack trace');
+      console.error('❌ Mensagem:', error instanceof Error ? error.message : 'Erro desconhecido');
+      alert('Erro ao criar pesquisa. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addQuestion = () => {
@@ -126,6 +167,14 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
             Nova Pesquisa
           </DialogTitle>
         </DialogHeader>
+
+        {/* Alert de Sucesso */}
+        {showSuccessAlert && (
+          <Alert className="bg-green-50 border-green-200">
+            <RiCheckboxCircleFill className="h-4 w-4 text-green-600" />
+            <AlertTitle>Pesquisa NPS criada com sucesso!</AlertTitle>
+          </Alert>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           {/* Informações Básicas */}
@@ -169,29 +218,8 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate">Data de Início *</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="endDate">Data de Término *</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
+              {/* Removido: Campos de data de início e fim */}
+              {/* Templates não precisam de datas específicas - serão definidas no agendamento */}
             </CardContent>
           </Card>
 
@@ -249,12 +277,12 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
 
           {/* Ações */}
           <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
               <Calendar className="w-4 h-4 mr-2" />
-              Criar Pesquisa
+              {isSubmitting ? 'Criando...' : 'Criar Pesquisa'}
             </Button>
           </div>
         </form>

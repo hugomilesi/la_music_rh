@@ -2,33 +2,51 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { debugAuth, debugRender } from '@/utils/debugUtils';
+import { invalidatePermissionsCache } from '@/hooks/usePermissionsV2';
 
 interface Profile {
   id: string;
-  full_name: string | null;
-  avatar_url: string | null;
+  auth_user_id?: string;
+  profile_id?: string;
+  username?: string;
+  email: string;
   role: string;
+  permissions?: any;
+  settings?: any;
+  status?: string;
+  employee_id?: string | null;
+  avatar_url?: string | null;
+  phone?: string | null;
+  is_active?: boolean;
+  last_login_at?: string | null;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
+  department?: string | null;
+  position?: string | null;
+  deleted_at?: string | null;
+  last_login?: string | null;
+  preferences?: any;
+  employee_number?: string | null;
+  birth_date?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  hire_date?: string | null;
+  termination_date?: string | null;
+  salary?: number | null;
+  address?: any;
+  emergency_contact?: any;
+  documents?: any;
+  notes?: string | null;
+  unit_id?: string | null;
+  system_permissions?: any;
+  profile_data?: any;
+  // Legacy fields for backward compatibility
   level?: string;
-  permissions?: string[];
   metadata?: any;
-  nome?: string;
-  nivel?: string;
-  cargo?: string;
-  departamento?: string;
-  phone?: string;
-  department?: string;
-  position?: string;
   bio?: string;
-  birth_date?: string;
-  address?: string;
-  emergency_contact?: string;
   emergency_phone?: string;
   start_date?: string;
-  status?: string;
-  preferences?: any;
-  employee_id?: string | null;
 }
 
 interface AuthContextType {
@@ -42,6 +60,7 @@ interface AuthContextType {
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
   forceLogout: () => Promise<void>;
+  forceRefreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,11 +121,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId?: string) => {
     const targetUserId = userId || user?.id;
     
+    console.log('🔍 fetchProfile called with:', { targetUserId, currentUserId: user?.id });
+    
     if (!targetUserId) {
+      console.log('❌ No targetUserId found, returning early');
       return;
     }
 
     try {
+      console.log('🔍 Fetching profile from database for user:', targetUserId);
+      
+      // FORÇAR LIMPEZA DO CACHE - remover sessionStorage antes de buscar
+      sessionStorage.removeItem('userProfile');
+      console.log('🧹 Cleared profile cache from sessionStorage');
+      
       // Buscar perfil diretamente da tabela users
       const { data, error } = await supabase
         .from('users')
@@ -114,17 +142,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('auth_user_id', targetUserId)
         .single();
 
+      console.log('🔍 Database query result:', { data, error });
+
       if (error) {
+        console.log('❌ Error fetching profile:', error);
         return;
       }
 
       if (data) {
+        console.log('✅ Profile fetched successfully:', {
+          id: data.id,
+          role: data.role,
+          authUserId: data.auth_user_id,
+          permissions: data.permissions
+        });
+        
         setProfile(data as Profile);
-        // Salvar no sessionStorage
+        // Salvar no sessionStorage APENAS após confirmar os dados do banco
         sessionStorage.setItem('userProfile', JSON.stringify(data));
+        console.log('💾 Profile saved to sessionStorage with updated data');
+        
+        // Disparar evento profile-loaded imediatamente após atualizar o profile
+        if (user) {
+          console.log('🔥 Dispatching profile-loaded event from fetchProfile');
+          window.dispatchEvent(new CustomEvent('profile-loaded', {
+            detail: { profile: data as Profile, user }
+          }));
+        }
+      } else {
+        console.log('❌ No profile data returned from database');
       }
       
     } catch (error) {
+      console.log('❌ Exception in fetchProfile:', error);
       setProfile(null);
       sessionStorage.removeItem('userProfile');
     }
@@ -156,6 +206,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       // Even if there's an error, force redirect
       window.location.href = '/';
+    }
+  };
+
+  const forceRefreshProfile = async () => {
+    console.log('🔄 forceRefreshProfile called');
+    
+    if (!user?.id) {
+      console.log('❌ No user ID available for profile refresh');
+      return;
+    }
+    
+    try {
+      // Limpar completamente o cache
+      sessionStorage.removeItem('userProfile');
+      setProfile(null);
+      
+      // Invalidar cache de permissões
+      invalidatePermissionsCache(user.id);
+      console.log('🧹 Invalidated permissions cache for user:', user.id);
+      
+      console.log('🧹 Cleared all profile cache, fetching fresh data...');
+      
+      // Buscar dados frescos do banco
+      await fetchProfile(user.id);
+      
+      console.log('✅ Profile refresh completed');
+    } catch (error) {
+      console.error('❌ Error in forceRefreshProfile:', error);
     }
   };
 
@@ -294,6 +372,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Monitor profile changes and log when it's loaded
   useEffect(() => {
     if (profile && user) {
+      console.log('🔥 Profile loaded:', {
+        userId: user.id,
+        profileRole: profile.role,
+        profileId: profile.id,
+        fullName: profile.username,
+        authUserId: profile.auth_user_id
+      });
+      console.log('🔥 Current session:', supabase.auth.getSession());
+      
       // Dispatch a custom event to notify other components
       window.dispatchEvent(new CustomEvent('profile-loaded', {
         detail: { profile, user }
@@ -429,7 +516,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     profile,
@@ -439,7 +526,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     updateProfile,
     resendConfirmation,
-    forceLogout
+    forceLogout,
+    forceRefreshProfile,
   };
   
   // Auth context value logging disabled
