@@ -3,7 +3,7 @@ export interface Incident {
   employeeId: string;
   employeeName?: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high';
   description: string;
   incidentDate: string;
   reporterId?: string;
@@ -16,7 +16,7 @@ export interface Incident {
 export interface CreateIncidentData {
   employeeId: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high';
   description: string;
   incidentDate: string;
   reporterId?: string;
@@ -25,7 +25,7 @@ export interface CreateIncidentData {
 
 export interface UpdateIncidentData {
   type?: string;
-  severity?: 'leve' | 'moderado' | 'grave';
+  severity?: 'low' | 'medium' | 'high';
   description?: string;
   incidentDate?: string;
   reporterId?: string;

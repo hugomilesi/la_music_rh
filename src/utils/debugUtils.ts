@@ -38,7 +38,7 @@ export const measurePerformance = (name: string, fn: () => void) => {
 };
 
 // Component render tracker (simple counter without hooks)
-let componentRenderCounts = new Map<string, number>();
+const componentRenderCounts = new Map<string, number>();
 
 export const trackRender = (componentName: string) => {
   const currentCount = componentRenderCounts.get(componentName) || 0;

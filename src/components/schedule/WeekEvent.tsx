@@ -10,15 +10,17 @@ interface WeekEventProps {
 
 const WeekEvent: React.FC<WeekEventProps> = ({ event, onClick }) => {
   const getEventTypeColor = (type: string) => {
-    const colors = {
-      'plantao': 'bg-blue-100 border-blue-300 text-blue-800',
-      'avaliacao': 'bg-purple-100 border-purple-300 text-purple-800',
-      'reuniao': 'bg-green-100 border-green-300 text-green-800',
-      'folga': 'bg-gray-100 border-gray-300 text-gray-800',
-      'outro': 'bg-orange-100 border-orange-300 text-orange-800',
-      'coffee-connection': 'bg-amber-100 border-amber-300 text-amber-800'
+    const eventTypeColors = {
+      'meeting': 'bg-green-100 border-green-300 text-green-800',
+      'appointment': 'bg-blue-100 border-blue-300 text-blue-800',
+      'reminder': 'bg-yellow-100 border-yellow-300 text-yellow-800',
+      'task': 'bg-purple-100 border-purple-300 text-purple-800',
+      'vacation': 'bg-gray-100 border-gray-300 text-gray-800',
+      'training': 'bg-indigo-100 border-indigo-300 text-indigo-800',
+      'avaliacao': 'bg-red-100 border-red-300 text-red-800',
+      'coffee-connection': 'bg-orange-100 border-orange-300 text-orange-800',
     };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 border-gray-300 text-gray-800';
+    return eventTypeColors[type as keyof typeof eventTypeColors] || 'bg-gray-100 border-gray-300 text-gray-800';
   };
 
   // Calculate position and height based on time

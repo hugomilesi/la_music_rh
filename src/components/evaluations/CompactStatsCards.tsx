@@ -12,17 +12,79 @@ export const CompactStatsCards: React.FC = () => {
   const { evaluations } = useEvaluations();
   const [openModal, setOpenModal] = useState<string | null>(null);
 
+  console.log('📊 CompactStatsCards: Avaliações recebidas:', evaluations);
+
   const totalEvaluations = evaluations.length;
-  const completedEvaluations = evaluations.filter(e => e.status === 'Concluída').length;
-  const inProgressEvaluations = evaluations.filter(e => e.status === 'Em Andamento').length;
-  const completedEvaluationsWithScore = evaluations.filter(e => e.status === 'Concluída' && e.score > 0);
-  const averageScore = completedEvaluationsWithScore.length > 0 
-    ? completedEvaluationsWithScore.reduce((sum, e) => sum + e.score, 0) / completedEvaluationsWithScore.length 
+  
+  // Avaliações concluídas (status 'Concluída' ou 'finalized')
+  const completedEvaluations = evaluations.filter(e => 
+    e.status === 'Concluída' || e.status === 'finalized'
+  ).length;
+  
+  const inProgressEvaluations = evaluations.filter(e => 
+    e.status === 'Em Andamento' || e.status === 'submitted'
+  ).length;
+  
+  // Para média geral, considerar avaliações com score válido (incluindo Coffee Connection)
+  const evaluationsWithValidScore = evaluations.filter(e => {
+    // Para Coffee Connection, considerar como "concluída" se tem data de reunião
+    if (e.type === 'Coffee Connection') {
+      return e.meetingDate && e.status === 'Concluída';
+    }
+    // Para outras avaliações, precisa ter score > 0
+    return (e.status === 'Concluída' || e.status === 'finalized') && e.score && e.score > 0;
+  });
+
+  console.log('📈 CompactStatsCards: Avaliações com score válido:', evaluationsWithValidScore);
+  
+  // Calcular média apenas das avaliações que têm score numérico
+  const evaluationsWithNumericScore = evaluationsWithValidScore.filter(e => e.score && e.score > 0);
+  const averageScore = evaluationsWithNumericScore.length > 0 
+    ? evaluationsWithNumericScore.reduce((sum, e) => sum + (e.score || 0), 0) / evaluationsWithNumericScore.length 
     : 0;
 
   const completionRate = totalEvaluations > 0 
     ? Math.round((completedEvaluations / totalEvaluations) * 100) 
     : 0;
+
+  console.log('📊 CompactStatsCards: Estatísticas calculadas:', {
+    totalEvaluations,
+    completedEvaluations,
+    inProgressEvaluations,
+    averageScore,
+    completionRate,
+    evaluationsWithValidScore: evaluationsWithValidScore.length
+  });
+
+  // Calcular tendência baseada em dados mais recentes vs mais antigos
+  const getTrendIndicator = () => {
+    if (evaluations.length < 2) return { symbol: '=', color: 'text-yellow-600', label: 'Insuficiente' };
+    
+    // Ordenar por data de criação
+    const sortedEvaluations = [...evaluations].sort((a, b) => 
+      new Date(a.date || a.createdAt || '').getTime() - new Date(b.date || b.createdAt || '').getTime()
+    );
+    
+    const midPoint = Math.floor(sortedEvaluations.length / 2);
+    const olderHalf = sortedEvaluations.slice(0, midPoint);
+    const newerHalf = sortedEvaluations.slice(midPoint);
+    
+    const olderCompletionRate = olderHalf.length > 0 
+      ? (olderHalf.filter(e => e.status === 'Concluída' || e.status === 'finalized').length / olderHalf.length) * 100
+      : 0;
+    
+    const newerCompletionRate = newerHalf.length > 0 
+      ? (newerHalf.filter(e => e.status === 'Concluída' || e.status === 'finalized').length / newerHalf.length) * 100
+      : 0;
+    
+    const difference = newerCompletionRate - olderCompletionRate;
+    
+    if (difference > 10) return { symbol: '↗', color: 'text-green-600', label: 'Crescendo' };
+    if (difference < -10) return { symbol: '↘', color: 'text-red-600', label: 'Declinando' };
+    return { symbol: '→', color: 'text-yellow-600', label: 'Estável' };
+  };
+
+  const trendData = getTrendIndicator();
 
   const getScoreColor = (score: number) => {
     if (score >= 4.5) return 'text-green-600';
@@ -91,23 +153,27 @@ export const CompactStatsCards: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className={`text-2xl font-bold ${getScoreColor(averageScore)}`}>
-                  {averageScore.toFixed(1)}
+                  {averageScore > 0 ? averageScore.toFixed(1) : '--'}
                 </p>
                 <p className="text-sm text-gray-600">Média Geral</p>
               </div>
               <Star className={`w-8 h-8 ${getScoreColor(averageScore)}`} />
             </div>
             <div className="mt-2 flex items-center">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-3 h-3 ${
-                    star <= averageScore
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
+              {averageScore > 0 ? (
+                [1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-3 h-3 ${
+                      star <= averageScore
+                        ? 'text-yellow-400 fill-current'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                ))
+              ) : (
+                <span className="text-xs text-gray-500">Sem dados</span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -117,25 +183,22 @@ export const CompactStatsCards: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-purple-600">
-                  {completionRate > 75 ? '+' : completionRate > 50 ? '=' : '-'}
+                <p className={`text-2xl font-bold ${trendData.color}`}>
+                  {trendData.symbol}
                 </p>
                 <p className="text-sm text-gray-600">Tendência</p>
               </div>
-              <TrendingUp className={`w-8 h-8 ${
-                completionRate > 75 ? 'text-green-600' : 
-                completionRate > 50 ? 'text-yellow-600' : 'text-red-600'
-              }`} />
+              <TrendingUp className={`w-8 h-8 ${trendData.color}`} />
             </div>
             <div className="mt-2">
               <Badge 
                 variant="outline" 
-                className={`text-xs ${
-                  completionRate > 75 ? 'text-green-600 border-green-200' : 
-                  completionRate > 50 ? 'text-yellow-600 border-yellow-200' : 'text-red-600 border-red-200'
+                className={`text-xs ${trendData.color} ${
+                  trendData.color === 'text-green-600' ? 'border-green-200' : 
+                  trendData.color === 'text-yellow-600' ? 'border-yellow-200' : 'border-red-200'
                 }`}
               >
-                {completionRate > 75 ? 'Excelente' : completionRate > 50 ? 'Bom' : 'Atenção'}
+                {trendData.label}
               </Badge>
             </div>
           </CardContent>

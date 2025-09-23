@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, AlertTriangle, Clock, FileText, Upload } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, Upload } from 'lucide-react';
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
+import { extractDocumentTypeFromPath, getDocumentStatus } from '@/utils/documentUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentChecklistProps {
   employeeId?: string;
@@ -12,16 +14,18 @@ interface DocumentChecklistProps {
 }
 
 interface RequiredDocument {
-  type: string;
+  id: string;
+  document_type: string;
   name: string;
   description: string;
-  mandatory: boolean;
+  is_mandatory: boolean;
 }
 
 interface EmployeeDocumentStatus {
   employeeId: string;
   employeeName: string;
   requiredDocuments: {
+    id: string;
     type: string;
     name: string;
     status: 'completo' | 'pendente' | 'vencendo' | 'vencido';
@@ -32,77 +36,98 @@ interface EmployeeDocumentStatus {
   pendingMandatory: number;
 }
 
-const REQUIRED_DOCUMENTS: RequiredDocument[] = [
-  {
-    type: 'contrato_trabalho',
-    name: 'Contrato de Trabalho',
-    description: 'Contrato de trabalho assinado',
-    mandatory: true
-  },
-  {
-    type: 'carteira_trabalho',
-    name: 'Carteira de Trabalho',
-    description: 'Cópia da carteira de trabalho',
-    mandatory: true
-  },
-  {
-    type: 'cpf',
-    name: 'CPF',
-    description: 'Cópia do CPF',
-    mandatory: true
-  },
-  {
-    type: 'rg',
-    name: 'RG',
-    description: 'Cópia do RG ou documento de identidade',
-    mandatory: true
-  },
-  {
-    type: 'comprovante_residencia',
-    name: 'Comprovante de Residência',
-    description: 'Comprovante de residência atualizado',
-    mandatory: true
-  },
-  {
-    type: 'titulo_eleitor',
-    name: 'Título de Eleitor',
-    description: 'Cópia do título de eleitor',
-    mandatory: false
-  },
-  {
-    type: 'certificado_reservista',
-    name: 'Certificado de Reservista',
-    description: 'Certificado de reservista (para homens)',
-    mandatory: false
-  },
-  {
-    type: 'certidao_nascimento',
-    name: 'Certidão de Nascimento',
-    description: 'Certidão de nascimento ou casamento',
-    mandatory: false
-  },
-  {
-    type: 'comprovante_escolaridade',
-    name: 'Comprovante de Escolaridade',
-    description: 'Diploma ou certificado de conclusão',
-    mandatory: false
-  },
-  {
-    type: 'foto_3x4',
-    name: 'Foto 3x4',
-    description: 'Foto 3x4 recente',
-    mandatory: false
-  }
-];
-
 export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
   employeeId,
   onUploadDocument
 }) => {
   const { filteredDocuments } = useDocuments();
   const { employees } = useEmployees();
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Buscar documentos obrigatórios do banco de dados usando a nova view
+  useEffect(() => {
+    const fetchRequiredDocuments = async () => {
+      try {
+        // Usar a nova view para melhor sincronização
+        const { data, error } = await supabase
+          .from('user_required_documents')
+          .select('*')
+          .limit(1); // Apenas para verificar se a view existe
+
+        if (error) {
+          console.error('View não encontrada, usando método tradicional:', error);
+          // Fallback para método tradicional
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('required_documents')
+            .select('id, document_type, name, description, is_mandatory')
+            .eq('is_active', true)
+            .order('name');
+
+          if (fallbackError) {
+            console.error('Erro ao buscar documentos obrigatórios:', fallbackError);
+            return;
+          }
+
+          setRequiredDocuments(fallbackData || []);
+        } else {
+          // Usar a view para obter documentos únicos
+          const { data: viewData, error: viewError } = await supabase
+            .from('user_required_documents')
+            .select('required_document_id, document_name, document_type, description, is_mandatory')
+            .eq('is_active', true);
+
+          if (viewError) {
+            console.error('Erro ao buscar via view:', viewError);
+            return;
+          }
+
+          // Extrair documentos únicos da view
+          const uniqueDocuments = viewData?.reduce((acc, item) => {
+            const existingDoc = acc.find(doc => doc.id === item.required_document_id);
+            if (!existingDoc) {
+              acc.push({
+                id: item.required_document_id,
+                document_type: item.document_type,
+                name: item.document_name,
+                description: item.description,
+                is_mandatory: item.is_mandatory
+              });
+            }
+            return acc;
+          }, [] as RequiredDocument[]) || [];
+
+          setRequiredDocuments(uniqueDocuments);
+
+          // Verificar se há problemas de sincronização e executar sync se necessário
+          const { data: syncData, error: syncError } = await supabase
+            .from('user_required_documents')
+            .select('sync_status')
+            .neq('sync_status', 'synchronized');
+
+          if (!syncError && syncData && syncData.length > 0) {
+            console.log('Problemas de sincronização detectados, executando sincronização...');
+            const { error: syncFunctionError } = await supabase.rpc('sync_user_required_documents');
+            if (syncFunctionError) {
+              console.error('Erro na sincronização:', syncFunctionError);
+            } else {
+              console.log('Sincronização executada com sucesso');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar documentos obrigatórios:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequiredDocuments();
+  }, []);
 
   const employeeDocumentStatus = useMemo(() => {
+    if (loading || requiredDocuments.length === 0) return null;
+
     if (employeeId) {
       // Single employee view
       const employee = employees.find(emp => emp.id === employeeId);
@@ -110,16 +135,17 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
 
       const employeeDocuments = filteredDocuments.filter(doc => doc.employeeId === employeeId);
       
-      const requiredDocuments = REQUIRED_DOCUMENTS.map(reqDoc => {
+      const requiredDocumentsStatus = requiredDocuments.map(reqDoc => {
         const existingDoc = employeeDocuments.find(doc => 
-          doc.document.toLowerCase().includes(reqDoc.type.toLowerCase()) ||
-          doc.type === reqDoc.type
+          extractDocumentTypeFromPath(doc.file_path).toLowerCase().includes(reqDoc.name.toLowerCase()) ||
+          doc.document.toLowerCase().includes(reqDoc.document_type.toLowerCase())
         );
 
         let status: 'completo' | 'pendente' | 'vencendo' | 'vencido' = 'pendente';
         
         if (existingDoc) {
-          switch (existingDoc.status) {
+          const docStatus = getDocumentStatus(existingDoc.expires_at);
+          switch (docStatus) {
             case 'válido':
               status = 'completo';
               break;
@@ -135,23 +161,26 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
         }
 
         return {
-          type: reqDoc.type,
+          id: reqDoc.id,
+          type: reqDoc.document_type,
           name: reqDoc.name,
           status,
           document: existingDoc,
-          mandatory: reqDoc.mandatory
+          mandatory: reqDoc.is_mandatory
         };
       });
 
-      const totalRequired = REQUIRED_DOCUMENTS.length;
-      const completed = requiredDocuments.filter(doc => doc.status === 'completo').length;
-      const pendingMandatory = requiredDocuments.filter(doc => doc.mandatory && doc.status === 'pendente').length;
+      // Only count mandatory documents for completion rate and pending count
+      const mandatoryDocuments = requiredDocumentsStatus.filter(doc => doc.mandatory);
+      const totalMandatory = mandatoryDocuments.length;
+      const completedMandatory = mandatoryDocuments.filter(doc => doc.status === 'completo').length;
+      const pendingMandatory = mandatoryDocuments.filter(doc => doc.status === 'pendente').length;
 
       return {
         employeeId,
         employeeName: employee.name,
-        requiredDocuments,
-        completionRate: Math.round((completed / totalRequired) * 100),
+        requiredDocuments: requiredDocumentsStatus,
+        completionRate: totalMandatory > 0 ? Math.round((completedMandatory / totalMandatory) * 100) : 100,
         pendingMandatory
       };
     } else {
@@ -159,16 +188,17 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
       return employees.map(employee => {
         const employeeDocuments = filteredDocuments.filter(doc => doc.employeeId === employee.id);
         
-        const requiredDocuments = REQUIRED_DOCUMENTS.map(reqDoc => {
+        const requiredDocumentsStatus = requiredDocuments.map(reqDoc => {
           const existingDoc = employeeDocuments.find(doc => 
-            doc.document.toLowerCase().includes(reqDoc.type.toLowerCase()) ||
-            doc.type === reqDoc.type
+            extractDocumentTypeFromPath(doc.file_path).toLowerCase().includes(reqDoc.name.toLowerCase()) ||
+            doc.document.toLowerCase().includes(reqDoc.document_type.toLowerCase())
           );
 
           let status: 'completo' | 'pendente' | 'vencendo' | 'vencido' = 'pendente';
           
           if (existingDoc) {
-            switch (existingDoc.status) {
+            const docStatus = getDocumentStatus(existingDoc.expires_at);
+            switch (docStatus) {
               case 'válido':
                 status = 'completo';
                 break;
@@ -184,28 +214,31 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
           }
 
           return {
-            type: reqDoc.type,
+            id: reqDoc.id,
+            type: reqDoc.document_type,
             name: reqDoc.name,
             status,
             document: existingDoc,
-            mandatory: reqDoc.mandatory
+            mandatory: reqDoc.is_mandatory
           };
         });
 
-        const totalRequired = REQUIRED_DOCUMENTS.length;
-        const completed = requiredDocuments.filter(doc => doc.status === 'completo').length;
-        const pendingMandatory = requiredDocuments.filter(doc => doc.mandatory && doc.status === 'pendente').length;
+        // Only count mandatory documents for completion rate and pending count
+        const mandatoryDocuments = requiredDocumentsStatus.filter(doc => doc.mandatory);
+        const totalMandatory = mandatoryDocuments.length;
+        const completedMandatory = mandatoryDocuments.filter(doc => doc.status === 'completo').length;
+        const pendingMandatory = mandatoryDocuments.filter(doc => doc.status === 'pendente').length;
 
         return {
           employeeId: employee.id,
           employeeName: employee.name,
-          requiredDocuments,
-          completionRate: Math.round((completed / totalRequired) * 100),
+          requiredDocuments: requiredDocumentsStatus,
+          completionRate: totalMandatory > 0 ? Math.round((completedMandatory / totalMandatory) * 100) : 100,
           pendingMandatory
         };
-      }).filter(emp => emp.pendingMandatory > 0); // Only show employees with pending mandatory docs
+      });
     }
-  }, [employeeId, employees, filteredDocuments]);
+  }, [employeeId, employees, filteredDocuments, requiredDocuments, loading]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -216,7 +249,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
       case 'vencido':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
       default:
-        return <FileText className="w-4 h-4 text-gray-400" />;
+        return <XCircle className="w-4 h-4 text-gray-400" />;
     }
   };
 
@@ -243,6 +276,16 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
     }
   };
 
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Carregando documentos obrigatórios...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (employeeId && employeeDocumentStatus && !Array.isArray(employeeDocumentStatus)) {
     // Single employee view
     const employee = employeeDocumentStatus as EmployeeDocumentStatus;
@@ -266,37 +309,40 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {employee.requiredDocuments.map((doc) => (
-              <div key={doc.type} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(doc.status)}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{doc.name}</span>
-                      {doc.mandatory && (
-                        <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
-                          OBRIGATÓRIO
-                        </Badge>
-                      )}
+            {employee.requiredDocuments.map((doc) => {
+              const requiredDoc = requiredDocuments.find(rd => rd.document_type === doc.type);
+              return (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(doc.status)}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{doc.name}</span>
+                        {doc.mandatory && (
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                            OBRIGATÓRIO
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{requiredDoc?.description}</p>
                     </div>
-                    <p className="text-sm text-gray-600">{REQUIRED_DOCUMENTS.find(rd => rd.type === doc.type)?.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(doc.status, doc.mandatory)}
+                    {doc.status === 'pendente' && onUploadDocument && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => onUploadDocument(employee.employeeId, doc.type)}
+                      >
+                        <Upload className="w-4 h-4 mr-1" />
+                        Enviar
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(doc.status, doc.mandatory)}
-                  {doc.status === 'pendente' && onUploadDocument && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => onUploadDocument(employee.employeeId, doc.type)}
-                    >
-                      <Upload className="w-4 h-4 mr-1" />
-                      Enviar
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -339,7 +385,7 @@ export const DocumentChecklist: React.FC<DocumentChecklistProps> = ({
                     {employee.requiredDocuments
                       .filter(doc => doc.mandatory && doc.status === 'pendente')
                       .map((doc) => (
-                        <div key={doc.type} className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200">
+                        <div key={doc.id} className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200">
                           <AlertTriangle className="w-4 h-4 text-red-600" />
                           <span className="text-sm font-medium text-red-800">{doc.name}</span>
                         </div>

@@ -47,12 +47,15 @@ export const ScheduleStats: React.FC<ScheduleStatsProps> = ({ events, selectedDa
     };
   }, [events, employees]);
 
-  const typeLabels: Record<string, string> = {
-    'plantao': 'Plantões',
+  const eventTypeLabels = {
+    'meeting': 'Reuniões',
+    'appointment': 'Compromissos',
+    'reminder': 'Lembretes',
+    'task': 'Tarefas',
+    'vacation': 'Férias',
+    'training': 'Treinamentos',
     'avaliacao': 'Avaliações',
-    'reuniao': 'Reuniões',
-    'folga': 'Folgas',
-    'outro': 'Outros'
+    'coffee-connection': 'Coffee Connections'
   };
 
   return (
@@ -92,7 +95,7 @@ export const ScheduleStats: React.FC<ScheduleStatsProps> = ({ events, selectedDa
           <div className="space-y-1">
             {Object.entries(stats.typeCount).map(([type, count]) => (
               <div key={type} className="flex items-center justify-between text-sm">
-                <span>{typeLabels[type] || type}</span>
+                <span>{eventTypeLabels[type] || type}</span>
                 <Badge variant="outline">{count}</Badge>
               </div>
             ))}

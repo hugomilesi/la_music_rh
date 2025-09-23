@@ -248,14 +248,14 @@ export const benefitsService = {
         updateData.tipo = tipoMapping[category] || 'outros';
       }
       if (benefitData.description !== undefined) updateData.descricao = benefitData.description;
-      if (benefitData.value !== undefined) updateData.valor = benefitData.value;
+      if (benefitData.value !== undefined) updateData.cost = benefitData.value;
       if (benefitData.coverage !== undefined) {
         // Serialize coverage array as JSON string for database storage
         updateData.coverage = Array.isArray(benefitData.coverage) 
           ? JSON.stringify(benefitData.coverage)
           : benefitData.coverage;
       }
-      if (benefitData.isActive !== undefined) updateData.ativo = benefitData.isActive;
+      if (benefitData.isActive !== undefined) updateData.is_active = benefitData.isActive;
       if (benefitData.startDate !== undefined) {
         // Only set start_date if it's a valid date string, not empty
         updateData.start_date = benefitData.startDate && benefitData.startDate.trim() !== '' ? benefitData.startDate : null;
@@ -354,7 +354,7 @@ export const benefitsService = {
         color: '#gray'
       },
       description: data.descricao || '',
-      value: parseFloat(data.valor) || 0,
+      value: parseFloat(data.cost) || 0,
       coverage: (() => {
         if (!data.coverage) return [];
         if (Array.isArray(data.coverage)) return data.coverage;
@@ -367,7 +367,7 @@ export const benefitsService = {
       })(),
       eligibilityRules: data.eligibility_rules || [],
       provider: data.provider || '',
-      isActive: data.ativo,
+      isActive: data.is_active,
       startDate: data.start_date || '',
       endDate: data.end_date || '',
       documents: uploadedDocuments,
@@ -410,8 +410,7 @@ export const benefitsService = {
         .select(`
           *,
           users(username),
-          benefits(nome),
-          dependents:benefit_dependents(*)
+          benefits(name)
         `)
         .order('enrollment_date', { ascending: false });
       
@@ -420,31 +419,8 @@ export const benefitsService = {
         throw error;
       }
       
-      // Then get all dependents for these employee benefits
-      const employeeBenefitIds = employeeBenefitsData.map(eb => eb.id);
-      const { data: dependentsData, error: dependentsError } = await supabase
-        .from('benefit_dependents')
-        .select('*')
-        .in('employee_benefit_id', employeeBenefitIds);
-      
-      if (dependentsError) {
-        console.warn('BenefitsService: ⚠️ Erro ao buscar dependentes:', dependentsError);
-        // Don't throw, just log and continue without dependents
-      }
-      
-      // Group dependents by employee_benefit_id
-      const dependentsByEmployeeBenefit = (dependentsData || []).reduce((acc, dep) => {
-        if (!acc[dep.employee_benefit_id]) {
-          acc[dep.employee_benefit_id] = [];
-        }
-        acc[dep.employee_benefit_id].push(dep);
-        return acc;
-      }, {} as Record<string, any[]>);
-      
-      const data = employeeBenefitsData.map(eb => ({
-        ...eb,
-        benefit_dependents: dependentsByEmployeeBenefit[eb.id] || []
-      }));
+      // Since benefit_dependents table doesn't exist, we'll work with the data we have
+      const data = employeeBenefitsData;
       
       console.log('BenefitsService: ✅ Benefícios de funcionários encontrados:', data.length);
       
@@ -453,17 +429,10 @@ export const benefitsService = {
         employeeId: eb.employee_id,
         employeeName: eb.users?.username || 'Funcionário não encontrado',
         benefitId: eb.benefit_id,
-        benefitName: eb.benefits?.nome || 'Benefício não encontrado',
+        benefitName: eb.benefits?.name || 'Benefício não encontrado',
         enrollmentDate: eb.enrollment_date,
         // Status is determined by dates: active if no end date or future end date
-        dependents: eb.benefit_dependents?.map((dep: any) => ({
-          id: dep.id,
-          name: dep.name,
-          relationship: dep.relationship,
-          birthDate: dep.birth_date,
-          documentNumber: dep.document_number,
-          isActive: dep.is_active
-        })) || [],
+        dependents: [], // benefit_dependents table doesn't exist yet
         documents: [], // Will be implemented later if needed
         lastUpdate: eb.updated_at,
         nextRenewalDate: eb.termination_date,
@@ -545,10 +514,10 @@ export const benefitsService = {
         status: 'active'
       })
       .select(`
-        *,
-        users(username),
-        benefits(nome)
-      `)
+          *,
+          users(username),
+          benefits(name)
+        `)
       .single();
 
     if (enrollmentError) {
@@ -559,33 +528,18 @@ export const benefitsService = {
       throw enrollmentError;
     }
 
-    // Then create dependents if any
-    if (dependents.length > 0) {
-      const dependentData = dependents.map(dep => ({
-        employee_benefit_id: enrollment.id,
-        name: dep.name,
-        relationship: dep.relationship,
-        birth_date: dep.birthDate,
-        document_number: dep.documentNumber,
-        is_active: dep.isActive !== false
-      }));
-
-      const { error: dependentsError } = await supabase
-        .from('benefit_dependents')
-        .insert(dependentData);
-
-      if (dependentsError) {
-        console.log('BenefitsService: ⚠️ Erro ao inserir dependentes, mas inscrição foi bem-sucedida:', dependentsError);
-        // Don't throw here, enrollment was successful
-      }
-    }
+    // Note: benefit_dependents table doesn't exist yet
+        // Dependents functionality will be implemented when the table is created
+        if (dependents.length > 0) {
+          console.log('BenefitsService: ⚠️ Dependentes não podem ser salvos - tabela benefit_dependents não existe');
+        }
 
     const result = {
       id: enrollment.id,
       employeeId: enrollment.employee_id,
       employeeName: enrollment.users?.username || 'Funcionário não encontrado',
       benefitId: enrollment.benefit_id,
-      benefitName: enrollment.benefits?.nome || 'Benefício não encontrado',
+      benefitName: enrollment.benefits?.name || 'Benefício não encontrado',
       enrollmentDate: enrollment.enrollment_date,
       // Status determined by dates
       dependents: dependents || [],
@@ -610,10 +564,10 @@ export const benefitsService = {
       const updateData: any = {};
       
       // Map frontend fields to database fields (only use existing columns)
-      if (data.nextRenewalDate !== undefined) updateData.next_renewal_date = data.nextRenewalDate;
-      if (data.customValue !== undefined) updateData.valor_personalizado = data.customValue;
-      if (data.notes !== undefined) updateData.observacoes = data.notes;
-      if (data.renewalStatus !== undefined) updateData.renewal_status = data.renewalStatus;
+      if (data.nextRenewalDate !== undefined) updateData.termination_date = data.nextRenewalDate;
+      if (data.customValue !== undefined) updateData.premium_amount = data.customValue;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+      if (data.renewalStatus !== undefined) updateData.status = data.renewalStatus;
       // Note: performance_data column doesn't exist in the database
       // This is handled in the frontend logic based on other data
       
@@ -628,8 +582,7 @@ export const benefitsService = {
         .select(`
           *,
           users(username),
-        benefits(nome),
-          dependents:benefit_dependents(*)
+          benefits(name)
         `)
         .eq('id', id)
         .single();
@@ -644,19 +597,12 @@ export const benefitsService = {
           employeeId: current.employee_id,
           employeeName: current.users?.username || 'Funcionário não encontrado',
           benefitId: current.benefit_id,
-          benefitName: current.benefits?.nome || 'Benefício não encontrado',
-          enrollmentDate: current.data_inicio,
-          dependents: current.dependents?.map((dep: any) => ({
-            id: dep.id,
-            name: dep.name,
-            relationship: dep.relationship,
-            birthDate: dep.birth_date,
-            documentNumber: dep.document_number,
-            isActive: dep.is_active
-          })) || [],
+          benefitName: current.benefits?.name || 'Benefício não encontrado',
+          enrollmentDate: current.enrollment_date,
+          dependents: [], // benefit_dependents table doesn't exist yet
           documents: [],
           lastUpdate: current.updated_at,
-          nextRenewalDate: current.next_renewal_date || current.data_fim,
+          nextRenewalDate: current.termination_date,
           renewalStatus: 'active' // Determined by frontend logic based on dates
         };
         
@@ -671,8 +617,7 @@ export const benefitsService = {
         .select(`
           *,
           users(username),
-          benefits(nome),
-          dependents:benefit_dependents(*)
+          benefits(name)
         `)
         .single();
 
@@ -686,20 +631,13 @@ export const benefitsService = {
         employeeId: updated.employee_id,
         employeeName: updated.users?.username || 'Funcionário não encontrado',
         benefitId: updated.benefit_id,
-        benefitName: updated.benefits?.nome || 'Benefício não encontrado',
-        enrollmentDate: updated.data_inicio,
+        benefitName: updated.benefits?.name || 'Benefício não encontrado',
+        enrollmentDate: updated.enrollment_date,
         // Status determined by dates
-        dependents: updated.dependents?.map((dep: any) => ({
-          id: dep.id,
-          name: dep.name,
-          relationship: dep.relationship,
-          birthDate: dep.birth_date,
-          documentNumber: dep.document_number,
-          isActive: dep.is_active
-        })) || [],
+        dependents: [], // benefit_dependents table doesn't exist yet
         documents: [],
         lastUpdate: updated.updated_at,
-        nextRenewalDate: updated.next_renewal_date || updated.data_fim,
+        nextRenewalDate: updated.termination_date,
       renewalStatus: 'active' // Determined by frontend logic based on dates
     };
     
@@ -738,7 +676,7 @@ export const benefitsService = {
       // Get all benefits
       const { data: benefits, error: benefitsError } = await supabase
         .from('benefits')
-        .select('id, nome, valor, ativo, tipo');
+        .select('id, name, cost, is_active, benefit_types(name)');
 
       if (benefitsError) {
         // Log desabilitado
@@ -753,7 +691,7 @@ export const benefitsService = {
           enrollment_date,
           termination_date,
           premium_amount,
-          benefits(valor)
+          benefits(cost)
         `);
 
       if (employeeBenefitsError) {
@@ -763,7 +701,7 @@ export const benefitsService = {
 
       // Calculate statistics
       const totalBenefits = benefits.length;
-      const activeBenefits = benefits.filter(b => b.ativo).length;
+      const activeBenefits = benefits.filter(b => b.is_active).length;
       
       // Consider active enrollments as those without end date or with future end date
       const currentDate = new Date();
@@ -774,9 +712,9 @@ export const benefitsService = {
       const totalEnrollments = activeEnrollments.length;
       const pendingApprovals = 0; // Since we don't have status column, assume no pending approvals
       
-      // Calculate total cost from employee benefits (use premium_amount or benefit valor)
+      // Calculate total cost from employee benefits (use premium_amount or benefit cost)
       const totalCost = activeEnrollments.reduce((sum, eb) => {
-        const cost = eb.premium_amount || eb.benefits?.valor || 0;
+        const cost = eb.premium_amount || eb.benefits?.cost || 0;
         return sum + cost;
       }, 0);
 
@@ -789,7 +727,7 @@ export const benefitsService = {
       const mostPopularBenefitId = Object.entries(benefitEnrollmentCounts)
         .sort(([,a], [,b]) => b - a)[0]?.[0];
       
-      const mostPopularBenefit = benefits.find(b => b.id === mostPopularBenefitId)?.nome || 'N/A';
+      const mostPopularBenefit = benefits.find(b => b.id === mostPopularBenefitId)?.name || 'N/A';
 
       // Calculate utilization rate
       const utilizationRate = totalBenefits > 0 ? (totalEnrollments / totalBenefits) * 100 : 0;
@@ -803,13 +741,13 @@ export const benefitsService = {
         const enrollments = benefitActiveEnrollments.length;
         
         const benefitTotalCost = benefitActiveEnrollments.reduce((sum, eb) => {
-          const cost = eb.premium_amount || eb.benefits?.valor || benefit.valor || 0;
+          const cost = eb.premium_amount || eb.benefits?.cost || benefit.cost || 0;
           return sum + cost;
         }, 0);
 
         return {
           benefitId: benefit.id,
-          benefitName: benefit.nome,
+          benefitName: benefit.name,
           enrollments,
           utilizationRate: enrollments > 0 ? (enrollments / 100) * 100 : 0, // Assuming 100 total employees
           totalCost: benefitTotalCost,

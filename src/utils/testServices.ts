@@ -130,7 +130,7 @@ export const testServices = {
     // Log any failures
     Object.entries(results).forEach(([service, result]) => {
       if (!result.success) {
-
+        console.error(`Service ${service} failed:`, result.error);
       }
     });
     

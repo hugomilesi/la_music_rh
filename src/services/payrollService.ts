@@ -6,8 +6,6 @@ export const payrollService = {
   // Payroll Cycles
   async getPayrolls(): Promise<Payroll[]> {
     try {
-      console.log('🔄 PayrollService: Buscando folhas de pagamento');
-      
       const { data, error } = await supabase
         .from('payrolls')
         .select('*')
@@ -15,22 +13,17 @@ export const payrollService = {
         .order('month', { ascending: false });
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao buscar folhas:', error);
         throw error;
       }
 
-      console.log(`✅ PayrollService: ${data?.length || 0} folhas encontradas`);
       return data || [];
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao buscar folhas de pagamento:', error);
       throw error;
     }
   },
 
   async getPayroll(month: number, year: number): Promise<Payroll | null> {
     try {
-      console.log('🔄 PayrollService: Buscando folha específica:', { month, year });
-      
       const { data, error } = await supabase
         .from('payrolls')
         .select('*')
@@ -39,22 +32,17 @@ export const payrollService = {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao buscar folha específica:', error);
         throw error;
       }
       
-      console.log('✅ PayrollService: Folha encontrada:', data ? 'Sim' : 'Não');
       return data;
     } catch (error) {
-      console.error('❌ PayrollService: Erro em getPayroll:', error);
       throw error;
     }
   },
 
   async createPayroll(month: number, year: number, duplicateFrom?: { month: number; year: number }): Promise<Payroll> {
     try {
-      console.log('🔄 PayrollService: Criando nova folha de pagamento:', { month, year });
-      
       const { data, error } = await supabase
         .from('payrolls')
         .insert({ month, year })
@@ -62,11 +50,8 @@ export const payrollService = {
         .single();
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao criar folha:', error);
         throw error;
       }
-
-      console.log('✅ PayrollService: Folha criada com sucesso:', data.id);
 
       // Create payroll entries
       if (duplicateFrom) {
@@ -77,36 +62,27 @@ export const payrollService = {
 
       return data;
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao criar folha de pagamento:', error);
       throw error;
     }
   },
 
   async updatePayrollStatus(id: string, status: 'draft' | 'approved' | 'paid'): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Atualizando status da folha:', { id, status });
-      
       const { error } = await supabase
         .from('payrolls')
         .update({ status })
         .eq('id', id);
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao atualizar status:', error);
         throw error;
       }
-
-      console.log('✅ PayrollService: Status atualizado com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao atualizar status da folha:', error);
       throw error;
     }
   },
 
   async deletePayroll(id: string): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Deletando folha de pagamento:', id);
-      
       // First delete related entries
       const { error: entriesError } = await supabase
         .from('folha_pagamento')
@@ -114,7 +90,6 @@ export const payrollService = {
         .eq('payroll_id', id);
 
       if (entriesError) {
-        console.error('❌ PayrollService: Erro ao deletar entradas:', entriesError);
         throw entriesError;
       }
 
@@ -125,13 +100,9 @@ export const payrollService = {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao deletar folha:', error);
         throw error;
       }
-
-      console.log('✅ PayrollService: Folha deletada com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao deletar folha de pagamento:', error);
       throw error;
     }
   },
@@ -225,15 +196,12 @@ export const payrollService = {
 
     return mappedData;
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao buscar entradas da folha de pagamento:', error);
       throw error;
     }
   },
 
   async getPayrollEntries(month: number, year: number, filters?: PayrollFilters): Promise<PayrollEntry[]> {
     try {
-      console.log('🔄 PayrollService: Buscando entradas da folha para:', { month, year, filters });
-      
       // Get payroll entries directly from folha_pagamento table
       let payrollQuery = supabase
         .from('folha_pagamento')
@@ -257,16 +225,12 @@ export const payrollService = {
       const { data: payrollData, error: payrollError } = await payrollQuery;
       
       if (payrollError) {
-        console.error('❌ PayrollService: Erro ao buscar entradas:', payrollError);
         throw payrollError;
       }
 
       if (!payrollData || payrollData.length === 0) {
-        console.log('⚠️ PayrollService: Nenhuma entrada encontrada para o período');
         return [];
       }
-
-      console.log(`✅ PayrollService: ${payrollData.length} entradas encontradas`);
 
       // Map data directly from folha_pagamento table
       const mappedData = payrollData.map(entry => ({
@@ -483,8 +447,6 @@ export const payrollService = {
 
   async updatePayrollEntry(id: string, updates: Partial<PayrollEntry>): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Atualizando entrada da folha:', id);
-      
       const updateData: any = {};
       
       // Map frontend fields to database fields
@@ -538,42 +500,30 @@ export const payrollService = {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao atualizar entrada:', error);
         throw error;
       }
-      
-      console.log('✅ PayrollService: Entrada atualizada com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao atualizar entrada da folha:', error);
       throw error;
     }
   },
 
   async deletePayrollEntry(id: string): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Deletando entrada da folha:', id);
-      
       const { error } = await supabase
         .from('folha_pagamento')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao deletar entrada:', error);
         throw error;
       }
-      
-      console.log('✅ PayrollService: Entrada deletada com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao deletar entrada da folha:', error);
       throw error;
     }
   },
 
   async getPayrollEntry(id: string): Promise<PayrollEntry | null> {
     try {
-      console.log('🔄 PayrollService: Buscando entrada da folha:', id);
-      
       const { data, error } = await supabase
         .from('folha_pagamento')
         .select('*')
@@ -581,12 +531,10 @@ export const payrollService = {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ PayrollService: Erro ao buscar entrada:', error);
         throw error;
       }
       
       if (!data) {
-        console.log('⚠️ PayrollService: Entrada não encontrada');
         return null;
       }
 
@@ -603,8 +551,6 @@ export const payrollService = {
           userData = user;
         }
       }
-
-      console.log('✅ PayrollService: Entrada encontrada');
       
       // Map the data to the expected format
       return {
@@ -639,15 +585,12 @@ export const payrollService = {
         pix: userData?.pix || ''
       };
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao buscar entrada da folha:', error);
       throw error;
     }
   },
 
   async createPayrollEntries(payrollId: string, month?: number, year?: number): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Criando entradas da folha de pagamento');
-      
       // Get payroll info if month/year not provided
       let targetMonth = month;
       let targetYear = year;
@@ -667,7 +610,7 @@ export const payrollService = {
       // Get all active users to create payroll entries
       const { data: users, error: usersError } = await supabase
         .from('users')
-        .select('auth_user_id, position')
+        .select('auth_user_id, position_id, roles!position_id(name)')
         .eq('active', true);
 
       if (usersError) throw usersError;
@@ -691,7 +634,6 @@ export const payrollService = {
       const usersToCreate = users.filter(user => !existingUserIds.has(user.auth_user_id));
 
       if (usersToCreate.length === 0) {
-        console.log('⚠️ PayrollService: Nenhuma entrada nova para criar');
         return;
       }
 
@@ -722,18 +664,13 @@ export const payrollService = {
         .insert(entries);
 
       if (error) throw error;
-      
-      console.log('✅ PayrollService: Entradas da folha criadas com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao criar entradas da folha:', error);
       throw error;
     }
   },
 
   async duplicatePayrollEntries(newPayrollId: string, duplicateFrom: { month: number; year: number }): Promise<void> {
     try {
-      console.log('🔄 PayrollService: Duplicando entradas da folha de pagamento');
-      
       // Get the target payroll info to determine the correct month/year
       const { data: targetPayroll, error: targetError } = await supabase
         .from('payrolls')
@@ -786,7 +723,6 @@ export const payrollService = {
       const entriesToCreate = sourceEntries.filter(entry => !existingUserIds.has(entry.colaborador_id));
 
       if (entriesToCreate.length === 0) {
-        console.log('⚠️ PayrollService: Nenhuma entrada nova para duplicar');
         return;
       }
 
@@ -817,10 +753,7 @@ export const payrollService = {
         .insert(newEntries);
 
       if (error) throw error;
-      
-      console.log('✅ PayrollService: Entradas duplicadas com sucesso');
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao duplicar entradas da folha:', error);
       throw error;
     }
   },

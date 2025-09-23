@@ -23,7 +23,7 @@ interface EventFormData {
   date: string;
   startTime: string;
   endTime: string;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro';
+  type: 'meeting' | 'appointment' | 'reminder' | 'task' | 'vacation' | 'training';
   description?: string;
   location?: string;
   emailAlert: boolean;
@@ -48,11 +48,12 @@ export const EventForm: React.FC<EventFormProps> = ({
   submitLabel
 }) => {
   const eventTypes = [
-    { value: 'plantao', label: 'Plantão' },
-    { value: 'avaliacao', label: 'Avaliação' },
-    { value: 'reuniao', label: 'Reunião' },
-    { value: 'folga', label: 'Folga' },
-    { value: 'outro', label: 'Outro' }
+    { value: 'meeting', label: 'Reunião' },
+    { value: 'appointment', label: 'Compromisso' },
+    { value: 'reminder', label: 'Lembrete' },
+    { value: 'task', label: 'Tarefa' },
+    { value: 'vacation', label: 'Férias' },
+    { value: 'training', label: 'Treinamento' },
   ];
 
   return (

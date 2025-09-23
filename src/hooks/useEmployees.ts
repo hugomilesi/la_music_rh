@@ -20,8 +20,9 @@ export const useEmployees = () => {
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('id, username, department, position, status')
-      .order('username');
+          .select('id, username, department, position_id, status, roles!position_id(name)')
+          .eq('status', 'ativo')
+          .order('username');
 
         if (error) throw error;
 
@@ -29,7 +30,7 @@ export const useEmployees = () => {
           id: user.id,
           name: user.username,
           department: user.department,
-          position: user.position,
+          position: user.roles?.name || 'Não definido',
           status: user.status
         })) || []);
       } catch (err) {

@@ -26,7 +26,6 @@ export async function testRecognitionIntegration() {
       results.errors.push(`Erro de conexão: ${connectionError.message}`);
     } else {
       results.connection = true;
-
     }
     
     // Teste 2: Carregamento de programas
@@ -49,7 +48,6 @@ export async function testRecognitionIntegration() {
       const ranking = await RecognitionService.getEmployeeRanking();
       if (ranking && ranking.length > 0) {
         results.ranking = true;
-         // });
       } else {
         results.errors.push('Nenhum funcionário encontrado no ranking');
       }
@@ -63,9 +61,7 @@ export async function testRecognitionIntegration() {
       const achievements = await RecognitionService.getEmployeeAchievements();
       if (achievements && achievements.length > 0) {
         results.achievements = true;
-          // });
       } else {
-  
         results.achievements = true; // Não é erro se não houver conquistas
       }
     } catch (error) {
@@ -97,19 +93,16 @@ export async function testRecognitionIntegration() {
         
         if (evaluation && evaluation.id) {
           results.evaluation = true;
-  
           
           // Limpar dados de teste
           await supabase
             .from('employee_evaluations')
             .delete()
             .eq('id', evaluation.id);
-  
         } else {
           results.errors.push('Falha ao criar avaliação de teste');
         }
       } else {
-
         results.evaluation = true; // Não é erro se não houver dados
       }
     } catch (error) {
@@ -127,7 +120,7 @@ export async function testRecognitionIntegration() {
     const allPassed = results.connection && results.programs && results.ranking && results.achievements && results.evaluation;
     
     if (allPassed) {
-
+      // All tests passed
     } else {
       // Some tests failed logging disabled
     }
@@ -166,7 +159,7 @@ export async function testSpecificData() {
       if (error) {
         // Table error logging disabled
       } else {
-        
+        // Table check passed
       }
     }
     

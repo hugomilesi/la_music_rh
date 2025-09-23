@@ -114,6 +114,22 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
             </select>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <Label htmlFor="unit">Unidade</Label>
+            <select
+              id="unit"
+              {...register('unit')}
+              className="w-full h-10 px-3 rounded-md border border-input bg-background"
+            >
+              <option value="">Selecione uma unidade (opcional)</option>
+              <option value="campo-grande">Campo Grande</option>
+              <option value="barra">Barra</option>
+              <option value="recreio">Recreio</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Perfil e Status */}

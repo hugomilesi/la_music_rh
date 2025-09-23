@@ -218,10 +218,14 @@ export const SmartFilters: React.FC<SmartFiltersProps> = ({
                         onChange={(e) => onDateRangeChange?.(e.target.value)}
                       >
                         <option value="">Todos os Períodos</option>
-                        <option value="today">Hoje</option>
-                        <option value="week">Esta Semana</option>
-                        <option value="month">Este Mês</option>
-                        <option value="quarter">Este Trimestre</option>
+                        <option value="2025 - 1º Trimestre">2025 - 1º Trimestre (Jan/Mar)</option>
+                        <option value="2025 - 2º Trimestre">2025 - 2º Trimestre (Abr/Jun)</option>
+                        <option value="2025 - 3º Trimestre">2025 - 3º Trimestre (Jul/Set)</option>
+                        <option value="2025 - 4º Trimestre">2025 - 4º Trimestre (Out/Dez)</option>
+                        <option value="2024 - 1º Trimestre">2024 - 1º Trimestre (Jan/Mar)</option>
+                        <option value="2024 - 2º Trimestre">2024 - 2º Trimestre (Abr/Jun)</option>
+                        <option value="2024 - 3º Trimestre">2024 - 3º Trimestre (Jul/Set)</option>
+                        <option value="2024 - 4º Trimestre">2024 - 4º Trimestre (Out/Dez)</option>
                       </select>
                     </div>
                   </>

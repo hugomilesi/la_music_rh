@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Filter } from 'lucide-react';
-import { useUnit } from '@/contexts/UnitContext';
-import { UNITS, Unit } from '@/types/unit';
+import { useUnit } from '@/hooks/useUnit';
+import { SCHEDULE_UNITS } from '@/types/unit';
 
 interface UnitSelectorProps {
   variant?: 'button' | 'compact';
@@ -29,7 +29,7 @@ export const UnitSelector: React.FC<UnitSelectorProps> = ({
   if (variant === 'compact') {
     return (
       <div className="flex gap-2">
-        {UNITS.map(unit => (
+        {SCHEDULE_UNITS.map(unit => (
           <Badge
             key={unit.id}
             variant={isUnitSelected(unit.id) ? 'default' : 'outline'}
@@ -81,7 +81,7 @@ export const UnitSelector: React.FC<UnitSelectorProps> = ({
           </div>
           
           <div className="space-y-3">
-            {UNITS.map(unit => (
+            {SCHEDULE_UNITS.map(unit => (
               <div key={unit.id} className="flex items-center space-x-3">
                 <Checkbox
                   id={unit.id}

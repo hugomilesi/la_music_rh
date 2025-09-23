@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { CreateSystemUserData } from '@/types/systemUser';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +31,7 @@ import { CreateUserFormData, createUserSchema } from '@/types/userFormSchemas';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserCreatedModal } from './UserCreatedModal';
 import { notifyPermissionChange } from '@/utils/redirectUtils';
+import { fetchDepartments, fetchRoles, type Department, type Role } from '@/services/rolesService';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ interface UserFormData {
   department: string;
   phone: string;
   position: string;
+  unit?: string;
   status: 'active' | 'inactive';
 }
 
@@ -60,6 +62,33 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [createdUserData, setCreatedUserData] = useState<any>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  
+  // Fetch departments and roles on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [departmentsData, rolesData] = await Promise.all([
+          fetchDepartments(),
+          fetchRoles()
+        ]);
+        setDepartments(departmentsData);
+        setRoles(rolesData);
+      } catch (error) {
+        console.error('Error loading departments and roles:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar departamentos e cargos.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    if (open) {
+      loadData();
+    }
+  }, [open, toast]);
   
   // Move useForm to top level - before any conditional returns
   const form = useForm<CreateUserFormData>({
@@ -270,7 +299,7 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cargo</FormLabel>
+                    <FormLabel>Perfil de Acesso</FormLabel>
                     <FormControl>
                       <Combobox
                         options={[
@@ -280,9 +309,9 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                         ]}
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder="Selecione o cargo"
-                        searchPlaceholder="Buscar cargo..."
-                        emptyText="Nenhum cargo encontrado."
+                        placeholder="Selecione o perfil de acesso"
+                        searchPlaceholder="Buscar perfil..."
+                        emptyText="Nenhum perfil encontrado."
                       />
                     </FormControl>
                     <FormMessage />
@@ -297,7 +326,21 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                   <FormItem>
                     <FormLabel>Departamento</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Pedagógico, Vendas" {...field} />
+                      <div className="space-y-2">
+                        <Combobox
+                          options={departments.map(dept => ({ value: dept.name, label: dept.name }))}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Selecione um departamento"
+                          searchPlaceholder="Buscar departamento..."
+                          emptyText="Nenhum departamento encontrado."
+                        />
+                        {departments.length > 0 && (
+                          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                            <strong>Departamentos disponíveis:</strong> {departments.map(dept => dept.name).join(', ')}
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -325,9 +368,50 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 name="position"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Posição</FormLabel>
+                    <FormLabel>Cargo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Professor Senior" {...field} />
+                      <div className="space-y-2">
+                        <Combobox
+                          options={roles.map(role => ({ value: role.name, label: role.name }))}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Selecione um cargo"
+                          searchPlaceholder="Buscar cargo..."
+                          emptyText="Nenhum cargo encontrado."
+                        />
+                        {roles.length > 0 && (
+                          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                            <strong>Cargos disponíveis:</strong> {roles.map(role => role.name).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={[
+                          { value: 'campo-grande', label: 'Campo Grande' },
+                          { value: 'barra', label: 'Barra' },
+                          { value: 'recreio', label: 'Recreio' }
+                        ]}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione uma unidade (opcional)"
+                        searchPlaceholder="Buscar unidade..."
+                        emptyText="Nenhuma unidade encontrada."
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

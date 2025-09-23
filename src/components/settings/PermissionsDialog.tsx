@@ -129,7 +129,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('role_permissions')
+        .from('module_permissions')
         .select('*')
         .order('role_name, module_name');
 
@@ -194,7 +194,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({ children }
       };
 
       const { error } = await supabase
-        .from('role_permissions')
+        .from('module_permissions')
         .upsert(updatedPermission, {
           onConflict: 'role_name,module_name'
         });

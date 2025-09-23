@@ -191,7 +191,7 @@ export const InstallPrompt: React.FC = () => {
             
             <div className="space-y-2">
               {instructions.steps.map((step, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200">
+                <div key={`step-${index}`} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200">
                   <div className="flex-shrink-0 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
                     {step.icon}
                   </div>

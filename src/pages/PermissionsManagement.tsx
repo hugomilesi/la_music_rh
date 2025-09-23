@@ -55,31 +55,41 @@ const PermissionsManagement: React.FC = () => {
   // Verificar se o usuário tem permissão para gerenciar permissões
   // canManagePermissions já vem do usePermissions
 
-  // Buscar todas as permissões disponíveis
+  // Buscar todas as permissões disponíveis baseado nos módulos da module_permissions
   const fetchPermissions = async () => {
     try {
+      // Buscar módulos únicos da tabela module_permissions
       const { data, error } = await supabase
-        .from('permissions')
-        .select('id, name, description')
-        .order('name');
+        .from('module_permissions')
+        .select('module_name')
+        .order('module_name');
+      
       if (error) throw error;
-      setPermissions(data || []);
+      
+      // Criar lista de permissões baseada nos módulos únicos
+      const uniqueModules = [...new Set(data?.map(item => item.module_name) || [])];
+      const permissionsList = uniqueModules.map(moduleName => ({
+        id: moduleName,
+        name: moduleName,
+        description: `Permissões para o módulo ${moduleName}`
+      }));
+      
+      setPermissions(permissionsList);
     } catch (err) {
       // Log desabilitado: Error fetching permissions
       setError('Erro ao carregar permissões');
     }
   };
 
-  // Buscar roles configuráveis (exceto super_admin)
+  // Buscar roles configuráveis (apenas gestor_rh e gerente)
   const fetchRoles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('id, name, description')
-        .neq('name', 'super_admin')
-        .order('name');
-      if (error) throw error;
-      setRoles(data || []);
+      // Usar roles fixos do sistema em vez de buscar da tabela roles
+      const systemRoles = [
+        { id: 'gestor_rh', name: 'gestor_rh', description: 'Gestor de Recursos Humanos' },
+        { id: 'gerente', name: 'gerente', description: 'Gerente' }
+      ];
+      setRoles(systemRoles);
     } catch (err) {
       // Log desabilitado: Error fetching roles
       setError('Erro ao carregar roles');
@@ -89,18 +99,12 @@ const PermissionsManagement: React.FC = () => {
   // Buscar permissões de um role específico
   const fetchRolePermissions = async (roleId: string) => {
     try {
-      // Primeiro, buscar o nome do role pelo ID
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('name')
-        .eq('id', roleId)
-        .single();
-      
-      if (roleError) throw roleError;
+      // Usar o roleId diretamente como nome da role (gestor_rh ou gerente)
+      const roleName = roleId;
       
       // Buscar as permissões do role usando o nome
       const { data, error } = await supabase
-        .from('role_permissions')
+        .from('module_permissions')
         .select(`
           module_name,
           can_view,
@@ -108,7 +112,7 @@ const PermissionsManagement: React.FC = () => {
           can_edit,
           can_delete
         `)
-        .eq('role_name', roleData.name);
+        .eq('role_name', roleName);
       
       if (error) throw error;
       
@@ -135,27 +139,21 @@ const PermissionsManagement: React.FC = () => {
     
     setSaving(true);
     try {
-      // Primeiro, buscar o nome do role pelo ID
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('name')
-        .eq('id', selectedRole)
-        .single();
-      
-      if (roleError) throw roleError;
+      // Usar o selectedRole diretamente como nome da role (gestor_rh ou gerente)
+      const roleName = selectedRole;
       
       // Remover todas as permissões existentes do role
       const { error: deleteError } = await supabase
-        .from('role_permissions')
+        .from('module_permissions')
         .delete()
-        .eq('role_name', roleData.name);
+        .eq('role_name', roleName);
       
       if (deleteError) throw deleteError;
       
       // Adicionar as novas permissões selecionadas
       if (selectedPermissions.size > 0) {
         const rolePermissionsData = Array.from(selectedPermissions).map(moduleName => ({
-          role_name: roleData.name,
+          role_name: roleName,
           module_name: moduleName,
           can_view: true,
           can_create: false,
@@ -164,7 +162,7 @@ const PermissionsManagement: React.FC = () => {
         }));
         
         const { error: insertError } = await supabase
-          .from('role_permissions')
+          .from('module_permissions')
           .insert(rolePermissionsData);
         
         if (insertError) throw insertError;
@@ -222,9 +220,9 @@ const PermissionsManagement: React.FC = () => {
     }
   }, [selectedRole]);
 
-  // Agrupar permissões por módulo
+  // Agrupar permissões por módulo (agora cada permissão já é um módulo)
   const groupedPermissions = permissions.reduce((acc, perm) => {
-    const module = perm.name.split('.')[0];
+    const module = perm.name;
     if (!acc[module]) {
       acc[module] = [];
     }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2, Lock, Database } from 'lucide-react';
+import { Download, Shield, Users, Settings, FileText, Plus, Edit, Trash2, Loader2, Lock, Database, RefreshCw } from 'lucide-react';
 import { SystemUsersDialog } from '@/components/settings/SystemUsersDialog';
 import { PermissionsDialog } from '@/components/settings/PermissionsDialog';
 import { RolesDialog } from '@/components/settings/RolesDialog';
@@ -112,20 +112,25 @@ const SettingsPage: React.FC = () => {
         setSystemStats({
           totalEmployees: usersWithProfiles.length,
           totalUsers: usersWithProfiles.length,
-          activeUnits: statsData.activeUnits,
-          lastBackup: statsData.lastBackup
+          activeUnits: statsData.activeUnits || 0,
+          lastBackup: statsData.lastBackup || 'Não disponível'
         });
       } else {
-        // Fallback to old method if new function fails
-        const usersData = await fetchSystemUsers();
-        setSystemUsers(usersData);
-        setSystemStats(statsData);
+        // Fallback to direct method if new function fails
+        try {
+          const usersData = await fetchSystemUsers();
+          setSystemUsers(usersData);
+          setSystemStats(statsData);
+        } catch (fallbackError) {
+          console.error('Fallback method also failed:', fallbackError);
+          setError('Erro ao carregar usuários do sistema.');
+        }
       }
       
-      setRolesData(rolesDataResult);
-    } catch (err) {
-      // Log desabilitado: Error loading settings data
-      setError('Erro ao carregar dados. Tente novamente.');
+      setRolesData(rolesDataResult || []);
+    } catch (err: any) {
+      console.error('Error loading settings data:', err);
+      setError(err.message || 'Erro ao carregar dados. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -254,6 +259,16 @@ const SettingsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={loadAllData}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
           <Button variant="outline" size="sm">
             <Download className="w-4 h-4 mr-2" />
             Backup de Dados

@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useSchedule } from '@/contexts/ScheduleContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
+import { useEmployees } from '@/hooks/useEmployees';
 import { ScheduleEvent } from '@/types/schedule';
 import { ScheduleUnit, SCHEDULE_UNITS } from '@/types/unit';
 
@@ -40,7 +41,7 @@ const editEventSchema = z.object({
   date: z.date({ required_error: 'Data é obrigatória' }),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de fim é obrigatório'),
-  type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro']),
+  type: z.enum(['meeting', 'appointment', 'reminder', 'task', 'vacation', 'training']),
   description: z.string().optional(),
   location: z.string().optional(),
   emailAlert: z.boolean().default(false),
@@ -63,6 +64,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
   const { updateEvent, isLoading } = useSchedule();
   const { toast } = useToast();
   const { canEditInModule } = usePermissionsV2();
+  const { employees: employeesList, loading: loadingEmployees } = useEmployees();
   const canManageEmployees = useMemo(() => canEditInModule('agenda'), [canEditInModule]);
 
   const form = useForm<EditEventFormData>({
@@ -73,7 +75,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
       unit: ScheduleUnit.CAMPO_GRANDE,
       startTime: '',
       endTime: '',
-      type: 'outro',
+      type: 'appointment',
       description: '',
       location: '',
       emailAlert: false,
@@ -139,19 +141,20 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
   };
 
   const eventTypes = [
-    { value: 'plantao', label: 'Plantão' },
-    { value: 'avaliacao', label: 'Avaliação' },
-    { value: 'reuniao', label: 'Reunião' },
-    { value: 'folga', label: 'Folga' },
-    { value: 'outro', label: 'Outro' },
+    { value: 'meeting', label: 'Reunião' },
+    { value: 'appointment', label: 'Compromisso' },
+    { value: 'reminder', label: 'Lembrete' },
+    { value: 'task', label: 'Tarefa' },
+    { value: 'vacation', label: 'Férias' },
+    { value: 'training', label: 'Treinamento' },
   ];
 
-  const employees = [
-    { value: '1', label: 'Ana Silva' },
-    { value: '2', label: 'Carlos Santos' },
-    { value: '3', label: 'Maria Oliveira' },
-    { value: '4', label: 'João Costa' },
-  ];
+  const employees = useMemo(() => {
+    return employeesList.map(emp => ({
+      value: emp.id,
+      label: `${emp.name} - ${emp.position}`
+    }));
+  }, [employeesList]);
 
   if (!canManageEmployees) {
     return (
@@ -209,7 +212,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o colaborador" />
+                          <SelectValue placeholder={loadingEmployees ? "Carregando colaboradores..." : "Selecione o colaborador"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

@@ -3,10 +3,11 @@
  */
 export interface Incident {
   id: string;
+  title: string;
   employeeId: string;
   employeeName: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   incidentDate: string;
   reporterId: string;
@@ -20,10 +21,11 @@ export interface Incident {
  * Dados para criação de um novo incidente
  */
 export interface NewIncidentData {
+  title: string;
   employeeId: string;
   employeeName?: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   incidentDate: string;
   reporterId: string;

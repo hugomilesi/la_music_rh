@@ -24,15 +24,40 @@ import { useEvaluations } from '@/contexts/EvaluationContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvaluationData } from '@/types/evaluation';
+import { SCHEDULE_UNITS } from '@/types/unit';
+
+// Função para converter data em período (ano e trimestre)
+const convertDateToPeriod = (date: string): string => {
+  if (!date) return '';
+  
+  const selectedDate = new Date(date);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1; // getMonth() retorna 0-11
+  
+  let quarter = '';
+  if (month >= 1 && month <= 3) {
+    quarter = '1º Trimestre';
+  } else if (month >= 4 && month <= 6) {
+    quarter = '2º Trimestre';
+  } else if (month >= 7 && month <= 9) {
+    quarter = '3º Trimestre';
+  } else if (month >= 10 && month <= 12) {
+    quarter = '4º Trimestre';
+  }
+  
+  return `${year} - ${quarter}`;
+};
 
 const formSchema = z.object({
-  employeeId: z.string().min(1, 'Colaborador é obrigatório'),
-  type: z.enum(['Avaliação 360°', 'Auto Avaliação', 'Avaliação do Gestor'], {
+  employee_id: z.string().min(1, 'Colaborador é obrigatório'),
+  evaluation_type: z.enum(['Avaliação 360°', 'Auto Avaliação', 'Avaliação do Gestor'], {
     errorMap: () => ({ message: 'Tipo de avaliação é obrigatório' })
   }),
+  evaluation_date: z.string().min(1, 'Data da avaliação é obrigatória'),
   period: z.string().min(1, 'Período é obrigatório'),
   evaluatorId: z.string().optional(),
   comments: z.string().optional(),
+  unit: z.string().min(1, 'Unidade é obrigatória'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,25 +78,33 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      employeeId: '',
-      type: 'Avaliação 360°',
-      period: '2024-T1',
+      employee_id: '',
+      evaluation_type: 'Avaliação 360°',
+      evaluation_date: '',
+      period: '',
       evaluatorId: '',
       comments: '',
+      unit: '',
     },
   });
 
-  const selectedType = form.watch('type');
+  const selectedType = form.watch('evaluation_type');
 
   const onSubmit = async (data: FormData) => {
     try {
+      console.log('🔄 NewEvaluationDialog: Dados do formulário:', data);
+      
       const evaluationData: NewEvaluationData = {
-        employeeId: data.employeeId,
-        type: data.type,
+        employee_id: data.employee_id,
+        evaluation_type: data.evaluation_type,
+        evaluation_date: data.evaluation_date,
         period: data.period,
-        evaluatorId: data.evaluatorId || undefined,
+        evaluator_id: data.evaluatorId || null,
         comments: data.comments || undefined,
+        unit: data.unit,
       };
+      
+      console.log('📤 NewEvaluationDialog: Enviando dados para o serviço:', evaluationData);
       
       await addEvaluation(evaluationData);
       toast({
@@ -81,7 +114,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      // Log desabilitado: Error in onSubmit
+      console.error('❌ NewEvaluationDialog: Erro ao criar avaliação:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a avaliação.',
@@ -105,7 +138,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="employeeId"
+                name="employee_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Colaborador</FormLabel>
@@ -129,7 +162,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
 
               <FormField
                 control={form.control}
-                name="type"
+                name="evaluation_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Avaliação</FormLabel>
@@ -150,20 +183,68 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
 
               <FormField
                 control={form.control}
-                name="period"
+                name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Período</FormLabel>
+                    <FormLabel>Unidade</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Ex: 2024-T1" 
-                        {...field} 
-                      />
+                      <select
+                        {...field}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">Selecione uma unidade</option>
+                        {SCHEDULE_UNITS.map((unit) => (
+                          <option key={unit.id} value={unit.id}>
+                            {unit.name}
+                          </option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                      control={form.control}
+                      name="evaluation_date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data da Avaliação</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e.target.value);
+                                const period = convertDateToPeriod(e.target.value);
+                                form.setValue('period', period);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="period"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Período</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              readOnly
+                              placeholder="Será preenchido automaticamente"
+                              className="bg-gray-50"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
 
 

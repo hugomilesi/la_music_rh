@@ -11,7 +11,7 @@ interface ScheduleContextType {
   isLoading: boolean;
   addEvent: (data: NewScheduleEventData) => Promise<void>;
   updateEvent: (id: string, data: Partial<ScheduleEvent>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
+  deleteEvent: (id: string, source?: 'schedule' | 'evaluations') => Promise<void>;
   getEventsForUnits: (units: ScheduleUnit[]) => ScheduleEvent[];
   refreshEvents: () => Promise<void>;
 }
@@ -26,46 +26,18 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadEvents = async () => {
     try {
       setIsLoading(true);
+      console.log('🔄 Carregando eventos da VIEW...');
       
-      // Carregar eventos da agenda
-      const scheduleEvents = await scheduleService.getScheduleEvents();
+      // Usar a nova VIEW que combina eventos e avaliações
+      const events = await scheduleService.getScheduleEventsWithEvaluations();
       
-      // Carregar avaliações e converter para eventos
-      let evaluationEvents: ScheduleEvent[] = [];
-      try {
-        const evaluations = await evaluationService.getEvaluations();
-        evaluationEvents = evaluations
-          .filter(evaluation => evaluation.meetingDate && evaluation.meetingTime && evaluation.status !== 'pending')
-          .map(evaluation => ({
-            id: `eval_${evaluation.id}`,
-            title: `${evaluation.type} - ${evaluation.employee}`,
-            employeeId: evaluation.employeeId,
-            unit: 'campo-grande' as Unit,
-            date: evaluation.meetingDate!,
-            startTime: evaluation.meetingTime!,
-            endTime: addOneHour(evaluation.meetingTime!),
-            type: evaluation.type === 'Coffee Connection' ? 'coffee-connection' : 'avaliacao',
-            description: `${evaluation.type} com ${evaluation.employee}${evaluation.topics ? `. Tópicos: ${evaluation.topics.join(', ')}` : ''}${evaluation.status === 'Concluída' && evaluation.score ? `. Nota: ${evaluation.score}` : ''}`,
-            location: evaluation.location || 'Não informado',
-            emailAlert: false,
-            whatsappAlert: false,
-            createdAt: evaluation.date || new Date().toISOString(),
-            updatedAt: evaluation.date || new Date().toISOString(),
-            status: evaluation.status,
-            score: evaluation.score
-          }));
-      } catch (evalError) {
-        // Error loading evaluation events logging disabled
-      }
-      
-      // Combinar eventos da agenda e avaliações
-      const allEvents = [...scheduleEvents, ...evaluationEvents];
-      setEvents(allEvents);
+      console.log('📊 Eventos carregados da VIEW:', events);
+      setEvents(events);
     } catch (error) {
-      // Error loading schedule events logging disabled
+      console.error('❌ Erro ao carregar eventos:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar eventos",
+        description: "Não foi possível carregar os eventos",
         variant: "destructive",
       });
     } finally {
@@ -133,24 +105,64 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
 
-  const deleteEvent = useCallback(async (id: string) => {
+  const deleteEvent = async (eventId: string, source?: string) => {
     try {
-      await scheduleService.deleteScheduleEvent(id);
-      setEvents(prev => prev.filter(event => event.id !== id));
+      console.log('🗑️ Tentando deletar evento:', { eventId, source });
+      
+      // Encontrar o evento para verificar se é uma avaliação
+      const event = events.find(e => e.id === eventId);
+      
+      if (!event) {
+        console.log('❌ Evento não encontrado');
+        toast({
+          title: "Erro",
+          description: "Evento não encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar se é uma avaliação e se a remoção está desabilitada
+      if (event.is_evaluation && event.is_removable_disabled) {
+        console.log('🚫 Tentativa de deletar avaliação bloqueada');
+        toast({
+          title: "Ação não permitida",
+          description: "Avaliações não podem ser removidas da agenda",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Se for uma avaliação (ID começa com 'eval_'), não permitir exclusão
+      if (eventId.startsWith('eval_')) {
+        console.log('🚫 Tentativa de deletar avaliação bloqueada (ID prefixado)');
+        toast({
+          title: "Ação não permitida", 
+          description: "Avaliações não podem ser removidas da agenda",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Só permitir exclusão de eventos regulares
+      await scheduleService.deleteScheduleEvent(eventId);
+      
+      // Recarregar eventos após exclusão
+      await loadEvents();
+      
       toast({
         title: "Sucesso",
         description: "Evento removido com sucesso",
       });
     } catch (error) {
-      // Error deleting event logging disabled
+      console.error('❌ Erro ao deletar evento:', error);
       toast({
         title: "Erro",
-        description: "Erro ao remover evento",
+        description: "Não foi possível remover o evento",
         variant: "destructive",
       });
-      throw error;
     }
-  }, [toast]);
+  };
 
   const getEventsForUnits = useCallback((units: ScheduleUnit[]) => {
     if (units.length === 0) return [];

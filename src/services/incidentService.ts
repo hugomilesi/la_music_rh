@@ -7,39 +7,35 @@ export const incidentService = {
    */
   async getAll(): Promise<Incident[]> {
     try {
-      console.log('IncidentService: Buscando todos os incidentes...');
       const { data, error } = await supabase
         .from('incidents')
         .select(`
           *,
           employee:users!employee_id(id, username),
-          reporter:users!reporter_id(id, username)
+          reporter:users!reported_by(id, username)
         `)
         .order('date_occurred', { ascending: false });
 
       if (error) {
-        console.error('IncidentService: Erro ao buscar incidentes:', error);
         throw error;
       }
 
-      console.log('IncidentService: Dados brutos dos incidentes:', data);
-
       return data?.map(incident => ({
         id: incident.id,
+        title: incident.title,
         employeeId: incident.employee_id,
         employeeName: incident.employee?.username || '',
         type: incident.incident_type,
         severity: incident.severity,
         description: incident.description,
         incidentDate: incident.date_occurred,
-        reporterId: incident.reporter_id,
+        reporterId: incident.reported_by,
         reporterName: incident.reporter?.username || '',
-        status: incident.status,
+        status: this.mapStatusFromDatabase(incident.status),
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      console.error('IncidentService: Erro em getAll:', error);
       throw error;
     }
   },
@@ -56,13 +52,12 @@ export const incidentService = {
     endDate?: string;
   }): Promise<Incident[]> {
     try {
-      console.log('IncidentService: Buscando incidentes filtrados:', filters);
       let query = supabase
         .from('incidents')
         .select(`
           *,
           employee:users!employee_id(id, username),
-          reporter:users!reporter_id(id, username)
+          reporter:users!reported_by(id, username)
         `);
 
       if (filters.employeeId) {
@@ -89,30 +84,52 @@ export const incidentService = {
       const { data, error } = await query;
 
       if (error) {
-        console.error('IncidentService: Erro ao buscar incidentes filtrados:', error);
         throw error;
       }
 
-      console.log('IncidentService: Dados dos incidentes filtrados:', data);
-
       return data?.map(incident => ({
         id: incident.id,
+        title: incident.title,
         employeeId: incident.employee_id,
         employeeName: incident.employee?.username || '',
         type: incident.incident_type,
         severity: incident.severity,
         description: incident.description,
         incidentDate: incident.date_occurred,
-        reporterId: incident.reporter_id,
+        reporterId: incident.reported_by,
         reporterName: incident.reporter?.username || '',
         status: incident.status,
         createdAt: incident.created_at,
         updatedAt: incident.updated_at
       })) || [];
     } catch (error) {
-      console.error('IncidentService: Erro em getFiltered:', error);
       throw error;
     }
+  },
+
+  /**
+   * Mapeia status do frontend para o banco de dados
+   */
+  mapStatusToDatabase(status: string): string {
+    const statusMap: Record<string, string> = {
+      'ativo': 'open',
+      'resolvido': 'resolved',
+      'arquivado': 'closed'
+    };
+    return statusMap[status] || 'open';
+  },
+
+  /**
+   * Mapeia status do banco de dados para o frontend
+   */
+  mapStatusFromDatabase(status: string): string {
+    const statusMap: Record<string, string> = {
+      'open': 'ativo',
+      'in_progress': 'ativo',
+      'resolved': 'resolvido',
+      'closed': 'arquivado'
+    };
+    return statusMap[status] || 'ativo';
   },
 
   /**
@@ -120,48 +137,45 @@ export const incidentService = {
    */
   async add(incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>): Promise<Incident> {
     try {
-      console.log('IncidentService: Adicionando novo incidente:', incident);
       const { data, error } = await supabase
         .from('incidents')
         .insert({
+          title: incident.title,
           employee_id: incident.employeeId,
           incident_type: incident.type,
           severity: incident.severity,
           description: incident.description,
           date_occurred: incident.incidentDate,
-          reporter_id: incident.reporterId,
-          status: incident.status || 'open'
+          reported_by: incident.reporterId,
+          status: this.mapStatusToDatabase(incident.status || 'ativo')
         })
         .select(`
           *,
           employee:users!employee_id(id, username),
-          reporter:users!reporter_id(id, username)
+          reporter:users!reported_by(id, username)
         `)
         .single();
 
       if (error) {
-        console.error('IncidentService: Erro ao adicionar incidente:', error);
         throw error;
       }
 
-      console.log('Added incident data:', data);
-
       return {
         id: data.id,
+        title: data.title,
         employeeId: data.employee_id,
         employeeName: data.employee?.username || '',
         type: data.incident_type,
         severity: data.severity,
         description: data.description,
         incidentDate: data.date_occurred,
-        reporterId: data.reporter_id,
+        reporterId: data.reported_by,
         reporterName: data.reporter?.username || '',
-        status: data.status,
+        status: this.mapStatusFromDatabase(data.status),
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('IncidentService: Erro em add:', error);
       throw error;
     }
   },
@@ -171,16 +185,16 @@ export const incidentService = {
    */
   async update(id: string, incident: Partial<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Incident> {
     try {
-      console.log('IncidentService: Atualizando incidente:', id, incident);
       const updateData: any = {};
       
+      if (incident.title !== undefined) updateData.title = incident.title;
       if (incident.employeeId !== undefined) updateData.employee_id = incident.employeeId;
       if (incident.type !== undefined) updateData.incident_type = incident.type;
       if (incident.severity !== undefined) updateData.severity = incident.severity;
       if (incident.description !== undefined) updateData.description = incident.description;
       if (incident.incidentDate !== undefined) updateData.date_occurred = incident.incidentDate;
-      if (incident.reporterId !== undefined) updateData.reporter_id = incident.reporterId;
-      if (incident.status !== undefined) updateData.status = incident.status;
+      if (incident.reporterId !== undefined) updateData.reported_by = incident.reporterId;
+      if (incident.status !== undefined) updateData.status = this.mapStatusToDatabase(incident.status);
 
       const { data, error } = await supabase
         .from('incidents')
@@ -194,28 +208,25 @@ export const incidentService = {
         .single();
 
       if (error) {
-        console.error('IncidentService: Erro ao atualizar incidente:', error);
         throw error;
       }
 
-      console.log('IncidentService: Dados do incidente atualizado:', data);
-
       return {
         id: data.id,
+        title: data.title,
         employeeId: data.employee_id,
         employeeName: data.employee?.username || '',
         type: data.incident_type,
         severity: data.severity,
         description: data.description,
         incidentDate: data.date_occurred,
-        reporterId: data.reporter_id,
+        reporterId: data.reported_by,
         reporterName: data.reporter?.username || '',
-        status: data.status,
+        status: this.mapStatusFromDatabase(data.status),
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('IncidentService: Erro em update:', error);
       throw error;
     }
   },
@@ -225,20 +236,15 @@ export const incidentService = {
    */
   async delete(id: string): Promise<void> {
     try {
-      console.log('IncidentService: Deletando incidente:', id);
       const { error } = await supabase
         .from('incidents')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('IncidentService: Erro ao deletar incidente:', error);
         throw error;
       }
-
-      console.log('IncidentService: Incidente deletado com sucesso:', id);
     } catch (error) {
-      console.error('IncidentService: Erro em delete:', error);
       throw error;
     }
   },
@@ -248,17 +254,13 @@ export const incidentService = {
    */
   async getStats(): Promise<IncidentStats> {
     try {
-      console.log('IncidentService: Buscando estatísticas dos incidentes...');
       const { data, error } = await supabase
         .from('incidents')
         .select('incident_type, severity, status, date_occurred');
 
       if (error) {
-        console.error('IncidentService: Erro ao buscar estatísticas:', error);
         throw error;
       }
-
-      console.log('IncidentService: Dados das estatísticas encontrados:', data?.length || 0);
 
       const stats: IncidentStats = {
         total: data?.length || 0,
@@ -310,7 +312,6 @@ export const incidentService = {
 
       return stats;
     } catch (error) {
-      console.error('IncidentService: Erro em getStats:', error);
       throw error;
     }
   },
@@ -319,36 +320,71 @@ export const incidentService = {
    * Inscreve-se para atualizações em tempo real de incidentes
    */
   subscribeToIncidents(callback: (payload: any) => void) {
-    console.log('IncidentService: Inscrevendo-se para atualizações em tempo real...');
-    const channel = supabase
-      .channel('incidents-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'incidents'
-        },
-        (payload) => {
-          callback(payload);
-        }
-      )
-      .subscribe();
+    try {
+      // Verifica se já existe um canal com o mesmo nome
+      const existingChannel = supabase.getChannels().find(ch => ch.topic === 'incidents-changes');
+      if (existingChannel) {
+        console.warn('IncidentService: Canal já existe, removendo antes de criar novo...');
+        supabase.removeChannel(existingChannel);
+      }
 
-    return channel;
+      console.log('IncidentService: Inscrevendo-se para atualizações em tempo real...');
+      const channel = supabase
+        .channel('incidents-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'incidents'
+          },
+          (payload) => {
+            try {
+              callback(payload);
+            } catch (error) {
+              console.error('IncidentService: Erro no callback:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('IncidentService: Subscrição realizada com sucesso');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('IncidentService: Erro na subscrição do canal');
+          }
+        });
+
+      return channel;
+    } catch (error) {
+      console.error('IncidentService: Erro ao criar subscrição:', error);
+      throw error;
+    }
   },
 
   /**
    * Remove inscrição de atualizações em tempo real de incidentes
    */
   unsubscribeFromIncidents(channel: any) {
-    console.log('IncidentService: Removendo inscrição de atualizações em tempo real...');
-    if (channel) {
-      try {
-        supabase.removeChannel(channel);
-      } catch (error) {
-        console.error('IncidentService: Erro ao remover canal:', error);
+    if (!channel) {
+      console.warn('IncidentService: Tentativa de remover canal nulo');
+      return;
+    }
+
+    try {
+      console.log('IncidentService: Removendo inscrição de atualizações em tempo real...');
+      
+      // Primeiro tenta unsubscribe do canal
+      if (typeof channel.unsubscribe === 'function') {
+        channel.unsubscribe();
       }
+      
+      // Depois remove o canal
+      supabase.removeChannel(channel);
+      
+      console.log('IncidentService: Canal removido com sucesso');
+    } catch (error) {
+      console.error('IncidentService: Erro ao remover canal:', error);
+      // Não re-throw o erro para não quebrar o cleanup
     }
   }
 };

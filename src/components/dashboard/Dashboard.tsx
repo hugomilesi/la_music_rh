@@ -309,7 +309,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white/90 mb-4">Programação de ausências</p>
               <div className="space-y-2">
                 {alerts.vacations.slice(0, 3).map((vacation, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={vacation.id || `vacation-${index}`} className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                     <span className="text-sm">{vacation.description}</span>
                   </div>

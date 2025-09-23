@@ -5,7 +5,7 @@ export interface EventFormData {
   title: string;
   employeeId: string;
   unit: ScheduleUnit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
+  type: 'meeting' | 'appointment' | 'reminder' | 'task' | 'vacation' | 'training';
   date: string;
   startTime: string;
   endTime: string;
@@ -19,7 +19,7 @@ export interface NewScheduleEventData {
   title: string;
   employeeId: string;
   unit: ScheduleUnit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
+  type: 'meeting' | 'appointment' | 'reminder' | 'task' | 'vacation' | 'training';
   date: string;
   startTime: string;
   endTime: string;
@@ -36,7 +36,7 @@ export interface ScheduleEvent {
   employeeId: string; // alias for compatibility
   employee: string; // employee name
   unit: ScheduleUnit;
-  type: 'plantao' | 'avaliacao' | 'reuniao' | 'folga' | 'outro' | 'coffee-connection';
+  type: 'meeting' | 'appointment' | 'reminder' | 'task' | 'vacation' | 'training';
   event_date: string;
   date: string; // alias for compatibility
   start_time: string;
@@ -53,6 +53,11 @@ export interface ScheduleEvent {
   createdAt: string; // alias for compatibility
   updated_at: string;
   updatedAt: string; // alias for compatibility
+  status?: string;
+  // Campos para controle de avaliações
+  is_evaluation?: boolean;
+  is_removable_disabled?: boolean;
+  evaluation_id?: string;
 }
 
 export interface TimeSlot {

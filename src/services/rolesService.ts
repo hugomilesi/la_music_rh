@@ -29,8 +29,6 @@ export interface RoleWithDepartment extends Role {
 
 // Department CRUD operations
 export const fetchDepartments = async (): Promise<Department[]> => {
-  console.log('RolesService: Iniciando busca de departamentos');
-  
   try {
     const { data, error } = await supabase
       .from('departments')
@@ -38,22 +36,17 @@ export const fetchDepartments = async (): Promise<Department[]> => {
       .order('name');
 
     if (error) {
-      console.error('RolesService: Erro ao buscar departamentos:', error);
-      throw new Error(`Erro ao buscar departamentos: ${error.message}`);
+      throw error;
     }
 
-    console.log('RolesService: Departamentos encontrados:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('RolesService: Erro na busca de departamentos:', error);
     throw error;
   }
 };
 
 export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {
   try {
-    console.log('🔄 RolesService: Criando departamento:', department);
-    
     const { data, error } = await supabase
       .from('departments')
       .insert([department])
@@ -61,22 +54,17 @@ export const createDepartment = async (department: Omit<Department, 'id' | 'crea
       .single();
 
     if (error) {
-      console.error('❌ RolesService: Erro ao criar departamento:', error);
-      throw new Error(`Erro ao criar departamento: ${error.message}`);
+      throw error;
     }
 
-    console.log('✅ RolesService: Departamento criado com sucesso:', data.id);
     return data;
   } catch (error) {
-    console.error('❌ RolesService: Erro na criação de departamento:', error);
     throw error;
   }
 };
 
 export const updateDepartment = async (id: string, updates: Partial<Omit<Department, 'id' | 'created_at' | 'updated_at'>>): Promise<Department> => {
   try {
-    console.log('🔄 RolesService: Atualizando departamento:', id);
-    
     const { data, error } = await supabase
       .from('departments')
       .update(updates)
@@ -85,68 +73,53 @@ export const updateDepartment = async (id: string, updates: Partial<Omit<Departm
       .single();
 
     if (error) {
-      console.error('❌ RolesService: Erro ao atualizar departamento:', error);
-      throw new Error(`Erro ao atualizar departamento: ${error.message}`);
+      throw error;
     }
 
-    console.log('✅ RolesService: Departamento atualizado com sucesso');
     return data;
   } catch (error) {
-    console.error('❌ RolesService: Erro na atualização de departamento:', error);
     throw error;
   }
 };
 
 export const deleteDepartment = async (id: string): Promise<void> => {
   try {
-    console.log('🔄 RolesService: Deletando departamento:', id);
-    
     const { error } = await supabase
       .from('departments')
       .delete()
       .eq('id', id);
 
     if (error) {
-      console.error('❌ RolesService: Erro ao deletar departamento:', error);
-      throw new Error(`Erro ao deletar departamento: ${error.message}`);
+      throw error;
     }
-
-    console.log('✅ RolesService: Departamento deletado com sucesso');
   } catch (error) {
-    console.error('❌ RolesService: Erro na deleção de departamento:', error);
     throw error;
   }
 };
 
 // Role CRUD operations
-export const fetchRoles = async (): Promise<RoleWithDepartment[]> => {
+export const fetchRoles = async (): Promise<Role[]> => {
   try {
-    console.log('🔄 RolesService: Iniciando busca de cargos');
-    
     const { data, error } = await supabase
       .from('roles')
       .select(`
         *,
-        department:departments(*)
+        department:departments(id, name)
       `)
       .order('name');
 
     if (error) {
-      console.error('❌ RolesService: Erro ao buscar cargos:', error);
-      throw new Error(`Erro ao buscar cargos: ${error.message}`);
+      throw error;
     }
 
-    // Transform the data to match the expected interface
+    // Transform the data to match our Role interface
     const transformedData = data?.map(role => ({
       ...role,
-      department: role.department || null,
-      employees: 0 // Default value, will be updated by countEmployeesByRole if needed
+      department_name: role.department?.name || 'Sem departamento'
     })) || [];
 
-    console.log('✅ RolesService: Cargos encontrados:', transformedData.length);
     return transformedData;
   } catch (error) {
-    console.error('❌ RolesService: Erro na busca de cargos:', error);
     throw error;
   }
 };
@@ -154,26 +127,82 @@ export const fetchRoles = async (): Promise<RoleWithDepartment[]> => {
 // Get roles by department
 export const fetchRolesByDepartment = async (departmentId: string): Promise<Role[]> => {
   try {
-    console.log('🔄 RolesService: Buscando cargos do departamento:', departmentId);
-    
     const { data, error } = await supabase
       .from('roles')
       .select(`
         *,
-        department:departments(*)
+        department:departments(id, name)
       `)
       .eq('department_id', departmentId)
       .order('name');
 
     if (error) {
-      console.error('❌ RolesService: Erro ao buscar cargos do departamento:', error);
-      throw new Error(`Erro ao buscar cargos do departamento: ${error.message}`);
+      throw error;
     }
 
-    console.log('✅ RolesService: Cargos do departamento encontrados:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('❌ RolesService: Erro na busca de cargos do departamento:', error);
+    throw error;
+  }
+};
+
+// Create a new role
+export const createRole = async (role: Omit<Role, 'id' | 'created_at' | 'updated_at'>): Promise<Role> => {
+  try {
+    const { data, error } = await supabase
+      .from('roles')
+      .insert([role])
+      .select(`
+        *,
+        department:departments(id, name)
+      `)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update a role
+export const updateRole = async (id: string, updates: Partial<Omit<Role, 'id' | 'created_at' | 'updated_at'>>): Promise<Role> => {
+  try {
+    const { data, error } = await supabase
+      .from('roles')
+      .update(updates)
+      .eq('id', id)
+      .select(`
+        *,
+        department:departments(id, name)
+      `)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Delete a role
+export const deleteRole = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('roles')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
     throw error;
   }
 };
@@ -181,36 +210,29 @@ export const fetchRolesByDepartment = async (departmentId: string): Promise<Role
 // Count employees by role
 export const countEmployeesByRole = async (roleId: string): Promise<number> => {
   try {
-    console.log('🔄 RolesService: Contando funcionários por cargo:', roleId);
-    
-    // First get the role name
-    const { data: roleData, error: roleError } = await supabase
+    // First, get the role to ensure it exists
+    const { data: role, error: roleError } = await supabase
       .from('roles')
-      .select('name')
+      .select('id, name')
       .eq('id', roleId)
       .single();
 
-    if (roleError || !roleData) {
-      console.log('⚠️ RolesService: Cargo não encontrado para contagem');
+    if (roleError || !role) {
       return 0;
     }
 
-    // Count users with this role
+    // Count users with this role using the role name (not role_id)
     const { count, error } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('role', roleData.name)
-      .neq('status', 'inactive');
+      .eq('role', role.name);
 
     if (error) {
-      console.error('❌ RolesService: Erro ao contar usuários do cargo:', error);
-      return 0;
+      throw error;
     }
 
-    console.log('✅ RolesService: Funcionários contados:', count || 0);
     return count || 0;
   } catch (error) {
-    console.error('❌ RolesService: Erro na contagem de funcionários por cargo:', error);
-    return 0;
+    throw error;
   }
 };

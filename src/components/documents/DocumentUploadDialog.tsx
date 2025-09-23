@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,22 +15,31 @@ import { formatDateToLocal } from '@/utils/dateUtils';
 interface DocumentUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedEmployeeId?: string;
 }
 
 export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
   open,
-  onOpenChange
+  onOpenChange,
+  preSelectedEmployeeId
 }) => {
   const { uploadDocument, isLoading } = useDocuments();
   const { employees } = useEmployees();
   const [formData, setFormData] = useState({
-    employeeId: '',
+    employeeId: preSelectedEmployeeId || '',
     documentType: '',
     expiryDate: '',
     notes: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Atualizar employeeId quando preSelectedEmployeeId mudar
+  React.useEffect(() => {
+    if (preSelectedEmployeeId) {
+      setFormData(prev => ({ ...prev, employeeId: preSelectedEmployeeId }));
+    }
+  }, [preSelectedEmployeeId]);
 
   const maxFileSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = [
@@ -147,6 +156,9 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
             <FileText className="w-5 h-5" />
             Enviar Documento
           </DialogTitle>
+          <DialogDescription>
+            Faça o upload de documentos para os colaboradores do sistema.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -246,13 +258,14 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="expiryDate">Data de Validade (Opcional)</Label>
+            <Label htmlFor="expiryDate">Data de Validade *</Label>
             <Input
               type="date"
               id="expiryDate"
               value={formData.expiryDate}
               onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-              min={formatDateToLocal(new Date())}
+              min={new Date().toISOString().split('T')[0]}
+              required
             />
           </div>
 
@@ -273,7 +286,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={!selectedFile || !formData.employeeId || !formData.documentType || isLoading}
+              disabled={!selectedFile || !formData.employeeId || !formData.documentType || !formData.expiryDate || isLoading}
             >
               {isLoading ? 'Enviando...' : 'Enviar Documento'}
             </Button>

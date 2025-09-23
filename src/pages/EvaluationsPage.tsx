@@ -62,8 +62,12 @@ export function EvaluationsPage() {
     loadEvaluations();
   }, []);
 
-  // Handle evaluation deletion
+  // Handle evaluation deletion with confirmation
   const handleDeleteEvaluation = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover esta avaliação?')) {
+      return;
+    }
+    
     try {
       await evaluationService.deleteEvaluation(id);
       setEvaluations(prev => prev.filter(e => e.id !== id));
@@ -268,6 +272,7 @@ export function EvaluationsPage() {
               <TableRow>
                 <TableHead>Colaborador</TableHead>
                 <TableHead>Cargo</TableHead>
+                <TableHead>Unidade</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Período</TableHead>
                 <TableHead>Nota</TableHead>
@@ -281,6 +286,11 @@ export function EvaluationsPage() {
                 <TableRow key={evaluation.id}>
                   <TableCell className="font-medium">{evaluation.employee}</TableCell>
                   <TableCell>{evaluation.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {evaluation.unit || '-'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge className={getTypeBadge(evaluation.type)}>
                       {evaluation.type === 'Coffee Connection' && <Coffee className="w-3 h-3 mr-1" />}
@@ -299,7 +309,7 @@ export function EvaluationsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {evaluation.status === 'Concluída' && evaluation.date 
+                    {evaluation.date 
                       ? new Date(evaluation.date).toLocaleDateString('pt-BR')
                       : evaluation.meetingDate 
                         ? new Date(evaluation.meetingDate).toLocaleDateString('pt-BR') 

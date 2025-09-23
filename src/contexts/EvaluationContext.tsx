@@ -53,22 +53,27 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const addEvaluation = async (evaluationData: NewEvaluationData) => {
     try {
-      // Log desabilitado: Adding evaluation
+      console.log('🔄 EvaluationContext: Adicionando avaliação:', evaluationData);
+      
       const newEvaluation = await evaluationService.createEvaluation(evaluationData);
-      // Log desabilitado: Evaluation added
+      
+      console.log('✅ EvaluationContext: Avaliação criada com sucesso:', newEvaluation);
+      
       setEvaluations(prev => [...prev, newEvaluation]);
+      
       toast({
-        title: "Sucesso",
-        description: "Avaliação criada com sucesso",
+        title: 'Sucesso',
+        description: 'Avaliação criada com sucesso!',
       });
     } catch (error) {
-      // Log desabilitado: Error adding evaluation
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('❌ EvaluationContext: Erro ao adicionar avaliação:', error);
+      
       toast({
-        title: "Erro",
-        description: "Erro ao criar avaliação: " + errorMessage,
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Erro ao criar avaliação. Tente novamente.',
+        variant: 'destructive',
       });
+      
       throw error;
     }
   };

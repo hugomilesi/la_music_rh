@@ -18,7 +18,7 @@ export const mockContacts: Contact[] = [
     phone: '+5511999999999',
     email: 'ana.silva@empresa.com',
     unit: 'São Paulo',
-    role: 'Gerente de Vendas',
+    role: 'Coordenadora de Vendas',
     department: 'Comercial',
     isActive: true
   },
@@ -28,7 +28,7 @@ export const mockContacts: Contact[] = [
     phone: '+5511888888888',
     email: 'carlos.santos@empresa.com',
     unit: 'Rio de Janeiro',
-    role: 'Analista de RH',
+    role: 'Coordenador Administrativo',
     department: 'Recursos Humanos',
     isActive: true
   },

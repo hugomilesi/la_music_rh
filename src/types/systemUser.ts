@@ -8,6 +8,7 @@ export interface SystemUser {
   position?: string;
   department?: string;
   phone?: string;
+  unit?: string;
   status: 'active' | 'inactive';
   lastAccess: string;
   createdAt: string;
@@ -34,6 +35,7 @@ export interface UpdateSystemUserData {
   position?: string;
   department?: string;
   phone?: string;
+  unit?: string;
   permissions: string[];
   status: 'active' | 'inactive';
 }

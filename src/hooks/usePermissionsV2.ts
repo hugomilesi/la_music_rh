@@ -82,31 +82,19 @@ export const usePermissionsV2 = () => {
 
   // Buscar permissões do usuário usando a nova função get_user_permissions
   const fetchUserPermissions = useCallback(async () => {
-    console.log('🔒 [usePermissionsV2] fetchUserPermissions called', { 
-      userId: user?.id, 
-      profileRole: profile?.role,
-      fetchingRef: fetchingRef.current
-    });
-
     if (!user?.id || !profile?.role) {
-      console.log('🔒 [usePermissionsV2] User or profile not available', {
-        user: user?.id,
-        profile: profile?.role
-      });
       setLoading(false); // Importante: definir loading como false quando não há user/profile
       return;
     }
   
     // Evitar múltiplas chamadas simultâneas usando ref
     if (fetchingRef.current) {
-      console.log('🔒 [usePermissionsV2] Already fetching permissions');
       return;
     }
 
     // Criar chave única para evitar chamadas desnecessárias
     const currentFetchKey = `${user.id}-${profile.role}`;
     if (lastFetchRef.current === currentFetchKey) {
-      console.log('🔒 [usePermissionsV2] Same fetch key, skipping');
       return;
     }
   
@@ -124,40 +112,22 @@ export const usePermissionsV2 = () => {
     setError(null);
   
     try {
-      console.log('🔒 [usePermissionsV2] Cache check', {
-        cacheKey,
-        hasCached: !!cached,
-        sessionId: session?.user?.id,
-        cachedSessionId: cached?.sessionId
-      });
-      
       if (cached && cached.sessionId === session?.user?.id) {
-        console.log('🔒 [usePermissionsV2] Using cached permissions', cached.permissions);
         setUserPermissions(cached.permissions);
         setLoading(false);
         fetchingRef.current = false;
         return;
       }
-  
-      console.log('🔒 [usePermissionsV2] Fetching permissions from database for user:', user.id);
       
       // Buscar permissões usando a função RPC atualizada
       const { data: permissionsData, error: permissionsError } = await supabase
         .rpc('get_user_permissions', { 
           user_auth_id: user.id 
         });
-  
-      console.log('🔒 [usePermissionsV2] RPC response', {
-        data: permissionsData,
-        error: permissionsError
-      });
 
       if (permissionsError) {
-        console.error('🔒 [usePermissionsV2] Error fetching permissions:', permissionsError);
         throw permissionsError;
       }
-  
-      console.log('🔒 [usePermissionsV2] Raw permissions data:', permissionsData);
   
       // A função RPC agora retorna um JSON array diretamente
       // Mapear os dados para o formato esperado pelo frontend
@@ -167,8 +137,6 @@ export const usePermissionsV2 = () => {
             description: perm.description || getPermissionDescription(perm.name)
           }))
         : [];
-  
-      console.log('🔒 [usePermissionsV2] Mapped permissions:', mappedPermissions);
   
       // Atualizar cache
       permissionsCache.set(cacheKey, {
@@ -185,14 +153,12 @@ export const usePermissionsV2 = () => {
       const hasChanged = JSON.stringify(currentPermissionNames) !== JSON.stringify(newPermissionNames);
       
       if (hasChanged) {
-        console.log('🔒 [usePermissionsV2] Permissions changed, dispatching event');
         window.dispatchEvent(new CustomEvent('permissions-changed', { 
           detail: { permissions: mappedPermissions } 
         }));
       }
   
     } catch (error) {
-      console.error('🔒 [usePermissionsV2] Error in fetchUserPermissions:', error);
       setError(error as Error);
     } finally {
       setLoading(false);
@@ -217,16 +183,8 @@ export const usePermissionsV2 = () => {
     const handleProfileLoaded = (event: CustomEvent) => {
       const { profile: loadedProfile, user: loadedUser } = event.detail;
       
-      console.log('🔒 [usePermissionsV2] Profile loaded event received', {
-        loadedUserId: loadedUser?.id,
-        currentUserId: user?.id,
-        loadedProfile: loadedProfile?.role,
-        currentProfile: profile?.role
-      });
-      
       // Só recarregar se for o mesmo usuário e ainda não temos permissões
       if (loadedUser && loadedProfile && loadedUser.id === user?.id && userPermissions.length === 0) {
-        console.log('🔒 [usePermissionsV2] Triggering permissions fetch from profile-loaded event');
         // Usar uma função inline para evitar dependência de fetchUserPermissions
         if (!fetchingRef.current && user?.id && profile?.role) {
           fetchUserPermissions();
@@ -244,24 +202,11 @@ export const usePermissionsV2 = () => {
   // Verificações de role específicas (definidas antes de hasPermission)
   const isSuperAdmin = useMemo(() => {
     const result = profile?.role === 'super_admin';
-    console.log('🔍 isSuperAdmin check:', { 
-      profileRole: profile?.role, 
-      result,
-      userId: user?.id,
-      profileData: profile 
-    });
     return result;
   }, [profile]);
 
   const isAdmin = useMemo(() => {
     const result = profile?.role === 'admin' || isSuperAdmin;
-    console.log('🔍 isAdmin check:', { 
-      profileRole: profile?.role, 
-      isSuperAdmin, 
-      result,
-      userId: user?.id,
-      profileData: profile 
-    });
     return result;
   }, [profile, isSuperAdmin]);
 
@@ -275,42 +220,21 @@ export const usePermissionsV2 = () => {
 
   // Função principal para verificar permissões
   const hasPermission = useCallback((permissionName: string): boolean => {
-    console.log('🔐 hasPermission called:', {
-      permissionName,
-      hasUser: !!user,
-      hasProfile: !!profile,
-      userRole: profile?.role,
-      isSuperAdmin,
-      isAdmin,
-      memoizedUserPermissionsLength: memoizedUserPermissions?.length || 0,
-      memoizedUserPermissions: memoizedUserPermissions?.map(p => p.name) || [],
-      loading
-    });
-    
     if (!user || !profile) {
-      console.log('🔐 hasPermission: No user or profile');
       return false;
     }
     
     if (!memoizedUserPermissions || memoizedUserPermissions.length === 0) {
-      console.log('🔐 hasPermission: No permissions loaded yet');
       return false;
     }
     
     // Super admin e admin têm acesso total a todas as permissões
     if (isSuperAdmin || isAdmin) {
-      console.log('🔐 hasPermission: Super admin or admin access granted');
       return true;
     }
     
     // Verificar se a permissão existe nas permissões carregadas
     const hasAccess = memoizedUserPermissions.some(p => p.name === permissionName);
-    
-    console.log('🔐 hasPermission result:', {
-      permissionName,
-      hasAccess,
-      availablePermissions: memoizedUserPermissions.map(p => p.name)
-    });
     
     return hasAccess;
   }, [user?.id, profile?.role, memoizedUserPermissions, isSuperAdmin, isAdmin, loading]);
@@ -352,19 +276,8 @@ export const usePermissionsV2 = () => {
 
   // Funções de conveniência para módulos específicos
   const canViewModule = useCallback((module: string): boolean => {
-    console.log('🔍 canViewModule called with:', {
-      module,
-      isSuperAdmin,
-      isAdmin,
-      profileRole: profile?.role,
-      userId: user?.id,
-      loading,
-      permissionsCount: memoizedUserPermissions?.length || 0
-    });
-    
     // Super admin e admin têm acesso total a todos os módulos
     if (isSuperAdmin || isAdmin) {
-      console.log('✅ Super admin or admin access granted for module:', module);
       return true;
     }
     
@@ -390,13 +303,6 @@ export const usePermissionsV2 = () => {
     const permissionName = modulePermissionMap[module] || module;
     
     const hasAccess = hasPermission(permissionName);
-    
-    console.log('🔐 Permission check result:', {
-      module,
-      permissionName,
-      hasAccess,
-      availablePermissions: memoizedUserPermissions?.map(p => p.name) || []
-    });
     
     return hasAccess;
   }, [hasPermission, isSuperAdmin, isAdmin, profile?.role, user?.id, memoizedUserPermissions, loading]);

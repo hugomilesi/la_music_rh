@@ -31,7 +31,7 @@ const formSchema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   startTime: z.string().min(1, 'Horário de início é obrigatório'),
   endTime: z.string().min(1, 'Horário de término é obrigatório'),
-  type: z.enum(['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'] as const),
+  type: z.enum(['meeting', 'appointment', 'reminder', 'task', 'vacation', 'training'] as const),
   description: z.string().default(''),
   location: z.string().default(''),
   emailAlert: z.boolean().default(false),
@@ -158,7 +158,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
     }
   };
 
-  const activeEmployees = employees.filter(emp => emp.status === 'active');
+  const activeEmployees = employees.filter(emp => emp.status === 'ativo');
 
   // Convert FormData to EventFormData for the EventForm component
   const convertToEventFormData = (data: FormData): EventFormData => ({

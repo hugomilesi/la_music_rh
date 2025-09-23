@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus, MapPin, User } from 'lucide-react';
+import { Filter, Calendar, ChevronLeft, ChevronRight, Clock, Plus, MapPin, User, RefreshCw } from 'lucide-react';
 import { useSchedule } from '@/contexts/ScheduleContext';
-import { useUnit } from '@/contexts/UnitContext';
+import { useUnit } from '@/hooks/useUnit';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleEvent } from '@/types/schedule';
 import { getScheduleUnitInfo } from '@/types/unit';
@@ -30,6 +30,7 @@ const SchedulePage: React.FC = () => {
   const [duplicateEvent, setDuplicateEvent] = useState<ScheduleEvent | null>(null);
   const { hasAnyUnitSelected } = useUnit();
   const { toast } = useToast();
+  const { refreshEvents, isLoading } = useSchedule();
 
   const {
     currentDate,
@@ -57,23 +58,27 @@ const SchedulePage: React.FC = () => {
 
   const getEventTypeColor = (type: string) => {
     const colors = {
-      'plantao': 'bg-blue-100 text-blue-800',
-      'avaliacao': 'bg-purple-100 text-purple-800',
-      'reuniao': 'bg-green-100 text-green-800',
-      'folga': 'bg-gray-100 text-gray-800',
-      'outro': 'bg-orange-100 text-orange-800',
-      'coffee-connection': 'bg-amber-100 text-amber-800'
+      'meeting': 'bg-green-100 text-green-800',
+      'appointment': 'bg-blue-100 text-blue-800',
+      'reminder': 'bg-yellow-100 text-yellow-800',
+      'task': 'bg-purple-100 text-purple-800',
+      'vacation': 'bg-gray-100 text-gray-800',
+      'training': 'bg-indigo-100 text-indigo-800',
+      'avaliacao': 'bg-red-100 text-red-800',
+      'coffee-connection': 'bg-orange-100 text-orange-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   const getEventTypeLabel = (type: string) => {
     const labels = {
-      'plantao': 'Plantão',
+      'meeting': 'Reunião',
+      'appointment': 'Compromisso',
+      'reminder': 'Lembrete',
+      'task': 'Tarefa',
+      'vacation': 'Férias',
+      'training': 'Treinamento',
       'avaliacao': 'Avaliação',
-      'reuniao': 'Reunião',
-      'folga': 'Folga',
-      'outro': 'Outro',
       'coffee-connection': 'Coffee Connection'
     };
     return labels[type as keyof typeof labels] || 'Evento';
@@ -157,6 +162,15 @@ const SchedulePage: React.FC = () => {
           
           <div className="flex items-center gap-3 mt-4 md:mt-0">
             <UnitSelector />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshEvents}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
             <Button variant="outline" size="sm" onClick={handleFilters}>
               <Filter className="w-4 h-4 mr-2" />
               Filtros
@@ -372,7 +386,7 @@ const SchedulePage: React.FC = () => {
 
                       return (
                         <div
-                          key={index}
+                          key={`date-${index}`}
                           className={`min-h-[120px] p-3 border rounded-lg cursor-pointer ${
                             isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                           } ${
@@ -488,7 +502,7 @@ const SchedulePage: React.FC = () => {
                 <CardTitle>Próximos Eventos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="max-h-[600px] overflow-y-auto space-y-4">
                   {!hasAnyUnitSelected ? (
                     <div className="text-center py-8 text-gray-500">
                       <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -502,7 +516,7 @@ const SchedulePage: React.FC = () => {
                       <p className="text-sm">Clique em "Novo Evento" para adicionar um evento à agenda</p>
                     </div>
                   ) : (
-                    filteredEvents.slice(0, 5).map(event => {
+                    filteredEvents.slice(0, 10).map(event => {
                       const unitInfo = getScheduleUnitInfo(event.unit);
                       return (
                         <div 
@@ -549,7 +563,7 @@ const SchedulePage: React.FC = () => {
                     })
                   )}
                   
-                  {filteredEvents.length > 5 && (
+                  {filteredEvents.length > 10 && (
                     <div className="text-center">
                       <Button variant="outline" size="sm" className="w-full">
                         Ver todos os eventos

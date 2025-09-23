@@ -1,35 +1,31 @@
 
 import { z } from 'zod';
+import { Unit } from './unit';
 
 export const createUserSchema = z.object({
-  username: z.string()
-    .min(1, 'Nome de usuário é obrigatório')
-    .min(2, 'Nome deve ter pelo menos 2 caracteres')
-    .max(100, 'Nome não pode ter mais de 100 caracteres')
-    .refine(val => val.trim().length > 0, 'Nome não pode estar vazio'),
-  email: z.string()
-    .min(1, 'Email é obrigatório')
-    .email('Email deve ter um formato válido')
-    .max(255, 'Email não pode ter mais de 255 caracteres'),
+  name: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido'),
   role: z.enum(['admin', 'gestor_rh', 'gerente'], {
-    errorMap: () => ({ message: 'Perfil de usuário é obrigatório' })
+    required_error: 'Função é obrigatória',
   }),
-  position: z.string()
-    .min(1, 'Cargo é obrigatório')
-    .min(2, 'Cargo deve ter pelo menos 2 caracteres')
-    .max(100, 'Cargo não pode ter mais de 100 caracteres'),
+  position: z.string().optional(),
   department: z.string().optional(),
   phone: z.string().optional(),
-  status: z.enum(['active', 'inactive']).default('active')
+  unit: z.nativeEnum(Unit).optional(),
+  status: z.enum(['active', 'inactive']).default('active'),
 });
 
 export const updateUserSchema = z.object({
-  username: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  role: z.enum(['admin', 'gestor_rh', 'gerente']),
-  position: z.string().min(2, 'Cargo é obrigatório'),
+  name: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido'),
+  role: z.enum(['admin', 'gestor_rh', 'gerente'], {
+    required_error: 'Função é obrigatória',
+  }),
+  position: z.string().optional(),
   department: z.string().optional(),
   phone: z.string().optional(),
-  status: z.enum(['active', 'inactive']).default('active')
+  unit: z.nativeEnum(Unit).optional(),
+  status: z.enum(['active', 'inactive']).default('active'),
 });
 
 export type CreateUserFormData = z.infer<typeof createUserSchema>;

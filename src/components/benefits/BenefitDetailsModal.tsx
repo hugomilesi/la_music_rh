@@ -237,7 +237,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {benefit.coverage.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={`coverage-${index}`} className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
                       <span>{item}</span>
                     </div>
@@ -259,7 +259,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
               <CardContent>
                 <div className="space-y-2">
                   {benefit.eligibilityRules.map((rule, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <div key={`rule-${index}`} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                       <span className="text-sm">
                         {rule.rule.replace('_', ' ')}: {rule.operator} {rule.value}
                       </span>

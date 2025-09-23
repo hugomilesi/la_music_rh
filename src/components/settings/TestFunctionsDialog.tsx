@@ -249,7 +249,7 @@ export const TestFunctionsDialog: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   {testResults.map((result, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                    <div key={`result-${index}`} className="flex items-start gap-3 p-3 border rounded-lg">
                       <div className="flex-shrink-0 mt-0.5">
                         {getStatusIcon(result.status)}
                       </div>

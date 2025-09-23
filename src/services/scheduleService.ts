@@ -1,105 +1,207 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ScheduleEvent, NewScheduleEventData } from '@/types/schedule';
-import { Unit } from '@/types/unit';
+import { Unit, ScheduleUnit } from '@/types/unit';
 
 export const scheduleService = {
+  async getScheduleEventsWithEvaluations(): Promise<ScheduleEvent[]> {
+    try {
+      const { data, error } = await supabase
+        .from('schedule_events_with_evaluations')
+        .select('*')
+        .order('start_date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data?.map(event => {
+        // Converter timestamps para formato esperado pelo frontend
+        const startDate = new Date(event.start_date);
+        const endDate = new Date(event.end_date);
+        
+        // Extrair data no formato YYYY-MM-DD
+        const dateStr = startDate.toISOString().split('T')[0];
+        
+        // Extrair horários no formato HH:MM
+        const startTime = startDate.toTimeString().slice(0, 5);
+        const endTime = endDate.toTimeString().slice(0, 5);
+        
+        console.log('📅 Mapeando evento da VIEW:', {
+          id: event.id,
+          title: event.title,
+          is_evaluation: event.is_evaluation,
+          is_removable_disabled: event.is_removable_disabled,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          dateStr,
+          startTime,
+          endTime
+        });
+        
+        return {
+          id: event.id,
+          title: event.title,
+          employee_id: event.user_id,
+          employeeId: event.user_id,
+          employee: 'Unknown', // Será resolvido pelo frontend se necessário
+          unit: (event.unit || 'campo-grande') as ScheduleUnit,
+          date: dateStr,
+          event_date: dateStr,
+          start_time: startTime,
+          startTime: startTime,
+          end_time: endTime,
+          endTime: endTime,
+          type: (event.event_type || 'appointment') as ScheduleEvent['type'],
+          description: event.description,
+          location: event.location,
+          email_alert: false,
+          emailAlert: false,
+          whatsapp_alert: false,
+          whatsappAlert: false,
+          created_at: event.created_at,
+          createdAt: event.created_at,
+          updated_at: event.updated_at,
+          updatedAt: event.updated_at,
+          status: event.status,
+          // Campos específicos para controle de remoção
+          is_evaluation: event.is_evaluation,
+          is_removable_disabled: event.is_removable_disabled,
+          evaluation_id: event.evaluation_id
+        };
+      }) || [];
+    } catch (error) {
+      console.error('❌ Erro ao carregar eventos da VIEW:', error);
+      throw error;
+    }
+  },
+
   async getScheduleEvents(): Promise<ScheduleEvent[]> {
     try {
-      console.log('🔄 ScheduleService: Buscando eventos da agenda...');
-      
       const { data, error } = await supabase
         .from('schedule_events')
         .select(`
           *,
-          users!schedule_events_employee_id_fkey(username)
+          users(username)
         `)
-        .order('event_date', { ascending: false });
+        .order('start_date', { ascending: false });
       
       if (error) {
-        console.error('❌ ScheduleService: Erro ao buscar eventos da agenda:', error);
         throw error;
       }
       
-      console.log('✅ ScheduleService: Eventos da agenda encontrados:', data?.length || 0);
-      
-      return data?.map(event => ({
-        id: event.id,
-        title: event.title,
-        employee_id: event.employee_id,
-        employeeId: event.employee_id,
-        employee: event.users?.username || 'Unknown',
-        unit: event.unit as Unit,
-        date: event.event_date,
-        event_date: event.event_date,
-        start_time: event.start_time,
-        startTime: event.start_time,
-        end_time: event.end_time,
-        endTime: event.end_time,
-        type: event.type as ScheduleEvent['type'],
-        description: event.description,
-        location: event.location,
-        email_alert: event.email_alert || false,
-        emailAlert: event.email_alert || false,
-        whatsapp_alert: event.whatsapp_alert || false,
-        whatsappAlert: event.whatsapp_alert || false,
-        created_at: event.created_at,
-        createdAt: event.created_at,
-        updated_at: event.updated_at,
-        updatedAt: event.updated_at
-      })) || [];
+      return data?.map(event => {
+        // Converter timestamps para formato esperado pelo frontend
+        const startDate = new Date(event.start_date);
+        const endDate = new Date(event.end_date);
+        
+        // Extrair data no formato YYYY-MM-DD
+        const dateStr = startDate.toISOString().split('T')[0];
+        
+        // Extrair horários no formato HH:MM
+        const startTime = startDate.toTimeString().slice(0, 5);
+        const endTime = endDate.toTimeString().slice(0, 5);
+        
+        console.log('📅 Mapeando evento:', {
+          id: event.id,
+          title: event.title,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          dateStr,
+          startTime,
+          endTime
+        });
+        
+        return {
+          id: event.id,
+          title: event.title,
+          employee_id: event.user_id,
+          employeeId: event.user_id,
+          employee: event.users?.username || 'Unknown',
+          unit: (event.unit || 'campo-grande') as ScheduleUnit,
+          date: dateStr,
+          event_date: dateStr,
+          start_time: startTime,
+          startTime: startTime,
+          end_time: endTime,
+          endTime: endTime,
+          type: (event.event_type || event.type || 'appointment') as ScheduleEvent['type'],
+          description: event.description,
+          location: event.location,
+          email_alert: event.email_alert || false,
+          emailAlert: event.email_alert || false,
+          whatsapp_alert: event.whatsapp_alert || false,
+          whatsappAlert: event.whatsapp_alert || false,
+          created_at: event.created_at,
+          createdAt: event.created_at,
+          updated_at: event.updated_at,
+          updatedAt: event.updated_at,
+          status: event.status
+        };
+      }) || [];
     } catch (error) {
-      console.error('❌ ScheduleService: Erro ao buscar eventos da agenda:', error);
+      console.error('❌ Erro ao carregar eventos:', error);
       throw error;
     }
   },
 
   async createScheduleEvent(eventData: NewScheduleEventData): Promise<ScheduleEvent> {
     try {
-      console.log('🔄 ScheduleService: Criando evento da agenda:', eventData);
+      console.log('📝 Criando evento com dados:', eventData);
+      
+      // Converter data e horários para timestamp
+      const startDateTime = new Date(`${eventData.date}T${eventData.startTime}:00`);
+      const endDateTime = new Date(`${eventData.date}T${eventData.endTime}:00`);
+      
+      console.log('🕐 Timestamps convertidos:', {
+        startDateTime: startDateTime.toISOString(),
+        endDateTime: endDateTime.toISOString()
+      });
       
       const { data, error } = await supabase
         .from('schedule_events')
-        .insert([{
+        .insert({
           title: eventData.title,
-          employee_id: eventData.employeeId,
+          user_id: eventData.employeeId,
           unit: eventData.unit,
-          event_date: eventData.date,
-          start_time: eventData.startTime,
-          end_time: eventData.endTime,
-          type: eventData.type,
+          start_date: startDateTime.toISOString(),
+          end_date: endDateTime.toISOString(),
+          event_type: eventData.type,
           description: eventData.description,
           location: eventData.location,
-          email_alert: eventData.emailAlert,
-          whatsapp_alert: eventData.whatsappAlert
-        }])
+          status: 'scheduled'
+        })
         .select(`
           *,
-          users!schedule_events_employee_id_fkey(username)
+          users(username)
         `)
         .single();
       
       if (error) {
-        console.error('❌ ScheduleService: Erro ao criar evento da agenda:', error);
+        console.error('❌ Erro ao criar evento:', error);
         throw error;
       }
       
-      console.log('✅ ScheduleService: Evento da agenda criado com sucesso:', data.id);
+      console.log('✅ Evento criado com sucesso:', data);
+      
+      // Mapear resposta para formato do frontend
+      const startDate = new Date(data.start_date);
+      const endDate = new Date(data.end_date);
       
       return {
         id: data.id,
         title: data.title,
-        employee_id: data.employee_id,
-        employeeId: data.employee_id,
+        employee_id: data.user_id,
+        employeeId: data.user_id,
         employee: data.users?.username || 'Unknown',
-        unit: data.unit as Unit,
-        date: data.event_date,
-        event_date: data.event_date,
-        start_time: data.start_time,
-        startTime: data.start_time,
-        end_time: data.end_time,
-        endTime: data.end_time,
-        type: data.type as ScheduleEvent['type'],
+        unit: (data.unit || 'campo-grande') as ScheduleUnit,
+        date: startDate.toISOString().split('T')[0],
+        event_date: startDate.toISOString().split('T')[0],
+        start_time: startDate.toTimeString().slice(0, 5),
+        startTime: startDate.toTimeString().slice(0, 5),
+        end_time: endDate.toTimeString().slice(0, 5),
+        endTime: endDate.toTimeString().slice(0, 5),
+        type: (data.event_type || data.type || 'appointment') as ScheduleEvent['type'],
         description: data.description,
         location: data.location,
         email_alert: data.email_alert || false,
@@ -109,25 +211,25 @@ export const scheduleService = {
         created_at: data.created_at,
         createdAt: data.created_at,
         updated_at: data.updated_at,
-        updatedAt: data.updated_at
+        updatedAt: data.updated_at,
+        status: data.status
       };
     } catch (error) {
-      console.error('Error in createScheduleEvent:', error);
+      console.error('❌ Erro ao criar evento:', error);
       throw error;
     }
   },
 
   async updateScheduleEvent(id: string, updates: Partial<ScheduleEvent>): Promise<ScheduleEvent> {
     try {
-      console.log('🔄 ScheduleService: Atualizando evento de agenda:', { id, updates });
-      
       const { data, error } = await supabase
         .from('schedule_events')
         .update({
           title: updates.title,
-          employee_id: updates.employeeId || updates.employee_id,
+          user_id: updates.employeeId || updates.employee_id,
           unit: updates.unit,
-          event_date: updates.date || updates.event_date,
+          start_date: updates.date || updates.event_date,
+          end_date: updates.endTime ? new Date((updates.date || updates.event_date) + 'T' + (updates.endTime || updates.end_time)).toISOString() : null,
           start_time: updates.startTime || updates.start_time,
           end_time: updates.endTime || updates.end_time,
           type: updates.type,
@@ -139,26 +241,23 @@ export const scheduleService = {
         .eq('id', id)
         .select(`
           *,
-          users!schedule_events_employee_id_fkey(username)
+          users(username)
         `)
         .single();
       
       if (error) {
-        console.error('❌ ScheduleService: Erro ao atualizar evento:', error);
         throw error;
       }
-      
-      console.log('✅ ScheduleService: Evento atualizado com sucesso:', data.id);
       
       return {
         id: data.id,
         title: data.title,
-        employee_id: data.employee_id,
-        employeeId: data.employee_id, // alias
+        employee_id: data.user_id,
+        employeeId: data.user_id, // alias
         employee: data.users?.username || 'Unknown',
         unit: data.unit as Unit,
-        date: data.event_date, // alias
-        event_date: data.event_date,
+        date: data.start_date, // alias
+        event_date: data.start_date,
         start_time: data.start_time,
         startTime: data.start_time, // alias
         end_time: data.end_time,
@@ -176,36 +275,27 @@ export const scheduleService = {
         updatedAt: data.updated_at // alias
       };
     } catch (error) {
-      console.error('❌ ScheduleService: Erro ao atualizar evento:', error);
       throw error;
     }
   },
 
   async deleteScheduleEvent(id: string): Promise<void> {
     try {
-      console.log('🔄 ScheduleService: Deletando evento de agenda:', id);
-      
       const { error } = await supabase
         .from('schedule_events')
         .delete()
         .eq('id', id);
       
       if (error) {
-        console.error('❌ ScheduleService: Erro ao deletar evento:', error);
         throw error;
       }
-      
-      console.log('✅ ScheduleService: Evento deletado com sucesso:', id);
     } catch (error) {
-      console.error('❌ ScheduleService: Erro ao deletar evento:', error);
       throw error;
     }
   },
 
   async getEventsForUnits(units: Unit[]): Promise<ScheduleEvent[]> {
     try {
-      console.log('🔄 ScheduleService: Buscando eventos para unidades:', units);
-      
       const { data, error } = await supabase
         .from('schedule_events')
         .select(`
@@ -216,17 +306,14 @@ export const scheduleService = {
         .order('event_date', { ascending: false });
       
       if (error) {
-        console.error('❌ ScheduleService: Erro ao buscar eventos por unidades:', error);
         throw error;
       }
-      
-      console.log('✅ ScheduleService: Eventos encontrados:', data?.length || 0);
       
       return data?.map(event => ({
         id: event.id,
         title: event.title,
-        employee_id: event.employee_id,
-        employeeId: event.employee_id, // alias
+        employee_id: event.user_id,
+        employeeId: event.user_id, // alias
         employee: event.users?.username || 'Unknown',
         unit: event.unit as Unit,
         date: event.event_date, // alias
@@ -248,7 +335,6 @@ export const scheduleService = {
         updatedAt: event.updated_at // alias
       })) || [];
     } catch (error) {
-      console.error('❌ ScheduleService: Erro ao buscar eventos por unidades:', error);
       throw error;
     }
   }

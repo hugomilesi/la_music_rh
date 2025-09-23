@@ -1,95 +1,142 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { documentService, Document as ServiceDocument } from '@/services/documentService';
+import { documentService } from '@/services/documentService';
+import { documentChecklistService } from '@/services/documentChecklistService';
 import { Document, DocumentUpload } from '@/types/document';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DocumentFilter {
   searchTerm?: string;
   type?: 'all' | 'obrigatorio' | 'temporario' | 'complementar';
-  status?: 'all' | 'válido' | 'vencido' | 'vencendo' | 'pendente';
-  employeeId?: string;
-  dateRange?: {
-    start: string;
-    end: string;
-  };
+  status?: 'all' | 'pendente' | 'completo' | 'vencendo' | 'vencido';
+  employee?: string;
 }
 
 interface DocumentStats {
   total: number;
   valid: number;
-  expired: number;
   expiring: number;
+  expired: number;
   pending: number;
 }
 
 interface DocumentContextType {
   documents: Document[];
   filteredDocuments: Document[];
-  loading: boolean;
-  isLoading: boolean;
-  error: string | null;
   filter: DocumentFilter;
+  setFilter: (filter: Partial<DocumentFilter>) => void;
   stats: DocumentStats;
-  loadDocuments: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
   uploadDocument: (uploadData: DocumentUpload) => Promise<Document>;
-  updateDocument: (documentId: string, updates: Partial<Document>) => Promise<Document>;
-  replaceDocument: (documentId: string, newFile: File) => Promise<Document>;
-  deleteDocument: (documentId: string) => Promise<void>;
+  deleteDocument: (id: string) => Promise<void>;
   downloadDocument: (document: Document) => Promise<void>;
-  viewDocument: (document: Document) => Promise<void>;
-  exportDocumentsByEmployee: (employeeId: string, format: 'pdf' | 'excel') => Promise<void>;
-  getDocumentsByEmployee: (employeeId: string) => Promise<Document[]>;
-  setFilter: (newFilter: Partial<DocumentFilter>) => void;
-  exportDocuments: (format: 'pdf' | 'excel') => void;
+  viewDocument: (document: Document) => void;
+  exportDocuments: () => void;
+  exportDocumentsByEmployee: (employeeId: string) => void;
+  loadDocuments: () => Promise<void>;
+  requiredDocuments: any[]; // Add required documents to context
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
 
-export const useDocumentContext = () => {
+export const useDocuments = () => {
   const context = useContext(DocumentContext);
   if (!context) {
-    throw new Error('useDocumentContext must be used within a DocumentProvider');
+    throw new Error('useDocuments must be used within a DocumentProvider');
   }
   return context;
 };
 
-// Export comprehensive useDocuments hook
-export const useDocuments = () => {
-  return useDocumentContext();
-};
-
 export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
   const [filter, setFilterState] = useState<DocumentFilter>({
     searchTerm: '',
     type: 'all',
-    status: 'all'
+    status: 'all',
+    employee: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { profile } = useAuth();
+
+  // Load required documents using the new view
+  const loadRequiredDocuments = async () => {
+    try {
+      // Use the new view for better synchronization
+      const userDocuments = await documentChecklistService.getUserRequiredDocuments();
+      
+      // Extract unique required documents from the view
+      const uniqueRequiredDocs = userDocuments.reduce((acc, item) => {
+        const existingDoc = acc.find(doc => doc.id === item.required_document_id);
+        if (!existingDoc) {
+          acc.push({
+            id: item.required_document_id,
+            name: item.document_name,
+            document_type: item.document_type,
+            is_mandatory: item.is_mandatory,
+            is_active: item.is_active,
+            category: item.category,
+            description: item.description
+          });
+        }
+        return acc;
+      }, []);
+
+      setRequiredDocuments(uniqueRequiredDocs);
+      
+      // Trigger synchronization if there are sync issues
+      const syncIssues = userDocuments.filter(item => item.sync_status !== 'synchronized');
+      if (syncIssues.length > 0) {
+        console.log('Problemas de sincronização detectados, executando sincronização automática...');
+        await documentChecklistService.syncUserRequiredDocuments();
+        // Reload after sync
+        const updatedUserDocuments = await documentChecklistService.getUserRequiredDocuments();
+        const updatedRequiredDocs = updatedUserDocuments.reduce((acc, item) => {
+          const existingDoc = acc.find(doc => doc.id === item.required_document_id);
+          if (!existingDoc) {
+            acc.push({
+              id: item.required_document_id,
+              name: item.document_name,
+              document_type: item.document_type,
+              is_mandatory: item.is_mandatory,
+              is_active: item.is_active,
+              category: item.category,
+              description: item.description
+            });
+          }
+          return acc;
+        }, []);
+        setRequiredDocuments(updatedRequiredDocs);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar documentos obrigatórios:', error);
+    }
+  };
+
+  // Load required documents on mount
+  useEffect(() => {
+    loadRequiredDocuments();
+  }, []);
 
   // Load documents on mount
   useEffect(() => {
     loadDocuments();
   }, []);
 
-  // Helper function to map service document to UI document
-  const mapServiceDocumentToUIDocument = (serviceDoc: any): Document => {
-    return serviceDoc; // No mapping needed, data comes in correct format
-  };
-
   const loadDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const data = await documentService.getAllDocuments();
-      const mappedDocuments = data.map(mapServiceDocumentToUIDocument);
-      setDocuments(mappedDocuments);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar documentos');
+      const docs = await documentService.getAllDocuments();
+      setDocuments(docs);
+    } catch (error) {
+      console.error('Erro ao carregar documentos:', error);
+      setError('Erro ao carregar documentos');
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar os documentos',
@@ -100,325 +147,195 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  // Helper function to update checklist after document upload
+  const updateChecklistAfterUpload = async (document: Document) => {
+    try {
+      console.log('Verificando se documento corresponde a um documento obrigatório:', document);
+      
+      // Find matching required document
+      const matchingRequiredDoc = requiredDocuments.find(reqDoc => {
+        const docName = document.file_name || document.document_name || '';
+        const docType = document.document_type || '';
+        
+        // Check if document matches by name or type
+        return docName.toLowerCase().includes(reqDoc.name.toLowerCase()) ||
+               docName.toLowerCase().includes(reqDoc.document_type.toLowerCase()) ||
+               docType.toLowerCase().includes(reqDoc.document_type.toLowerCase());
+      });
+
+      if (matchingRequiredDoc && matchingRequiredDoc.is_mandatory) {
+        console.log('Documento obrigatório encontrado, atualizando checklist:', matchingRequiredDoc);
+        
+        // Get employee checklist
+        const employeeChecklist = await documentChecklistService.getEmployeeDocumentChecklist(document.employee_id);
+        
+        // Find the checklist item for this required document
+        const checklistItem = employeeChecklist.find(item => 
+          item.required_document_id === matchingRequiredDoc.id
+        );
+
+        if (checklistItem) {
+          // Update checklist item status to 'completo' and link the document
+          await documentChecklistService.updateChecklistItemStatus(checklistItem.id, 'completo');
+          
+          // Update the checklist item with the document ID
+          const { error } = await supabase
+            .from('employee_document_checklist')
+            .update({ 
+              document_id: document.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', checklistItem.id);
+
+          if (error) {
+            console.error('Erro ao vincular documento ao checklist:', error);
+          } else {
+            console.log('Checklist atualizado com sucesso para documento:', document.file_name);
+            toast({
+              title: 'Checklist Atualizado',
+              description: `Documento obrigatório "${matchingRequiredDoc.name}" marcado como completo`,
+            });
+          }
+        } else {
+          console.log('Item do checklist não encontrado, criando novo item...');
+          // If checklist item doesn't exist, sync the employee checklist
+          await documentChecklistService.syncEmployeeChecklist(document.employee_id);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar checklist após upload:', error);
+      // Don't throw error to avoid breaking the upload flow
+    }
+  };
+
   const uploadDocument = async (uploadData: DocumentUpload): Promise<Document> => {
     try {
-      // Log desabilitado: Uploading document
+      setLoading(true);
       
-      // Map UI upload data to service upload data
-      const serviceUploadData = {
-        employee_id: uploadData.employeeId,
-        document_name: uploadData.file.name,
+      const newDocument = await documentService.uploadDocument({
+        ...uploadData,
         document_type: uploadData.documentType,
-        file: uploadData.file,
-        expiry_date: uploadData.expiryDate,
-        notes: uploadData.notes,
-        uploaded_by: 'current_user' // TODO: Get from auth context
-      };
-      
-      const newServiceDocument = await documentService.uploadDocument(serviceUploadData);
-      // Log desabilitado: Document uploaded
-      
-      // Map service document to UI document
-      const newDocument = mapServiceDocumentToUIDocument(newServiceDocument);
-      
-      // Add to local state
-      setDocuments(prev => [newDocument, ...prev]);
+        employee_id: uploadData.employeeId,
+        file_name: uploadData.file.name,
+        file_size: uploadData.file.size,
+        mime_type: uploadData.file.type
+      });
+
+      // Update checklist automatically if document matches required document
+      await updateChecklistAfterUpload(newDocument);
+
+      await loadDocuments();
       
       toast({
         title: 'Sucesso',
         description: 'Documento enviado com sucesso'
       });
-      
+
       return newDocument;
-    } catch (err) {
-      // Log desabilitado: Error uploading document
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar documento';
+    } catch (error) {
+      console.error('Erro ao fazer upload do documento:', error);
       toast({
         title: 'Erro',
-        description: errorMessage,
+        description: 'Erro ao fazer upload do documento',
         variant: 'destructive'
       });
-      throw err;
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateDocument = async (documentId: string, updates: Partial<Document>): Promise<Document> => {
+  const deleteDocument = async (id: string): Promise<void> => {
     try {
-      // Map UI updates to service updates
-      const serviceUpdates: any = {};
-      if (updates.document) serviceUpdates.document_name = updates.document;
-      if (updates.status) serviceUpdates.status = updates.status;
-      if (updates.expiryDate !== undefined) serviceUpdates.expiry_date = updates.expiryDate;
-      if (updates.notes !== undefined) serviceUpdates.notes = updates.notes;
-      
-      const updatedServiceDocument = await documentService.updateDocument(documentId, serviceUpdates);
-      const updatedDocument = mapServiceDocumentToUIDocument(updatedServiceDocument);
-      
-      // Update local state
-      setDocuments(prev => 
-        prev.map(doc => doc.id === documentId ? updatedDocument : doc)
-      );
-      
-      toast({
-        title: 'Sucesso',
-        description: 'Documento atualizado com sucesso'
-      });
-      
-      return updatedDocument;
-    } catch (err) {
-      // Log desabilitado: Error updating document
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar documento',
-        variant: 'destructive'
-      });
-      throw err;
-    }
-  };
-
-  const deleteDocument = async (documentId: string): Promise<void> => {
-    try {
-      await documentService.deleteDocument(documentId);
-      
-      // Remove from local state
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      setLoading(true);
+      await documentService.deleteDocument(id);
+      await loadDocuments();
       
       toast({
         title: 'Sucesso',
         description: 'Documento excluído com sucesso'
       });
-    } catch (err) {
-      // Log desabilitado: Error deleting document
+    } catch (error) {
+      console.error('Erro ao excluir documento:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao excluir documento',
         variant: 'destructive'
       });
-      throw err;
-    }
-  };
-
-  const replaceDocument = async (documentId: string, newFile: File): Promise<Document> => {
-    try {
-      // Log desabilitado: Replacing document
-      
-      // Find the existing document
-      const existingDocument = documents.find(doc => doc.id === documentId);
-      if (!existingDocument) {
-        throw new Error('Document not found');
-      }
-      
-      // Delete the old document
-      await documentService.deleteDocument(documentId);
-      
-      // Upload the new document with the same metadata
-      const uploadData = {
-        employee_id: existingDocument.employeeId,
-        document_name: existingDocument.document,
-        document_type: existingDocument.type,
-        file: newFile,
-        expiry_date: existingDocument.expiryDate,
-        notes: existingDocument.notes,
-        uploaded_by: 'current_user' // TODO: Get from auth context
-      };
-      
-      const newServiceDocument = await documentService.uploadDocument(uploadData);
-      const newDocument = mapServiceDocumentToUIDocument(newServiceDocument);
-      
-      // Update local state - replace the old document with the new one
-      setDocuments(prev => 
-        prev.map(doc => doc.id === documentId ? newDocument : doc)
-      );
-      
-      toast({
-        title: 'Sucesso',
-        description: 'Documento substituído com sucesso'
-      });
-      
-      return newDocument;
-    } catch (err) {
-      // Log desabilitado: Error replacing document
-      toast({
-        title: 'Erro',
-        description: 'Erro ao substituir documento',
-        variant: 'destructive'
-      });
-      throw err;
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const downloadDocument = async (document: Document): Promise<void> => {
     try {
-      // Log desabilitado: Downloading document
-      
-      // Ensure we have a valid document ID
-      if (!document.id || typeof document.id !== 'string') {
-        throw new Error('Invalid document ID');
-      }
-      
-      const downloadUrl = await documentService.downloadDocument(document.id);
-      
-      // Create a temporary link to trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = document.fileName || document.document;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await documentService.downloadDocument(document.id);
       
       toast({
         title: 'Sucesso',
-        description: 'Download iniciado com sucesso'
+        description: 'Download iniciado'
       });
-    } catch (err) {
-      // Log desabilitado: Error downloading document
+    } catch (error) {
+      console.error('Erro ao fazer download do documento:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao baixar documento',
+        description: 'Erro ao fazer download do documento',
         variant: 'destructive'
       });
-      throw err;
     }
   };
 
-  const viewDocument = async (document: Document): Promise<void> => {
-    try {
-      // Log desabilitado: Viewing document
-      
-      // Ensure we have a valid document ID
-      if (!document.id || typeof document.id !== 'string') {
-        throw new Error('Invalid document ID');
-      }
-      
-      const viewUrl = await documentService.downloadDocument(document.id);
-      
-      // Open document in new tab
-      window.open(viewUrl, '_blank');
-      
-      toast({
-        title: 'Sucesso',
-        description: 'Documento aberto em nova aba'
-      });
-    } catch (err) {
-      // Log desabilitado: Error viewing document
-      toast({
-        title: 'Erro',
-        description: 'Erro ao visualizar documento',
-        variant: 'destructive'
-      });
-      throw err;
-    }
+  const viewDocument = (document: Document): void => {
+    // Open document in new tab
+    window.open(document.file_url, '_blank');
   };
 
-  const exportDocumentsByEmployee = async (employeeId: string, format: 'pdf' | 'excel'): Promise<void> => {
-    try {
-      // Log desabilitado: Exporting documents for employee
-      
-      // Get employee documents
-      const employeeDocuments = documents.filter(doc => doc.employeeId === employeeId);
-      
-      if (employeeDocuments.length === 0) {
-        toast({
-          title: 'Aviso',
-          description: 'Nenhum documento encontrado para este funcionário'
-        });
-        return;
-      }
-      
-      if (format === 'excel') {
-        // Create CSV content
-        const headers = ['Documento', 'Tipo', 'Data Upload', 'Data Validade', 'Status', 'Arquivo', 'Tamanho', 'Observações'];
-        const csvContent = [
-          headers.join(','),
-          ...employeeDocuments.map(doc => [
-            `"${doc.document}"`,
-            `"${doc.type}"`,
-            `"${new Date(doc.uploadDate).toLocaleDateString('pt-BR')}"`,
-            `"${doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString('pt-BR') : 'Sem validade'}"`,
-            `"${doc.status}"`,
-            `"${doc.fileName}"`,
-            `"${doc.fileSize ? (doc.fileSize / 1024).toFixed(2) + ' KB' : 'N/A'}"`,
-            `"${doc.notes || ''}"`
-          ].join(','))
-        ].join('\n');
-        
-        // Create and download file
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `documentos_funcionario_${employeeId}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toast({
-          title: 'Sucesso',
-          description: 'Documentos exportados com sucesso'
-        });
-      } else {
-        // TODO: Implement PDF export functionality
-        toast({
-          title: 'Em desenvolvimento',
-          description: `Exportação de documentos em ${format.toUpperCase()} será implementada em breve`
-        });
-      }
-    } catch (err) {
-      // Log desabilitado: Error exporting employee documents
-      toast({
-        title: 'Erro',
-        description: 'Erro ao exportar documentos do funcionário',
-        variant: 'destructive'
-      });
-      throw err;
-    }
+  const exportDocuments = (): void => {
+    // Implementation for exporting documents
+    console.log('Exporting documents...');
   };
 
-  const getDocumentsByEmployee = async (employeeId: string): Promise<Document[]> => {
-    try {
-      const serviceDocuments = await documentService.getDocumentsByEmployeeId(employeeId);
-      return serviceDocuments.map(mapServiceDocumentToUIDocument);
-    } catch (err) {
-      // Log desabilitado: Error getting employee documents
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar documentos do funcionário',
-        variant: 'destructive'
-      });
-      throw err;
-    }
+  const exportDocumentsByEmployee = (employeeId: string): void => {
+    // Implementation for exporting documents by employee
+    console.log('Exporting documents for employee:', employeeId);
   };
 
   const setFilter = (newFilter: Partial<DocumentFilter>) => {
     setFilterState(prev => ({ ...prev, ...newFilter }));
   };
 
-  const exportDocuments = (format: 'pdf' | 'excel') => {
-    // TODO: Implement export functionality
-    toast({
-      title: 'Em desenvolvimento',
-      description: `Exportação em ${format.toUpperCase()} será implementada em breve`
-    });
-  };
-
-  // Filter documents based on current filter
   const filteredDocuments = useMemo(() => {
     return documents.filter(doc => {
       // Search term filter
       if (filter.searchTerm) {
         const searchLower = filter.searchTerm.toLowerCase();
         const matchesSearch = 
-          doc.document.toLowerCase().includes(searchLower) ||
-          doc.type.toLowerCase().includes(searchLower) ||
-          (doc.fileName && doc.fileName.toLowerCase().includes(searchLower)) ||
-          doc.employee.toLowerCase().includes(searchLower);
+          (doc.document_name && doc.document_name.toLowerCase().includes(searchLower)) ||
+          (doc.document_type && doc.document_type.toLowerCase().includes(searchLower)) ||
+          (doc.file_name && doc.file_name.toLowerCase().includes(searchLower)) ||
+          (doc.employee && doc.employee.username && doc.employee.username.toLowerCase().includes(searchLower)) ||
+          (doc.employee && doc.employee.email && doc.employee.email.toLowerCase().includes(searchLower)) ||
+          (doc.employee && doc.employee.position && doc.employee.position.toLowerCase().includes(searchLower));
         if (!matchesSearch) return false;
       }
 
-      // Type filter
+      // Type filter - Fixed logic for mandatory documents
       if (filter.type && filter.type !== 'all') {
-        if (doc.type !== filter.type) return false;
+        if (filter.type === 'obrigatorio') {
+          // Check if document matches any mandatory required document
+          const mandatoryDocs = requiredDocuments.filter(reqDoc => reqDoc.is_mandatory);
+          const isDocumentMandatory = mandatoryDocs.some(reqDoc => {
+            // Check if document name or file path contains the required document name
+            const docName = doc.file_name || doc.document_name || '';
+            return docName.toLowerCase().includes(reqDoc.name.toLowerCase()) ||
+                   docName.toLowerCase().includes(reqDoc.document_type.toLowerCase());
+          });
+          if (!isDocumentMandatory) return false;
+        } else {
+          // For other types, use the existing logic
+          if (doc.document_type !== filter.type) return false;
+        }
       }
 
       // Status filter
@@ -428,43 +345,50 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // Employee filter
       if (filter.employee) {
-        if (!doc.employee.toLowerCase().includes(filter.employee.toLowerCase())) return false;
+        const employeeMatch = 
+          (doc.employee && doc.employee.username && doc.employee.username.toLowerCase().includes(filter.employee.toLowerCase())) ||
+          (doc.employee && doc.employee.email && doc.employee.email.toLowerCase().includes(filter.employee.toLowerCase())) ||
+          (doc.employee && doc.employee.position && doc.employee.position.toLowerCase().includes(filter.employee.toLowerCase()));
+        if (!employeeMatch) return false;
       }
 
       return true;
     });
-  }, [documents, filter]);
+  }, [documents, filter, requiredDocuments]);
 
   // Calculate stats
-  const stats = useMemo((): DocumentStats => {
+  const stats = useMemo(() => {
+    const total = filteredDocuments.length;
+    const valid = filteredDocuments.filter(doc => doc.status === 'completo').length;
+    const expiring = filteredDocuments.filter(doc => doc.status === 'vencendo').length;
+    const expired = filteredDocuments.filter(doc => doc.status === 'vencido').length;
+    const pending = filteredDocuments.filter(doc => doc.status === 'pendente').length;
+
     return {
-      total: filteredDocuments.length,
-      valid: filteredDocuments.filter(doc => doc.status === 'válido').length,
-      expired: filteredDocuments.filter(doc => doc.status === 'vencido').length,
-      expiring: filteredDocuments.filter(doc => doc.status === 'vencendo').length,
-      pending: filteredDocuments.filter(doc => doc.status === 'pendente').length
+      total,
+      valid,
+      expiring,
+      expired,
+      pending
     };
   }, [filteredDocuments]);
 
   const value: DocumentContextType = {
     documents,
     filteredDocuments,
-    loading,
-    isLoading: loading,
-    error,
     filter,
+    setFilter,
     stats,
-    loadDocuments,
+    loading,
+    error,
     uploadDocument,
-    updateDocument,
-    replaceDocument,
     deleteDocument,
     downloadDocument,
     viewDocument,
+    exportDocuments,
     exportDocumentsByEmployee,
-    getDocumentsByEmployee,
-    setFilter,
-    exportDocuments
+    loadDocuments,
+    requiredDocuments
   };
 
   return (

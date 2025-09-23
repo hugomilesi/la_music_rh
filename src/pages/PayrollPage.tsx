@@ -165,11 +165,8 @@ export default function PayrollPage() {
 
   // Função para deletar funcionário
   const handleDeleteEmployee = async (employeeId: string) => {
-    console.log('Tentando deletar funcionário com ID:', employeeId);
-    
     // Verificar se o ID existe
     if (!employeeId) {
-      console.error('ID do funcionário não encontrado:', employeeId);
       setPayrollError('Erro: ID do funcionário não encontrado');
       return;
     }
@@ -188,12 +185,8 @@ export default function PayrollPage() {
     if (!employeeToDelete) return;
     
     try {
-      console.log('Chamando payrollService.deletePayrollEntry com ID:', employeeToDelete.id);
-      
       // Deletar entrada da folha de pagamento
       await payrollService.deletePayrollEntry(employeeToDelete.id);
-      
-      console.log('Entrada deletada com sucesso');
       
       // Recarregar dados após exclusão
       const [year, month] = selectedMonth.split('-').map(Number);
@@ -205,7 +198,6 @@ export default function PayrollPage() {
       setEmployeeToDelete(null);
 
     } catch (error) {
-      console.error('Erro ao deletar funcionário:', error);
       setPayrollError('Erro ao excluir funcionário: ' + error.message);
       setDeleteDialogOpen(false);
       setEmployeeToDelete(null);
@@ -462,7 +454,6 @@ export default function PayrollPage() {
       
       return [];
     } catch (error) {
-      console.error('Erro ao buscar dados de evolução:', error);
       return [];
     }
   };
@@ -481,7 +472,6 @@ export default function PayrollPage() {
         setPayrollEntries(entries);
         
       } catch (error) {
-        console.error('Erro ao carregar dados da folha de pagamento:', error);
         setPayrollError('Erro ao carregar dados: ' + error.message);
       } finally {
         setPayrollLoading(false);
@@ -741,7 +731,6 @@ export default function PayrollPage() {
         const data = await fetchEvolutionData();
         setEvolutionData(data);
       } catch (error) {
-        console.error('Erro ao carregar dados de evolução:', error);
         setEvolutionData([]);
       }
     };

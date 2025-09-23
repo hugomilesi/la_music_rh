@@ -85,7 +85,7 @@ export const WhatsAppIntegration: React.FC = () => {
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>Para: {notification.recipientNames.join(', ')}</span>
+                    <span>Para: {Array.isArray(notification.recipientNames) ? notification.recipientNames.join(', ') : 'N/A'}</span>
                     <span>•</span>
                     <span>{new Date(notification.createdAt).toLocaleDateString('pt-BR')}</span>
                     {notification.sentAt && (

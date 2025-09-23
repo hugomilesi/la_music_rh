@@ -382,7 +382,7 @@ export function ActionSheet({
           
           {actions.map((action, index) => (
             <button
-              key={index}
+              key={`action-${index}`}
               onClick={() => {
                 action.onClick();
                 onClose();

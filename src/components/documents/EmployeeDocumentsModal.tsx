@@ -10,6 +10,7 @@ import { useDocuments } from '@/contexts/DocumentContext';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Document } from '@/types/document';
 import { EditDocumentDialog } from './EditDocumentDialog';
+import { extractDocumentTypeFromPath, formatExpiryDate, getDocumentStatus } from '@/utils/documentUtils';
 
 interface EmployeeDocumentsModalProps {
   employeeId: string | null;
@@ -69,19 +70,27 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      'válido': 'bg-green-100 text-green-800',
-      'vencido': 'bg-red-100 text-red-800',
-      'vencendo': 'bg-yellow-100 text-yellow-800',
-      'pendente': 'bg-gray-100 text-gray-800'
+      'Válido': 'bg-green-100 text-green-800',
+      'Vencido': 'bg-red-100 text-red-800',
+      'Vencendo em breve': 'bg-yellow-100 text-yellow-800',
+      'Sem validade': 'bg-gray-100 text-gray-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
   const getTypeColor = (type: string) => {
     const colors = {
-      'obrigatorio': 'bg-red-50 text-red-700 border-red-200',
-      'temporario': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'complementar': 'bg-blue-50 text-blue-700 border-blue-200'
+      'Contrato de Trabalho': 'bg-red-50 text-red-700 border-red-200',
+      'Carteira de Trabalho': 'bg-red-50 text-red-700 border-red-200',
+      'CPF': 'bg-red-50 text-red-700 border-red-200',
+      'RG': 'bg-red-50 text-red-700 border-red-200',
+      'Comprovante de Residência': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'Atestado de Saúde Ocupacional': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'PIS/PASEP': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Título de Eleitor': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Atestado Médico': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Certificado de Curso': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Carteira Médica': 'bg-blue-50 text-blue-700 border-blue-200'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -176,18 +185,17 @@ export const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">{doc.document_name}</TableCell>
                     <TableCell>
-                      <Badge className={getTypeColor(doc.document_type)}>
-                        {doc.document_type === 'obrigatorio' ? 'Obrigatório' : 
-                         doc.document_type === 'temporario' ? 'Temporário' : 'Complementar'}
+                      <Badge className={getTypeColor(extractDocumentTypeFromPath(doc.file_path))}>
+                        {extractDocumentTypeFromPath(doc.file_path)}
                       </Badge>
                     </TableCell>
                     <TableCell>{new Date(doc.created_at).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
-                      {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('pt-BR') : 'Sem validade'}
+                      {formatExpiryDate(doc.expires_at)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusBadge(doc.status)}>
-                        {doc.status}
+                      <Badge className={getStatusBadge(getDocumentStatus(doc.expires_at))}>
+                        {getDocumentStatus(doc.expires_at)}
                       </Badge>
                     </TableCell>
                     <TableCell>

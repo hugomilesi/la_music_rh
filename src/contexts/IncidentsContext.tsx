@@ -1,8 +1,9 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { incidentService } from '../services/incidentService';
 import type { Incident, IncidentFilter, IncidentStats } from '../types/incident';
 import { toast } from 'sonner';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 interface IncidentsContextType {
   incidents: Incident[];
@@ -22,6 +23,8 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<IncidentStats | null>(null);
+  const subscriptionRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const refreshIncidents = useCallback(async () => {
     try {
@@ -53,20 +56,43 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Inscreve-se para atualizações em tempo real
   useEffect(() => {
-    const subscription = incidentService.subscribeToIncidents(() => {
-      refreshIncidents();
-      refreshStats();
-    });
-    
-    return () => {
+    // Evita múltiplas subscrições usando ref
+    if (isSubscribedRef.current || subscriptionRef.current) {
+      return;
+    }
+
+    const setupSubscription = async () => {
       try {
-        incidentService.unsubscribeFromIncidents(subscription);
-        // Cleanup completed
+        isSubscribedRef.current = true;
+        
+        subscriptionRef.current = incidentService.subscribeToIncidents(() => {
+          // Usa setTimeout para evitar problemas de re-render durante o callback
+          setTimeout(() => {
+            refreshIncidents();
+            refreshStats();
+          }, 0);
+        });
       } catch (error) {
-        // Error during cleanup
+        console.error('Erro ao configurar subscrição:', error);
+        isSubscribedRef.current = false;
       }
     };
-  }, []); // Empty dependency array to prevent re-subscription
+
+    setupSubscription();
+    
+    return () => {
+      if (subscriptionRef.current) {
+        try {
+          incidentService.unsubscribeFromIncidents(subscriptionRef.current);
+        } catch (error) {
+          console.error('Erro ao fazer cleanup da subscrição:', error);
+        } finally {
+          subscriptionRef.current = null;
+          isSubscribedRef.current = false;
+        }
+      }
+    };
+  }, []); // Array vazio para executar apenas uma vez
 
   const addIncident = async (incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -119,20 +145,42 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  const handleRealtimeError = (error: Error) => {
+    console.error('Erro no realtime de incidentes:', error);
+    // Tenta reconectar após um delay
+    setTimeout(() => {
+      if (!isSubscribedRef.current) {
+        try {
+          subscriptionRef.current = incidentService.subscribeToIncidents(() => {
+            setTimeout(() => {
+              refreshIncidents();
+              refreshStats();
+            }, 0);
+          });
+          isSubscribedRef.current = true;
+        } catch (reconnectError) {
+          console.error('Erro ao reconectar:', reconnectError);
+        }
+      }
+    }, 5000);
+  };
+
   return (
-    <IncidentsContext.Provider value={{
-      incidents,
-      loading,
-      stats,
-      addIncident,
-      updateIncident,
-      deleteIncident,
-      getFilteredIncidents,
-      refreshIncidents,
-      refreshStats
-    }}>
-      {children}
-    </IncidentsContext.Provider>
+    <ErrorBoundary onError={handleRealtimeError}>
+      <IncidentsContext.Provider value={{
+        incidents,
+        loading,
+        stats,
+        addIncident,
+        updateIncident,
+        deleteIncident,
+        getFilteredIncidents,
+        refreshIncidents,
+        refreshStats
+      }}>
+        {children}
+      </IncidentsContext.Provider>
+    </ErrorBoundary>
   );
 };
 

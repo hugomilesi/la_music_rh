@@ -259,7 +259,7 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
               <div className="space-y-2">
                 <Label>Documentos anexados:</Label>
                 {documents.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div key={`doc-${index}`} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" />
                       <span className="text-sm">{doc}</span>

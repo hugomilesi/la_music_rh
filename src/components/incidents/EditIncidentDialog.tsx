@@ -34,7 +34,7 @@ interface EditIncidentDialogProps {
     id: string;
     employeeId?: string;
     type: string;
-    severity: 'leve' | 'moderado' | 'grave';
+    severity: 'low' | 'medium' | 'high';
     description: string;
     incidentDate: string;
     reporterId?: string;
@@ -45,7 +45,7 @@ interface EditIncidentDialogProps {
 interface IncidentFormData {
   employeeId: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high';
   description: string;
   incidentDate: string;
   reporterId: string;
@@ -69,7 +69,7 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
     defaultValues: {
       employeeId: incident?.employeeId || '',
       type: incident?.type || '',
-      severity: incident?.severity || 'leve',
+      severity: incident?.severity || 'low',
       description: incident?.description || '',
       incidentDate: incident?.incidentDate || '',
       reporterId: incident?.reporterId || '',

@@ -12,6 +12,7 @@ export interface Evaluation {
   evaluatorId?: string;
   evaluator?: string;
   comments?: string;
+  unit?: string;
   // Campos específicos do Coffee Connection
   meetingDate?: string;
   meetingTime?: string;
@@ -22,11 +23,13 @@ export interface Evaluation {
 }
 
 export interface NewEvaluationData {
-  employeeId: string;
-  type: 'Avaliação 360°' | 'Auto Avaliação' | 'Avaliação do Gestor' | 'Coffee Connection';
+  employee_id: string;
+  evaluation_type: 'Avaliação 360°' | 'Auto Avaliação' | 'Avaliação do Gestor' | 'Coffee Connection';
+  evaluation_date: string;
   period: string;
-  evaluatorId?: string;
+  evaluator_id?: string | null;
   comments?: string;
+  unit: string;
   // Campos específicos do Coffee Connection
   meetingDate?: string;
   meetingTime?: string;

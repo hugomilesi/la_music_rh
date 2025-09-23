@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,19 @@ import { useDocuments } from '@/contexts/DocumentContext';
 import { Document } from '@/types/document';
 import { toast } from 'sonner';
 import { formatDateToLocal } from '@/utils/dateUtils';
+import { supabase } from '@/lib/supabase';
 
 interface EditDocumentDialogProps {
   document: Document | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface RequiredDocument {
+  id: string;
+  document_type: string;
+  name: string;
+  is_active: boolean;
 }
 
 export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
@@ -24,16 +32,42 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 }) => {
   const { updateDocument, replaceDocument } = useDocuments();
   const [name, setName] = useState('');
+  const [documentType, setDocumentType] = useState('');
   const [notes, setNotes] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [newFile, setNewFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
+
+  // Load required documents from database
+  useEffect(() => {
+    const loadRequiredDocuments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('required_documents')
+          .select('id, document_type, name, is_active')
+          .eq('is_active', true)
+          .order('name');
+
+        if (error) throw error;
+        setRequiredDocuments(data || []);
+      } catch (error) {
+        console.error('Erro ao carregar tipos de documento:', error);
+        toast.error('Erro ao carregar tipos de documento');
+      }
+    };
+
+    if (open) {
+      loadRequiredDocuments();
+    }
+  }, [open]);
 
   React.useEffect(() => {
     if (document) {
-      setName(document.document || '');
+      setName(document.document_name || '');
+      setDocumentType(document.document_type || '');
       setNotes(document.notes || '');
-      setExpiryDate(document.expiryDate ? formatDateToLocal(new Date(document.expiryDate)) : '');
+      setExpiryDate(document.expiry_date ? formatDateToLocal(new Date(document.expiry_date)) : '');
     }
   }, [document]);
 
@@ -42,22 +76,28 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 
     setLoading(true);
     try {
+      // Get the selected document name from the dropdown
+      const selectedDoc = requiredDocuments.find(doc => doc.document_type === documentType);
+      const documentName = selectedDoc ? selectedDoc.name : name;
+
       if (newFile) {
         // Replace the document file
         await replaceDocument(document.id, newFile);
         // Update document metadata after replacing file
         await updateDocument(document.id, {
-          document: name || document.document,
+          document: documentName,
+          document_type: documentType,
           notes,
-          expiryDate: expiryDate || null
+          expires_at: expiryDate || null
         });
         toast.success('Documento substituído com sucesso!');
       } else {
         // Update document metadata only
         await updateDocument(document.id, {
-          document: name || document.document,
+          document: documentName,
+          document_type: documentType,
           notes,
-          expiryDate: expiryDate || null
+          expires_at: expiryDate || null
         });
         toast.success('Documento atualizado com sucesso!');
       }
@@ -90,13 +130,19 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name">Nome do Documento</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nome do documento"
-            />
+            <Label htmlFor="documentType">Tipo de Documento *</Label>
+            <Select value={documentType} onValueChange={setDocumentType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de documento" />
+              </SelectTrigger>
+              <SelectContent>
+                {requiredDocuments.map((doc) => (
+                  <SelectItem key={doc.id} value={doc.document_type}>
+                    {doc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -137,8 +183,8 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
 
           <div className="bg-muted p-3 rounded-md">
             <p className="text-sm font-medium">Arquivo atual:</p>
-            <p className="text-sm text-muted-foreground">{document.fileName}</p>
-            <p className="text-sm text-muted-foreground">Tipo: {document.type}</p>
+            <p className="text-sm text-muted-foreground">{document.file_name}</p>
+            <p className="text-sm text-muted-foreground">Tipo: {document.mime_type}</p>
           </div>
         </div>
 
@@ -152,7 +198,7 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={loading}
+            disabled={loading || !documentType}
           >
             {loading ? 'Salvando...' : 'Salvar'}
           </Button>

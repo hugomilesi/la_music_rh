@@ -5,23 +5,29 @@ interface CreateUserRequest {
   email: string;
   password: string;
   name: string;
-  department: string;
-  position: string;
+  department?: string;
+  position?: string;
   phone?: string;
   role: string;
+  unit?: string;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production'
-    ? '*'
-    : 'http://localhost:8081',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Credentials': 'true',
-};
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "*";
+
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
+
+  const corsHeaders=getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -166,7 +172,8 @@ Deno.serve(async (req: Request) => {
       department,
       position,
       phone,
-      role
+      role,
+      unit
     } = requestData;
     
     // Validação de campos obrigatórios
@@ -190,11 +197,12 @@ Deno.serve(async (req: Request) => {
       validationErrors.push('Nome deve ter pelo menos 2 caracteres');
     }
     
-    if (!position || position.trim() === '') {
-      validationErrors.push('Cargo é obrigatório');
+    // Position is optional - only validate if provided
+    if (position && position.trim() === '') {
+      validationErrors.push('Cargo não pode estar vazio se fornecido');
     }
     
-    if (!role || !['admin', 'coordenador', 'professor', 'usuario'].includes(role)) {
+    if (!role || !['super_admin', 'admin', 'gestor_rh', 'gerente'].includes(role)) {
       validationErrors.push('Perfil de usuário é obrigatório e deve ser válido');
     }
     
@@ -365,11 +373,92 @@ Deno.serve(async (req: Request) => {
 
     const userId = authUser.user.id;
 
-    // Wait a moment for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Get or create default department
+    let departmentId = null;
+    if (department && department !== 'Não informado') {
+      const { data: existingDept, error: deptError } = await supabaseAdmin
+        .from('departments')
+        .select('id')
+        .eq('name', department)
+        .single();
 
-    // Update user preferences if admin
-    if (role === 'admin') {
+      if (deptError && deptError.code === 'PGRST116') {
+        // Department doesn't exist, create it
+        const { data: newDept, error: createDeptError } = await supabaseAdmin
+          .from('departments')
+          .insert({ name: department })
+          .select('id')
+          .single();
+
+        if (createDeptError) {
+          console.warn('Failed to create department:', createDeptError.message);
+        } else {
+          departmentId = newDept.id;
+        }
+      } else if (!deptError) {
+        departmentId = existingDept.id;
+      }
+    }
+
+    // If no department specified or creation failed, get default department
+    if (!departmentId) {
+      const { data: defaultDept, error: defaultDeptError } = await supabaseAdmin
+        .from('departments')
+        .select('id')
+        .eq('name', 'Geral')
+        .single();
+
+      if (defaultDeptError && defaultDeptError.code === 'PGRST116') {
+        // Create default department if it doesn't exist
+        const { data: newDefaultDept, error: createDefaultError } = await supabaseAdmin
+          .from('departments')
+          .insert({ name: 'Geral' })
+          .select('id')
+          .single();
+
+        if (!createDefaultError) {
+          departmentId = newDefaultDept.id;
+        }
+      } else if (!defaultDeptError) {
+        departmentId = defaultDept.id;
+      }
+    }
+
+    // Create user in public.users table
+    console.log('Creating user in public.users table...');
+    const { data: publicUser, error: publicUserError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        auth_user_id: userId,
+        username: name,
+        email: email,
+        role: role,
+        department_id: departmentId,
+        phone: phone || null,
+        unit: unit || null,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (publicUserError) {
+      console.error('Failed to create user in public.users:', publicUserError);
+      
+      // If user creation in public table fails, we should clean up the auth user
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        console.log('Cleaned up auth user after public user creation failure');
+      } catch (cleanupError) {
+        console.error('Failed to cleanup auth user:', cleanupError);
+      }
+      
+      throw new Error(`Failed to create user profile: ${publicUserError.message}`);
+    }
+
+    console.log('User created successfully in public.users:', publicUser.id);
+
+    // Update user preferences if admin or super_admin
+    if (role === 'admin' || role === 'super_admin') {
       const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({

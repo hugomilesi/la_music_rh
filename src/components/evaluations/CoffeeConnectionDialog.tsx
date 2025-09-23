@@ -27,12 +27,37 @@ import { useEmployees } from '@/contexts/EmployeeContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvaluationData } from '@/types/evaluation';
 import { Coffee, X, Plus } from 'lucide-react';
+import { SCHEDULE_UNITS } from '@/types/unit';
+
+// Função para converter data em período (ano e trimestre)
+const convertDateToPeriod = (date: string): string => {
+  if (!date) return '';
+  
+  const selectedDate = new Date(date);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1; // getMonth() retorna 0-11
+  
+  let quarter = '';
+  if (month >= 1 && month <= 3) {
+    quarter = '1º Trimestre';
+  } else if (month >= 4 && month <= 6) {
+    quarter = '2º Trimestre';
+  } else if (month >= 7 && month <= 9) {
+    quarter = '3º Trimestre';
+  } else if (month >= 10 && month <= 12) {
+    quarter = '4º Trimestre';
+  }
+  
+  return `${year} - ${quarter}`;
+};
 
 const formSchema = z.object({
   employeeId: z.string().min(1, 'Colaborador é obrigatório'),
   meetingDate: z.string().min(1, 'Data é obrigatória'),
+  period: z.string().min(1, 'Período é obrigatório'),
   meetingTime: z.string().min(1, 'Horário é obrigatório'),
   location: z.string().min(1, 'Local é obrigatório'),
+  unit: z.string().min(1, 'Unidade é obrigatória'),
   topics: z.array(z.string()).optional(),
   followUpActions: z.string().optional(),
   confidential: z.boolean().optional(),
@@ -73,8 +98,10 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
     defaultValues: {
       employeeId: '',
       meetingDate: '',
+      period: '',
       meetingTime: '',
       location: '',
+      unit: '',
       topics: [],
       followUpActions: '',
       confidential: false,
@@ -99,18 +126,25 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
+      console.log('🔄 CoffeeConnectionDialog: Dados do formulário:', data);
+      
       const evaluationData: NewEvaluationData = {
-        employeeId: data.employeeId,
-        type: 'Coffee Connection',
-        period: new Date().getFullYear().toString(),
+        employee_id: data.employeeId,
+        evaluation_type: 'Coffee Connection',
+        evaluation_date: data.meetingDate,
+        period: data.period,
+        evaluatorId: undefined,
+        comments: data.comments,
+        unit: data.unit,
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,
         location: data.location,
         topics: selectedTopics,
         followUpActions: data.followUpActions,
         confidential: data.confidential,
-        comments: data.comments,
       };
+      
+      console.log('📤 CoffeeConnectionDialog: Enviando dados para o serviço:', evaluationData);
       
       await addEvaluation(evaluationData);
       toast({
@@ -126,6 +160,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         onSuccess();
       }
     } catch (error) {
+      console.error('❌ CoffeeConnectionDialog: Erro ao agendar sessão:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao agendar a sessão.',
@@ -174,8 +209,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                 )}
               />
 
-
-
               <FormField
                 control={form.control}
                 name="location"
@@ -192,12 +225,44 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
 
               <FormField
                 control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      >
+                        <option value="">Selecione uma unidade</option>
+                        {SCHEDULE_UNITS.map((unit) => (
+                           <option key={unit.id} value={unit.id}>
+                             {unit.name}
+                           </option>
+                         ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="meetingDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input 
+                        type="date" 
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          const period = convertDateToPeriod(e.target.value);
+                          form.setValue('period', period);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -218,6 +283,25 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="period"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Período</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      readOnly
+                      placeholder="Será preenchido automaticamente"
+                      className="bg-gray-50"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div>
               <FormLabel>Tópicos para Discussão</FormLabel>

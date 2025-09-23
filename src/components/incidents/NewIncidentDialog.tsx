@@ -18,9 +18,10 @@ interface NewIncidentDialogProps {
 }
 
 interface IncidentFormData {
+  title: string;
   employeeId: string;
   type: string;
-  severity: 'leve' | 'moderado' | 'grave';
+  severity: 'low' | 'medium' | 'high';
   description: string;
   incidentDate: string;
   reporterId: string;
@@ -36,9 +37,10 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
+      title: '',
       employeeId: '',
       type: '',
-      severity: 'leve',
+      severity: 'low',
       description: '',
       incidentDate: getTodayLocal(),
       reporterId: 'eea4767c-7c68-4667-b783-cba2b30c9fcf' // Default reporter ID
@@ -47,6 +49,7 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
 
   const onSubmit = (data: IncidentFormData) => {
     const incidentData = {
+      title: data.title,
       employeeId: data.employeeId,
       employeeName: employees.find(emp => emp.id === data.employeeId)?.name || '',
       type: data.type,
@@ -74,11 +77,26 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Nova Ocorrência</DialogTitle>
+          <DialogDescription>
+            Registre uma nova ocorrência no sistema preenchendo os campos abaixo.
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título da Ocorrência</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Digite um título para a ocorrência" required />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="grid grid-cols-2 gap-4">
               <FormField

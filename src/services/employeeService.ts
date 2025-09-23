@@ -6,163 +6,170 @@ import { Unit } from '@/types/unit';
 export const employeeService = {
   async getEmployees(): Promise<Employee[]> {
     try {
-      console.log('EmployeeService: Buscando funcionários...');
+      console.log('🔍 Buscando colaboradores...');
       
-      // Get all users from the unified users table
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .is('deleted_at', null)
-        .order('username');
+        .order('username', { ascending: true });
       
       if (error) {
-        console.error('EmployeeService: Erro ao buscar funcionários:', error);
+        console.error('❌ Erro ao buscar colaboradores:', error);
         throw error;
       }
       
-      console.log('EmployeeService: Funcionários encontrados:', data?.length || 0);
+      console.log('✅ Colaboradores encontrados:', data?.length || 0);
       
-      return data?.map(user => ({
-        ...user,
-        name: user.username,
-        status: user.status === 'ativo' ? 'active' : 'inactive',
-        units: Array.isArray(user.units) ? user.units.map((unit: string) => unit as Unit) : []
+      const mappedData = data?.map(user => ({
+        id: user.id,
+        name: user.username || 'Nome não informado',
+        email: user.email || 'Email não informado',
+        phone: user.phone || '',
+        position: user.position_id || 'Não informado',
+        department: user.department || 'Não informado',
+        units: [], // TODO: Implementar mapeamento de unidades
+        start_date: user.created_at,
+        status: user.status === 'ativo' ? 'ativo' : 'inativo',
+        avatar: user.avatar_url,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_login: user.last_login,
+        role: user.role,
+        auth_user_id: user.auth_user_id
       })) || [];
+      
+      console.log('📊 Dados mapeados:', mappedData);
+      return mappedData;
+      
     } catch (error) {
-      console.error('EmployeeService: Erro em getEmployees:', error);
+      console.error('💥 Erro crítico no employeeService.getEmployees:', error);
       throw error;
     }
   },
 
   async getEmployeeById(id: string): Promise<Employee | null> {
-    try {
-      console.log('EmployeeService: Buscando funcionário por ID:', id);
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .single();
-      
-      if (error) {
-        console.error('EmployeeService: Erro ao buscar funcionário por ID:', error);
-        throw error;
-      }
-      
-      if (!data) {
-        console.log('EmployeeService: Funcionário não encontrado');
-        return null;
-      }
-      
-      console.log('EmployeeService: Funcionário encontrado:', data.username);
-      
-      return {
-        ...data,
-        name: data.username,
-        status: data.status === 'ativo' ? 'active' : 'inactive',
-        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
-      };
-    } catch (error) {
-      console.error('EmployeeService: Erro em getEmployeeById:', error);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
       throw error;
     }
+    
+    if (!data) {
+      return null;
+    }
+    
+    return {
+      id: data.id,
+      name: data.username,
+      email: data.email,
+      phone: data.phone || '',
+      position: data.position_id || 'Não informado',
+      department: data.department || 'Não informado',
+      units: [], // TODO: Implementar mapeamento de unidades
+      start_date: data.created_at,
+      status: data.status === 'ativo' ? 'ativo' : 'inativo',
+      avatar: data.avatar_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      last_login: data.last_login,
+      role: data.role,
+      auth_user_id: data.auth_user_id
+    };
   },
 
   async createEmployee(employeeData: NewEmployeeData): Promise<Employee> {
-    try {
-      console.log('EmployeeService: Criando funcionário:', employeeData.name);
-      
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          username: employeeData.name,
-          email: employeeData.email,
-          phone: employeeData.phone,
-          position: employeeData.position,
-          department: employeeData.department,
-          status: employeeData.status === 'active' ? 'ativo' : 'inativo',
-          units: employeeData.units || []
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('EmployeeService: Erro ao criar funcionário:', error);
-        throw error;
-      }
-      
-      console.log('EmployeeService: Funcionário criado com sucesso:', data.username);
-      
-      return {
-        ...data,
-        name: data.username,
-        status: data.status === 'ativo' ? 'active' : 'inactive',
-        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
-      };
-    } catch (error) {
-      console.error('EmployeeService: Erro em createEmployee:', error);
+    const insertData = {
+      username: employeeData.name,
+      email: employeeData.email,
+      role: employeeData.role,
+      department: employeeData.department,
+      position_id: employeeData.position,
+      phone: employeeData.phone,
+      status: employeeData.status || 'ativo',
+      is_active: true
+    };
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert(insertData)
+      .select()
+      .single();
+    
+    if (error) {
       throw error;
     }
+    
+    return {
+      id: data.id,
+      name: data.username,
+      email: data.email,
+      phone: data.phone || '',
+      position: data.position_id || 'Não informado',
+      department: data.department || 'Não informado',
+      units: [], // TODO: Implementar mapeamento de unidades
+      start_date: data.created_at,
+      status: data.status === 'ativo' ? 'ativo' : 'inativo',
+      avatar: data.avatar_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      last_login: data.last_login,
+      role: data.role,
+      auth_user_id: data.auth_user_id
+    };
   },
 
   async updateEmployee(id: string, employeeData: Partial<NewEmployeeData>): Promise<Employee> {
-    try {
-      console.log('EmployeeService: Atualizando funcionário:', id);
-      
-      const updateData: any = {};
-      
-      if (employeeData.name) updateData.username = employeeData.name;
-      if (employeeData.email) updateData.email = employeeData.email;
-      if (employeeData.phone) updateData.phone = employeeData.phone;
-      if (employeeData.position) updateData.position = employeeData.position;
-      if (employeeData.department) updateData.department = employeeData.department;
-      if (employeeData.status) updateData.status = employeeData.status === 'active' ? 'ativo' : 'inativo';
-      if (employeeData.units) updateData.units = employeeData.units;
-      
-      const { data, error } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('EmployeeService: Erro ao atualizar funcionário:', error);
-        throw error;
-      }
-      
-      console.log('EmployeeService: Funcionário atualizado com sucesso:', data.username);
-      
-      return {
-        ...data,
-        name: data.username,
-        status: data.status === 'ativo' ? 'active' : 'inactive',
-        units: Array.isArray(data.units) ? data.units.map((unit: string) => unit as Unit) : []
-      };
-    } catch (error) {
-      console.error('EmployeeService: Erro em updateEmployee:', error);
+    const updateData: any = {};
+    
+    if (employeeData.name) updateData.username = employeeData.name;
+    if (employeeData.email) updateData.email = employeeData.email;
+    if (employeeData.role) updateData.role = employeeData.role;
+    if (employeeData.department) updateData.department = employeeData.department;
+    if (employeeData.position) updateData.position_id = employeeData.position;
+    if (employeeData.phone) updateData.phone = employeeData.phone;
+    if (employeeData.status) updateData.status = employeeData.status;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
       throw error;
     }
+    
+    return {
+      id: data.id,
+      name: data.username,
+      email: data.email,
+      phone: data.phone || '',
+      position: data.position_id || 'Não informado',
+      department: data.department || 'Não informado',
+      units: [], // TODO: Implementar mapeamento de unidades
+      start_date: data.created_at,
+      status: data.status === 'ativo' ? 'ativo' : 'inativo',
+      avatar: data.avatar_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      last_login: data.last_login,
+      role: data.role,
+      auth_user_id: data.auth_user_id
+    };
   },
 
   async deleteEmployee(id: string): Promise<void> {
-    try {
-      console.log('EmployeeService: Deletando funcionário:', id);
-      
-      const { error } = await supabase
-        .from('users')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-      
-      if (error) {
-        console.error('EmployeeService: Erro ao deletar funcionário:', error);
-        throw error;
-      }
-      
-      console.log('EmployeeService: Funcionário deletado com sucesso');
-    } catch (error) {
-      console.error('EmployeeService: Erro em deleteEmployee:', error);
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
       throw error;
     }
   }

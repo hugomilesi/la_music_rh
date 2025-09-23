@@ -14,46 +14,35 @@ export class RecognitionService {
   // Programas de Reconhecimento
   static async getPrograms(): Promise<RecognitionProgram[]> {
     try {
-      console.log('RecognitionService: Buscando programas de reconhecimento...');
-      
       const { data, error } = await supabase
         .from('recognition_programs')
         .select('*')
-        .eq('is_active', true)
-        .order('name')
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('RecognitionService: Erro ao buscar programas:', error);
         throw error;
       }
-      
-      console.log('RecognitionService: Programas encontrados:', data?.length || 0);
+
       return data || [];
     } catch (error) {
-      console.error('RecognitionService: Erro em getPrograms:', error);
       throw error;
     }
   }
 
   static async getProgramById(id: string): Promise<RecognitionProgram | null> {
     try {
-      console.log('RecognitionService: Buscando programa por ID:', id);
-      
       const { data, error } = await supabase
         .from('recognition_programs')
         .select('*')
         .eq('id', id)
-        .single()
+        .single();
 
       if (error) {
-        console.error('RecognitionService: Erro ao buscar programa:', error);
         throw error;
       }
-      
-      console.log('RecognitionService: Programa encontrado:', data ? 'Sim' : 'Não');
+
       return data;
     } catch (error) {
-      console.error('RecognitionService: Erro em getProgramById:', error);
       throw error;
     }
   }
@@ -61,23 +50,18 @@ export class RecognitionService {
   // Critérios de Reconhecimento
   static async getCriteriaByProgram(programId: string): Promise<RecognitionCriterion[]> {
     try {
-      console.log('RecognitionService: Buscando critérios do programa:', programId);
-      
       const { data, error } = await supabase
         .from('recognition_criteria')
         .select('*')
         .eq('program_id', programId)
-        .order('order_index')
+        .order('weight', { ascending: false });
 
       if (error) {
-        console.error('RecognitionService: Erro ao buscar critérios:', error);
         throw error;
       }
-      
-      console.log('RecognitionService: Critérios encontrados:', data?.length || 0);
+
       return data || [];
     } catch (error) {
-      console.error('RecognitionService: Erro em getCriteriaByProgram:', error);
       throw error;
     }
   }
@@ -87,8 +71,6 @@ export class RecognitionService {
     evaluation: Omit<EmployeeEvaluation, 'id' | 'created_at' | 'updated_at'>
   ): Promise<EmployeeEvaluation> {
     try {
-      console.log('RecognitionService: Criando avaliação do funcionário:', evaluation.employee_id);
-      
       const { data, error } = await supabase
         .from('employee_evaluations')
         .insert(evaluation)
@@ -96,14 +78,11 @@ export class RecognitionService {
         .single()
 
       if (error) {
-        console.error('RecognitionService: Erro ao criar avaliação:', error);
         throw error;
       }
       
-      console.log('RecognitionService: Avaliação criada com sucesso:', data.id);
       return data;
     } catch (error) {
-      console.error('RecognitionService: Erro em createEmployeeEvaluation:', error);
       throw error;
     }
   }
@@ -114,8 +93,6 @@ export class RecognitionService {
     evaluationPeriod?: string
   ): Promise<EmployeeEvaluation[]> {
     try {
-      console.log('RecognitionService: Buscando avaliações do funcionário:', employeeId);
-      
       let query = supabase
         .from('employee_evaluations')
         .select('*')
@@ -132,14 +109,11 @@ export class RecognitionService {
       const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) {
-        console.error('RecognitionService: Erro ao buscar avaliações:', error);
         throw error;
       }
       
-      console.log('RecognitionService: Avaliações encontradas:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('RecognitionService: Erro em getEmployeeEvaluations:', error);
       throw error;
     }
   }
@@ -165,6 +139,45 @@ export class RecognitionService {
 
     if (error) throw error
     return data || []
+  }
+
+  static async createCriteriaEvaluation(criteriaEvaluation: Omit<EmployeeCriteriaEvaluation, 'id' | 'created_at' | 'updated_at'>): Promise<EmployeeCriteriaEvaluation> {
+    try {
+      const { data, error } = await supabase
+        .from('employee_criteria_evaluations')
+        .insert([criteriaEvaluation])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getCriteriaEvaluations(evaluationId: string): Promise<EmployeeCriteriaEvaluation[]> {
+    try {
+      const { data, error } = await supabase
+        .from('employee_criteria_evaluations')
+        .select(`
+          *,
+          criteria:recognition_criteria(*)
+        `)
+        .eq('evaluation_id', evaluationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Conquistas de Funcionários
@@ -243,6 +256,25 @@ export class RecognitionService {
 
     if (error) throw error
     return data || []
+  }
+
+  static async getMonthlyProgress(employeeId: string, period: string): Promise<MonthlyProgress | null> {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_progress')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('period', period)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Ranking de Funcionários
@@ -440,7 +472,76 @@ export class RecognitionService {
 
       return evaluation;
     } catch (error) {
-      console.log('RecognitionService: ❌ Erro em updateEmployeeEvaluation:', error);
+      throw error;
+    }
+  }
+
+  static async updateMonthlyProgress(employeeId: string, period: string): Promise<void> {
+    try {
+      // Buscar todas as avaliações do funcionário no período
+      const { data: evaluations, error: evalError } = await supabase
+        .from('employee_evaluations')
+        .select(`
+          *,
+          criteria_evaluations:employee_criteria_evaluations(*)
+        `)
+        .eq('employee_id', employeeId)
+        .eq('evaluation_period', period);
+
+      if (evalError) {
+        throw evalError;
+      }
+
+      // Calcular estatísticas
+      const totalEvaluations = evaluations?.length || 0;
+      let totalScore = 0;
+      let totalCriteriaEvaluations = 0;
+
+      evaluations?.forEach(evaluation => {
+        evaluation.criteria_evaluations?.forEach((criteria: any) => {
+          totalScore += criteria.score;
+          totalCriteriaEvaluations++;
+        });
+      });
+
+      const averageScore = totalCriteriaEvaluations > 0 ? totalScore / totalCriteriaEvaluations : 0;
+
+      // Verificar se já existe progresso para este período
+      const existingProgress = await this.getMonthlyProgress(employeeId, period);
+
+      const progressData = {
+        employee_id: employeeId,
+        period,
+        total_evaluations: totalEvaluations,
+        average_score: averageScore,
+        total_score: totalScore,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingProgress) {
+        // Atualizar progresso existente
+        const { error: updateError } = await supabase
+          .from('monthly_progress')
+          .update(progressData)
+          .eq('id', existingProgress.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        // Criar novo progresso
+        const { error: insertError } = await supabase
+          .from('monthly_progress')
+          .insert([{
+            ...progressData,
+            created_at: new Date().toISOString()
+          }]);
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+    } catch (error) {
       throw error;
     }
   }
@@ -448,8 +549,6 @@ export class RecognitionService {
   // Função para deletar uma avaliação
   static async deleteEmployeeEvaluation(evaluationId: string) {
     try {
-      console.log('🔄 RecognitionService: Deletando avaliação do funcionário:', evaluationId);
-      
       // 1. Buscar dados da avaliação antes de deletar
       const { data: evaluation, error: fetchError } = await supabase
         .from('evaluations')
@@ -458,7 +557,6 @@ export class RecognitionService {
         .single();
 
       if (fetchError) {
-        console.error('❌ RecognitionService: Erro ao buscar dados da avaliação:', fetchError);
         throw fetchError;
       }
 
@@ -469,7 +567,6 @@ export class RecognitionService {
         .eq('evaluation_id', evaluationId);
 
       if (criteriaError) {
-        console.error('❌ RecognitionService: Erro ao deletar avaliações de critérios:', criteriaError);
         throw criteriaError;
       }
 
@@ -480,17 +577,14 @@ export class RecognitionService {
         .eq('id', evaluationId);
 
       if (evalError) {
-        console.error('❌ RecognitionService: Erro ao deletar avaliação:', evalError);
         throw evalError;
       }
 
       // 4. Atualizar o progresso mensal
       await this.updateMonthlyProgress(evaluation.employee_id, evaluation.evaluation_period);
 
-      console.log('✅ RecognitionService: Avaliação deletada com sucesso:', evaluationId);
       return true;
     } catch (error) {
-      console.error('❌ RecognitionService: Erro em deleteEmployeeEvaluation:', error);
       throw error;
     }
   }

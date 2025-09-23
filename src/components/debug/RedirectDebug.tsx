@@ -107,7 +107,7 @@ const RedirectDebug: React.FC = () => {
         <div className="bg-gray-50 p-3 rounded max-h-40 overflow-y-auto">
           {userPermissions && userPermissions.length > 0 ? (
             userPermissions.map((permission, index) => (
-              <div key={index} className="text-sm">
+              <div key={permission.id || `permission-${index}`} className="text-sm">
                 {permission.name}
               </div>
             ))

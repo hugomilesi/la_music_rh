@@ -56,31 +56,15 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
   // Memoize permission check to prevent unnecessary recalculations
   // Only check permissions when they are fully loaded
   const hasRequiredPermission = useMemo(() => {
-    console.log('🛡️ hasRequiredPermission called:', {
-      requiredPermission,
-      hasUser: !!user,
-      hasProfile: !!profile,
-      userRole: profile?.role,
-      loading,
-      permissionsLoading,
-      userPermissionsLength: userPermissions?.length || 0,
-      userPermissions: userPermissions?.map(p => p.name) || [],
-      isSuperAdmin,
-      isAdmin
-    });
-    
     if (!requiredPermission) {
-      console.log('🛡️ hasRequiredPermission: No permission required');
       return true;
     }
     
     if (!user || !profile) {
-      console.log('🛡️ hasRequiredPermission: No user or profile');
       return false;
     }
     
     if (loading || permissionsLoading) {
-      console.log('🛡️ hasRequiredPermission: Still loading');
       return null; // Ainda carregando
     }
     
@@ -88,32 +72,23 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
     const cacheKey = `${user.id}-${requiredPermission}`;
     if (permissionCheckCache.has(cacheKey)) {
       const cached = permissionCheckCache.get(cacheKey);
-      console.log('🛡️ hasRequiredPermission: Using cached result:', cached);
       return cached;
     }
     
     // Super admin e admin têm acesso total
     if (isSuperAdmin || isAdmin) {
-      console.log('🛡️ hasRequiredPermission: Super admin or admin access granted');
       permissionCheckCache.set(cacheKey, true);
       return true;
     }
     
     // Verificar se as permissões foram carregadas
     if (!userPermissions || userPermissions.length === 0) {
-      console.log('🛡️ hasRequiredPermission: No permissions loaded yet');
       permissionCheckCache.set(cacheKey, false);
       return false;
     }
     
     // Verificar se a permissão específica existe
     const hasAccess = userPermissions.some(p => p.name === requiredPermission);
-    
-    console.log('🛡️ hasRequiredPermission result:', {
-      requiredPermission,
-      hasAccess,
-      availablePermissions: userPermissions.map(p => p.name)
-    });
     
     permissionCheckCache.set(cacheKey, hasAccess);
     return hasAccess;
@@ -162,7 +137,6 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 
   // Wait for profile to load
   if (!profile) {
-    console.log('⏳ ProtectedPageRoute - Aguardando perfil carregar...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -174,13 +148,6 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
   // Só redireciona se hasRequiredPermission for explicitamente false (não null)
   if (requiredPermission && hasRequiredPermission === false) {
     const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
-    console.log('❌ ProtectedPageRoute - Sem permissão, redirecionando:', {
-      requiredPermission,
-      hasRequiredPermission,
-      redirectingTo: firstAccessibleRoute,
-      currentPath: window.location.pathname,
-      userRole: profile?.role
-    });
     return <Navigate to={firstAccessibleRoute} replace />;
   }
 

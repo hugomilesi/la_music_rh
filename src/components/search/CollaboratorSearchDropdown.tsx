@@ -43,13 +43,23 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
       return;
     }
 
-    const filtered = employees.filter(employee =>
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.units?.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filtered = employees.filter(employee => {
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Verificações de segurança para evitar erros com campos undefined/null
+      const name = employee.name?.toLowerCase() || '';
+      const email = employee.email?.toLowerCase() || '';
+      const position = employee.position?.toLowerCase() || '';
+      const department = employee.department?.toLowerCase() || '';
+      
+      return (
+        name.includes(searchLower) ||
+        email.includes(searchLower) ||
+        position.includes(searchLower) ||
+        department.includes(searchLower) ||
+        employee.units?.some(unit => unit?.toLowerCase().includes(searchLower))
+      );
+    });
 
     setFilteredEmployees(filtered);
     setIsOpen(filtered.length > 0);
@@ -85,9 +95,50 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
     setSearchTerm('');
   };
 
+  const handleSearchChange = (value: string) => {
+    console.log('🔍 Busca iniciada:', value);
+    setSearchTerm(value);
+    
+    if (!value.trim()) {
+      setFilteredEmployees([]);
+      setIsOpen(false);
+      return;
+    }
+
+    console.log('👥 Total de colaboradores:', employees.length);
+
+    const filtered = employees.filter(employee => {
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Verificações de segurança para evitar erros com campos undefined/null
+      const name = employee.name?.toLowerCase() || '';
+      const email = employee.email?.toLowerCase() || '';
+      const position = employee.position?.toLowerCase() || '';
+      const department = employee.department?.toLowerCase() || '';
+      
+      const matches = (
+        name.includes(searchLower) ||
+        email.includes(searchLower) ||
+        position.includes(searchLower) ||
+        department.includes(searchLower) ||
+        employee.units?.some(unit => unit?.toLowerCase().includes(searchLower))
+      );
+      
+      if (matches) {
+        console.log('✅ Colaborador encontrado:', employee.name);
+      }
+      
+      return matches;
+    });
+
+    console.log('📊 Resultados filtrados:', filtered.length);
+    setFilteredEmployees(filtered);
+    setIsOpen(filtered.length > 0);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isDisabled) {
-      setSearchTerm(e.target.value);
+      handleSearchChange(e.target.value);
     }
   };
 

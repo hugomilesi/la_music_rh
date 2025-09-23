@@ -10,6 +10,7 @@ interface UpdateUserRequest {
     position?: string;
     phone?: string;
     status?: string;
+    unit?: string;
   };
 }
 

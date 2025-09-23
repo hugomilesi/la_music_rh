@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
         }
       },
       '/api/nps': {
-        target: 'https://dzmatfnltgtgjvbputtb.supabase.co/functions/v1',
+        target: 'https://jrphwjkgepmgdgiqebyr.supabase.co/functions/v1',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/nps/, '/nps'),
         secure: true,
@@ -171,6 +171,9 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html')
+      },
       output: {
         manualChunks: undefined,
       },

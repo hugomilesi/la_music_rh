@@ -89,7 +89,6 @@ export const ROLE_PROGRAM_MAPPING: { [key: string]: string[] } = {
   // Administrativo/Recepção - Fideliza+
   'Coordenadora Pedagógica': ['fideliza'],
   'Recepcionista': ['fideliza'],
-  'Assistente Administrativo': ['fideliza'],
   'Coordenador Administrativo': ['fideliza'],
   
   // Vendas - Matriculador+ LA
@@ -97,7 +96,6 @@ export const ROLE_PROGRAM_MAPPING: { [key: string]: string[] } = {
   'Consultora de Vendas': ['matriculador'],
   'Coordenadora de Vendas': ['matriculador'],
   'Coordenador de Vendas': ['matriculador'],
-  'Gerente de Vendas': ['matriculador'],
   
   // Professores - Professor+ LA
   'Professor': ['professor'],

@@ -181,7 +181,7 @@ export const EditEvaluationDialog: React.FC<EditEvaluationDialogProps> = ({
                 <Label>Tópicos de Conversa</Label>
                 <div className="space-y-2">
                   {formData.topics.map((topic, index) => (
-                    <div key={index} className="flex gap-2">
+                    <div key={`topic-${index}`} className="flex gap-2">
                       <Input
                         value={topic}
                         onChange={(e) => handleTopicChange(index, e.target.value)}

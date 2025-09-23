@@ -186,7 +186,7 @@ export const RenewalManagementModal: React.FC<RenewalManagementModalProps> = ({
                                   <h5 className="font-medium mb-2">Progresso das Metas</h5>
                                   <div className="space-y-2">
                                     {renewal.performanceData.goalProgress.map((goal, index) => (
-                                      <div key={index} className="flex items-center justify-between">
+                                      <div key={`goal-${index}`} className="flex items-center justify-between">
                                         <span className="text-sm">{goal.goalTitle}</span>
                                         <div className="flex items-center gap-2">
                                           <Progress value={goal.completionPercentage} className="w-20" />

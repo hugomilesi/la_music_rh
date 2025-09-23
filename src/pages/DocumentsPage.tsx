@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3, Lock } from 'lucide-react';
+import { Plus, Filter, Search, Upload, Download, AlertTriangle, CheckCircle, Clock, Mail, Edit3, Lock, RefreshCw } from 'lucide-react';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,7 +17,7 @@ import { DocumentManagementDialog } from '@/components/documents/DocumentManagem
 import { SendToAccountantDialog } from '@/components/documents/SendToAccountantDialog';
 import { EditChecklistDialog } from '@/components/documents/EditChecklistDialog';
 import { EmployeeDocumentsModal } from '@/components/documents/EmployeeDocumentsModal';
-import { GroupedDocumentsTable } from '@/components/documents/GroupedDocumentsTable';
+import { ImprovedDocumentsTable } from '@/components/documents/ImprovedDocumentsTable';
 
 import { useDocuments } from '@/contexts/DocumentContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
@@ -44,7 +44,7 @@ const DocumentsPage: React.FC = () => {
   
   const userAccessLevel = getUserAccessLevel();
   
-  const { filteredDocuments, filter, setFilter, stats, exportDocuments } = useDocuments();
+  const { filteredDocuments, filter, setFilter, stats, exportDocuments, loadDocuments } = useDocuments();
   const { employees } = useEmployees();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
@@ -56,6 +56,13 @@ const DocumentsPage: React.FC = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
   const [selectedDocumentsForAccountant, setSelectedDocumentsForAccountant] = useState<Document[]>([]);
+  const [selectedEmployeeForUpload, setSelectedEmployeeForUpload] = useState<string | undefined>(undefined);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Função para forçar refresh dos dados
+  const handleRefreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
   
   // Filter documents based on user access level
   const getVisibleDocuments = () => {
@@ -140,6 +147,11 @@ const DocumentsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <Button variant="outline" size="sm" onClick={loadDocuments}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+          
           <Button variant="outline" size="sm" onClick={() => setSendToAccountantDialogOpen(true)}>
             <Mail className="w-4 h-4 mr-2" />
             Enviar ao Contador
@@ -285,24 +297,12 @@ const DocumentsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Grouped Documents Table */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Documentos por Colaborador
-          </h2>
-          <p className="text-sm text-gray-600">
-            Clique em um colaborador para expandir ou no nome para ver detalhes
-          </p>
-        </div>
-        
-        <GroupedDocumentsTable 
-          documents={visibleDocuments}
-          employees={employees}
-          onEmployeeClick={handleEmployeeClick}
-          onSendToAccountant={handleSendToAccountant}
-        />
-      </div>
+      {/* Improved Documents Table */}
+      <ImprovedDocumentsTable 
+        key={refreshKey}
+        onEmployeeClick={handleEmployeeClick}
+        onSendToAccountant={handleSendToAccountant}
+      />
 
 
 
@@ -340,6 +340,7 @@ const DocumentsPage: React.FC = () => {
       <DocumentUploadDialog 
         open={uploadDialogOpen} 
         onOpenChange={setUploadDialogOpen}
+        preSelectedEmployeeId={selectedEmployeeForUpload}
       />
       
       <AdvancedFiltersDialog 
@@ -361,7 +362,13 @@ const DocumentsPage: React.FC = () => {
 
       <EditChecklistDialog 
         open={editChecklistDialogOpen} 
-        onOpenChange={setEditChecklistDialogOpen}
+        onOpenChange={(open) => {
+          setEditChecklistDialogOpen(open);
+          // Refresh dados quando o diálogo for fechado após alterações
+          if (!open) {
+            handleRefreshData();
+          }
+        }}
       />
 
       <EmployeeDocumentsModal

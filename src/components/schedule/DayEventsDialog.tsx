@@ -34,23 +34,27 @@ const DayEventsDialog: React.FC<DayEventsDialogProps> = ({
 
   const getEventTypeColor = (type: string) => {
     const colors = {
-      'plantao': 'bg-blue-100 text-blue-800',
-      'avaliacao': 'bg-purple-100 text-purple-800',
-      'reuniao': 'bg-green-100 text-green-800',
-      'folga': 'bg-gray-100 text-gray-800',
-      'outro': 'bg-orange-100 text-orange-800',
-      'coffee-connection': 'bg-amber-100 text-amber-800'
+      'meeting': 'bg-green-100 text-green-800',
+      'appointment': 'bg-blue-100 text-blue-800',
+      'reminder': 'bg-yellow-100 text-yellow-800',
+      'task': 'bg-purple-100 text-purple-800',
+      'vacation': 'bg-gray-100 text-gray-800',
+      'training': 'bg-indigo-100 text-indigo-800',
+      'avaliacao': 'bg-red-100 text-red-800',
+      'coffee-connection': 'bg-orange-100 text-orange-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
   const getEventTypeLabel = (type: string) => {
     const labels = {
-      'plantao': 'Plantão',
+      'meeting': 'Reunião',
+      'appointment': 'Compromisso',
+      'reminder': 'Lembrete',
+      'task': 'Tarefa',
+      'vacation': 'Férias',
+      'training': 'Treinamento',
       'avaliacao': 'Avaliação',
-      'reuniao': 'Reunião',
-      'folga': 'Folga',
-      'outro': 'Outro',
       'coffee-connection': 'Coffee Connection'
     };
     return labels[type as keyof typeof labels] || 'Evento';

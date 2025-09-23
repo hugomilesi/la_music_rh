@@ -253,7 +253,7 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
                 <p className="text-sm font-medium">Arquivos selecionados:</p>
                 <div className="space-y-1">
                   {documents.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                    <div key={`file-${index}`} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-gray-500" />
                         <span className="text-sm">{file.name}</span>

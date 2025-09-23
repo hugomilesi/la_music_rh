@@ -29,9 +29,29 @@ export const EventQuickActions: React.FC<EventQuickActionsProps> = ({
   const { deleteEvent } = useSchedule();
   const { toast } = useToast();
 
+  // Verificar se é um evento de avaliação
+  const isEvaluationEvent = event.id.startsWith('eval_');
+  
+  console.log('🔍 EventQuickActions - Evento:', {
+    id: event.id,
+    title: event.title,
+    isEvaluationEvent,
+    type: event.type
+  });
+
   const handleDelete = async () => {
+    // Verificação adicional para eventos de avaliação
+    if (isEvaluationEvent) {
+      toast({
+        title: 'Ação não permitida',
+        description: 'Avaliações só podem ser removidas na página de Avaliações.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      await deleteEvent(event.id);
+      await deleteEvent(event.id, 'schedule');
       toast({
         title: 'Evento removido',
         description: 'O evento foi removido com sucesso.',
@@ -54,11 +74,16 @@ export const EventQuickActions: React.FC<EventQuickActionsProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onClick={() => onView?.(event)}>
           <Eye className="mr-2 h-4 w-4" />
           Ver detalhes
@@ -72,10 +97,18 @@ export const EventQuickActions: React.FC<EventQuickActionsProps> = ({
           Duplicar
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Remover
-        </DropdownMenuItem>
+        {!isEvaluationEvent && (
+          <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Remover
+          </DropdownMenuItem>
+        )}
+        {isEvaluationEvent && (
+          <DropdownMenuItem disabled className="text-gray-400">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Remover na página de Avaliações
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

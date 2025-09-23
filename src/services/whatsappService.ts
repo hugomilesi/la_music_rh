@@ -95,12 +95,18 @@ export class WhatsAppService {
   // Verificar status da conexão WhatsApp
   static async getConnectionStatus(): Promise<WhatsAppStatus> {
     try {
-      const apiUrl = this.evolutionApiUrl.endsWith('/') ? this.evolutionApiUrl.slice(0, -1) : this.evolutionApiUrl;
-      const response = await fetch(`${apiUrl}/instance/connectionState/${this.instanceName}`, {
+      // Validar configuração antes de verificar status
+      if (!validateEvolutionApiConfig(this.config)) {
+        return {
+          isConnected: false,
+          error: 'Configuração da Evolution API inválida'
+        };
+      }
+
+      const fullUrl = formatApiUrl(this.config.apiUrl, `/instance/connectionState/${this.config.instanceName}`);
+      const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: {
-          'apikey': this.evolutionApiKey || ''
-        }
+        headers: getEvolutionApiHeaders(this.config.apiKey)
       });
 
       if (!response.ok) {
@@ -114,7 +120,7 @@ export class WhatsAppService {
       
       return {
         isConnected: result.instance?.state === 'open',
-        instanceName: this.instanceName,
+        instanceName: this.config.instanceName,
         error: result.instance?.state !== 'open' ? 'Instância não conectada' : undefined
       };
     } catch (error) {
@@ -128,12 +134,15 @@ export class WhatsAppService {
   // Obter QR Code para conexão
   static async getQRCode(): Promise<string | null> {
     try {
-      const apiUrl = this.evolutionApiUrl.endsWith('/') ? this.evolutionApiUrl.slice(0, -1) : this.evolutionApiUrl;
-      const response = await fetch(`${apiUrl}/instance/connect/${this.instanceName}`, {
+      // Validar configuração antes de obter QR Code
+      if (!validateEvolutionApiConfig(this.config)) {
+        return null;
+      }
+
+      const fullUrl = formatApiUrl(this.config.apiUrl, `/instance/connect/${this.config.instanceName}`);
+      const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: {
-          'apikey': this.evolutionApiKey || ''
-        }
+        headers: getEvolutionApiHeaders(this.config.apiKey)
       });
 
       if (!response.ok) {

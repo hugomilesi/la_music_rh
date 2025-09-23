@@ -25,8 +25,6 @@ const translateStatusToDb = (frontendStatus: VacationRequest['status']): string 
 export const vacationService = {
   async getVacationRequests(): Promise<VacationRequest[]> {
     try {
-      console.log('🔄 VacationService: Buscando solicitações de férias');
-      
       const { data, error } = await supabase
         .from('vacation_requests')
         .select(`
@@ -36,11 +34,9 @@ export const vacationService = {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('❌ VacationService: Erro ao buscar solicitações:', error);
         throw error;
       }
       
-      console.log(`✅ VacationService: ${data?.length || 0} solicitações encontradas`);
       return data?.map(request => ({
         id: request.id,
         employeeId: request.employee_id,
@@ -57,26 +53,21 @@ export const vacationService = {
         type: (request.request_type as VacationRequest['type']) || 'vacation'
       })) || [];
     } catch (error) {
-      console.error('❌ VacationService: Erro ao buscar solicitações de férias:', error);
       throw error;
     }
   },
 
   async getVacationBalances(): Promise<VacationBalance[]> {
     try {
-      console.log('🔄 VacationService: Buscando saldos de férias');
-      
       const { data, error } = await supabase
         .from('vacation_balances')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('❌ VacationService: Erro ao buscar saldos:', error);
         throw error;
       }
       
-      console.log(`✅ VacationService: ${data?.length || 0} saldos encontrados`);
       return data?.map(balance => ({
         employeeId: balance.employee_id,
         totalDays: balance.total_days || 30,
@@ -86,19 +77,15 @@ export const vacationService = {
         expirationDate: balance.expiration_date
       })) || [];
     } catch (error) {
-      console.error('❌ VacationService: Erro ao buscar saldos de férias:', error);
       throw error;
     }
   },
 
   async createVacationRequest(requestData: NewVacationRequest): Promise<VacationRequest> {
     try {
-      console.log('🔄 VacationService: Criando solicitação de férias');
-      
       // Validate UUID format for employeeId
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(requestData.employeeId)) {
-        console.error('❌ VacationService: Formato de employeeId inválido');
         throw new Error('Invalid employeeId format. Must be a valid UUID.');
       }
 
@@ -114,7 +101,6 @@ export const vacationService = {
         end_date: requestData.endDate,
         days_requested: daysDiff,
         reason: requestData.reason,
-        request_type: requestData.type || 'vacation',
         status: 'pending'
       };
 
@@ -128,11 +114,9 @@ export const vacationService = {
         .single();
 
       if (error) {
-        console.error('❌ VacationService: Erro ao criar solicitação:', error);
         throw error;
       }
 
-      console.log('✅ VacationService: Solicitação criada com sucesso');
       return {
         id: data.id,
         employeeId: data.employee_id,
@@ -149,22 +133,18 @@ export const vacationService = {
         type: (data.request_type as VacationRequest['type']) || 'vacation'
       };
     } catch (error) {
-      console.error('❌ VacationService: Erro ao criar solicitação de férias:', error);
       throw error;
     }
   },
 
   async updateVacationRequest(id: string, updateData: Partial<VacationRequest>): Promise<VacationRequest> {
     try {
-      console.log('🔄 VacationService: Atualizando solicitação de férias');
-      
       const updateFields: any = {};
       
       if (updateData.startDate) updateFields.start_date = updateData.startDate;
       if (updateData.endDate) updateFields.end_date = updateData.endDate;
       if (updateData.reason) updateFields.reason = updateData.reason;
       if (updateData.status) updateFields.status = translateStatusToDb(updateData.status);
-      if (updateData.type) updateFields.request_type = updateData.type;
       if (updateData.rejectionReason) updateFields.rejection_reason = updateData.rejectionReason;
       if (updateData.approvedBy) updateFields.approved_by = updateData.approvedBy;
       if (updateData.approvedDate) updateFields.approved_at = updateData.approvedDate;
@@ -188,11 +168,9 @@ export const vacationService = {
         .single();
       
       if (error) {
-        console.error('❌ VacationService: Erro ao atualizar solicitação:', error);
         throw error;
       }
       
-      console.log('✅ VacationService: Solicitação atualizada com sucesso');
       return {
         id: data.id,
         employeeId: data.employee_id,
@@ -209,7 +187,6 @@ export const vacationService = {
         type: (data.request_type as VacationRequest['type']) || 'vacation'
       };
     } catch (error) {
-      console.error('❌ VacationService: Erro ao atualizar solicitação de férias:', error);
       throw error;
     }
   },
@@ -227,24 +204,22 @@ export const vacationService = {
 
   async approveVacationRequest(id: string, approvedBy: string): Promise<VacationRequest> {
     try {
-      console.log('🔄 VacationService: Aprovando solicitação de férias');
-      
-      // Validate that approvedBy user exists
-      const { data: userExists, error: userError } = await supabase
+      // Get current user info to validate approver
+      const { data: approver, error: approverError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, username')
         .eq('id', approvedBy)
         .single();
-      
-      if (userError || !userExists) {
-        console.error('❌ VacationService: Usuário aprovador não encontrado');
-        throw new Error('Usuário aprovador não encontrado no sistema. Verifique se você está logado corretamente.');
+
+      if (approverError || !approver) {
+        throw new Error('Usuário aprovador não encontrado');
       }
 
       const updateData = {
         status: 'approved',
         approved_by: approvedBy,
-        approved_date: new Date().toISOString().split('T')[0]
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase
@@ -253,61 +228,57 @@ export const vacationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!employee_id(username)
+          employee:users!vacation_requests_employee_id_fkey(username),
+          approved_by_user:users!vacation_requests_approved_by_fkey(username)
         `)
         .single();
 
       if (error) {
-        console.error('❌ VacationService: Erro ao aprovar solicitação:', error);
-        if (error.code === '23503') {
-          throw new Error('Erro de referência: Usuário aprovador não encontrado no sistema.');
-        }
-        throw new Error(`Erro ao aprovar solicitação: ${error.message}`);
+        throw error;
       }
 
-      console.log('✅ VacationService: Solicitação aprovada com sucesso');
+      // TODO: Update vacation balance when approved
+      // This should be implemented based on your business logic
+      
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Unknown',
+        employeeName: data.employee?.username || 'Funcionário não encontrado',
         startDate: data.start_date,
         endDate: data.end_date,
-        days: data.days_requested,
-        reason: data.reason || 'Férias',
-        status: translateStatus(data.status),
-        requestDate: data.request_date || (data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        daysRequested: data.days_requested,
+        reason: data.reason,
+        status: data.status,
         approvedBy: data.approved_by,
-        approvedDate: data.approved_date,
-        rejectionReason: data.rejection_reason || '',
-        type: (data.request_type as VacationRequest['type']) || 'vacation'
+        approvedByName: data.approved_by_user?.username || null,
+        approvedAt: data.approved_at,
+        rejectionReason: data.rejection_reason,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('❌ VacationService: Erro ao aprovar solicitação de férias:', error);
       throw error;
     }
   },
 
   async rejectVacationRequest(id: string, rejectionReason: string, rejectedBy: string): Promise<VacationRequest> {
     try {
-      console.log('🔄 VacationService: Rejeitando solicitação de férias');
-      
-      // Validate that rejectedBy user exists
-      const { data: userExists, error: userError } = await supabase
+      // Get current user info to validate rejector
+      const { data: rejector, error: rejectorError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, username')
         .eq('id', rejectedBy)
         .single();
-      
-      if (userError || !userExists) {
-        console.error('❌ VacationService: Usuário que está rejeitando não encontrado');
-        throw new Error('Usuário que está rejeitando não encontrado no sistema. Verifique se você está logado corretamente.');
+
+      if (rejectorError || !rejector) {
+        throw new Error('Usuário que está rejeitando não encontrado');
       }
 
       const updateData = {
         status: 'rejected',
+        approved_by: rejectedBy, // Store who rejected it
         rejection_reason: rejectionReason,
-        rejected_by: rejectedBy,
-        rejected_date: new Date().toISOString().split('T')[0]
+        updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase
@@ -316,36 +287,32 @@ export const vacationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!employee_id(username)
+          employee:users!vacation_requests_employee_id_fkey(username),
+          approved_by_user:users!vacation_requests_approved_by_fkey(username)
         `)
         .single();
 
       if (error) {
-        console.error('❌ VacationService: Erro ao rejeitar solicitação:', error);
-        if (error.code === '23503') {
-          throw new Error('Erro de referência: Usuário que está rejeitando não encontrado no sistema.');
-        }
-        throw new Error(`Erro ao rejeitar solicitação: ${error.message}`);
+        throw error;
       }
-
-      console.log('✅ VacationService: Solicitação rejeitada com sucesso');
+      
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Unknown',
+        employeeName: data.employee?.username || 'Funcionário não encontrado',
         startDate: data.start_date,
         endDate: data.end_date,
-        days: data.days_requested,
-        reason: data.reason || 'Férias',
-        status: translateStatus(data.status),
-        requestDate: data.request_date || (data.created_at ? new Date(data.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        daysRequested: data.days_requested,
+        reason: data.reason,
+        status: data.status,
         approvedBy: data.approved_by,
-        approvedDate: data.approved_date,
-        rejectionReason: data.rejection_reason || '',
-        type: (data.request_type as VacationRequest['type']) || 'vacation'
+        approvedByName: data.approved_by_user?.username || null,
+        approvedAt: data.approved_at,
+        rejectionReason: data.rejection_reason,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
       };
     } catch (error) {
-      console.error('❌ VacationService: Erro ao rejeitar solicitação de férias:', error);
       throw error;
     }
   }

@@ -21,7 +21,9 @@ import {
   Shield,
   Key,
   Save,
-  Loader2
+  Loader2,
+  Edit,
+  X
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -29,18 +31,20 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   
-  // Profile form state
+  // Profile form state (departamento e cargo removidos - apenas visualização)
   const [profileData, setProfileData] = useState({
     username: profile?.username || '',
     phone: profile?.phone || '',
-    department: profile?.department || '',
-    position: profile?.position || '',
     bio: profile?.bio || '',
     address: profile?.address || '',
     emergency_contact: profile?.emergency_contact || '',
     emergency_phone: profile?.emergency_phone || ''
   });
+
+  // Backup dos dados originais para cancelar edição
+  const [originalData, setOriginalData] = useState(profileData);
 
   // Password form state
   const [passwordData, setPasswordData] = useState({
@@ -60,6 +64,10 @@ export default function ProfilePage() {
         throw error;
       }
 
+      // Atualizar backup dos dados originais
+      setOriginalData(profileData);
+      setIsEditing(false);
+
       toast({
         title: 'Perfil atualizado',
         description: 'Suas informações foram atualizadas com sucesso',
@@ -74,6 +82,22 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Cancelar edição - restaurar dados originais
+      setProfileData(originalData);
+    } else {
+      // Iniciar edição - salvar backup dos dados atuais
+      setOriginalData(profileData);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleCancelEdit = () => {
+    setProfileData(originalData);
+    setIsEditing(false);
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -229,6 +253,12 @@ export default function ProfilePage() {
                     <span>{profile.position}</span>
                   </div>
                 )}
+                {profile?.unit && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    <span>{profile.unit}</span>
+                  </div>
+                )}
                 {profileData.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
@@ -245,9 +275,30 @@ export default function ProfilePage() {
           {/* Profile Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Informações Pessoais
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Informações Pessoais
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                  className="flex items-center gap-2"
+                >
+                  {isEditing ? (
+                    <>
+                      <X className="w-4 h-4" />
+                      Cancelar
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4" />
+                      Editar
+                    </>
+                  )}
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -255,93 +306,113 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="username">Nome de Usuário</Label>
-                    <Input
-                      id="username"
-                      value={profileData.username}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
-                      placeholder="Seu nome de usuário"
-                    />
+                    {isEditing ? (
+                      <Input
+                        id="username"
+                        value={profileData.username}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
+                        placeholder="Seu nome de usuário"
+                      />
+                    ) : (
+                      <div className="p-2 bg-gray-50 rounded-md min-h-[40px] flex items-center">
+                        {profileData.username || 'Não informado'}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="(11) 99999-9999"
-                    />
+                    {isEditing ? (
+                      <Input
+                        id="phone"
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="(11) 99999-9999"
+                      />
+                    ) : (
+                      <div className="p-2 bg-gray-50 rounded-md min-h-[40px] flex items-center">
+                        {profileData.phone || 'Não informado'}
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Departamento</Label>
-                    <Input
-                      id="department"
-                      value={profileData.department}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, department: e.target.value }))}
-                      placeholder="Seu departamento"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="position">Cargo</Label>
-                    <Input
-                      id="position"
-                      value={profileData.position}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, position: e.target.value }))}
-                      placeholder="Seu cargo"
-                    />
-                  </div>
+                  {/* Campos de departamento e cargo removidos - apenas visualização disponível */}
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="bio">Biografia</Label>
-                  <Textarea
-                    id="bio"
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                    placeholder="Conte um pouco sobre você..."
-                    rows={3}
-                  />
+                  {isEditing ? (
+                    <Textarea
+                      id="bio"
+                      value={profileData.bio}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                      placeholder="Conte um pouco sobre você..."
+                      rows={3}
+                    />
+                  ) : (
+                    <div className="p-2 bg-gray-50 rounded-md min-h-[80px] flex items-start">
+                      {profileData.bio || 'Não informado'}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="address">Endereço</Label>
-                  <Input
-                    id="address"
-                    value={profileData.address}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Seu endereço"
-                  />
+                  {isEditing ? (
+                    <Input
+                      id="address"
+                      value={profileData.address}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Seu endereço"
+                    />
+                  ) : (
+                    <div className="p-2 bg-gray-50 rounded-md min-h-[40px] flex items-center">
+                      {profileData.address || 'Não informado'}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="emergency_contact">Contato de Emergência</Label>
-                    <Input
-                      id="emergency_contact"
-                      value={profileData.emergency_contact}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, emergency_contact: e.target.value }))}
-                      placeholder="Nome do contato"
-                    />
+                    {isEditing ? (
+                      <Input
+                        id="emergency_contact"
+                        value={profileData.emergency_contact}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, emergency_contact: e.target.value }))}
+                        placeholder="Nome do contato"
+                      />
+                    ) : (
+                      <div className="p-2 bg-gray-50 rounded-md min-h-[40px] flex items-center">
+                        {profileData.emergency_contact || 'Não informado'}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="emergency_phone">Telefone de Emergência</Label>
-                    <Input
-                      id="emergency_phone"
-                      value={profileData.emergency_phone}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, emergency_phone: e.target.value }))}
-                      placeholder="(11) 99999-9999"
-                    />
+                    {isEditing ? (
+                      <Input
+                        id="emergency_phone"
+                        value={profileData.emergency_phone}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, emergency_phone: e.target.value }))}
+                        placeholder="(11) 99999-9999"
+                      />
+                    ) : (
+                      <div className="p-2 bg-gray-50 rounded-md min-h-[40px] flex items-center">
+                        {profileData.emergency_phone || 'Não informado'}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar Alterações
-                </Button>
+                {isEditing && (
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar Alterações
+                  </Button>
+                )}
               </form>
             </CardContent>
           </Card>

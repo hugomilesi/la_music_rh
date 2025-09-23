@@ -40,10 +40,17 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleWithDepartment | null>(null);
 
   const [newDepartment, setNewDepartment] = useState({
     name: '',
     description: ''
+  });
+  const [newRole, setNewRole] = useState({
+    name: '',
+    description: '',
+    department_id: ''
   });
   const { toast } = useToast();
   const { canViewModule } = usePermissionsV2();
@@ -180,10 +187,80 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     }
   };
 
+  const handleAddRole = () => {
+    setEditingRole(null);
+    setNewRole({ name: '', description: '', department_id: '' });
+    setIsAddingRole(true);
+  };
+
+  const handleEditRole = async (role: RoleWithDepartment) => {
+    setEditingRole(role);
+    setNewRole({
+      name: role.name,
+      description: role.description || '',
+      department_id: role.department_id
+    });
+    setIsAddingRole(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!newRole.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome do cargo é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newRole.department_id) {
+      toast({
+        title: "Erro",
+        description: "Departamento é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      if (editingRole) {
+        await updateRole(editingRole.id, newRole);
+        toast({
+          title: "Sucesso",
+          description: "Cargo atualizado com sucesso",
+        });
+      } else {
+        await createRole(newRole);
+        toast({
+          title: "Sucesso",
+          description: "Cargo criado com sucesso",
+        });
+      }
+      
+      setNewRole({ name: '', description: '', department_id: '' });
+      setIsAddingRole(false);
+      setEditingRole(null);
+      await loadData();
+    } catch (error) {
+      // Log desabilitado: Error saving role
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao salvar cargo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCancelEdit = () => {
     setEditingDepartment(null);
     setNewDepartment({ name: '', description: '' });
     setIsAddingDepartment(false);
+    setIsAddingRole(false);
+    setEditingRole(null);
+    setNewRole({ name: '', description: '', department_id: '' });
   };
 
   const loadData = async () => {
@@ -230,9 +307,9 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Gerenciar Cargos e Setores</DialogTitle>
+          <DialogTitle>Gerenciar Cargos e Departamentos</DialogTitle>
           <DialogDescription>
-            Configure a estrutura organizacional da empresa
+            Configure os cargos e departamentos da empresa. Os perfis de acesso (super_admin, admin, gestor_rh, gerente) são gerenciados separadamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -242,7 +319,7 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar cargos ou setores..."
+                placeholder="Buscar cargos ou departamentos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -342,11 +419,73 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
 
           {/* Roles Table */}
           <div className="border rounded-lg">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-medium">Cargos</h3>
+              <Button onClick={handleAddRole} disabled={isLoading}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Cargo
+              </Button>
+            </div>
+            
+            {/* Add Role Form */}
+            {isAddingRole && (
+              <div className="border-b p-4 space-y-4 bg-green-50">
+                <h4 className="font-medium">
+                  {editingRole ? 'Editar Cargo' : 'Adicionar Novo Cargo'}
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="roleName">Nome do Cargo</Label>
+                    <Input
+                      id="roleName"
+                      value={newRole.name}
+                      onChange={(e) => setNewRole({...newRole, name: e.target.value})}
+                      placeholder="Ex: Analista de RH"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="roleDepartment">Departamento</Label>
+                    <select
+                      id="roleDepartment"
+                      value={newRole.department_id}
+                      onChange={(e) => setNewRole({...newRole, department_id: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecione um departamento</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="roleDescription">Descrição (Opcional)</Label>
+                    <Input
+                      id="roleDescription"
+                      value={newRole.description}
+                      onChange={(e) => setNewRole({...newRole, description: e.target.value})}
+                      placeholder="Descrição do cargo"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveRole} disabled={isLoading}>
+                    {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {editingRole ? 'Atualizar' : 'Adicionar'} Cargo
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEdit} disabled={isLoading}>
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Cargo</TableHead>
-                  <TableHead>Setor</TableHead>
+                  <TableHead>Departamento</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Colaboradores</TableHead>
                   <TableHead>Ações</TableHead>
@@ -384,9 +523,14 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Somente visualização</span>
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEditRole(role)}
+                          disabled={isLoading}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))

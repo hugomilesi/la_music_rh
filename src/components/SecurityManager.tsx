@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle, XCircle, Shield, Zap, Trash2, Search } from 'lucide-react';
-import { securityService, SecurityFixResult } from '@/services/securityService';
+import { 
+  Shield, 
+  Zap, 
+  Trash2, 
+  Search, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Loader2, 
+  Play 
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/usePermissions';
 
 interface SecurityStep {
   id: string;
@@ -19,42 +22,17 @@ interface SecurityStep {
   result?: SecurityFixResult;
 }
 
-export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-  const { user, profile } = useAuth();
-  const { canViewModule } = usePermissions();
+interface SecurityFixResult {
+  success: boolean;
+  message: string;
+  details?: any;
+}
 
-  useEffect(() => {
-    // Security manager mounted
-    return () => {
-      // Security manager unmounted
-    };
-  }, [user, profile, canViewModule]);
+interface SecurityManagerProps {
+  children?: React.ReactNode;
+}
 
-  if (!user || !profile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!canViewModule) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando permissões...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (children) {
-    return <>{children}</>;
-  }
+export function SecurityManager({ children }: SecurityManagerProps) {
   const [steps, setSteps] = useState<SecurityStep[]>([
     {
       id: 'functions',
@@ -91,6 +69,10 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
   const [progress, setProgress] = useState(0);
   const [showDetails, setShowDetails] = useState<string | null>(null);
 
+  if (children) {
+    return <>{children}</>;
+  }
+
   const updateStepStatus = (stepId: string, status: SecurityStep['status'], result?: SecurityFixResult) => {
     setSteps(prev => prev.map(step => 
       step.id === stepId ? { ...step, status, result } : step
@@ -121,7 +103,6 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: securityError
           });
         } else {
-
           updateStepStatus('functions', 'success', {
             success: true,
             message: 'Correções de segurança aplicadas com sucesso',
@@ -155,7 +136,6 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: rlsError
           });
         } else {
-
           updateStepStatus('rls', 'success', {
             success: true,
             message: 'Políticas RLS otimizadas com sucesso'
@@ -188,7 +168,6 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: cleanupError
           });
         } else {
-
           updateStepStatus('indexes', 'success', {
             success: true,
             message: 'Limpeza de índices concluída',
@@ -222,7 +201,6 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
             details: verificationError
           });
         } else {
-
           updateStepStatus('verification', 'success', {
             success: true,
             message: 'Verificação de segurança concluída',
@@ -255,114 +233,106 @@ export const SecurityManager: React.FC<{ children?: React.ReactNode }> = ({ chil
       case 'error':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'running':
-        return <div className="h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />;
+        return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
       default:
-        return <div className="h-5 w-5 border-2 border-gray-300 rounded-full" />;
-    }
-  };
-
-  const getStatusBadge = (status: SecurityStep['status']) => {
-    switch (status) {
-      case 'success':
-        return <Badge variant="default" className="bg-green-500">Concluído</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Erro</Badge>;
-      case 'running':
-        return <Badge variant="secondary">Executando...</Badge>;
-      default:
-        return <Badge variant="outline">Pendente</Badge>;
+        return <Clock className="h-5 w-5 text-gray-400" />;
     }
   };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-6 w-6" />
-            Gerenciador de Segurança
-          </CardTitle>
-          <CardDescription>
-            Execute as correções de segurança identificadas na auditoria
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Progresso da Execução</h3>
-              <p className="text-sm text-muted-foreground">
-                {isRunning ? `Executando etapa ${currentStep + 1} de ${steps.length}` : 'Pronto para executar'}
-              </p>
-            </div>
-            <Button 
-              onClick={executeSecurityPlan} 
-              disabled={isRunning}
-              className="min-w-[120px]"
-            >
-              {isRunning ? 'Executando...' : 'Executar Plano'}
-            </Button>
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Gerenciador de Segurança</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Execute correções automáticas de segurança e otimizações
+            </p>
           </div>
-          
-          {isRunning && (
-            <Progress value={progress} className="w-full" />
-          )}
-        </CardContent>
-      </Card>
+          <Button 
+            onClick={executeSecurityPlan}
+            disabled={isRunning}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Executando...
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Executar Plano
+              </>
+            )}
+          </Button>
+        </div>
 
-      <div className="grid gap-4">
-        {steps.map((step, index) => (
-          <Card key={step.id} className={`transition-all duration-200 ${
-            step.status === 'running' ? 'ring-2 ring-blue-500' : ''
-          }`}>
-            <CardHeader className="pb-3">
+        {isRunning && (
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Progresso</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {steps.map((step, index) => (
+            <div 
+              key={step.id} 
+              className={`border rounded-lg p-4 transition-all ${
+                currentStep === index && isRunning 
+                  ? 'border-blue-300 bg-blue-50' 
+                  : 'border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {step.icon}
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(step.status)}
                   <div>
-                    <CardTitle className="text-lg">{step.title}</CardTitle>
-                    <CardDescription>{step.description}</CardDescription>
+                    <h3 className="font-medium text-gray-900">{step.title}</h3>
+                    <p className="text-sm text-gray-600">{step.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(step.status)}
-                  {getStatusIcon(step.status)}
+                
+                <div className="flex items-center space-x-2">
+                  {step.result && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDetails(showDetails === step.id ? null : step.id)}
+                    >
+                      {showDetails === step.id ? 'Ocultar' : 'Detalhes'}
+                    </Button>
+                  )}
                 </div>
               </div>
-            </CardHeader>
-            
-            {step.result && (
-              <CardContent className="pt-0">
-                <Alert className={step.result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  <AlertDescription>
-                    <div className="flex items-center justify-between">
-                      <span>{step.result.message}</span>
-                      {step.result.details && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowDetails(showDetails === step.id ? null : step.id)}
-                        >
-                          {showDetails === step.id ? 'Ocultar' : 'Detalhes'}
-                        </Button>
-                      )}
+              
+              {showDetails === step.id && step.result && (
+                <div className="mt-4 p-3 bg-gray-50 rounded border">
+                  <div className="text-sm">
+                    <div className="font-medium text-gray-900 mb-2">
+                      {step.result.message}
                     </div>
-                    
-                    {showDetails === step.id && step.result.details && (
-                      <div className="mt-3 p-3 bg-white rounded border">
-                        <pre className="text-xs overflow-auto max-h-40">
-                          {JSON.stringify(step.result.details, null, 2)}
-                        </pre>
-                      </div>
+                    {step.result.details && (
+                      <pre className="text-xs text-gray-600 overflow-auto">
+                        {JSON.stringify(step.result.details, null, 2)}
+                      </pre>
                     )}
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            )}
-          </Card>
-        ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-};
-
-export default SecurityManager;
+}

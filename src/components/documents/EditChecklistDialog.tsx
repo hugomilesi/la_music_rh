@@ -1,10 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, Edit3, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit3, GripVertical } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { requiredDocumentsService } from '@/services/requiredDocumentsService';
+import { documentChecklistService } from '@/services/documentChecklistService';
 
 interface ChecklistItem {
   id: string;
@@ -32,40 +35,158 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
   open,
   onOpenChange
 }) => {
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(defaultChecklist);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(false);
+  const { toast } = useToast();
 
-  const handleAddItem = () => {
-    if (newItemName.trim()) {
-      const newItem: ChecklistItem = {
-        id: Date.now().toString(),
-        name: newItemName.trim(),
-        required: true
-      };
-      setChecklist(prev => [...prev, newItem]);
-      setNewItemName('');
+  // Carregar documentos obrigatórios do banco de dados
+  useEffect(() => {
+    if (open && !initialLoad) {
+      loadRequiredDocuments();
+    }
+  }, [open, initialLoad]);
+
+  const loadRequiredDocuments = async () => {
+    try {
+      setLoading(true);
+      const documents = await requiredDocumentsService.getRequiredDocuments();
+      const checklistItems = requiredDocumentsService.convertToChecklistItems(documents);
+      setChecklist(checklistItems);
+      setInitialLoad(true);
+    } catch (error) {
+      console.error('Erro ao carregar documentos obrigatórios:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os documentos obrigatórios.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRemoveItem = (id: string) => {
-    setChecklist(prev => prev.filter(item => item.id !== id));
+  const handleAddItem = async () => {
+    if (newItemName.trim()) {
+      try {
+        setLoading(true);
+        const newDocument = await requiredDocumentsService.createRequiredDocument({
+          document_type: newItemName.trim().toLowerCase().replace(/\s+/g, '_'),
+          name: newItemName.trim(),
+          description: `Documento: ${newItemName.trim()}`,
+          is_mandatory: true,
+          category: 'documentos_pessoais',
+          is_active: true
+        });
+
+        const newItem: ChecklistItem = {
+          id: newDocument.id,
+          name: newDocument.name,
+          required: newDocument.is_mandatory
+        };
+        
+        setChecklist(prev => [...prev, newItem]);
+        setNewItemName('');
+        
+        toast({
+          title: "Sucesso",
+          description: "Documento adicionado com sucesso.",
+        });
+      } catch (error) {
+        console.error('Erro ao adicionar documento:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível adicionar o documento.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  const handleUpdateItem = (id: string, name: string) => {
-    setChecklist(prev => prev.map(item => 
-      item.id === id ? { ...item, name } : item
-    ));
+  const handleRemoveItem = async (id: string) => {
+    try {
+      setLoading(true);
+      await requiredDocumentsService.removeRequiredDocument(id);
+      setChecklist(prev => prev.filter(item => item.id !== id));
+      
+      toast({
+        title: "Sucesso",
+        description: "Documento removido com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao remover documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o documento.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleRequired = (id: string) => {
-    setChecklist(prev => prev.map(item => 
-      item.id === id ? { ...item, required: !item.required } : item
-    ));
+  const handleUpdateItem = async (id: string, name: string) => {
+    try {
+      await requiredDocumentsService.updateDocumentName(id, name);
+      setChecklist(prev => prev.map(item => 
+        item.id === id ? { ...item, name } : item
+      ));
+    } catch (error) {
+      console.error('Erro ao atualizar nome do documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o nome do documento.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSave = () => {
-    // Salvando checklist
-    // Here you would save to your backend/context
+  const handleToggleRequired = async (id: string) => {
+    try {
+      const item = checklist.find(item => item.id === id);
+      if (!item) return;
+
+      const newRequiredStatus = !item.required;
+      await requiredDocumentsService.updateDocumentMandatory(id, newRequiredStatus);
+      
+      setChecklist(prev => prev.map(item => 
+        item.id === id ? { ...item, required: newRequiredStatus } : item
+      ));
+      
+      toast({
+        title: "Sucesso",
+        description: `Documento marcado como ${newRequiredStatus ? 'obrigatório' : 'opcional'}.`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status obrigatório:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do documento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // Sincronizar todas as checklists de funcionários com as novas configurações
+      await documentChecklistService.syncAllEmployeeChecklists();
+      
+      toast({
+        title: "Sucesso",
+        description: "Todas as alterações foram salvas e as checklists foram sincronizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao sincronizar checklists:', error);
+      toast({
+        title: "Aviso",
+        description: "Alterações salvas, mas houve um problema na sincronização das checklists.",
+        variant: "destructive",
+      });
+    }
     onOpenChange(false);
   };
 
@@ -89,9 +210,9 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
               onKeyPress={(e) => e.key === 'Enter' && handleAddItem()}
               className="flex-1"
             />
-            <Button onClick={handleAddItem} size="sm">
+            <Button onClick={handleAddItem} size="sm" disabled={loading}>
               <Plus className="w-4 h-4 mr-2" />
-              Adicionar
+              {loading ? 'Adicionando...' : 'Adicionar'}
             </Button>
           </div>
 
@@ -132,6 +253,7 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
                       size="sm"
                       onClick={() => handleRemoveItem(item.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={loading}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -166,8 +288,8 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSave}>
-            Salvar Alterações
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
         </DialogFooter>
       </DialogContent>

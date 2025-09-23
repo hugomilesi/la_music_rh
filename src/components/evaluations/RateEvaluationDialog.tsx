@@ -59,21 +59,30 @@ export function RateEvaluationDialog({
 
     setLoading(true);
     try {
+      console.log('🔄 RateEvaluationDialog: Iniciando avaliação com dados:', {
+        evaluationId: evaluation.id,
+        rating,
+        comments,
+        status: 'Concluída'
+      });
+
       const updateData = {
         score: rating,
         status: 'Concluída' as const,
-        completed_at: new Date().toISOString(),
         comments: comments || evaluation.comments,
       };
 
+      console.log('📤 RateEvaluationDialog: Enviando dados para updateEvaluation:', updateData);
+
       const updatedEvaluation = await evaluationService.updateEvaluation(evaluation.id, updateData);
       
+      console.log('✅ RateEvaluationDialog: Avaliação atualizada com sucesso:', updatedEvaluation);
+
       // Create the updated evaluation object with the new data
       const evaluationWithUpdates = {
         ...updatedEvaluation,
         score: rating,
         status: 'Concluída' as const,
-        completed_at: new Date().toISOString(),
         comments: comments || evaluation.comments,
       };
       
@@ -90,7 +99,7 @@ export function RateEvaluationDialog({
       setHoveredRating(0);
       setComments('');
     } catch (error) {
-      // Log desabilitado: Error rating evaluation
+      console.error('❌ RateEvaluationDialog: Erro ao avaliar:', error);
       toast({
         title: "Erro ao avaliar",
         description: "Ocorreu um erro ao registrar a nota. Tente novamente.",

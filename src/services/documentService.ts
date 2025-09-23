@@ -23,6 +23,12 @@ export interface Document {
   expires_at?: string;
   created_at?: string;
   updated_at?: string;
+  employee_id?: string;
+  employee?: {
+    id: string;
+    username: string;
+    email: string;
+  };
 }
 
 export interface DocumentUpload {
@@ -49,8 +55,15 @@ export const documentService = {
       
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
-        .eq('employee_id', employeeId)
+        .select(`
+          *,
+          employee:users(
+            id,
+            username,
+            email
+          )
+        `)
+        .eq('uploaded_by', employeeId)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -77,13 +90,15 @@ export const documentService = {
         requires_acknowledgment: doc.requires_acknowledgment,
         tags: doc.tags,
         metadata: doc.metadata,
-        expires_at: doc.expires_at,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at,
         created_by: doc.created_by,
         updated_by: doc.updated_by,
         approved_by: doc.approved_by,
-        approved_at: doc.approved_at
+        approved_at: doc.approved_at,
+        expires_at: doc.expires_at,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        employee_id: doc.uploaded_by, // Map uploaded_by to employee_id for frontend compatibility
+        employee: doc.employee
       })) || [];
     } catch (error) {
       console.error('DocumentService: Erro em getDocumentsByEmployeeId:', error);
@@ -98,7 +113,14 @@ export const documentService = {
       
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select(`
+          *,
+          employee:users(
+            id,
+            username,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -131,7 +153,9 @@ export const documentService = {
         created_by: doc.created_by,
         updated_by: doc.updated_by,
         approved_by: doc.approved_by,
-        approved_at: doc.approved_at
+        approved_at: doc.approved_at,
+        employee_id: doc.uploaded_by, // Map uploaded_by to employee_id for frontend compatibility
+        employee: doc.employee
       })) || [];
     } catch (error) {
       console.error('DocumentService: Erro em getAllDocuments:', error);
@@ -182,23 +206,16 @@ export const documentService = {
       const { data: document, error: dbError } = await supabase
         .from('documents')
         .insert({
-          title: uploadData.title,
+          name: uploadData.title || uploadData.file.name,
           description: uploadData.description,
-          document_type: uploadData.document_type || 'policy',
           category: uploadData.category,
-          file_name: uploadData.file.name,
           file_path: uploadResult.path,
           file_size: uploadData.file.size,
           mime_type: uploadData.file.type,
-          version: uploadData.version || '1.0',
-          status: uploadData.status || 'active',
           is_public: uploadData.is_public || false,
-          requires_acknowledgment: uploadData.requires_acknowledgment || false,
           tags: uploadData.tags || [],
-          metadata: uploadData.metadata || {},
-          expires_at: uploadData.expires_at,
-          created_by: uploadData.created_by,
-          updated_by: uploadData.created_by
+          uploaded_by: uploadData.created_by,
+          expires_at: uploadData.expires_at
         })
         .select()
         .single();
@@ -226,7 +243,7 @@ export const documentService = {
       // Get document info
       const { data: document, error: docError } = await supabase
         .from('documents')
-        .select('file_path, document_name')
+        .select('file_path, name')
         .eq('id', documentId)
         .single();
       
@@ -254,16 +271,17 @@ export const documentService = {
   },
 
   // Update document metadata
-  async updateDocument(documentId: string, updates: Partial<Pick<Document, 'title' | 'status' | 'expires_at' | 'description'>>): Promise<Document> {
+  async updateDocument(documentId: string, updates: Partial<Pick<Document, 'name' | 'description' | 'category' | 'is_public' | 'tags'>>): Promise<Document> {
     try {
       console.log('DocumentService: Atualizando documento:', documentId);
       
       // Map frontend fields to database columns
       const dbUpdates: any = {};
-      if (updates.title !== undefined) dbUpdates.title = updates.title;
-      if (updates.status !== undefined) dbUpdates.status = updates.status;
-      if (updates.expires_at !== undefined) dbUpdates.expires_at = updates.expires_at;
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.category !== undefined) dbUpdates.category = updates.category;
+      if (updates.is_public !== undefined) dbUpdates.is_public = updates.is_public;
+      if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
       
       const { data: document, error } = await supabase
         .from('documents')

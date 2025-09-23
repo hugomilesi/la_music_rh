@@ -1,26 +1,26 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Unit } from '@/types/employee';
+import { ScheduleUnit } from '@/types/unit';
 
 interface UnitContextType {
-  selectedUnits: Unit[];
-  toggleUnit: (unit: Unit) => void;
+  selectedUnits: ScheduleUnit[];
+  toggleUnit: (unit: ScheduleUnit) => void;
   selectAllUnits: () => void;
   clearUnitSelection: () => void;
-  isUnitSelected: (unit: Unit) => boolean;
+  isUnitSelected: (unit: ScheduleUnit) => boolean;
   hasAnyUnitSelected: boolean;
 }
 
 const UnitContext = createContext<UnitContextType | undefined>(undefined);
 
-export const UnitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [selectedUnits, setSelectedUnits] = useState<Unit[]>([
-    Unit.CAMPO_GRANDE,
-    Unit.RECREIO,
-    Unit.BARRA
+export function UnitProvider({ children }: { children: React.ReactNode }) {
+  const [selectedUnits, setSelectedUnits] = useState<ScheduleUnit[]>([
+    ScheduleUnit.CAMPO_GRANDE,
+    ScheduleUnit.RECREIO,
+    ScheduleUnit.BARRA
   ]);
 
-  const toggleUnit = useCallback((unit: Unit) => {
+  const toggleUnit = useCallback((unit: ScheduleUnit) => {
     setSelectedUnits(prev => {
       if (prev.includes(unit)) {
         return prev.filter(u => u !== unit);
@@ -31,14 +31,14 @@ export const UnitProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const selectAllUnits = useCallback(() => {
-    setSelectedUnits([Unit.CAMPO_GRANDE, Unit.RECREIO, Unit.BARRA]);
+    setSelectedUnits([ScheduleUnit.CAMPO_GRANDE, ScheduleUnit.RECREIO, ScheduleUnit.BARRA]);
   }, []);
 
   const clearUnitSelection = useCallback(() => {
     setSelectedUnits([]);
   }, []);
 
-  const isUnitSelected = useCallback((unit: Unit) => {
+  const isUnitSelected = useCallback((unit: ScheduleUnit) => {
     return selectedUnits.includes(unit);
   }, [selectedUnits]);
 
@@ -56,12 +56,6 @@ export const UnitProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </UnitContext.Provider>
   );
-};
+}
 
-export const useUnit = () => {
-  const context = useContext(UnitContext);
-  if (context === undefined) {
-    throw new Error('useUnit must be used within a UnitProvider');
-  }
-  return context;
-};
+export { UnitContext };

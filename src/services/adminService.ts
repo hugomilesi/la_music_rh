@@ -91,20 +91,15 @@ export const checkAdminPrivileges = async (): Promise<boolean> => {
  * Update user with proper admin validation
  */
 export const updateSystemUserAsAdmin = async (userId: string, updates: UpdateUserData): Promise<void> => {
-  try {
-    // First check if current user has admin privileges
-    const hasAdminPrivileges = await checkAdminPrivileges();
-    
-    if (!hasAdminPrivileges) {
-      throw new Error('Insufficient permissions. Only administrators can update user profiles.');
-    }
-
-    // Try the direct API approach first
-    await updateUserAsAdmin(userId, updates);
-    
-    // User profile updated successfully logging disabled
-  } catch (error) {
-    // Error in updateSystemUserAsAdmin logging disabled
-    throw error;
+  // First check if current user has admin privileges
+  const hasAdminPrivileges = await checkAdminPrivileges();
+  
+  if (!hasAdminPrivileges) {
+    throw new Error('Insufficient permissions. Only administrators can update user profiles.');
   }
+
+  // Try the direct API approach first
+  await updateUserAsAdmin(userId, updates);
+  
+  // User profile updated successfully logging disabled
 };

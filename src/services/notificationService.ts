@@ -6,19 +6,14 @@ import { emailService } from './emailService';
 export const notificationService = {
   async getNotifications(): Promise<Notification[]> {
     try {
-      console.log('🔄 NotificationService: Buscando notificações');
-      
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('❌ NotificationService: Erro ao buscar notificações:', error);
         throw error;
       }
-      
-      console.log('✅ NotificationService: Notificações encontradas:', data?.length || 0);
       return data?.map(notification => ({
         id: notification.id,
         title: notification.title,
@@ -36,14 +31,12 @@ export const notificationService = {
         metadata: notification.metadata as Notification['metadata']
       })) || [];
     } catch (error) {
-      console.error('❌ NotificationService: Erro em getNotifications:', error);
       throw error;
     }
   },
 
   async createNotification(notificationData: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
     try {
-      console.log('🔄 NotificationService: Criando notificação:', notificationData.title);
       
       const { data, error } = await supabase
         .from('notifications')
@@ -65,11 +58,8 @@ export const notificationService = {
       .single();
     
     if (error) {
-      console.error('❌ NotificationService: Erro ao criar notificação:', error);
       throw error;
     }
-    
-    console.log('✅ NotificationService: Notificação criada com sucesso:', data.id);
     return {
       id: data.id,
       title: data.title,
@@ -87,14 +77,12 @@ export const notificationService = {
       metadata: data.metadata as Notification['metadata']
     };
     } catch (error) {
-      console.error('❌ NotificationService: Erro em createNotification:', error);
       throw error;
     }
   },
 
   async updateNotification(id: string, updates: Partial<Notification>): Promise<Notification> {
     try {
-      console.log('🔄 NotificationService: Atualizando notificação:', id);
       
       const { data, error } = await supabase
         .from('notifications')
@@ -116,11 +104,8 @@ export const notificationService = {
         .single();
     
     if (error) {
-      console.error('❌ NotificationService: Erro ao atualizar notificação:', error);
       throw error;
     }
-    
-    console.log('✅ NotificationService: Notificação atualizada com sucesso:', data.id);
     return {
       id: data.id,
       title: data.title,
@@ -138,7 +123,6 @@ export const notificationService = {
       metadata: data.metadata as Notification['metadata']
     };
     } catch (error) {
-      console.error('❌ NotificationService: Erro em updateNotification:', error);
       throw error;
     }
   },
@@ -148,7 +132,6 @@ export const notificationService = {
    */
   async sendNotificationEmail(notification: Notification): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🔄 NotificationService: Enviando notificação por email:', notification.title);
       
       // Get recipient emails from users table
       const { data: employees, error: employeesError } = await supabase
@@ -157,7 +140,6 @@ export const notificationService = {
         .in('id', notification.recipients);
 
       if (employeesError) {
-        console.error('❌ NotificationService: Erro ao buscar emails dos destinatários:', employeesError);
         return { success: false, error: 'Erro ao buscar emails dos destinatários' };
       }
 
