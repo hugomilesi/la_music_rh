@@ -23,10 +23,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Lock } from 'lucide-react';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
-import { Employee, Unit } from '@/types/employee';
+import { Colaborador, UnidadeColaborador } from '@/types/colaborador';
 import { UNITS } from '@/types/unit';
 
 const formSchema = z.object({
@@ -36,13 +36,13 @@ const formSchema = z.object({
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().min(2, 'Departamento é obrigatório'),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
-  units: z.array(z.nativeEnum(Unit)).min(1, 'Selecione pelo menos uma unidade'),
+  units: z.array(z.nativeEnum(UnidadeColaborador)).min(1, 'Selecione pelo menos uma unidade'),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 interface EditEmployeeDialogProps {
-  employee: Employee | null;
+  employee: Colaborador | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -52,7 +52,7 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { updateEmployee } = useEmployees();
+  const { updateColaborador } = useColaboradores();
   const { toast } = useToast();
   const { canEditInModule } = usePermissionsV2();
   
@@ -77,13 +77,13 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
   useEffect(() => {
     if (employee) {
       form.reset({
-        name: employee.name,
+        name: employee.nome,
         email: employee.email,
-        phone: employee.phone,
-        position: employee.position,
-        department: employee.department,
-        start_date: employee.start_date,
-        units: employee.units,
+        phone: employee.telefone,
+        position: employee.cargo,
+        department: employee.departamento,
+        start_date: employee.dataAdmissao,
+        units: [employee.unidade],
       });
     }
   }, [employee, form]);
@@ -113,14 +113,14 @@ export const EditEmployeeDialog: React.FC<EditEmployeeDialogProps> = ({
     if (!employee) return;
 
     try {
-      await updateEmployee(employee.id, {
-        name: data.name,
+      await updateColaborador(employee.id, {
+        nome: data.name,
         email: data.email,
-        phone: data.phone,
-        position: data.position,
-        department: data.department,
-        start_date: data.start_date,
-        units: data.units,
+        telefone: data.phone,
+        cargo: data.position,
+        departamento: data.department,
+        dataAdmissao: data.start_date,
+        unidade: data.units[0],
       });
       
       onOpenChange(false);

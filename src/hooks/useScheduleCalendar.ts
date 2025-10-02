@@ -89,8 +89,13 @@ export const useScheduleCalendar = () => {
     return days;
   }, [currentDate]);
 
+  const navigateToDate = (date: Date) => {
+    setCurrentDate(date);
+  };
+
   return {
     currentDate,
+    setCurrentDate,
     viewMode,
     setViewMode,
     filteredEvents,
@@ -99,6 +104,7 @@ export const useScheduleCalendar = () => {
     navigateWeek,
     navigateMonth,
     goToToday,
+    navigateToDate,
     getEventsForDate,
     checkEventConflicts
   };

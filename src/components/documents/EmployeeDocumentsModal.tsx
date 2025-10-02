@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Download, Mail, FileText, Search, Package, Eye, Edit, Trash2, Lock } from 'lucide-react';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Document } from '@/types/document';
 import { EditDocumentDialog } from './EditDocumentDialog';

@@ -88,7 +88,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-red-600">
-                    {incidents.filter(i => i.status === 'ativo').length}
+                    {incidents.filter(i => i.status === 'open').length}
                   </p>
                   <p className="text-sm text-gray-600">Ativas</p>
                 </div>
@@ -98,7 +98,7 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {incidents.filter(i => i.status === 'resolvido').length}
+                    {incidents.filter(i => i.status === 'resolved').length}
                   </p>
                   <p className="text-sm text-gray-600">Resolvidas</p>
                 </div>

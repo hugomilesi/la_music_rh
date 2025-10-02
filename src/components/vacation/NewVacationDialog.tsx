@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Lock } from 'lucide-react';
 import { useVacation } from '@/contexts/VacationContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { NewVacationRequest } from '@/types/vacation';
@@ -60,7 +60,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   onOpenChange,
 }) => {
   const { addVacationRequest, isLoading } = useVacation();
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
   const { toast } = useToast();
   const { canCreateInModule } = usePermissionsV2();
   const canManageEmployees = useMemo(() => canCreateInModule('ferias'), [canCreateInModule]);
@@ -111,7 +111,7 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
   ];
 
   // Add error boundary for employee data
-  if (!employees || employees.length === 0) {
+  if (!colaboradoresAtivos || colaboradoresAtivos.length === 0) {
     // Log desabilitado: No employees available for vacation dialog
   }
 
@@ -163,10 +163,10 @@ export const NewVacationDialog: React.FC<NewVacationDialogProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {employees && employees.length > 0 ? (
-                        employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id}>
-                            {employee.name}
+                      {colaboradoresAtivos && colaboradoresAtivos.length > 0 ? (
+                        colaboradoresAtivos.map((colaborador) => (
+                          <SelectItem key={colaborador.id} value={colaborador.id}>
+                            {colaborador.nome}
                           </SelectItem>
                         ))
                       ) : (

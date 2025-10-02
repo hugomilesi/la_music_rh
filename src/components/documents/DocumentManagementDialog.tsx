@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Document, DocumentStatus } from '@/types/document';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { Download, Trash2, Edit, FileText, Calendar, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateToLocal } from '@/utils/dateUtils';

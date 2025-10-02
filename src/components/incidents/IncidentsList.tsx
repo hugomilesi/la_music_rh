@@ -54,18 +54,20 @@ const getSeverityBorderColor = (severity: string, theme: any) => {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'ativo': return 'error';
-    case 'resolvido': return 'success';
-    case 'arquivado': return 'default';
+    case 'open': return 'error';
+    case 'in_progress': return 'warning';
+    case 'resolved': return 'success';
+    case 'closed': return 'default';
     default: return 'default';
   }
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'ativo': return 'Ativo';
-    case 'resolvido': return 'Resolvido';
-    case 'arquivado': return 'Arquivado';
+    case 'open': return 'Ativo';
+    case 'in_progress': return 'Em Progresso';
+    case 'resolved': return 'Resolvido';
+    case 'closed': return 'Arquivado';
     default: return status;
   }
 };
@@ -80,7 +82,7 @@ const IncidentsList: React.FC = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [incidentToDelete, setIncidentToDelete] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: string, status: 'ativo' | 'resolvido' | 'arquivado'} | null>(null);
+  const [incidentToUpdateStatus, setIncidentToUpdateStatus] = useState<{id: string, status: 'open' | 'in_progress' | 'resolved' | 'closed'} | null>(null);
   
   // Menu de ações
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -103,17 +105,8 @@ const IncidentsList: React.FC = () => {
     fetchIncidents();
   }, [filter]);
 
-  // Separate effect for subscription to avoid re-subscribing on filter changes
-  useEffect(() => {
-    // Inscrever-se para atualizações em tempo real
-    const subscription = incidentService.subscribeToChanges(() => {
-      fetchIncidents();
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []); // Empty dependency array to prevent re-subscription
+  // Nota: A subscrição em tempo real é gerenciada pelo IncidentsContext
+  // Não é necessário criar subscrições adicionais aqui
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, incidentId: string) => {
     setAnchorEl(event.currentTarget);
@@ -142,7 +135,7 @@ const IncidentsList: React.FC = () => {
     handleCloseMenu();
   };
 
-  const handleUpdateStatus = (id: string, status: 'ativo' | 'resolvido' | 'arquivado') => {
+  const handleUpdateStatus = (id: string, status: 'open' | 'in_progress' | 'resolved' | 'closed') => {
     setIncidentToUpdateStatus({ id, status });
     setStatusDialogOpen(true);
     handleCloseMenu();
@@ -215,7 +208,7 @@ const IncidentsList: React.FC = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={filter} onChange={handleFilterChange} aria-label="filtros de incidentes">
           <Tab label="Todos" value="all" />
-          <Tab label="Ativos" value="active" />
+          <Tab label="Ativos" value="open" />
           <Tab label="Resolvidos" value="resolved" />
           <Tab label="Este Mês" value="thisMonth" />
         </Tabs>
@@ -224,7 +217,7 @@ const IncidentsList: React.FC = () => {
       {incidents.length === 0 ? (
         <EmptyState 
           message="Nenhum incidente encontrado"
-          description={`Não há incidentes ${filter === 'active' ? 'ativos' : filter === 'resolved' ? 'resolvidos' : filter === 'thisMonth' ? 'neste mês' : ''} para exibir.`}
+          description={`Não há incidentes ${filter === 'open' ? 'ativos' : filter === 'resolved' ? 'resolvidos' : filter === 'thisMonth' ? 'neste mês' : ''} para exibir.`}
           actionText="Adicionar Incidente"
           onAction={handleAddIncident}
         />
@@ -320,22 +313,22 @@ const IncidentsList: React.FC = () => {
           Editar
         </MenuItem>
         
-        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'ativo' && (
-          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'ativo')}>
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'open' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'in_progress')}>
             <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
-            Marcar como Ativo
+            Marcar como Em Progresso
           </MenuItem>
         )}
         
-        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status === 'ativo' && (
-          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'resolvido')}>
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'closed' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolved' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'resolved')}>
             <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
             Marcar como Resolvido
           </MenuItem>
         )}
         
-        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'arquivado' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolvido' && (
-          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'arquivado')}>
+        {selectedIncidentId && incidents.find(i => i.id === selectedIncidentId)?.status !== 'closed' && incidents.find(i => i.id === selectedIncidentId)?.status !== 'resolved' && (
+          <MenuItem onClick={() => selectedIncidentId && handleUpdateStatus(selectedIncidentId, 'closed')}>
             <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
             Arquivar
           </MenuItem>
@@ -367,8 +360,8 @@ const IncidentsList: React.FC = () => {
       {/* Diálogo de confirmação de mudança de status */}
       <ConfirmDialog
         open={statusDialogOpen}
-        title={`${incidentToUpdateStatus?.status === 'resolvido' ? 'Resolver' : 'Arquivar'} Incidente`}
-        content={`Tem certeza que deseja marcar este incidente como ${incidentToUpdateStatus?.status === 'resolvido' ? 'resolvido' : incidentToUpdateStatus?.status === 'ativo' ? 'ativo' : 'arquivado'}?`}
+        title={`${incidentToUpdateStatus?.status === 'resolved' ? 'Resolver' : incidentToUpdateStatus?.status === 'in_progress' ? 'Atualizar' : 'Arquivar'} Incidente`}
+        content={`Tem certeza que deseja marcar este incidente como ${incidentToUpdateStatus?.status === 'resolved' ? 'resolvido' : incidentToUpdateStatus?.status === 'in_progress' ? 'em progresso' : incidentToUpdateStatus?.status === 'open' ? 'ativo' : 'arquivado'}?`}
         onConfirm={confirmStatusUpdate}
         onCancel={() => setStatusDialogOpen(false)}
       />

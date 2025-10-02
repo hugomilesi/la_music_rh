@@ -9,7 +9,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { useForm } from 'react-hook-form';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useToast } from '@/hooks/use-toast';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
+import { useUsers } from '@/hooks/useUsers';
 import { formatDateToLocal, getTodayLocal } from '@/utils/dateUtils';
 
 interface NewIncidentDialogProps {
@@ -33,7 +34,8 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
 }) => {
   const { addIncident } = useIncidents();
   const { toast } = useToast();
-  const { employees, loading: loadingEmployees } = useEmployees();
+  const { colaboradoresAtivos, loadingColaboradores } = useColaboradores();
+  const { users, loading: loadingUsers } = useUsers();
   
   const form = useForm<IncidentFormData>({
     defaultValues: {
@@ -51,14 +53,14 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
     const incidentData = {
       title: data.title,
       employeeId: data.employeeId,
-      employeeName: employees.find(emp => emp.id === data.employeeId)?.name || '',
+      employeeName: colaboradoresAtivos?.find(col => col.id === data.employeeId)?.nome || '',
       type: data.type,
       severity: data.severity,
       description: data.description,
       incidentDate: data.incidentDate,
       reporterId: data.reporterId,
-      reporterName: employees.find(emp => emp.id === data.reporterId)?.name || '',
-      status: 'ativo' as const
+      reporterName: users?.find(user => user.id === data.reporterId)?.name || '',
+      status: 'open' as const
     };
     
     addIncident(incidentData);
@@ -107,10 +109,10 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
                     <FormLabel>Colaborador</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={employees.map((employee) => ({
-                          value: employee.id,
-                          label: employee.name,
-                        }))}
+                        options={colaboradoresAtivos?.map((colaborador) => ({
+                          value: colaborador.id,
+                          label: colaborador.nome,
+                        })) || []}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Selecione um colaborador"
@@ -210,12 +212,12 @@ export const NewIncidentDialog: React.FC<NewIncidentDialogProps> = ({
                         <SelectValue placeholder="Selecione o responsável" />
                       </SelectTrigger>
                       <SelectContent>
-                        {loadingEmployees ? (
-                          <SelectItem value="" disabled>Carregando...</SelectItem>
+                        {loadingUsers ? (
+                          <SelectItem value="loading" disabled>Carregando...</SelectItem>
                         ) : (
-                          employees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id}>
-                              {employee.name}
+                          users?.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.name}
                             </SelectItem>
                           ))
                         )}

@@ -29,7 +29,7 @@ export const vacationService = {
         .from('vacation_requests')
         .select(`
           *,
-          employee:users!employee_id(username)
+          employee:colaboradores!employee_id(nome)
         `)
         .order('created_at', { ascending: false });
       
@@ -40,7 +40,7 @@ export const vacationService = {
       return data?.map(request => ({
         id: request.id,
         employeeId: request.employee_id,
-        employeeName: request.employee?.username || 'Unknown',
+        employeeName: request.employee?.nome || 'Unknown',
         startDate: request.start_date,
         endDate: request.end_date,
         days: request.days_requested,
@@ -109,7 +109,7 @@ export const vacationService = {
         .insert(insertData)
         .select(`
           *,
-          employee:users!employee_id(username)
+          employee:colaboradores!employee_id(nome)
         `)
         .single();
 
@@ -120,7 +120,7 @@ export const vacationService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Unknown',
+        employeeName: data.employee?.nome || 'Unknown',
         startDate: data.start_date,
         endDate: data.end_date,
         days: data.days_requested,
@@ -163,7 +163,7 @@ export const vacationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!employee_id(username)
+          employee:colaboradores!employee_id(nome)
         `)
         .single();
       
@@ -174,7 +174,7 @@ export const vacationService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Unknown',
+        employeeName: data.employee?.nome || 'Unknown',
         startDate: data.start_date,
         endDate: data.end_date,
         days: data.days_requested,
@@ -208,7 +208,7 @@ export const vacationService = {
       const { data: approver, error: approverError } = await supabase
         .from('users')
         .select('id, username')
-        .eq('id', approvedBy)
+        .eq('auth_user_id', approvedBy)
         .single();
 
       if (approverError || !approver) {
@@ -217,7 +217,7 @@ export const vacationService = {
 
       const updateData = {
         status: 'approved',
-        approved_by: approvedBy,
+        approved_by: approver.id, // Store the user's internal ID, not auth_user_id
         approved_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -228,8 +228,8 @@ export const vacationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!vacation_requests_employee_id_fkey(username),
-          approved_by_user:users!vacation_requests_approved_by_fkey(username)
+          employee:colaboradores!employee_id(nome),
+          approved_by_user:users!approved_by(username)
         `)
         .single();
 
@@ -243,7 +243,7 @@ export const vacationService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Funcionário não encontrado',
+        employeeName: data.employee?.nome || 'Funcionário não encontrado',
         startDate: data.start_date,
         endDate: data.end_date,
         daysRequested: data.days_requested,
@@ -267,7 +267,7 @@ export const vacationService = {
       const { data: rejector, error: rejectorError } = await supabase
         .from('users')
         .select('id, username')
-        .eq('id', rejectedBy)
+        .eq('auth_user_id', rejectedBy)
         .single();
 
       if (rejectorError || !rejector) {
@@ -276,7 +276,7 @@ export const vacationService = {
 
       const updateData = {
         status: 'rejected',
-        approved_by: rejectedBy, // Store who rejected it
+        approved_by: rejector.id, // Store the user's internal ID, not auth_user_id
         rejection_reason: rejectionReason,
         updated_at: new Date().toISOString()
       };
@@ -287,8 +287,8 @@ export const vacationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:users!vacation_requests_employee_id_fkey(username),
-          approved_by_user:users!vacation_requests_approved_by_fkey(username)
+          employee:colaboradores!employee_id(nome),
+          approved_by_user:users!approved_by(username)
         `)
         .single();
 
@@ -299,7 +299,7 @@ export const vacationService = {
       return {
         id: data.id,
         employeeId: data.employee_id,
-        employeeName: data.employee?.username || 'Funcionário não encontrado',
+        employeeName: data.employee?.nome || 'Funcionário não encontrado',
         startDate: data.start_date,
         endDate: data.end_date,
         daysRequested: data.days_requested,

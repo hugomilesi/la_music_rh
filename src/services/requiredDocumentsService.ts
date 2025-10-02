@@ -20,23 +20,41 @@ export interface ChecklistItem {
 }
 
 export const requiredDocumentsService = {
-  // Buscar todos os documentos obrigatórios
+  // Buscar todos os documentos (obrigatórios e opcionais) ativos
   async getRequiredDocuments(): Promise<RequiredDocument[]> {
     try {
+      console.log('🔍 [requiredDocumentsService] Buscando TODOS os documentos ativos...');
+      
       const { data, error } = await supabase
         .from('required_documents')
-        .select('*')
+        .select('id, document_type, name, description, is_mandatory, category, is_active, created_at, updated_at')
         .eq('is_active', true)
         .order('name');
 
       if (error) {
-        console.error('Erro ao buscar documentos obrigatórios:', error);
+        console.error('❌ [requiredDocumentsService] Erro na consulta:', error);
         throw error;
       }
 
-      return data || [];
+      console.log('📋 [requiredDocumentsService] Documentos encontrados:', data?.length || 0);
+      console.log('📊 [requiredDocumentsService] Dados:', data);
+
+      const documents: RequiredDocument[] = data?.map(item => ({
+        id: item.id,
+        document_type: item.document_type,
+        name: item.name,
+        description: item.description || '',
+        is_mandatory: item.is_mandatory,
+        category: item.category || '',
+        is_active: item.is_active,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      })) || [];
+
+      console.log('✅ [requiredDocumentsService] Documentos processados:', documents.length);
+      return documents;
     } catch (error) {
-      console.error('Erro no serviço de documentos obrigatórios:', error);
+      console.error('❌ [requiredDocumentsService] Erro no serviço de documentos:', error);
       throw error;
     }
   },

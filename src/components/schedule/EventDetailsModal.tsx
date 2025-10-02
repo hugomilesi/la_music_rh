@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -8,15 +7,31 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, MapPin, User, Edit } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import {
+  Clock,
+  MapPin,
+  User,
+  Calendar,
+  Briefcase,
+  Coffee,
+  GraduationCap,
+  Plane,
+  CheckSquare,
+  Bell,
+  Edit,
+  Trash2,
+  X
+} from 'lucide-react';
 import { ScheduleEvent } from '@/types/schedule';
+import { getScheduleUnitInfo } from '@/types/unit';
 
 interface EventDetailsModalProps {
   event: ScheduleEvent | null;
   isOpen: boolean;
   onClose: () => void;
-  onEdit: (eventId: string) => void;
+  onEdit?: (event: ScheduleEvent) => void;
+  onDelete?: (eventId: string) => void;
 }
 
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
@@ -24,166 +39,212 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   isOpen,
   onClose,
   onEdit,
+  onDelete
 }) => {
   if (!event) return null;
 
-  const eventTypeColors = {
-    'meeting': 'bg-green-100 text-green-800',
-    'appointment': 'bg-blue-100 text-blue-800',
-    'reminder': 'bg-yellow-100 text-yellow-800',
-    'task': 'bg-purple-100 text-purple-800',
-    'vacation': 'bg-gray-100 text-gray-800',
-    'training': 'bg-indigo-100 text-indigo-800',
-    'avaliacao': 'bg-red-100 text-red-800',
-    'coffee-connection': 'bg-orange-100 text-orange-800',
-  };
+  const unitInfo = getScheduleUnitInfo(event.unit);
+  const eventDate = event.date || event.event_date;
+  const startTime = event.startTime || event.start_time;
+  const endTime = event.endTime || event.end_time;
 
-  const eventTypeLabels = {
-    'meeting': 'Reunião',
-    'appointment': 'Compromisso',
-    'reminder': 'Lembrete',
-    'task': 'Tarefa',
-    'vacation': 'Férias',
-    'training': 'Treinamento',
-    'avaliacao': 'Avaliação',
-    'coffee-connection': 'Coffee Connection',
-  };
-
-  const getEventTypeColor = (type: string) => {
-    return eventTypeColors[type as keyof typeof eventTypeColors] || 'bg-gray-100 text-gray-800';
+  const getEventTypeIcon = (type: string) => {
+    const icons = {
+      'meeting': <Briefcase className="w-5 h-5" />,
+      'appointment': <Calendar className="w-5 h-5" />,
+      'reminder': <Bell className="w-5 h-5" />,
+      'task': <CheckSquare className="w-5 h-5" />,
+      'vacation': <Plane className="w-5 h-5" />,
+      'training': <GraduationCap className="w-5 h-5" />,
+      'avaliacao': <User className="w-5 h-5" />,
+      'coffee-connection': <Coffee className="w-5 h-5" />,
+    };
+    return icons[type as keyof typeof icons] || <Calendar className="w-5 h-5" />;
   };
 
   const getEventTypeLabel = (type: string) => {
-    return eventTypeLabels[type as keyof typeof eventTypeLabels] || 'Evento';
+    const labels = {
+      'meeting': 'Reunião',
+      'appointment': 'Compromisso',
+      'reminder': 'Lembrete',
+      'task': 'Tarefa',
+      'vacation': 'Férias',
+      'training': 'Treinamento',
+      'avaliacao': 'Avaliação',
+      'coffee-connection': 'Coffee Connection'
+    };
+    return labels[type as keyof typeof labels] || 'Evento';
+  };
+
+  const getEventTypeColor = (type: string) => {
+    const colors = {
+      'meeting': 'bg-green-100 text-green-800',
+      'appointment': 'bg-blue-100 text-blue-800',
+      'reminder': 'bg-yellow-100 text-yellow-800',
+      'task': 'bg-purple-100 text-purple-800',
+      'vacation': 'bg-gray-100 text-gray-800',
+      'training': 'bg-indigo-100 text-indigo-800',
+      'avaliacao': 'bg-red-100 text-red-800',
+      'coffee-connection': 'bg-orange-100 text-orange-800',
+    };
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const handleEdit = () => {
+    onEdit?.(event);
+    onClose();
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Tem certeza que deseja excluir este evento?')) {
+      onDelete?.(event.id);
+      onClose();
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">{event.title}</DialogTitle>
-            <Badge className={getEventTypeColor(event.type)}>
-              {getEventTypeLabel(event.type)}
-            </Badge>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-gradient-to-br from-white via-gray-50 to-gray-100">
+        {/* Header with gradient background */}
+        <div className="relative bg-gradient-to-r from-purple-600 via-blue-600 to-teal-500 p-6 text-white">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 opacity-20">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <circle cx="150" cy="50" r="30" fill="white" fillOpacity="0.1" />
+              <circle cx="180" cy="80" r="20" fill="white" fillOpacity="0.15" />
+              <circle cx="120" cy="30" r="15" fill="white" fillOpacity="0.1" />
+            </svg>
           </div>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Main Event Info */}
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="font-medium">{event.employee}</p>
-                  <p className="text-sm text-gray-600">Colaborador</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="font-medium">
-                    {new Date(event.date).toLocaleDateString('pt-BR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                  <p className="text-sm text-gray-600">Data</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="font-medium">{event.startTime} - {event.endTime}</p>
-                  <p className="text-sm text-gray-600">Horário</p>
-                </div>
-              </div>
-
-              {event.location && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="font-medium">{event.location}</p>
-                    <p className="text-sm text-gray-600">Local</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm">
+                  {getEventTypeIcon(event.type)}
                 </div>
                 <div>
-                  <p className="font-medium">{event.unit}</p>
-                  <p className="text-sm text-gray-600">Unidade</p>
+                  <h2 className="text-2xl font-bold mb-2">{event.title}</h2>
+                  <Badge className="bg-yellow-400 text-yellow-900 font-semibold px-3 py-1">
+                    {getEventTypeLabel(event.type)}
+                  </Badge>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            
+            <div className="mt-4 text-white text-opacity-90">
+              <p className="text-lg font-medium">{formatDate(eventDate)}</p>
+              <p className="text-white text-opacity-80">{startTime} - {endTime}</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Description */}
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Colaborador */}
+          <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <User className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Colaborador</p>
+              <p className="text-lg font-semibold text-gray-900">{event.employee}</p>
+            </div>
+          </div>
+
+          {/* Unidade */}
+          <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className={`w-10 h-10 rounded-full ${unitInfo.color} flex items-center justify-center`}>
+              <div className="w-3 h-3 bg-white rounded-full"></div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Unidade</p>
+              <p className="text-lg font-semibold text-gray-900">{unitInfo.name}</p>
+            </div>
+          </div>
+
+          {/* Local */}
+          {event.location && (
+            <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <MapPin className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Local</p>
+                <p className="text-lg font-semibold text-gray-900">{event.location}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Descrição */}
           {event.description && (
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-medium mb-2">Descrição</h4>
-                <p className="text-gray-700">{event.description}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Alerts */}
-          {(event.emailAlert || event.whatsappAlert) && (
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-medium mb-3">Alertas Configurados</h4>
-                <div className="flex gap-2">
-                  {event.emailAlert && (
-                    <div className="flex items-center gap-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg">
-                      <span>📧</span>
-                      <span className="text-sm">Email</span>
-                    </div>
-                  )}
-                  {event.whatsappAlert && (
-                    <div className="flex items-center gap-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg">
-                      <span>📱</span>
-                      <span className="text-sm">WhatsApp</span>
-                    </div>
-                  )}
+            <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1 bg-purple-50 rounded-lg">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Event Metadata */}
-          <Card>
-            <CardContent className="p-4">
-              <h4 className="font-medium mb-3">Informações do Sistema</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-600">Criado em</p>
-                  <p>{new Date(event.createdAt).toLocaleString('pt-BR')}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Última modificação</p>
-                  <p>{new Date(event.updatedAt).toLocaleString('pt-BR')}</p>
-                </div>
+                <p className="font-medium text-gray-900">Descrição</p>
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-gray-600 leading-relaxed">
+                {event.description || 'Sem descrição disponível'}
+              </p>
+            </div>
+          )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose}>
-              Fechar
-            </Button>
-            <Button onClick={() => onEdit(event.id)}>
+          {/* Alertas */}
+          {(event.emailAlert || event.whatsappAlert) && (
+            <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1 bg-yellow-50 rounded-lg">
+                  <Bell className="w-4 h-4 text-yellow-600" />
+                </div>
+                <p className="font-medium text-gray-900">Alertas Configurados</p>
+              </div>
+              <div className="flex gap-3">
+                {event.emailAlert && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                    <span className="text-lg">📧</span>
+                    <span className="text-sm font-medium text-blue-800">Email</span>
+                  </div>
+                )}
+                {event.whatsappAlert && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
+                    <span className="text-lg">📱</span>
+                    <span className="text-sm font-medium text-green-800">WhatsApp</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Ações */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleEdit}
+              className="bg-white hover:bg-blue-50 border-blue-200 text-blue-700 hover:text-blue-800"
+            >
               <Edit className="w-4 h-4 mr-2" />
-              Editar Evento
+              Editar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Excluir
             </Button>
           </div>
         </div>

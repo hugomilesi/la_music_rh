@@ -29,20 +29,16 @@ export interface RoleWithDepartment extends Role {
 
 // Department CRUD operations
 export const fetchDepartments = async (): Promise<Department[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('departments')
-      .select('*')
-      .order('name');
+  const { data, error } = await supabase
+    .from('departments')
+    .select('*')
+    .order('name');
 
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
+  if (error) {
     throw error;
   }
+
+  return data || [];
 };
 
 export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {

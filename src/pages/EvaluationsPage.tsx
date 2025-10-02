@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Eye, Edit, Trash2, Coffee, Home, ChevronRight, Star, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Evaluation } from '@/types/evaluation';
-import { evaluationService } from '@/services/evaluationService';
+import { useEvaluations } from '@/contexts/EvaluationContext';
 import CoffeeConnectionManager from '@/components/evaluations/CoffeeConnectionManager';
 import { CompactStatsCards } from '@/components/evaluations/CompactStatsCards';
 import { SmartFilters } from '@/components/evaluations/SmartFilters';
@@ -17,8 +17,7 @@ import { RateEvaluationDialog } from '@/components/evaluations/RateEvaluationDia
 import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
 
 export function EvaluationsPage() {
-  const [evaluations, setEvaluations] = React.useState<Evaluation[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { evaluations, isLoading: loading, refreshEvaluations } = useEvaluations();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedEmployee, setSelectedEmployee] = React.useState('');
   const [selectedUnit, setSelectedUnit] = React.useState('');
@@ -38,30 +37,6 @@ export function EvaluationsPage() {
 
   // Log desabilitado: EvaluationsPage: Component rendering
 
-  // Load evaluations function
-  const loadEvaluations = async () => {
-    try {
-      setLoading(true);
-      const data = await evaluationService.getEvaluations();
-      // Log desabilitado: EvaluationsPage: Retrieved evaluations
-      setEvaluations(data);
-    } catch (error) {
-      // Log desabilitado: Erro ao buscar avaliações
-      toast({
-        title: "Erro ao carregar avaliações",
-        description: "Não foi possível carregar as avaliações. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load evaluations on component mount
-  React.useEffect(() => {
-    loadEvaluations();
-  }, []);
-
   // Handle evaluation deletion with confirmation
   const handleDeleteEvaluation = async (id: string) => {
     if (!confirm('Tem certeza que deseja remover esta avaliação?')) {
@@ -69,8 +44,8 @@ export function EvaluationsPage() {
     }
     
     try {
-      await evaluationService.deleteEvaluation(id);
-      setEvaluations(prev => prev.filter(e => e.id !== id));
+      const { deleteEvaluation } = useEvaluations();
+      await deleteEvaluation(id);
       toast({
         title: "Avaliação removida",
         description: "A avaliação foi removida com sucesso.",
@@ -87,7 +62,7 @@ export function EvaluationsPage() {
 
   // Handle evaluation update (only update local state, service call already done)
   const handleUpdateEvaluation = (updatedEvaluation: Evaluation) => {
-    setEvaluations(prev => prev.map(e => e.id === updatedEvaluation.id ? updatedEvaluation : e));
+    // O contexto já gerencia o estado, não precisamos fazer nada aqui
   };
 
   // Handle schedule new coffee connection
@@ -140,9 +115,9 @@ export function EvaluationsPage() {
   const filteredEvaluations = React.useMemo(() => {
     return evaluations.filter(evaluation => {
       const matchesSearch = !searchTerm || 
-        evaluation.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        evaluation.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        evaluation.period.toLowerCase().includes(searchTerm.toLowerCase());
+        (evaluation.employee && evaluation.employee.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (evaluation.type && evaluation.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (evaluation.period && evaluation.period.toLowerCase().includes(searchTerm.toLowerCase()));
       
       const matchesEmployee = !selectedEmployee || evaluation.employee === selectedEmployee;
       const matchesUnit = !selectedUnit || evaluation.unit === selectedUnit;
@@ -215,7 +190,7 @@ export function EvaluationsPage() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            onClick={loadEvaluations}
+            onClick={refreshEvaluations}
             className="flex items-center gap-2"
             disabled={loading}
           >
@@ -237,9 +212,11 @@ export function EvaluationsPage() {
 
       {/* Coffee Connection Manager */}
       <CoffeeConnectionManager
+          evaluations={evaluations}
           onViewEvaluation={handleViewEvaluation}
           onEditEvaluation={handleEditEvaluation}
           onScheduleNew={handleScheduleNew}
+          refreshEvents={refreshEvaluations}
         />
 
       {/* Smart Filters */}
@@ -388,7 +365,7 @@ export function EvaluationsPage() {
        <CoffeeConnectionDialog 
          open={showCoffeeDialog} 
          onOpenChange={setShowCoffeeDialog}
-         onSuccess={loadEvaluations}
+         onSuccess={refreshEvaluations}
        />
      </div>
    );

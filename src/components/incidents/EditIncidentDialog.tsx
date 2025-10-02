@@ -22,7 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Combobox } from '@/components/ui/combobox';
 import { Lock } from 'lucide-react';
 import { useIncidents } from '@/contexts/IncidentsContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
+import { useUsers } from '@/hooks/useUsers';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { formatDateToLocal } from '@/utils/dateUtils';
@@ -38,7 +39,7 @@ interface EditIncidentDialogProps {
     description: string;
     incidentDate: string;
     reporterId?: string;
-    status: 'ativo' | 'resolvido' | 'arquivado';
+    status: 'open' | 'in_progress' | 'resolved' | 'closed';
   } | null;
 }
 
@@ -49,7 +50,7 @@ interface IncidentFormData {
   description: string;
   incidentDate: string;
   reporterId: string;
-  status: 'ativo' | 'resolvido' | 'arquivado';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
 }
 
 export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
@@ -58,7 +59,8 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
   incident
 }) => {
   const { updateIncident } = useIncidents();
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
+  const { users, loading: loadingUsers } = useUsers();
   const { toast } = useToast();
   const { canEditInModule } = usePermissionsV2();
   
@@ -73,7 +75,7 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
       description: incident?.description || '',
       incidentDate: incident?.incidentDate || '',
       reporterId: incident?.reporterId || '',
-      status: incident?.status || 'ativo'
+      status: incident?.status || 'open'
     }
   });
 
@@ -197,10 +199,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Colaborador</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={employees.map((employee) => ({
-                          value: employee.id,
-                          label: employee.name,
-                        }))}
+                        options={colaboradoresAtivos?.map((colaborador) => ({
+                          value: colaborador.id,
+                          label: colaborador.nome,
+                        })) || []}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Selecione um colaborador"
@@ -262,9 +264,10 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                     <FormLabel>Status</FormLabel>
                     <FormControl>
                       <select {...field} className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm" required>
-                        <option value="ativo">Ativo</option>
-                        <option value="resolvido">Resolvido</option>
-                        <option value="arquivado">Arquivado</option>
+                        <option value="open">Ativo</option>
+                        <option value="in_progress">Em Progresso</option>
+                        <option value="resolved">Resolvido</option>
+                        <option value="closed">Arquivado</option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -314,15 +317,15 @@ export const EditIncidentDialog: React.FC<EditIncidentDialogProps> = ({
                   <FormLabel>Responsável pelo Registro</FormLabel>
                   <FormControl>
                     <Combobox
-                      options={employees.map((employee) => ({
-                        value: employee.id,
-                        label: employee.name,
-                      }))}
+                      options={users?.map((user) => ({
+                        value: user.id,
+                        label: user.name,
+                      })) || []}
                       value={field.value}
                       onValueChange={field.onChange}
                       placeholder="Selecione o responsável"
                       searchPlaceholder="Buscar responsável..."
-                      emptyText="Nenhum colaborador encontrado."
+                      emptyText="Nenhum usuário encontrado."
                     />
                   </FormControl>
                   <FormMessage />

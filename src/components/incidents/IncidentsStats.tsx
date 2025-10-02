@@ -139,9 +139,9 @@ const IncidentsStats: React.FC = () => {
 
   const getStats = () => {
     const total = incidents.length;
-    const ativos = incidents.filter(i => i.status === 'ativo').length;
-    const resolvidos = incidents.filter(i => i.status === 'resolvido').length;
-    const arquivados = incidents.filter(i => i.status === 'arquivado').length;
+    const ativos = incidents.filter(i => i.status === 'open').length;
+    const resolvidos = incidents.filter(i => i.status === 'resolved').length;
+      const arquivados = incidents.filter(i => i.status === 'closed').length;
     
     // Severidade
     const graves = incidents.filter(i => i.severity === 'grave').length;

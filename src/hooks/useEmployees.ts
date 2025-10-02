@@ -19,19 +19,19 @@ export const useEmployees = () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('users')
-          .select('id, username, department, position_id, status, roles!position_id(name)')
+          .from('colaboradores')
+          .select('id, nome, departamento, cargo, status')
           .eq('status', 'ativo')
-          .order('username');
+          .order('nome');
 
         if (error) throw error;
 
-        setEmployees(data?.map(user => ({
-          id: user.id,
-          name: user.username,
-          department: user.department,
-          position: user.roles?.name || 'Não definido',
-          status: user.status
+        setEmployees(data?.map(colaborador => ({
+          id: colaborador.id,
+          name: colaborador.nome,
+          department: colaborador.departamento,
+          position: colaborador.cargo || 'Não definido',
+          status: colaborador.status
         })) || []);
       } catch (err) {
         // Log desabilitado: Erro ao buscar funcionários
@@ -45,11 +45,11 @@ export const useEmployees = () => {
 
     // Inscrever-se para atualizações em tempo real
     const subscription = supabase
-      .channel('users-changes')
+      .channel(`colaboradores-changes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'users'
+        table: 'colaboradores'
       }, () => {
         fetchEmployees();
       })

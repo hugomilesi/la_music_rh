@@ -1,17 +1,15 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Coffee, Clock, MapPin, Check } from 'lucide-react';
+import { Coffee, Calendar, MapPin, Clock, CheckCircle } from 'lucide-react';
+import { Evaluation } from '@/types/evaluation';
 import { useEvaluations } from '@/contexts/EvaluationContext';
-import { useSchedule } from '@/contexts/ScheduleContext';
-import { Unit } from '@/types/unit';
 import { useToast } from '@/hooks/use-toast';
 
 export const CoffeeConnectionScheduleIntegration: React.FC = () => {
   const { evaluations, updateEvaluation } = useEvaluations();
-  const { addEvent } = useSchedule();
   const { toast } = useToast();
   
   // Filtrar apenas Coffee Connections com status 'Em Andamento'
@@ -31,39 +29,15 @@ export const CoffeeConnectionScheduleIntegration: React.FC = () => {
   const approveAndAddToCalendar = async (connection: any) => {
     if (connection.meetingDate && connection.meetingTime) {
       try {
-        // 1. Aprovar a avaliação (mudar status para 'Em Andamento')
+        // Aprovar a avaliação (mudar status para 'Em Andamento')
         await updateEvaluation(connection.id, { status: 'Em Andamento' });
-        
-        // 2. Adicionar ao calendário
-        const [hours, minutes] = connection.meetingTime.split(':');
-        const startDate = new Date(connection.meetingDate);
-        startDate.setHours(parseInt(hours), parseInt(minutes));
-        
-        const endDate = new Date(startDate);
-        endDate.setHours(startDate.getHours() + 1); // 1 hour duration
-
-        const newEvent = {
-          title: `Coffee Connection - ${connection.employee}`,
-          employeeId: connection.employeeId,
-          unit: Unit.CAMPO_GRANDE, // Default unit
-          date: connection.meetingDate,
-          startTime: connection.meetingTime,
-          endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
-          type: 'avaliacao' as const, // Coffee Connection maps to evaluation type
-          description: `Coffee Connection com ${connection.employee}\nLocal: ${connection.location || 'A definir'}\nTópicos: ${connection.topics?.join(', ') || 'Conversa geral'}`,
-          location: connection.location || '',
-          emailAlert: true,
-          whatsappAlert: false
-        };
-
-        await addEvent(newEvent);
         
         toast({
           title: "Sucesso",
-          description: `Coffee Connection aprovado e adicionado ao calendário para ${connection.employee}`,
+          description: `Coffee Connection aprovado e será exibido no calendário para ${connection.employee}`,
         });
         
-        // Coffee Connection aprovado e adicionado ao calendário
+        // Coffee Connection aprovado e será exibido no calendário através da view
       } catch (error) {
         toast({
           title: "Erro",

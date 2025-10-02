@@ -22,8 +22,8 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const filteredComments = responses.filter(response => {
-    const matchesSearch = response.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         response.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = response.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         response.employeeName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || response.category === filterCategory;
     
     return matchesSearch && matchesCategory;

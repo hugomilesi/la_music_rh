@@ -22,9 +22,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { useToast } from '@/hooks/use-toast';
-import { NewEmployeeData, Unit } from '@/types/employee';
+import { NovoColaborador, UnidadeColaborador } from '@/types/colaborador';
 import { UNITS } from '@/types/unit';
 
 const formSchema = z.object({
@@ -34,7 +34,7 @@ const formSchema = z.object({
   position: z.string().min(2, 'Cargo é obrigatório'),
   department: z.string().min(2, 'Departamento é obrigatório'),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
-  units: z.array(z.nativeEnum(Unit)).min(1, 'Selecione pelo menos uma unidade'),
+  units: z.array(z.nativeEnum(UnidadeColaborador)).min(1, 'Selecione pelo menos uma unidade'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -48,7 +48,7 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { addEmployee, isLoading } = useEmployees();
+  const { addColaborador, isLoading } = useColaboradores();
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -66,17 +66,17 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      const employeeData: NewEmployeeData = {
-        name: data.name,
+      const colaboradorData: NewColaboradorData = {
+        nome: data.name,
         email: data.email,
-        phone: data.phone,
-        position: data.position,
-        department: data.department,
-        start_date: data.start_date,
-        units: data.units,
+        telefone: data.phone,
+        cargo: data.position,
+        departamento: data.department,
+        dataAdmissao: data.start_date,
+        unidade: data.units[0], // Assumindo que o primeiro é o principal
       };
       
-      addEmployee(employeeData);
+      addColaborador(colaboradorData);
       toast({
         title: 'Colaborador adicionado',
         description: 'O novo colaborador foi cadastrado com sucesso.',

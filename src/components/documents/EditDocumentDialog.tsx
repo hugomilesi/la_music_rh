@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { Document } from '@/types/document';
 import { toast } from 'sonner';
 import { formatDateToLocal } from '@/utils/dateUtils';
@@ -44,13 +44,22 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
     const loadRequiredDocuments = async () => {
       try {
         const { data, error } = await supabase
-          .from('required_documents')
-          .select('id, document_type, name, is_active')
-          .eq('is_active', true)
-          .order('name');
+          .from('user_required_documents')
+          .select('required_document_id, document_type, document_name, is_mandatory')
+          .eq('is_mandatory', true)
+          .order('document_name');
 
         if (error) throw error;
-        setRequiredDocuments(data || []);
+        
+        // Mapear os dados para o formato esperado
+        const mappedData = data?.map(item => ({
+          id: item.required_document_id,
+          document_type: item.document_type,
+          name: item.document_name,
+          is_active: true
+        })) || [];
+        
+        setRequiredDocuments(mappedData);
       } catch (error) {
         console.error('Erro ao carregar tipos de documento:', error);
         toast.error('Erro ao carregar tipos de documento');

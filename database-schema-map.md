@@ -1,101 +1,125 @@
-# Database Schema Map - Sistema de Gestão RH
+# Database Schema Map - LA Music RH
 
-## Estado Atual do Sistema (Atualizado)
+## Project Information
+- **Project Name**: LA Music RH
+- **Project ID**: jrphwjkgepmgdgiqebyr
+- **Last Updated**: 2025-01-26
 
-### Usuários e Autenticação
-- **Total de usuários auth.users**: 4
-- **Total de usuários public.users**: 4
-- **Usuários órfãos**: 0 ✅ (Problema resolvido)
-- **Usuários com auth_user_id válido**: 4
+## Benefits System Tables
 
-### Estrutura de Documentos
-- **Total de documentos**: 1
-- **Documentos com colaborador válido**: 1
-- **Documentos órfãos**: 0 ✅
-- **Total de checklist de documentos**: 24
-- **Checklist com colaborador válido**: 24
-- **Checklist órfão**: 0 ✅
+### benefits
+Main benefits table containing all benefit information.
+- `id` (uuid) - Primary key
+- `name` (varchar) - Benefit name
+- `description` (text) - Benefit description
+- `benefit_type_id` (uuid) - Foreign key to benefit_types
+- `cost` (decimal) - Total cost
+- `employer_contribution` (decimal) - Employer contribution amount
+- `employee_contribution` (decimal) - Employee contribution amount
+- `coverage_details` (text) - Coverage details
+- `provider` (varchar) - Benefit provider
+- `is_active` (boolean) - Active status
+- `effective_date` (date) - Effective date
+- `expiration_date` (date) - Expiration date
+- `eligibility_rules` (text) - Eligibility rules
+- `created_at` (timestamp) - Creation timestamp
+- `updated_at` (timestamp) - Update timestamp
 
-### Colaboradores Ativos e Documentos
+### benefit_types
+Types/categories of benefits.
+- Contains benefit type definitions with colors and names
 
-| Username | Email | Role | Departamento | Unidade | Docs Total | Completos | Pendentes | Vencendo | Vencidos |
-|----------|-------|------|--------------|---------|------------|-----------|-----------|----------|----------|
-| admin | admin@gmail.com | super_admin | Recursos Humanos | null | 6 | 0 | 6 | 0 | 0 |
-| Hugo Guilherme | hugogmilesi@gmail.com | super_admin | Não informado | null | 6 | 0 | 6 | 0 | 0 |
-| hugo teste | madorgas295@gmail.com | gerente | Tecnologia | campo-grande | 6 | 0 | 6 | 0 | 0 |
-| Teste Usuario | teste_1758254051744@example.com | gerente | Não informado | null | 6 | 0 | 6 | 0 | 0 |
+### employee_benefits
+Employee enrollments in benefits.
+- Links employees to benefits with enrollment details
+- Includes dependent information
+- Tracks enrollment status and dates
 
-## Melhorias Implementadas
+### benefit_performance_goals
+Performance goals associated with benefits.
+- `id` (uuid) - Primary key
+- `benefit_id` (uuid) - Foreign key to benefits
+- `title` (varchar) - Goal title
+- `description` (text) - Goal description
+- `target_value` (decimal) - Target value
+- `current_value` (decimal) - Current progress
+- `unit` (varchar) - Unit of measurement
+- `status` (varchar) - Goal status
+- `weight` (decimal) - Goal weight/importance
+- `deadline` (date) - Goal deadline
+- `created_at` (timestamp) - Creation timestamp
+- `updated_at` (timestamp) - Update timestamp
 
-### 1. Limpeza de Usuários Órfãos
-- ✅ Função `clean_orphan_auth_users()` criada e executada
-- ✅ 8 usuários órfãos removidos com sucesso
-- ✅ Verificação confirmou 0 usuários órfãos restantes
+### benefit_documents
+Document management for benefits.
+- `id` (uuid) - Primary key
+- `benefit_id` (uuid) - Foreign key to benefits
+- `employee_benefit_id` (uuid) - Foreign key to employee_benefits (nullable)
+- `name` (varchar) - Document name
+- `file_path` (text) - File storage path
+- `file_type` (varchar) - File type/extension
+- `file_size` (integer) - File size in bytes
+- `status` (varchar) - Document status
+- `uploaded_by` (uuid) - User who uploaded
+- `created_at` (timestamp) - Upload timestamp
+- `updated_at` (timestamp) - Update timestamp
 
-### 2. Prevenção de Futuros Usuários Órfãos
-- ✅ Função `prevent_orphan_users()` criada
-- ✅ Trigger `trigger_prevent_orphan_users` implementado
-- ✅ Teste realizado com sucesso - usuário removido automaticamente
+### benefit_renewal_settings
+Renewal configuration for benefits.
+- Stores renewal periods and settings for automatic renewals
 
-### 3. Consistência de Dados
-- ✅ Todos os documentos têm colaboradores válidos
-- ✅ Todos os checklists têm colaboradores válidos
-- ✅ Nenhum dado órfão identificado
-
-## Observações Importantes
-
-### Status dos Documentos
-- **Todos os colaboradores têm 6 documentos pendentes**
-- **Nenhum documento foi marcado como completo ainda**
-- **Isso pode indicar que o sistema está funcionando corretamente, mas os colaboradores ainda não completaram seus documentos**
-
-### Estrutura de Unidades
-- Alguns colaboradores não têm unidade definida (null)
-- Unidades válidas: campo-grande, barra, recreio
-- Considerar tornar o campo unidade obrigatório
-
-### Próximos Passos Sugeridos
-1. Verificar se a interface de documentos está funcionando corretamente
-2. Analisar por que todos os documentos estão pendentes
-3. Implementar notificações para documentos vencendo
-4. Considerar tornar alguns campos obrigatórios (unidade, departamento)
-
-## Tabelas Principais
-
-### public.users
-- Tabela principal de usuários com RLS habilitado
-- Roles: super_admin, admin, gestor_rh, gerente
-- Campos importantes: auth_user_id, username, email, role, department, unit
-
-### employee_document_checklist
-- Controla o status dos documentos por colaborador
-- Status: pendente, completo, vencendo, vencido
-- Relaciona employee_id com required_document_id
+## Document System Tables
 
 ### documents
-- Armazena os documentos enviados
-- Relaciona com uploaded_by (usuário que fez upload)
+General document storage table.
 
 ### required_documents
-- Define quais documentos são obrigatórios
-- Categorias e descrições dos documentos necessários
+Required documents configuration.
 
-## Funções de Segurança Implementadas
+### user_required_documents
+User-specific required documents tracking.
 
-### clean_orphan_auth_users()
-```sql
--- Remove usuários órfãos do auth.users que não existem em public.users
--- Verifica referências antes de remover
-```
+## Features Implemented
 
-### prevent_orphan_users()
-```sql
--- Trigger que remove automaticamente usuários de auth.users
--- quando são removidos de public.users (se não há referências)
-```
+### ✅ Completed Features
+1. **Benefits Management**
+   - CRUD operations for benefits
+   - Benefit types and categories
+   - Employee enrollment system
+   - Dependent management
 
-## Status: Sistema Estável ✅
-- Sem usuários órfãos
-- Sem dados órfãos
-- Triggers de prevenção ativos
-- Consistência de dados verificada
+2. **Performance Goals System**
+   - Goal creation and management
+   - Progress tracking
+   - Status management
+   - Weight-based importance
+
+3. **Document Management System**
+   - File upload to Supabase Storage
+   - Document metadata storage
+   - Document type categorization
+   - File size and type validation
+   - Document download and deletion
+
+4. **Renewal Management**
+   - Automatic renewal detection
+   - Renewal approval workflow
+   - Extension capabilities
+
+### 🔄 Integration Status
+- Frontend components fully integrated
+- Backend services implemented
+- Database schema complete
+- File storage configured
+
+## Storage Configuration
+- **Storage Bucket**: benefit-documents
+- **File Types Supported**: PDF, DOC, DOCX, JPG, PNG
+- **Max File Size**: 10MB
+- **Access**: Authenticated users only
+
+## Security
+- Row Level Security (RLS) policies implemented
+- File access through signed URLs
+- User-based access control
+- Audit trail through timestamps and user tracking

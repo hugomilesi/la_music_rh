@@ -12,6 +12,7 @@ import {
 } from '@/types/notification';
 import { notificationService } from '@/services/notificationService';
 import { useToast } from '@/hooks/use-toast';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -73,9 +74,19 @@ const mockRecipients: NotificationRecipient[] = [
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [templates] = useState<NotificationTemplate[]>(mockTemplates);
-  const [recipients] = useState<NotificationRecipient[]>(mockRecipients);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { colaboradoresAtivos } = useColaboradores();
+
+  // Converter colaboradores para recipients
+  const recipients: NotificationRecipient[] = colaboradoresAtivos.map(colaborador => ({
+    id: colaborador.id,
+    name: colaborador.nome,
+    email: colaborador.email || '',
+    phone: colaborador.telefone || '',
+    unit: colaborador.unidade,
+    role: colaborador.cargo
+  }));
 
   const loadNotifications = async () => {
     try {

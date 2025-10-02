@@ -12,7 +12,7 @@ export interface Incident {
   incidentDate: string;
   reporterId: string;
   reporterName: string;
-  status: 'ativo' | 'resolvido' | 'arquivado';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -30,13 +30,13 @@ export interface NewIncidentData {
   incidentDate: string;
   reporterId: string;
   reporterName?: string;
-  status?: 'ativo' | 'resolvido' | 'arquivado';
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
 }
 
 /**
  * Filtros disponíveis para incidentes
  */
-export type IncidentFilter = 'all' | 'active' | 'resolved' | 'thisMonth';
+export type IncidentFilter = 'all' | 'open' | 'resolved' | 'thisMonth';
 
 /**
  * Tipos de incidentes pré-definidos

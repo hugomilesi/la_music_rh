@@ -72,6 +72,9 @@ export const benefitsService = {
             documents = [];
           }
 
+          // Fetch performance goals for this benefit
+          const goals = await this.getPerformanceGoalsByBenefit(benefit.id);
+
           return {
             id: benefit.id,
             name: benefit.name,
@@ -107,7 +110,19 @@ export const benefitsService = {
             startDate: benefit.effective_date || '',
             endDate: benefit.expiration_date || '',
             documents, // Now properly loaded
-            performanceGoals: benefit.performance_goals || [],
+            performanceGoals: goals.map(goal => ({
+              id: goal.id,
+              title: goal.title,
+              description: goal.description,
+              targetValue: goal.target_value,
+              currentValue: goal.current_value,
+              unit: goal.unit,
+              weight: goal.weight,
+              deadline: goal.deadline,
+              status: goal.status,
+              createdBy: goal.created_by,
+              createdAt: goal.created_at
+            })),
             renewalSettings: benefit.renewal_settings || null,
             createdAt: benefit.created_at,
             updatedAt: benefit.updated_at
@@ -404,12 +419,12 @@ export const benefitsService = {
     try {
       console.log('BenefitsService: 🔄 Buscando benefícios de funcionários...');
       
-      // First get employee benefits with user and benefit info
+      // First get employee benefits with colaborador and benefit info
       const { data: employeeBenefitsData, error } = await supabase
         .from('employee_benefits')
         .select(`
           *,
-          users(username),
+          colaboradores!colaborador_id(nome),
           benefits(name)
         `)
         .order('enrollment_date', { ascending: false });
@@ -419,53 +434,128 @@ export const benefitsService = {
         throw error;
       }
       
-      // Since benefit_dependents table doesn't exist, we'll work with the data we have
-      const data = employeeBenefitsData;
+      console.log('BenefitsService: ✅ Benefícios de funcionários encontrados:', employeeBenefitsData.length);
       
-      console.log('BenefitsService: ✅ Benefícios de funcionários encontrados:', data.length);
+      // Now get dependents for each employee benefit
+      const employeeBenefitsWithDependents = await Promise.all(
+        employeeBenefitsData.map(async (eb) => {
+          // Get dependents for this employee benefit
+          const { data: dependentsData, error: dependentsError } = await supabase
+            .from('benefit_dependents')
+            .select('*')
+            .eq('employee_benefit_id', eb.id)
+            .eq('is_active', true);
+
+          if (dependentsError) {
+            console.error('BenefitsService: ❌ Erro ao buscar dependentes:', dependentsError);
+          }
+
+          const dependents = dependentsData?.map(dep => ({
+            id: dep.id,
+            name: dep.name,
+            relationship: dep.relationship as 'spouse' | 'child' | 'parent' | 'other',
+            birthDate: dep.birth_date,
+            documentNumber: dep.document_number,
+            isActive: dep.is_active
+          })) || [];
+
+          return {
+            id: eb.id,
+            employeeId: eb.colaborador_id,
+            employeeName: eb.colaboradores?.nome || 'Funcionário não encontrado',
+            benefitId: eb.benefit_id,
+            benefitName: eb.benefits?.name || 'Benefício não encontrado',
+            enrollmentDate: eb.enrollment_date,
+            dependents,
+            documents: [], // Will be implemented later if needed
+            lastUpdate: eb.updated_at,
+            nextRenewalDate: eb.termination_date,
+            renewalStatus: eb.status || 'active'
+          };
+        })
+      );
       
-      return data.map(eb => ({
-        id: eb.id,
-        employeeId: eb.employee_id,
-        employeeName: eb.users?.username || 'Funcionário não encontrado',
-        benefitId: eb.benefit_id,
-        benefitName: eb.benefits?.name || 'Benefício não encontrado',
-        enrollmentDate: eb.enrollment_date,
-        // Status is determined by dates: active if no end date or future end date
-        dependents: [], // benefit_dependents table doesn't exist yet
-        documents: [], // Will be implemented later if needed
-        lastUpdate: eb.updated_at,
-        nextRenewalDate: eb.termination_date,
-        renewalStatus: eb.status || 'active'
-      }));
+      return employeeBenefitsWithDependents;
     } catch (error) {
       console.log('BenefitsService: ❌ Erro em getEmployeeBenefits:', error);
       throw error;
     }
   },
 
-  async createEmployeeBenefit(data: { employeeId: string; benefitId: string; dependents?: any[]; documents?: any[] }): Promise<EmployeeBenefit> {
+  async createEmployeeBenefit(data: {
+    employeeId: string;
+    benefitId: string;
+    dependents?: any[];
+    documents?: any[];
+  }): Promise<EmployeeBenefit> {
     try {
-      console.log('BenefitsService: 🔄 Iniciando createEmployeeBenefit', { employeeId: data.employeeId, benefitId: data.benefitId });
+      console.log('BenefitsService: 🔄 Criando benefício de funcionário...', data);
       
-      // UUID validation
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      
-      if (!uuidRegex.test(data.employeeId)) {
-        console.log('BenefitsService: ❌ Formato inválido de employeeId', { employeeId: data.employeeId });
-        throw new Error(`Invalid employeeId format: ${data.employeeId}. Expected UUID format.`);
-      }
-      
-      if (!uuidRegex.test(data.benefitId)) {
-        console.log('BenefitsService: ❌ Formato inválido de benefitId', { benefitId: data.benefitId });
-        throw new Error(`Invalid benefitId format: ${data.benefitId}. Expected UUID format.`);
+      // First create the employee benefit record
+      const { data: employeeBenefitData, error: benefitError } = await supabase
+        .from('employee_benefits')
+        .insert({
+          colaborador_id: data.employeeId,
+          benefit_id: data.benefitId,
+          enrollment_date: new Date().toISOString().split('T')[0],
+          status: 'active',
+          premium_amount: 0
+        })
+        .select(`
+          *,
+          colaboradores!colaborador_id(nome),
+          benefits(name)
+        `)
+        .single();
+
+      if (benefitError) {
+        console.error('BenefitsService: ❌ Erro ao criar benefício de funcionário:', benefitError);
+        throw benefitError;
       }
 
-      const result = await this.enrollEmployee(data.employeeId, data.benefitId, data.dependents);
-      console.log('BenefitsService: ✅ createEmployeeBenefit concluído com sucesso', { id: result.id });
-      return result;
+      console.log('BenefitsService: ✅ Benefício de funcionário criado:', employeeBenefitData.id);
+
+      // If dependents are provided, create them
+      if (data.dependents && data.dependents.length > 0) {
+        console.log('BenefitsService: 🔄 Criando dependentes...', data.dependents.length);
+        
+        const dependentsToInsert = data.dependents.map(dependent => ({
+          employee_benefit_id: employeeBenefitData.id,
+          name: dependent.name,
+          relationship: dependent.relationship,
+          birth_date: dependent.birthDate,
+          document_number: dependent.documentNumber || '',
+          is_active: true
+        }));
+
+        const { error: dependentsError } = await supabase
+          .from('benefit_dependents')
+          .insert(dependentsToInsert);
+
+        if (dependentsError) {
+          console.error('BenefitsService: ❌ Erro ao criar dependentes:', dependentsError);
+          // Don't throw here, just log the error as the main benefit was created
+        } else {
+          console.log('BenefitsService: ✅ Dependentes criados com sucesso');
+        }
+      }
+
+      // Return the formatted employee benefit
+      return {
+        id: employeeBenefitData.id,
+        employeeId: employeeBenefitData.colaborador_id,
+        employeeName: employeeBenefitData.colaboradores?.nome || 'Funcionário não encontrado',
+        benefitId: employeeBenefitData.benefit_id,
+        benefitName: employeeBenefitData.benefits?.name || 'Benefício não encontrado',
+        enrollmentDate: employeeBenefitData.enrollment_date,
+        dependents: data.dependents || [],
+        documents: data.documents || [],
+        lastUpdate: employeeBenefitData.updated_at,
+        nextRenewalDate: employeeBenefitData.termination_date,
+        renewalStatus: 'active'
+      };
     } catch (error) {
-      console.log('BenefitsService: ❌ Erro em createEmployeeBenefit:', error);
+      console.error('BenefitsService: ❌ Erro em createEmployeeBenefit:', error);
       throw error;
     }
   },
@@ -491,7 +581,7 @@ export const benefitsService = {
       const { data: existingEnrollment, error: checkError } = await supabase
       .from('employee_benefits')
       .select('id')
-      .eq('employee_id', employeeId)
+      .eq('colaborador_id', employeeId)
       .eq('benefit_id', benefitId)
       .maybeSingle();
 
@@ -508,14 +598,14 @@ export const benefitsService = {
     const { data: enrollment, error: enrollmentError } = await supabase
       .from('employee_benefits')
       .insert({
-        employee_id: employeeId,
+        colaborador_id: employeeId,
         benefit_id: benefitId,
         enrollment_date: new Date().toISOString().split('T')[0],
         status: 'active'
       })
       .select(`
           *,
-          users(username),
+          colaboradores!colaborador_id(nome),
           benefits(name)
         `)
       .single();
@@ -536,8 +626,8 @@ export const benefitsService = {
 
     const result = {
       id: enrollment.id,
-      employeeId: enrollment.employee_id,
-      employeeName: enrollment.users?.username || 'Funcionário não encontrado',
+      employeeId: enrollment.colaborador_id,
+      employeeName: enrollment.colaboradores?.nome || 'Funcionário não encontrado',
       benefitId: enrollment.benefit_id,
       benefitName: enrollment.benefits?.name || 'Benefício não encontrado',
       enrollmentDate: enrollment.enrollment_date,
@@ -833,6 +923,145 @@ export const benefitsService = {
       console.log('BenefitsService: ❌ Erro em updateBenefitDocument:', error);
       throw error;
     }
+  },
+
+  // Document Management
+  async uploadBenefitDocument(benefitId: string, employeeBenefitId: string | null, file: File, documentType: string) {
+    try {
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `benefits/${benefitId}/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Save document metadata to database
+      const documentData = {
+        benefit_id: benefitId,
+        employee_benefit_id: employeeBenefitId,
+        file_name: file.name,
+        file_path: uploadData.path,
+        file_size: file.size,
+        file_type: file.type,
+        document_type: documentType,
+        uploaded_by: 'current_user' // This should be replaced with actual user ID
+      };
+
+      const { data, error } = await supabase
+        .from('benefit_documents')
+        .insert(documentData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      throw error;
+    }
+  },
+
+  async getBenefitDocuments(benefitId: string, employeeBenefitId?: string) {
+    let query = supabase
+      .from('benefit_documents')
+      .select('*')
+      .eq('benefit_id', benefitId);
+
+    if (employeeBenefitId) {
+      query = query.eq('employee_benefit_id', employeeBenefitId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async deleteBenefitDocument(documentId: string) {
+    try {
+      // First get the document to get the file path
+      const { data: document, error: fetchError } = await supabase
+        .from('benefit_documents')
+        .select('file_path')
+        .eq('id', documentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([document.file_path]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('benefit_documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      throw error;
+    }
+  },
+
+  async getDocumentUrl(filePath: string) {
+    const { data } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+    return data?.signedUrl || null;
+  },
+
+  // Performance Goals Management
+  async createPerformanceGoal(goalData: any) {
+    const { data, error } = await supabase
+      .from('benefit_performance_goals')
+      .insert(goalData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePerformanceGoal(goalId: string, goalData: any) {
+    const { data, error } = await supabase
+      .from('benefit_performance_goals')
+      .update(goalData)
+      .eq('id', goalId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async deletePerformanceGoal(goalId: string) {
+    const { error } = await supabase
+      .from('benefit_performance_goals')
+      .delete()
+      .eq('id', goalId);
+
+    if (error) throw error;
+  },
+
+  async getPerformanceGoalsByBenefit(benefitId: string) {
+    const { data, error } = await supabase
+      .from('benefit_performance_goals')
+      .select('*')
+      .eq('benefit_id', benefitId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
 
   // Helper methods for category icons and colors

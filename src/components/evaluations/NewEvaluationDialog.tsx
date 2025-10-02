@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useEvaluations } from '@/contexts/EvaluationContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvaluationData } from '@/types/evaluation';
 import { SCHEDULE_UNITS } from '@/types/unit';
@@ -72,7 +72,7 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
   onOpenChange,
 }) => {
   const { addEvaluation, isLoading } = useEvaluations();
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -148,9 +148,9 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Selecione um colaborador</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {employee.name} - {employee.position}
+                        {colaboradoresAtivos.map((colaborador) => (
+                          <option key={colaborador.id} value={colaborador.id}>
+                            {colaborador.nome} - {colaborador.cargo}
                           </option>
                         ))}
                       </select>
@@ -260,9 +260,9 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Selecione um avaliador</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {employee.name} - {employee.position}
+                        {colaboradoresAtivos.map((colaborador) => (
+                          <option key={colaborador.id} value={colaborador.id}>
+                            {colaborador.nome} - {colaborador.cargo}
                           </option>
                         ))}
                       </select>

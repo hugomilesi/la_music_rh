@@ -8,7 +8,7 @@ export interface Incident {
   incidentDate: string;
   reporterId?: string;
   reporterName?: string;
-  status: 'ativo' | 'resolvido' | 'arquivado';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,7 +20,7 @@ export interface CreateIncidentData {
   description: string;
   incidentDate: string;
   reporterId?: string;
-  status?: 'ativo' | 'resolvido' | 'arquivado';
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
 }
 
 export interface UpdateIncidentData {
@@ -29,7 +29,7 @@ export interface UpdateIncidentData {
   description?: string;
   incidentDate?: string;
   reporterId?: string;
-  status?: 'ativo' | 'resolvido' | 'arquivado';
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
 }
 
 export interface IncidentStats {

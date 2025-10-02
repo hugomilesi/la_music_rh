@@ -36,11 +36,11 @@ export const MessageHistory: React.FC = () => {
 
   const filteredMessages = useMemo(() => {
     return enhancedMessages.filter(message => {
-      const matchesSearch = message.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           message.recipientName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = message.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           message.recipientName?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || message.status === statusFilter;
       const matchesType = typeFilter === 'all' || message.type === typeFilter;
-      const matchesRecipient = !recipientFilter || message.recipientName.toLowerCase().includes(recipientFilter.toLowerCase());
+      const matchesRecipient = !recipientFilter || message.recipientName?.toLowerCase().includes(recipientFilter.toLowerCase());
       
       const messageDate = new Date(message.createdAt);
       const matchesDateFrom = !dateFrom || messageDate >= dateFrom;

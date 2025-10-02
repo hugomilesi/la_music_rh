@@ -1,35 +1,49 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from 'sonner';
 
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { ProtectedPageRoute } from '@/components/auth/ProtectedPageRoute';
-import { AuthPage } from '@/components/auth/AuthPage';
-import { MainLayout } from '@/components/layout/MainLayout';
-import PageTransition from '@/components/layout/PageTransition';
-import { Toaster } from '@/components/ui/toaster';
-import { GlobalContextProvider } from '@/contexts/GlobalContextProvider';
-import { UnitProvider } from '@/contexts/UnitContext';
-import { EmployeeProvider } from '@/contexts/EmployeeContext';
-import { NotificationProvider } from '@/contexts/NotificationContext';
-import { NPSProvider } from './contexts/NPSContext';
-import { IncidentsProvider } from './contexts/IncidentsContext';
+// Error Handling
+import { initializeErrorHandling } from './utils/errorHandler';
+
+// Auth
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ProtectedPageRoute } from './components/auth/ProtectedPageRoute';
+
+// Contexts
+import { UnitProvider } from './contexts/UnitContext';
+import { EmployeeProvider } from './contexts/EmployeeContext';
+import { ColaboradorProvider } from './contexts/ColaboradorContext';
+import { DocumentProvider } from './contexts/DocumentContext';
 import { VacationProvider } from './contexts/VacationContext';
 import { EvaluationProvider } from './contexts/EvaluationContext';
 import { BenefitsProvider } from './contexts/BenefitsContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
+import { NPSProvider } from './contexts/NPSContext';
+import { IncidentsProvider } from './contexts/IncidentsContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { WhatsAppProvider } from './contexts/WhatsAppContext';
+
+// Components
+import { AuthPage } from './components/auth/AuthPage';
+import { MainLayout } from './components/layout/MainLayout';
+import PageTransition from './components/layout/PageTransition';
+
 import Index from '@/pages/Index';
 import DashboardPage from '@/pages/DashboardPage';
 
 import BenefitsPage from '@/pages/BenefitsPage';
 import DocumentsPage from '@/pages/DocumentsPage';
 import EvaluationsPage from '@/pages/EvaluationsPage';
+import CoffeeConnectionPage from '@/pages/CoffeeConnectionPage';
+import EvaluationsOnlyPage from '@/pages/EvaluationsOnlyPage';
 import PayrollPage from '@/pages/PayrollPage';
 import RecognitionPage from '@/pages/RecognitionPage';
 import SchedulePage from '@/pages/SchedulePage';
 import VacationPage from '@/pages/VacationPage';
 import WhatsAppPage from '@/pages/WhatsAppPage';
+import ColaboradoresPage from '@/pages/ColaboradoresPage';
 import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import UserSettingsPage from '@/pages/UserSettingsPage';
@@ -67,19 +81,43 @@ const NPSResponsePageWrapper: React.FC = () => {
 // Wrapper component for protected pages with global context and permission check
 const ProtectedPageWrapper: React.FC<{ 
   children: React.ReactNode;
-  requiredPermission: string;
+  requiredPermission?: string;
 }> = ({ children, requiredPermission }) => {
   
   return (
-    <ProtectedPageRoute requiredPermission={requiredPermission}>
-      <GlobalContextProvider>
-        <MainLayout>
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </MainLayout>
-      </GlobalContextProvider>
-    </ProtectedPageRoute>
+    <ProtectedRoute>
+      <ProtectedPageRoute requiredPermission={requiredPermission}>
+        <UnitProvider>
+          <EmployeeProvider>
+            <ColaboradorProvider>
+              <DocumentProvider>
+                <VacationProvider>
+                  <EvaluationProvider>
+                    <BenefitsProvider>
+                      <ScheduleProvider>
+                        <NPSProvider>
+                          <IncidentsProvider>
+                            <NotificationProvider>
+                              <WhatsAppProvider>
+                                <MainLayout>
+                                  <PageTransition>
+                                    {children}
+                                  </PageTransition>
+                                </MainLayout>
+                              </WhatsAppProvider>
+                            </NotificationProvider>
+                          </IncidentsProvider>
+                        </NPSProvider>
+                      </ScheduleProvider>
+                    </BenefitsProvider>
+                  </EvaluationProvider>
+                </VacationProvider>
+              </DocumentProvider>
+            </ColaboradorProvider>
+          </EmployeeProvider>
+        </UnitProvider>
+      </ProtectedPageRoute>
+    </ProtectedRoute>
   );
 };
 
@@ -88,9 +126,9 @@ const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) 
   <ProtectedRoute>
     <UnitProvider>
       <EmployeeProvider>
-        <ScheduleProvider>
-          <NPSProvider>
-            <IncidentsProvider>
+        <ColaboradorProvider>
+          <ScheduleProvider>
+            <NPSProvider>
               <VacationProvider>
                 <EvaluationProvider>
                   <BenefitsProvider>
@@ -104,9 +142,9 @@ const UserPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   </BenefitsProvider>
                 </EvaluationProvider>
               </VacationProvider>
-            </IncidentsProvider>
-          </NPSProvider>
-        </ScheduleProvider>
+            </NPSProvider>
+          </ScheduleProvider>
+        </ColaboradorProvider>
       </EmployeeProvider>
     </UnitProvider>
   </ProtectedRoute>
@@ -120,6 +158,12 @@ const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
 );
 
 function App() {
+  // Inicializa o sistema global de tratamento de erros
+  useEffect(() => {
+    initializeErrorHandling();
+    console.log('Sistema de tratamento de erros inicializado');
+  }, []);
+
   return (
     <Router>
       <Routes>
@@ -191,7 +235,13 @@ function App() {
                 
                 <Route path="/avaliacoes" element={
                     <ProtectedPageWrapper requiredPermission="dashboard">
-                      <EvaluationsPage />
+                      <EvaluationsOnlyPage />
+                    </ProtectedPageWrapper>
+                  } />
+                
+                <Route path="/coffee-connection" element={
+                    <ProtectedPageWrapper requiredPermission="dashboard">
+                      <CoffeeConnectionPage />
                     </ProtectedPageWrapper>
                   } />
                 
@@ -222,6 +272,12 @@ function App() {
                 <Route path="/whatsapp" element={
                   <ProtectedPageWrapper requiredPermission="dashboard">
                     <WhatsAppPage />
+                  </ProtectedPageWrapper>
+                } />
+                
+                <Route path="/colaboradores" element={
+                  <ProtectedPageWrapper requiredPermission="colaboradores">
+                    <ColaboradoresPage />
                   </ProtectedPageWrapper>
                 } />
                 

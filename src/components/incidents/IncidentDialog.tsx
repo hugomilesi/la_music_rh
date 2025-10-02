@@ -21,7 +21,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { ptBR } from 'date-fns/locale';
 
 import { Incident, INCIDENT_TYPES } from '../../types/incident';
-import { useEmployees } from '../../contexts/EmployeeContext';
+import { useColaboradores } from '../../contexts/ColaboradorContext';
 import { EmployeeSelector } from './EmployeeSelector';
 import { formatDateToLocal, getTodayLocal } from '../../utils/dateUtils';
 
@@ -42,7 +42,7 @@ interface FormErrors {
 }
 
 const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, incident }) => {
-  const { employees, isLoading: loadingEmployees } = useEmployees();
+  const { colaboradoresAtivos, loadingColaboradores } = useColaboradores();
   const [formData, setFormData] = useState<Omit<Incident, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }>({
     employeeId: '',
     employeeName: '',
@@ -52,7 +52,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
     incidentDate: getTodayLocal(),
     reporterId: '',
     reporterName: '',
-    status: 'ativo'
+    status: 'open'
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -80,7 +80,7 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
         incidentDate: getTodayLocal(),
         reporterId: '',
         reporterName: '',
-        status: 'ativo'
+        status: 'open'
       });
     }
     setErrors({});
@@ -322,9 +322,10 @@ const IncidentDialog: React.FC<IncidentDialogProps> = ({ open, onClose, onSave, 
                     onChange={handleChange}
                     label="Status"
                   >
-                    <MenuItem value="ativo">Ativo</MenuItem>
-                    <MenuItem value="resolvido">Resolvido</MenuItem>
-                    <MenuItem value="arquivado">Arquivado</MenuItem>
+                    <MenuItem value="open">Ativo</MenuItem>
+                <MenuItem value="in_progress">Em Progresso</MenuItem>
+                <MenuItem value="resolved">Resolvido</MenuItem>
+                <MenuItem value="closed">Arquivado</MenuItem>
                   </Select>
                 </FormControl>
               </Box>

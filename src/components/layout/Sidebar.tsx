@@ -15,7 +15,12 @@ import {
   Plane,
   Heart,
   DollarSign,
-  X
+  X,
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
+  Users,
+  Coffee
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
@@ -32,11 +37,28 @@ const menuItems = [
     module: 'dashboard'
   },
   {
-    title: 'Avaliações',
+    title: 'Reuniões',
     icon: UserCheck,
-    href: '/avaliacoes',
-    description: 'Feedbacks e avaliações',
-    module: 'avaliacoes'
+    href: null,
+    description: 'Avaliações e Coffee Connections',
+    module: 'avaliacoes',
+    hasSubItems: true,
+    subItems: [
+      {
+        title: 'Coffee Connection',
+        icon: Coffee,
+        href: '/coffee-connection',
+        description: 'Reuniões informais e conexões',
+        module: 'avaliacoes'
+      },
+      {
+        title: 'Avaliações',
+        icon: UserCheck,
+        href: '/avaliacoes',
+        description: 'Avaliações de desempenho',
+        module: 'avaliacoes'
+      }
+    ]
   },
   {
     title: 'Agenda',
@@ -74,13 +96,6 @@ const menuItems = [
     module: 'ocorrencias'
   },
   {
-    title: 'NPS Interno',
-    icon: TrendingUp,
-    href: '/nps',
-    description: 'Clima organizacional',
-    module: 'nps'
-  },
-  {
     title: 'Gamificação',
     icon: Award,
     href: '/reconhecimento',
@@ -90,16 +105,40 @@ const menuItems = [
   {
     title: 'Notificações',
     icon: Bell,
-    href: '/notificacoes',
-    description: 'Alertas e comunicados',
-    module: 'notificacoes'
+    href: null,
+    description: 'Sistema de comunicação',
+    module: 'notificacoes',
+    hasSubItems: true,
+    subItems: [
+      {
+        title: 'Alertas e Comunicados',
+        icon: AlertCircle,
+        href: '/notificacoes',
+        description: 'Alertas e comunicados',
+        module: 'notificacoes'
+      },
+      {
+        title: 'NPS Interno',
+        icon: TrendingUp,
+        href: '/nps',
+        description: 'Clima organizacional',
+        module: 'nps'
+      },
+      {
+        title: 'WhatsApp',
+        icon: MessageSquare,
+        href: '/whatsapp',
+        description: 'Integração WhatsApp',
+        module: 'whatsapp'
+      }
+    ]
   },
   {
-    title: 'WhatsApp',
-    icon: MessageSquare,
-    href: '/whatsapp',
-    description: 'Integração WhatsApp',
-    module: 'whatsapp'
+    title: 'Colaboradores',
+    icon: Users,
+    href: '/colaboradores',
+    description: 'Cadastro e gerenciamento de colaboradores',
+    module: 'colaboradores'
   },
   {
     title: 'Folha de Pagamento',
@@ -131,6 +170,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
   
   // Estado para forçar re-renderização quando o profile é atualizado
   const [profileVersion, setProfileVersion] = useState(0);
+  // Estado para controlar quais itens com subitens estão expandidos
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   
   // Debug: Log props and state changes
   useEffect(() => {
@@ -166,6 +207,19 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
     // Dependencies monitoring for useMemo
   }, [canViewModule, isLoading]);
 
+  // Função para alternar expansão de itens
+  const toggleExpanded = useCallback((itemTitle: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemTitle)) {
+        newSet.delete(itemTitle);
+      } else {
+        newSet.add(itemTitle);
+      }
+      return newSet;
+    });
+  }, []);
+
   // Filtrar itens do menu baseado nas permissões do usuário
   const visibleMenuItems = useMemo(() => {
     if (isLoading) {
@@ -175,9 +229,28 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
     console.log('🔍 Sidebar: Recalculating visible menu items', { profileVersion, isLoading });
     
     const filtered = menuItems.filter(item => {
+      // Para itens com subitens, verificar se pelo menos um subitem é visível
+      if (item.hasSubItems && item.subItems) {
+        const visibleSubItems = item.subItems.filter(subItem => {
+          const canView = canViewModule(subItem.module);
+          console.log(`📋 Sidebar: SubModule ${subItem.module} - canView: ${canView}`);
+          return canView;
+        });
+        return visibleSubItems.length > 0;
+      }
+      
       const canView = canViewModule(item.module);
       console.log(`📋 Sidebar: Module ${item.module} - canView: ${canView}`);
       return canView;
+    }).map(item => {
+      // Filtrar subitens baseado nas permissões
+      if (item.hasSubItems && item.subItems) {
+        return {
+          ...item,
+          subItems: item.subItems.filter(subItem => canViewModule(subItem.module))
+        };
+      }
+      return item;
     });
     
     console.log('✅ Sidebar: Visible menu items:', filtered.map(item => item.title));
@@ -298,25 +371,33 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
         <ul className="space-y-1 px-2">
           {visibleMenuItems.map((item, index) => {
             const Icon = item.icon;
-            const isActive = currentPath === item.href;
+            const isActive = item.href ? currentPath === item.href : false;
+            const isExpanded = expandedItems.has(item.title);
+            const hasActiveSubItem = item.hasSubItems && item.subItems?.some(subItem => currentPath === subItem.href);
             
             return (
-              <li key={item.href} className={`sidebar-item-animate sidebar-staggered-animation`} style={{animationDelay: `${index * 0.05}s`}}>
+              <li key={item.title} className={`sidebar-item-animate sidebar-staggered-animation`} style={{animationDelay: `${index * 0.05}s`}}>
                 <button
-                  data-testid={`sidebar-item-${item.href.replace('/', '')}`}
+                  data-testid={`sidebar-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleNavigation(item.href);
-                    // Fechar sidebar em mobile após navegação
-                    if (isMobile) {
-                      onToggle();
+                    
+                    if (item.hasSubItems) {
+                      // Se tem subitens, apenas expandir/colapsar
+                      toggleExpanded(item.title);
+                    } else if (item.href) {
+                      // Se tem href, navegar
+                      handleNavigation(item.href);
+                      if (isMobile) {
+                        onToggle();
+                      }
                     }
                   }}
                   className={cn(
                      "w-full flex items-center gap-3 px-3 py-3 rounded-xl group text-left touch-target touch-feedback menu-item",
                      "min-h-[48px] sidebar-responsive-item",
-                     isActive 
+                     isActive || hasActiveSubItem
                         ? "glass-strong text-white shadow-hr-glow bg-white/20 menu-item-active" 
                        : "text-white/85 hover:glass-subtle hover:text-white hover:shadow-hr-soft hover:bg-white/10"
                    )}
@@ -329,7 +410,56 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
                        <p className="menu-item-description sidebar-text truncate transition-colors">{item.description}</p>
                      </div>
                    )}
+                  {!collapsed && item.hasSubItems && (
+                    <div className="flex-shrink-0">
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4 transition-transform" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 transition-transform" />
+                      )}
+                    </div>
+                  )}
                 </button>
+                
+                {/* Subitens */}
+                {!collapsed && item.hasSubItems && item.subItems && isExpanded && (
+                  <ul className="mt-1 ml-8 space-y-1">
+                    {item.subItems.map((subItem, subIndex) => {
+                      const SubIcon = subItem.icon;
+                      const isSubActive = currentPath === subItem.href;
+                      
+                      return (
+                        <li key={subItem.href} className="sidebar-item-animate" style={{animationDelay: `${(index + subIndex + 1) * 0.05}s`}}>
+                          <button
+                            data-testid={`sidebar-subitem-${subItem.href.replace('/', '')}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleNavigation(subItem.href);
+                              if (isMobile) {
+                                onToggle();
+                              }
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg group text-left touch-target touch-feedback menu-item",
+                              "min-h-[40px] sidebar-responsive-item",
+                              isSubActive
+                                ? "glass-strong text-white shadow-hr-glow bg-white/20 menu-item-active"
+                                : "text-white/75 hover:glass-subtle hover:text-white hover:shadow-hr-soft hover:bg-white/5"
+                            )}
+                            title={collapsed ? subItem.title : undefined}
+                          >
+                            <SubIcon className="w-4 h-4 flex-shrink-0" />
+                            <div className="flex-1 min-w-0 sidebar-content">
+                              <span className="menu-item-title sidebar-text block text-sm">{subItem.title}</span>
+                              <p className="menu-item-description sidebar-text truncate transition-colors text-xs">{subItem.description}</p>
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}

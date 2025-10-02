@@ -89,7 +89,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
           }));
           allDocuments.push(...docsWithEmployee);
         } catch (docError) {
-
+          console.error('Erro ao carregar documentos do colaborador:', docError);
         }
       }
       

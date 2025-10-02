@@ -14,477 +14,329 @@ export const evaluationService = {
     return statusMap[dbStatus] || dbStatus;
   },
 
-  formatPeriodFromDates(startDate: string, endDate: string): string {
-    // Garantir que as datas estão no formato correto
-    const start = new Date(startDate + 'T00:00:00');
-    const end = new Date(endDate + 'T00:00:00');
-    const year = start.getFullYear();
-    
-    // Determinar o trimestre baseado nas datas de início e fim
-    const startMonth = start.getMonth() + 1; // getMonth() retorna 0-11
-    const endMonth = end.getMonth() + 1;
-    
-    console.log('🔍 formatPeriodFromDates DEBUG:', {
-      startDate,
-      endDate,
-      startDateParsed: start.toISOString(),
-      endDateParsed: end.toISOString(),
-      startMonth,
-      endMonth,
-      year
-    });
-    
-    // Verificar se é um período anual completo (janeiro a dezembro)
-    if (startMonth === 1 && endMonth === 12) {
-      console.log('✅ Identificado como Anual');
-      return `${year} - Anual`;
-    }
-    
-    // Verificar trimestres baseado apenas nos meses
-    if (startMonth === 1 && endMonth === 3) {
-      console.log('✅ Identificado como 1º Trimestre');
-      return `${year} - 1º Trimestre`;
-    } else if (startMonth === 4 && endMonth === 6) {
-      console.log('✅ Identificado como 2º Trimestre');
-      return `${year} - 2º Trimestre`;
-    } else if (startMonth === 7 && endMonth === 9) {
-      console.log('✅ Identificado como 3º Trimestre');
-      return `${year} - 3º Trimestre`;
-    } else if (startMonth === 10 && endMonth === 12) {
-      console.log('✅ Identificado como 4º Trimestre');
-      return `${year} - 4º Trimestre`;
-    }
-    
-    // Fallback para períodos customizados
-    console.log('❌ Nenhum trimestre padrão encontrado:', { startMonth, endMonth });
-    return `${year} - Período Customizado`;
-  },
-
   mapEvaluationStatusToDb(frontendStatus: string): string {
     const statusMap: Record<string, string> = {
       'Rascunho': 'draft',
       'Em Andamento': 'submitted',
       'Em Análise': 'reviewed',
-      'Concluída': 'finalized',
-      'concluida': 'finalized' // Legacy support
+      'Concluída': 'finalized'
     };
-    return statusMap[frontendStatus] || 'draft';
+    return statusMap[frontendStatus] || 'submitted';
   },
-  async getEvaluations(): Promise<Evaluation[]> {
-    try {
-      const { data, error } = await supabase
-        .from('evaluations')
-        .select(`
-          *,
-          employee:users!employee_id(username),
-          evaluator:users!evaluator_id(username)
-        `)
-        .order('date', { ascending: false }); // Banco usa 'date' não 'meeting_date'
 
-      if (error) {
-        throw error;
-      }
-
-      return data.map(evaluation => ({
-        id: evaluation.id,
-        employeeId: evaluation.employee_id,
-        employee: evaluation.employee?.username || 'Unknown',
-        evaluatorId: evaluation.evaluator_id,
-        evaluator: evaluation.evaluator?.username || 'Unknown',
-        type: this.mapEvaluationType(evaluation.evaluation_type),
-        period: this.formatPeriodFromDates(evaluation.evaluation_period_start, evaluation.evaluation_period_end),
-        status: this.mapEvaluationStatusFromDb(evaluation.status),
-        score: evaluation.overall_score || 0,
-        date: evaluation.date, // Banco usa 'date'
-        unit: evaluation.unit,
-        meetingDate: evaluation.meeting_date, // Fallback para compatibilidade
-        meetingTime: evaluation.meeting_time,
-        comments: evaluation.feedback || evaluation.comments,
-        location: evaluation.location,
-        topics: evaluation.topics || [],
-        followUpActions: evaluation.follow_up_actions,
-        confidential: evaluation.confidential || false,
-        evaluationPeriodStart: evaluation.evaluation_period_start,
-        evaluationPeriodEnd: evaluation.evaluation_period_end,
-        evaluationType: this.mapEvaluationType(evaluation.evaluation_type),
-        overallScore: evaluation.overall_score,
-        competenciesScore: evaluation.competencies_score,
-        goalsAchievement: evaluation.goals_achievement,
-        strengths: evaluation.strengths,
-        areasForImprovement: evaluation.areas_for_improvement,
-        developmentPlan: evaluation.development_plan,
-        evaluatorComments: evaluation.evaluator_comments,
-        hrComments: evaluation.hr_comments,
-        nextReviewDate: evaluation.next_review_date,
-        completedAt: evaluation.completed_at,
-        approvedAt: evaluation.approved_at,
-        approvedBy: evaluation.approved_by,
-        createdAt: evaluation.created_at,
-        updatedAt: evaluation.updated_at
-      }));
-    } catch (error) {
-      console.error('❌ EvaluationService: Erro ao buscar avaliações:', error);
-      throw error;
+  formatPeriodFromDates(startDate: string, endDate: string): string {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const startMonth = start.getMonth() + 1; // getMonth() retorna 0-11
+    const endMonth = end.getMonth() + 1;
+    
+    // Determinar o trimestre baseado nos meses
+    if (startMonth === 1 && endMonth === 3) {
+      return '1º Trimestre';
+    } else if (startMonth === 4 && endMonth === 6) {
+      return '2º Trimestre';
+    } else if (startMonth === 7 && endMonth === 9) {
+      return '3º Trimestre';
+    } else if (startMonth === 10 && endMonth === 12) {
+      return '4º Trimestre';
     }
-  },
-
-  // Helper para adicionar uma hora ao horário
-  addOneHour(time: string): string {
-    const [hours, minutes] = time.split(':').map(Number);
-    const newHours = (hours + 1) % 24;
-    return `${newHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  },
-
-  async createEvaluation(evaluationData: NewEvaluationData): Promise<Evaluation> {
-    try {
-      console.log('🔄 EvaluationService: Criando avaliação com dados:', evaluationData);
-      
-      // Map frontend data to database format
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Parse evaluation_date to get start and end dates for the quarter
-      let periodStart = today;
-      let periodEnd = today;
-      
-      if (evaluationData.evaluation_date) {
-        const evaluationDate = new Date(evaluationData.evaluation_date);
-        const year = evaluationDate.getFullYear();
-        const month = evaluationDate.getMonth() + 1; // getMonth() retorna 0-11
-        
-        // Determinar o trimestre baseado no mês da data selecionada
-        if (month >= 1 && month <= 3) {
-          periodStart = `${year}-01-01`;
-          periodEnd = `${year}-03-31`;
-        } else if (month >= 4 && month <= 6) {
-          periodStart = `${year}-04-01`;
-          periodEnd = `${year}-06-30`;
-        } else if (month >= 7 && month <= 9) {
-          periodStart = `${year}-07-01`;
-          periodEnd = `${year}-09-30`;
-        } else if (month >= 10 && month <= 12) {
-          periodStart = `${year}-10-01`;
-          periodEnd = `${year}-12-31`;
-        }
-      }
-      
-      const dbData = {
-        employee_id: evaluationData.employee_id,
-        evaluator_id: evaluationData.evaluator_id || evaluationData.employee_id, // Se não há avaliador, usa o próprio funcionário
-        evaluation_period_start: periodStart,
-        evaluation_period_end: periodEnd,
-        overall_score: null,
-        feedback: evaluationData.comments || null,
-        development_plan: null,
-        status: 'submitted', // Criar como 'Em Andamento' em vez de 'draft'
-        date: evaluationData.evaluation_date || today,
-        evaluation_type: this.mapEvaluationTypeToDb(evaluationData.evaluation_type),
-        unit: evaluationData.unit,
-        // Campos específicos do Coffee Connection
-        meeting_time: evaluationData.meetingTime || null,
-        location: evaluationData.location || null,
-        topics: evaluationData.topics || null,
-        follow_up_actions: evaluationData.followUpActions || null,
-        confidential: evaluationData.confidential || false
-      };
-      
-      console.log('📝 EvaluationService: Dados mapeados para o banco:', dbData);
-
-      const { data, error } = await supabase
-        .from('evaluations')
-        .insert(dbData)
-        .select(`
-          id,
-          employee_id,
-          evaluator_id,
-          evaluation_period_start,
-          evaluation_period_end,
-          overall_score,
-          feedback,
-          development_plan,
-          status,
-          date,
-          evaluation_type,
-          unit,
-          meeting_time,
-          location,
-          topics,
-          follow_up_actions,
-          confidential,
-          created_at,
-          updated_at,
-          employee:users!employee_id(username),
-          evaluator:users!evaluator_id(username)
-        `)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('✅ EvaluationService: Avaliação criada no banco:', data);
-
-      // Criar evento na agenda para todas as avaliações (não apenas Coffee Connection)
-      try {
-        console.log('📅 Criando evento na agenda para avaliação...');
-        
-        // Importar o scheduleService dinamicamente para evitar dependência circular
-        const { scheduleService } = await import('./scheduleService');
-        
-        // Para Coffee Connection, usar dados específicos
-        if (evaluationData.evaluation_type === 'Coffee Connection' && evaluationData.meetingDate && evaluationData.meetingTime) {
-          const scheduleEventData = {
-            title: `Coffee Connection - ${data.employee?.username || 'Colaborador'}`,
-            employeeId: data.employee_id,
-            unit: data.unit,
-            date: evaluationData.meetingDate,
-            startTime: evaluationData.meetingTime,
-            endTime: this.addOneHour(evaluationData.meetingTime), // Adiciona 1 hora
-            type: 'appointment' as const,
-            description: `Coffee Connection com ${data.employee?.username || 'Colaborador'}`,
-            location: evaluationData.location || '',
-            emailAlert: false,
-            whatsappAlert: false
-          };
-          
-          console.log('📝 Dados do evento na agenda (Coffee Connection):', scheduleEventData);
-          await scheduleService.createScheduleEvent(scheduleEventData);
-        } else {
-          // Para avaliações normais, criar evento genérico
-          const scheduleEventData = {
-            title: `${evaluationData.evaluation_type} - ${data.employee?.username || 'Colaborador'}`,
-            employeeId: data.employee_id,
-            unit: data.unit,
-            date: evaluationData.evaluation_date || new Date().toISOString().split('T')[0],
-            startTime: '09:00',
-            endTime: '10:00',
-            type: 'appointment' as const,
-            description: `${evaluationData.evaluation_type} com ${data.employee?.username || 'Colaborador'}`,
-            location: '',
-            emailAlert: false,
-            whatsappAlert: false
-          };
-          
-          console.log('📝 Dados do evento na agenda (Avaliação Normal):', scheduleEventData);
-          await scheduleService.createScheduleEvent(scheduleEventData);
-        }
-        
-        console.log('✅ Evento criado na agenda com sucesso');
-      } catch (scheduleError) {
-        console.error('❌ Erro ao criar evento na agenda:', scheduleError);
-        // Não falha a criação da avaliação se houver erro na agenda
-      }
-
-      return {
-        id: data.id,
-        employeeId: data.employee_id,
-        employee: data.employee?.username || 'Unknown',
-        evaluatorId: data.evaluator_id,
-        evaluator: data.evaluator?.username || 'Unknown',
-        type: this.mapEvaluationType(data.evaluation_type),
-        period: this.formatPeriodFromDates(data.evaluation_period_start, data.evaluation_period_end),
-        status: this.mapEvaluationStatusFromDb(data.status),
-        score: data.overall_score || 0,
-        date: data.date,
-        unit: data.unit,
-        meetingDate: evaluationData.meetingDate,
-        meetingTime: data.meeting_time,
-        comments: data.feedback,
-        location: data.location,
-        topics: data.topics || [],
-        followUpActions: data.follow_up_actions,
-        confidential: data.confidential || false,
-        evaluationPeriodStart: data.evaluation_period_start,
-        evaluationPeriodEnd: data.evaluation_period_end,
-        evaluationType: this.mapEvaluationType(data.evaluation_type),
-        overallScore: data.overall_score,
-        competenciesScore: null,
-        goalsAchievement: null,
-        strengths: '',
-        areasForImprovement: '',
-        developmentPlan: data.development_plan || '',
-        evaluatorComments: '',
-        hrComments: '',
-        nextReviewDate: null,
-        completedAt: null,
-        approvedAt: null,
-        approvedBy: null,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async updateEvaluation(id: string, updates: Partial<Evaluation>): Promise<Evaluation> {
-    try {
-      // Map camelCase frontend fields to snake_case database fields
-      const dbUpdates: any = {};
-      
-      // Map specific camelCase fields to snake_case
-      const fieldMapping: Record<string, string> = {
-        followUpActions: 'follow_up_actions',
-        meetingDate: 'meeting_date',
-        meetingTime: 'meeting_time'
-      };
-      
-      // Check if score is being updated and automatically set status to completed
-      const isScoreUpdate = updates.score !== undefined && updates.score > 0;
-      
-      Object.keys(updates).forEach((key: string) => {
-        const value = (updates as any)[key];
-        
-        // Skip empty string values for date and time fields to avoid database errors
-        if ((key === 'meetingDate' || key === 'meetingTime') && value === '') {
-          return;
-        }
-        
-        if (key === 'status') {
-          dbUpdates.status = this.mapEvaluationStatusToDb(updates.status!);
-        } else if (key === 'score') {
-          // Map score to overall_score in database
-          dbUpdates.overall_score = value;
-        } else if (key === 'comments') {
-          // Map comments to feedback in database
-          dbUpdates.feedback = value;
-        } else if (fieldMapping[key]) {
-          // Only add non-empty values for mapped fields
-          if (value !== '' && value !== null && value !== undefined) {
-            dbUpdates[fieldMapping[key]] = value;
-          }
-        } else {
-          // Fields that don't need mapping (location, topics, confidential, etc.)
-          // Only add non-empty values
-          if (value !== '' && value !== null && value !== undefined) {
-            dbUpdates[key] = value;
-          }
-        }
-      });
-      
-      // Automatically set status to completed and update date when score is provided
-      if (isScoreUpdate) {
-        dbUpdates.status = 'finalized';
-        dbUpdates.date = new Date().toISOString().split('T')[0];
-      }
-        
-      const { data, error } = await supabase
-        .from('evaluations')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select(`
-          *,
-          employee:users!employee_id(id, username),
-          evaluator:users!evaluator_id(id, username)
-        `)
-        .single();
-      
-      if (error) {
-        throw error;
-      }
-
-      // Get employee and evaluator information separately
-      const { data: employeeData } = await supabase
-        .from('users')
-        .select('username')
-        .eq('id', data.employee_id)
-        .single();
-
-      const { data: evaluatorData } = await supabase
-        .from('users')
-        .select('username')
-        .eq('id', data.evaluator_id)
-        .single();
-
-      return {
-        id: data.id,
-        employeeId: data.employee_id,
-        employee: employeeData?.username || 'Unknown',
-        role: 'N/A', // Não temos position no select
-        evaluator: evaluatorData?.username || 'Unknown',
-        evaluatorId: data.evaluator_id,
-        type: 'Avaliação 360°', // Valor padrão já que não temos mais o campo evaluation_type
-        period: data.period || 'N/A',
-        status: this.mapEvaluationStatusFromDb(data.status),
-        score: data.overall_score || 0,
-        date: data.date,
-        comments: data.feedback || data.comments,
-        unit: data.unit,
-        location: data.location,
-        topics: data.topics || [],
-        meetingDate: data.meeting_date,
-        meetingTime: data.meeting_time,
-        followUpActions: data.follow_up_actions,
-        confidential: data.confidential,
-        evaluationPeriodStart: data.evaluation_period_start,
-        evaluationPeriodEnd: data.evaluation_period_end,
-        evaluationType: 'Avaliação 360°', // Valor padrão já que não temos mais o campo evaluation_type
-        overallScore: data.overall_score,
-        competenciesScore: data.competencies_score,
-        goalsAchievement: data.goals_achievement,
-        strengths: data.strengths,
-        areasForImprovement: data.areas_for_improvement,
-        developmentPlan: data.development_plan,
-        evaluatorComments: data.evaluator_comments,
-        hrComments: data.hr_comments,
-        nextReviewDate: data.next_review_date,
-        completedAt: data.completed_at,
-        approvedAt: data.approved_at,
-        approvedBy: data.approved_by,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  async deleteEvaluation(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('evaluations')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Helper methods to map between frontend and database types
-  mapEvaluationType(dbType: string): Evaluation['type'] {
-    const typeMap: Record<string, Evaluation['type']> = {
-      'avaliacao_360': 'Avaliação 360°',
-      'auto_avaliacao': 'Auto Avaliação',
-      'avaliacao_gestor': 'Avaliação do Gestor',
-      'coffee_connection': 'Coffee Connection'
-    };
-    return typeMap[dbType] || 'Avaliação 360°';
-  },
-
-  mapEvaluationTypeToDb(frontendType: Evaluation['type']): string {
-    const typeMap: Record<Evaluation['type'], string> = {
-      'Avaliação 360°': 'avaliacao_360',
-      'Auto Avaliação': 'auto_avaliacao',
-      'Avaliação do Gestor': 'avaliacao_gestor',
-      'Coffee Connection': 'coffee_connection'
-    };
-    return typeMap[frontendType] || 'avaliacao_360';
+    
+    // Formato padrão se não for um trimestre completo
+    return `${start.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} - ${end.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}`;
   },
 
   mapEvaluationStatus(dbStatus: string): Evaluation['status'] {
     return this.mapEvaluationStatusFromDb(dbStatus) as Evaluation['status'];
   },
 
-  mapEvaluationStatusToDb(frontendStatus: Evaluation['status']): string {
-    const statusMap: Record<Evaluation['status'], string> = {
-      'Em Andamento': 'submitted',
-      'Concluída': 'finalized'
-    };
-    return statusMap[frontendStatus] || 'draft';
+  async createEvaluation(data: NewEvaluationData): Promise<Evaluation> {
+    try {
+      console.log('🔄 evaluationService.createEvaluation: Dados recebidos:', data);
+      
+      // Determinar o período de avaliação baseado na data
+      const evaluationDate = new Date(data.evaluation_date);
+      const year = evaluationDate.getFullYear();
+      const month = evaluationDate.getMonth() + 1; // getMonth() retorna 0-11
+      
+      // Determinar trimestre
+      let quarter: number;
+      if (month >= 1 && month <= 3) quarter = 1;
+      else if (month >= 4 && month <= 6) quarter = 2;
+      else if (month >= 7 && month <= 9) quarter = 3;
+      else quarter = 4;
+      
+      // Calcular datas de início e fim do trimestre
+      const quarterStartMonth = (quarter - 1) * 3 + 1;
+      const quarterEndMonth = quarter * 3;
+      
+      const evaluationPeriodStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}-01`;
+      const evaluationPeriodEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}-${new Date(year, quarterEndMonth, 0).getDate()}`;
+      
+      console.log('📅 Período calculado:', {
+        year,
+        month,
+        quarter,
+        evaluationPeriodStart,
+        evaluationPeriodEnd
+      });
+
+      // Validar dados obrigatórios
+      if (!data.employee_id) {
+        throw new Error('employee_id é obrigatório');
+      }
+      // evaluator_id é obrigatório apenas para avaliações que não sejam Auto Avaliação
+      if (!data.evaluator_id && data.evaluation_type !== 'Auto Avaliação') {
+        throw new Error('evaluator_id é obrigatório para este tipo de avaliação');
+      }
+      if (!data.evaluation_date) {
+        throw new Error('evaluation_date é obrigatório');
+      }
+
+      // Mapear dados para o formato do banco
+      const dbData = {
+        employee_id: data.employee_id, // Manter como string UUID
+        evaluator_id: data.evaluator_id || null, // Permitir null para Auto Avaliação
+        evaluation_period_start: evaluationPeriodStart,
+        evaluation_period_end: evaluationPeriodEnd,
+        feedback: data.comments || '',
+        status: 'submitted', // Status válido conforme constraint
+        date: data.evaluation_date,
+        evaluation_type: data.evaluation_type,
+        unit: data.unit
+      };
+
+      // Adicionar campos específicos do Coffee Connection se aplicável
+      if (data.evaluation_type === 'Coffee Connection') {
+        Object.assign(dbData, {
+          meeting_time: data.meetingTime,
+          location: data.location,
+          topics: data.topics,
+          follow_up_actions: data.followUpActions,
+          confidential: data.confidential || false
+        });
+      }
+
+      console.log('💾 Dados para inserção no banco:', JSON.stringify(dbData, null, 2));
+
+      // Inserir no banco de dados
+      const { data: insertedData, error } = await supabase
+        .from('evaluations')
+        .insert(dbData)
+        .select(`
+          *,
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao inserir avaliação:', error);
+        throw error;
+      }
+
+      console.log('✅ Avaliação inserida com sucesso:', insertedData);
+
+      // Mapear dados de volta para o formato do frontend
+      const mappedEvaluation: Evaluation = {
+        id: insertedData.id,
+        employeeId: insertedData.employee_id,
+        employee: insertedData.employee?.nome || 'N/A',
+        role: insertedData.employee?.cargo || 'N/A',
+        type: insertedData.evaluation_type,
+        period: this.formatPeriodFromDates(insertedData.evaluation_period_start, insertedData.evaluation_period_end),
+        score: insertedData.overall_score || 0,
+        status: this.mapEvaluationStatusFromDb(insertedData.status),
+        date: insertedData.date,
+        evaluatorId: insertedData.evaluator_id,
+        evaluator: insertedData.evaluator?.nome,
+        comments: insertedData.feedback,
+        unit: insertedData.unit,
+        // Campos específicos do Coffee Connection
+        meetingDate: insertedData.meeting_date,
+        meetingTime: insertedData.meeting_time,
+        location: insertedData.location,
+        topics: insertedData.topics,
+        followUpActions: insertedData.follow_up_actions,
+        confidential: insertedData.confidential
+      };
+
+      console.log('🎯 Avaliação mapeada para frontend:', mappedEvaluation);
+      return mappedEvaluation;
+
+    } catch (error) {
+      console.error('❌ Erro em createEvaluation:', error);
+      throw error;
+    }
   },
 
+  async getEvaluations(): Promise<Evaluation[]> {
+    try {
+      console.log('🔄 evaluationService.getEvaluations: Buscando avaliações...');
+      
+      const { data, error } = await supabase
+        .from('evaluations')
+        .select(`
+          *,
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
+        `)
+        .order('created_at', { ascending: false });
 
+      if (error) {
+        console.error('❌ Erro ao buscar avaliações:', error);
+        throw error;
+      }
+
+      console.log('📊 Dados brutos do banco:', data);
+
+      if (!data || data.length === 0) {
+        console.log('📭 Nenhuma avaliação encontrada');
+        return [];
+      }
+
+      // Mapear dados para o formato esperado pelo frontend
+      const mappedEvaluations: Evaluation[] = data.map(item => ({
+        id: item.id,
+        employeeId: item.employee_id,
+        employee: item.employee?.nome || 'N/A',
+        role: item.employee?.cargo || 'N/A',
+        type: item.evaluation_type,
+        period: this.formatPeriodFromDates(item.evaluation_period_start, item.evaluation_period_end),
+        score: item.overall_score || 0,
+        status: this.mapEvaluationStatusFromDb(item.status),
+        date: item.date,
+        evaluatorId: item.evaluator_id,
+        evaluator: item.evaluator?.nome,
+        comments: item.feedback,
+        unit: item.unit,
+        // Campos específicos do Coffee Connection
+        meetingDate: item.meeting_date,
+        meetingTime: item.meeting_time,
+        location: item.location,
+        topics: item.topics,
+        followUpActions: item.follow_up_actions,
+        confidential: item.confidential
+      }));
+
+      console.log('✅ Avaliações mapeadas:', mappedEvaluations);
+      return mappedEvaluations;
+
+    } catch (error) {
+      console.error('❌ Erro em getEvaluations:', error);
+      throw error;
+    }
+  },
+
+  async updateEvaluation(id: string, updates: Partial<Evaluation>): Promise<Evaluation> {
+    try {
+      console.log('🔄 evaluationService.updateEvaluation:', { id, updates });
+
+      // Mapear campos do frontend para o banco
+      const dbUpdates: any = {};
+      
+      if (updates.comments !== undefined) dbUpdates.feedback = updates.comments;
+      if (updates.status !== undefined) dbUpdates.status = this.mapEvaluationStatusToDb(updates.status);
+      if (updates.score !== undefined) dbUpdates.overall_score = updates.score;
+      if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
+      
+      // Campos específicos do Coffee Connection
+      if (updates.meetingDate !== undefined) dbUpdates.meeting_date = updates.meetingDate;
+      if (updates.meetingTime !== undefined) dbUpdates.meeting_time = updates.meetingTime;
+      if (updates.location !== undefined) dbUpdates.location = updates.location;
+      if (updates.topics !== undefined) dbUpdates.topics = updates.topics;
+      if (updates.followUpActions !== undefined) dbUpdates.follow_up_actions = updates.followUpActions;
+      if (updates.confidential !== undefined) dbUpdates.confidential = updates.confidential;
+
+      const { data, error } = await supabase
+        .from('evaluations')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select(`
+          *,
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
+        `)
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao atualizar avaliação:', error);
+        throw error;
+      }
+
+      // Mapear dados de volta para o formato do frontend
+      const mappedEvaluation: Evaluation = {
+        id: data.id,
+        employeeId: data.employee_id,
+        employee: data.employee?.nome || 'N/A',
+        role: data.employee?.cargo || 'N/A',
+        type: data.evaluation_type,
+        period: this.formatPeriodFromDates(data.evaluation_period_start, data.evaluation_period_end),
+        score: data.overall_score || 0,
+        status: this.mapEvaluationStatusFromDb(data.status),
+        date: data.date,
+        evaluatorId: data.evaluator_id,
+        evaluator: data.evaluator?.nome,
+        comments: data.feedback,
+        unit: data.unit,
+        // Campos específicos do Coffee Connection
+        meetingDate: data.meeting_date,
+        meetingTime: data.meeting_time,
+        location: data.location,
+        topics: data.topics,
+        followUpActions: data.follow_up_actions,
+        confidential: data.confidential
+      };
+
+      console.log('✅ Avaliação atualizada:', mappedEvaluation);
+      return mappedEvaluation;
+
+    } catch (error) {
+      console.error('❌ Erro em updateEvaluation:', error);
+      throw error;
+    }
+  },
+
+  async deleteEvaluation(id: string): Promise<void> {
+    try {
+      console.log('🔄 evaluationService.deleteEvaluation:', id);
+
+      const { error } = await supabase
+        .from('evaluations')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ Erro ao deletar avaliação:', error);
+        throw error;
+      }
+
+      console.log('✅ Avaliação deletada com sucesso');
+
+    } catch (error) {
+      console.error('❌ Erro em deleteEvaluation:', error);
+      throw error;
+    }
+  },
+
+  // Helper functions for evaluation types
+  mapEvaluationType(dbType: string): Evaluation['type'] {
+    const typeMap: Record<string, Evaluation['type']> = {
+      '360_evaluation': 'Avaliação 360°',
+      'self_evaluation': 'Auto Avaliação',
+      'manager_evaluation': 'Avaliação do Gestor',
+      'coffee_connection': 'Coffee Connection'
+    };
+    return typeMap[dbType] || dbType as Evaluation['type'];
+  },
+
+  mapEvaluationTypeToDb(frontendType: Evaluation['type']): string {
+    const typeMap: Record<Evaluation['type'], string> = {
+      'Avaliação 360°': '360_evaluation',
+      'Auto Avaliação': 'self_evaluation',
+      'Avaliação do Gestor': 'manager_evaluation',
+      'Coffee Connection': 'coffee_connection'
+    };
+    return typeMap[frontendType] || frontendType;
+  }
 };

@@ -27,6 +27,11 @@ interface BenefitsContextType {
   denyRenewal: (enrollmentId: string, comments: string) => Promise<void>;
   extendRenewal: (enrollmentId: string, newDate: string) => Promise<void>;
   loadInitialData: () => Promise<void>;
+  // Document Management
+  uploadBenefitDocument: (benefitId: string, employeeBenefitId: string | null, file: File, documentType: string) => Promise<void>;
+  getBenefitDocuments: (benefitId: string, employeeBenefitId?: string) => Promise<any[]>;
+  deleteBenefitDocument: (documentId: string) => Promise<void>;
+  getDocumentUrl: (filePath: string) => Promise<string | null>;
 }
 
 const BenefitsContext = createContext<BenefitsContextType | undefined>(undefined);
@@ -250,7 +255,50 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Universal functions - now available for all benefits
   const updatePerformanceGoals = async (benefitId: string, goals: PerformanceGoal[]) => {
-    await updateBenefit(benefitId, { performanceGoals: goals });
+    try {
+      // First, get existing goals for this benefit
+      const existingGoals = await benefitsService.getPerformanceGoalsByBenefit(benefitId);
+      
+      // Delete goals that are no longer in the new list
+      const goalIdsToKeep = goals.filter(g => g.id && !g.id.startsWith('temp_')).map(g => g.id);
+      const goalsToDelete = existingGoals.filter(g => !goalIdsToKeep.includes(g.id));
+      
+      for (const goal of goalsToDelete) {
+        await benefitsService.deletePerformanceGoal(goal.id);
+      }
+      
+      // Update or create goals
+      for (const goal of goals) {
+        const goalData = {
+          benefit_id: benefitId,
+          title: goal.title,
+          description: goal.description,
+          target_value: goal.targetValue,
+          current_value: goal.currentValue || 0,
+          unit: goal.unit,
+          weight: goal.weight,
+          deadline: goal.deadline,
+          status: goal.status,
+          created_by: goal.createdBy || 'current_user'
+        };
+        
+        if (goal.id && !goal.id.startsWith('temp_')) {
+          // Update existing goal
+          await benefitsService.updatePerformanceGoal(goal.id, goalData);
+        } else {
+          // Create new goal
+          await benefitsService.createPerformanceGoal(goalData);
+        }
+      }
+      
+      // Refresh benefits to get updated goals
+      await loadInitialData();
+      toast.success('Metas atualizadas com sucesso!');
+    } catch (error) {
+      console.error('Error updating performance goals:', error);
+      toast.error('Erro ao atualizar metas');
+      throw error;
+    }
   };
 
   const updateRenewalSettings = async (benefitId: string, settings: RenewalSettings) => {
@@ -271,6 +319,48 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Check if renewal is due within 30 days or overdue
       return daysUntilRenewal <= 30;
     });
+  };
+
+  // Document Management
+  const uploadBenefitDocument = async (benefitId: string, employeeBenefitId: string | null, file: File, documentType: string) => {
+    try {
+      await benefitsService.uploadBenefitDocument(benefitId, employeeBenefitId, file, documentType);
+      toast.success('Documento enviado com sucesso!');
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error('Erro ao enviar documento');
+      throw error;
+    }
+  };
+
+  const getBenefitDocuments = async (benefitId: string, employeeBenefitId?: string) => {
+    try {
+      return await benefitsService.getBenefitDocuments(benefitId, employeeBenefitId);
+    } catch (error) {
+      console.error('Error getting documents:', error);
+      toast.error('Erro ao carregar documentos');
+      throw error;
+    }
+  };
+
+  const deleteBenefitDocument = async (documentId: string) => {
+    try {
+      await benefitsService.deleteBenefitDocument(documentId);
+      toast.success('Documento excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Erro ao excluir documento');
+      throw error;
+    }
+  };
+
+  const getDocumentUrl = async (filePath: string) => {
+    try {
+      return await benefitsService.getDocumentUrl(filePath);
+    } catch (error) {
+      console.error('Error getting document URL:', error);
+      return null;
+    }
   };
 
   // Renewal management functions
@@ -371,7 +461,12 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       approveRenewal,
       denyRenewal,
       extendRenewal,
-      loadInitialData
+      loadInitialData,
+      // Document Management
+      uploadBenefitDocument,
+      getBenefitDocuments,
+      deleteBenefitDocument,
+      getDocumentUrl
     }}>
       {children}
     </BenefitsContext.Provider>

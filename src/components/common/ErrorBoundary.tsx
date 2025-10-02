@@ -27,11 +27,62 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary capturou um erro:', error, errorInfo);
     
+    // Identifica tipos específicos de erro
+    const errorType = this.identifyErrorType(error);
+    console.log('Tipo de erro identificado:', errorType);
+    
+    // Tratamento específico para erros de WebSocket/Realtime
+    if (errorType === 'websocket' || errorType === 'realtime') {
+      console.log('Erro de conexão detectado, tentando recuperação automática...');
+      // Força limpeza de conexões
+      this.handleConnectionError();
+    }
+    
     // Chama callback personalizado se fornecido
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
   }
+
+  identifyErrorType = (error: Error): string => {
+    const message = (error?.message || '').toLowerCase();
+    const stack = (error?.stack || '').toLowerCase();
+    
+    if (message.includes('websocket') || message.includes('connection') || 
+        message.includes('subscribe') || message.includes('channel') ||
+        stack.includes('supabase') || stack.includes('realtime')) {
+      return 'websocket';
+    }
+    
+    if (message.includes('network') || message.includes('fetch')) {
+      return 'network';
+    }
+    
+    if (message.includes('permission') || message.includes('unauthorized')) {
+      return 'permission';
+    }
+    
+    return 'unknown';
+  };
+
+  handleConnectionError = () => {
+    try {
+      // Tenta acessar o incidentService globalmente para forçar cleanup
+      if (window && (window as any).incidentService) {
+        (window as any).incidentService.forceCleanup();
+      }
+      
+      // Agenda uma tentativa de reconexão
+      setTimeout(() => {
+        if (!this.state.hasError) {
+          console.log('ErrorBoundary: Tentando reconexão automática...');
+          window.location.reload();
+        }
+      }, 5000);
+    } catch (cleanupError) {
+      console.error('Erro durante cleanup automático:', cleanupError);
+    }
+  };
 
   handleRetry = () => {
     this.setState({ hasError: false, error: undefined });

@@ -21,6 +21,7 @@ import { useDateDialog } from '@/hooks/useDateDialog';
 import { useScheduleCalendar } from '@/hooks/useScheduleCalendar';
 import { ScheduleStats } from '@/components/schedule/ScheduleStats';
 import { EventQuickActions } from '@/components/schedule/EventQuickActions';
+import EventCarousel from '@/components/schedule/EventCarousel';
 
 const SchedulePage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
@@ -28,12 +29,15 @@ const SchedulePage: React.FC = () => {
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [duplicateEvent, setDuplicateEvent] = useState<ScheduleEvent | null>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const { hasAnyUnitSelected } = useUnit();
   const { toast } = useToast();
   const { refreshEvents, isLoading } = useSchedule();
 
   const {
     currentDate,
+    setCurrentDate,
     viewMode,
     setViewMode,
     filteredEvents,
@@ -42,6 +46,7 @@ const SchedulePage: React.FC = () => {
     navigateWeek,
     navigateMonth,
     goToToday,
+    navigateToDate,
     getEventsForDate
   } = useScheduleCalendar();
 
@@ -65,6 +70,7 @@ const SchedulePage: React.FC = () => {
       'vacation': 'bg-gray-100 text-gray-800',
       'training': 'bg-indigo-100 text-indigo-800',
       'avaliacao': 'bg-red-100 text-red-800',
+      'evaluation': 'bg-red-100 text-red-800',
       'coffee-connection': 'bg-orange-100 text-orange-800',
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
@@ -79,6 +85,7 @@ const SchedulePage: React.FC = () => {
       'vacation': 'Férias',
       'training': 'Treinamento',
       'avaliacao': 'Avaliação',
+      'evaluation': 'Avaliação',
       'coffee-connection': 'Coffee Connection'
     };
     return labels[type as keyof typeof labels] || 'Evento';
@@ -148,6 +155,60 @@ const SchedulePage: React.FC = () => {
     handleEventClick(event);
   };
 
+  // Funções para interatividade bidirecional com o carrossel
+  const handleCarouselEventClick = (event: ScheduleEvent) => {
+    // Destacar o evento no calendário
+    setHighlightedEventId(event.id);
+    
+    // Navegar para a data do evento
+    const eventDate = new Date(event.date || event.event_date);
+    
+    // Se estiver na visão de semana, navegar para a semana do evento
+    if (viewMode === 'week') {
+      const eventWeekStart = new Date(eventDate);
+      eventWeekStart.setDate(eventDate.getDate() - eventDate.getDay());
+      
+      const currentWeekStart = new Date(currentDate);
+      currentWeekStart.setDate(currentDate.getDate() - currentDate.getDay());
+      
+      if (eventWeekStart.getTime() !== currentWeekStart.getTime()) {
+        setCurrentDate(eventDate);
+      }
+    }
+    // Se estiver na visão de mês, navegar para o mês do evento
+    else if (viewMode === 'month') {
+      if (eventDate.getMonth() !== currentDate.getMonth() || 
+          eventDate.getFullYear() !== currentDate.getFullYear()) {
+        setCurrentDate(eventDate);
+      }
+    }
+    
+    // Abrir detalhes do evento após um pequeno delay para permitir a navegação
+    setTimeout(() => {
+      handleEventClick(event);
+    }, 300);
+    
+    // Limpar o highlight após 5 segundos
+    setTimeout(() => {
+      setHighlightedEventId(null);
+    }, 5000);
+  };
+
+  const handleCarouselEventHover = (event: ScheduleEvent | null) => {
+    setHoveredEventId(event?.id || null);
+  };
+
+  const handleCalendarEventClick = (event: ScheduleEvent) => {
+    // Destacar o evento no carrossel
+    setHighlightedEventId(event.id);
+    handleEventClick(event);
+    
+    // Limpar o highlight após 5 segundos
+    setTimeout(() => {
+      setHighlightedEventId(null);
+    }, 5000);
+  };
+
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
   return (
@@ -199,7 +260,24 @@ const SchedulePage: React.FC = () => {
 
         {/* Statistics */}
         {hasAnyUnitSelected && (
-          <ScheduleStats events={filteredEvents} selectedDate={currentDate} />
+          <ScheduleStats 
+            events={filteredEvents} 
+            selectedDate={currentDate}
+          />
+        )}
+
+        {/* Event Carousel */}
+        {hasAnyUnitSelected && (
+          <EventCarousel
+            onEventClick={handleCarouselEventClick}
+            onEventHover={handleCarouselEventHover}
+            highlightedEventId={highlightedEventId}
+            onEventEdit={handleEditEvent}
+            onEventDelete={(eventId) => {
+              // Refresh events after deletion
+              refreshEvents();
+            }}
+          />
         )}
 
         {/* Filters Panel */}
@@ -278,9 +356,8 @@ const SchedulePage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar View */}
-          <div className="lg:col-span-2">
+        {/* Calendar View */}
+        <div className="w-full">
             {/* Weekly View */}
             {viewMode === 'week' && hasAnyUnitSelected && (
               <Card>
@@ -345,7 +422,9 @@ const SchedulePage: React.FC = () => {
                                 <WeekEvent
                                   key={event.id}
                                   event={event}
-                                  onClick={handleEventClick}
+                                  onClick={handleCalendarEventClick}
+                                  isHighlighted={highlightedEventId === event.id}
+                                  isHovered={hoveredEventId === event.id}
                                 />
                               ))}
                             </div>
@@ -409,11 +488,15 @@ const SchedulePage: React.FC = () => {
                                 <Tooltip key={event.id}>
                                   <TooltipTrigger asChild>
                                     <div
-                                      className={`text-xs p-2 rounded-md ${getEventTypeColor(event.type)} border-l-3 relative group cursor-pointer hover:opacity-90 hover:shadow-sm transition-all`}
+                                      className={`text-xs p-2 rounded-md ${getEventTypeColor(event.type)} border-l-3 relative group cursor-pointer hover:opacity-90 hover:shadow-sm transition-all ${
+                                        highlightedEventId === event.id ? 'ring-2 ring-blue-500 shadow-lg' : ''
+                                      } ${
+                                        hoveredEventId === event.id ? 'opacity-80 scale-105' : ''
+                                      }`}
                                       style={{ borderLeftColor: unitInfo.color.replace('bg-', '#') }}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleEventClick(event);
+                                        handleCalendarEventClick(event);
                                       }}
                                     >
                                       <div className="space-y-1">
@@ -493,87 +576,6 @@ const SchedulePage: React.FC = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
-
-          {/* Events List Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Próximos Eventos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-[600px] overflow-y-auto space-y-4">
-                  {!hasAnyUnitSelected ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Selecione uma unidade</p>
-                      <p className="text-sm">Escolha uma ou mais unidades para ver os eventos</p>
-                    </div>
-                  ) : filteredEvents.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Nenhum evento agendado</p>
-                      <p className="text-sm">Clique em "Novo Evento" para adicionar um evento à agenda</p>
-                    </div>
-                  ) : (
-                    filteredEvents.slice(0, 10).map(event => {
-                      const unitInfo = getScheduleUnitInfo(event.unit);
-                      return (
-                        <div 
-                          key={event.id} 
-                          className="p-4 border border-gray-200 rounded-lg hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group bg-white"
-                          onClick={() => handleEventClick(event)}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${unitInfo.color}`}></div>
-                              <span className="text-xs font-medium text-gray-600">{unitInfo.name}</span>
-                            </div>
-                            <Badge className={`${getEventTypeColor(event.type)} text-xs px-2 py-1`}>
-                              {getEventTypeLabel(event.type)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-gray-900 leading-tight">{event.title}</h4>
-                            <p className="text-sm text-gray-700 font-medium">{event.employee}</p>
-                            
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                <span>{new Date(event.date).toLocaleDateString('pt-BR')}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                <span>{event.startTime} - {event.endTime}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <EventQuickActions
-                              event={event}
-                              onView={handleEventClick}
-                              onEdit={() => handleEditEvent(event.id)}
-                              onDuplicate={handleDuplicateEvent}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  
-                  {filteredEvents.length > 10 && (
-                    <div className="text-center">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Ver todos os eventos
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         {/* Modals */}

@@ -150,9 +150,10 @@ export const AdvancedFiltersDialog: React.FC<AdvancedFiltersDialogProps> = ({
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               >
                 <option value="all">Todos os Status</option>
-                <option value="ativo">Ativo</option>
-                <option value="resolvido">Resolvido</option>
-                <option value="arquivado">Arquivado</option>
+                <option value="open">Ativo</option>
+                <option value="in_progress">Em Progresso</option>
+                <option value="resolved">Resolvido</option>
+                <option value="closed">Arquivado</option>
               </select>
             </div>
           </div>

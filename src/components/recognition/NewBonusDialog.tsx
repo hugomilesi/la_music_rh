@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DollarSign, Gift, Star, User, MapPin, Lock } from 'lucide-react';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { Unit } from '@/types/employee';
 
@@ -25,7 +25,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
   onOpenChange,
   onSaveBonus
 }) => {
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
   const { canCreateInModule } = usePermissionsV2();
   const canManagePayroll = useMemo(() => canCreateInModule('folha_pagamento'), [canCreateInModule]);
   
@@ -73,7 +73,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
     onOpenChange(false);
   };
 
-  const selectedEmployeeData = employees.find(e => e.id === selectedEmployee);
+  const selectedEmployeeData = colaboradoresAtivos.find(e => e.id === selectedEmployee);
 
   if (!canManagePayroll) {
     return (
@@ -123,18 +123,18 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
                       <SelectValue placeholder="Escolha um colaborador" />
                     </SelectTrigger>
                     <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
+                      {colaboradoresAtivos.map((colaborador) => (
+                        <SelectItem key={colaborador.id} value={colaborador.id}>
                           <div className="flex items-center justify-between w-full">
                             <div className="flex flex-col">
-                              <span className="font-medium">{employee.name}</span>
+                              <span className="font-medium">{colaborador.nome}</span>
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {employee.position}
+                                  {colaborador.cargo}
                                 </Badge>
-                                {employee.units && employee.units.length > 0 && (
+                                {colaborador.unidade && (
                                   <Badge className="text-xs bg-blue-100 text-blue-800">
-                                    {getUnitDisplayName(employee.units[0])}
+                                    {colaborador.unidade}
                                   </Badge>
                                 )}
                               </div>
@@ -151,18 +151,16 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-blue-900">{selectedEmployeeData.name}</p>
+                          <p className="font-medium text-blue-900">{selectedEmployeeData.nome}</p>
                           <p className="text-sm text-blue-700">
-                            {selectedEmployeeData.position} • {selectedEmployeeData.department}
+                            {selectedEmployeeData.cargo} • {selectedEmployeeData.departamento}
                           </p>
-                          {selectedEmployeeData.units && selectedEmployeeData.units.length > 0 && (
+                          {selectedEmployeeData.unidade && (
                             <div className="flex gap-1 mt-1">
-                              {selectedEmployeeData.units.map(unit => (
-                                <Badge key={unit} variant="secondary" className="text-xs">
-                                  <MapPin className="w-2 h-2 mr-1" />
-                                  {getUnitDisplayName(unit)}
-                                </Badge>
-                              ))}
+                              <Badge variant="secondary" className="text-xs">
+                                <MapPin className="w-2 h-2 mr-1" />
+                                {selectedEmployeeData.unidade}
+                              </Badge>
                             </div>
                           )}
                         </div>

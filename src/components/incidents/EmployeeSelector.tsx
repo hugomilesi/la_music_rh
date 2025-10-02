@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, User, MapPin, Lock } from 'lucide-react';
-import { Employee } from '@/types/employee';
-import { Unit } from '@/types/unit';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { Colaborador } from '@/types/colaborador';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 
 interface EmployeeSelectorProps {
@@ -18,35 +17,35 @@ interface EmployeeSelectorProps {
 export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   value,
   onChange,
-  placeholder = "Buscar funcionário...",
+  placeholder = "Buscar colaborador...",
   error,
   disabled = false
 }) => {
-  const { employees, isLoading, error: employeesError } = useEmployees();
+  const { colaboradoresAtivos, loadingColaboradores } = useColaboradores();
   const { canViewModule } = usePermissionsV2();
   const canViewEmployees = useMemo(() => canViewModule('usuarios'), [canViewModule]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<Colaborador[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isDisabled = disabled || isLoading || employeesError !== null || !employees || employees.length === 0 || !canViewEmployees;
+  const isDisabled = disabled || loadingColaboradores || !colaboradoresAtivos || colaboradoresAtivos.length === 0 || !canViewEmployees;
 
   // Set initial selected employee name based on value
   useEffect(() => {
-    if (value && employees) {
-      const employee = employees.find(emp => emp.id === value);
-      if (employee) {
-        setSelectedEmployeeName(employee.name);
-        setSearchTerm(employee.name);
+    if (value && colaboradoresAtivos) {
+      const colaborador = colaboradoresAtivos.find(col => col.id === value);
+      if (colaborador) {
+        setSelectedEmployeeName(colaborador.nome);
+        setSearchTerm(colaborador.nome);
       }
     } else {
       setSelectedEmployeeName('');
       setSearchTerm('');
     }
-  }, [value, employees]);
+  }, [value, colaboradoresAtivos]);
 
   useEffect(() => {
     if (isDisabled || searchTerm.trim() === '') {
@@ -55,17 +54,17 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
       return;
     }
 
-    const filtered = employees.filter(employee =>
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.units?.some(unit => unit.toLowerCase().includes(searchTerm.toLowerCase()))
+    const filtered = colaboradoresAtivos.filter(colaborador =>
+      colaborador.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      colaborador.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      colaborador.cargo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      colaborador.departamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      colaborador.unidade?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     setFilteredEmployees(filtered);
     setIsOpen(filtered.length > 0 && searchTerm !== selectedEmployeeName);
-  }, [searchTerm, employees, isDisabled, selectedEmployeeName]);
+  }, [searchTerm, colaboradoresAtivos, isDisabled, selectedEmployeeName]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -84,20 +83,13 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
     };
   }, [selectedEmployeeName]);
 
-  const getUnitDisplayName = (unit: Unit) => {
-    const unitNames = {
-      [Unit.CAMPO_GRANDE]: 'Campo Grande',
-      [Unit.BARRA]: 'Barra',
-      [Unit.RECREIO]: 'Recreio'
-    };
-    return unitNames[unit] || unit;
-  };
-
-  const handleEmployeeSelect = (employee: Employee) => {
-    setSelectedEmployeeName(employee.name);
-    setSearchTerm(employee.name);
+  // Removendo função não utilizada
+  
+  const handleEmployeeSelect = (colaborador: Colaborador) => {
+    setSelectedEmployeeName(colaborador.nome);
+    setSearchTerm(colaborador.nome);
     setIsOpen(false);
-    onChange(employee.id, employee.name);
+    onChange(colaborador.id, colaborador.nome);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,10 +112,9 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
   };
 
   const getPlaceholderText = () => {
-    if (!canViewEmployees) return "Sem permissão para visualizar funcionários";
-    if (isLoading) return "Carregando funcionários...";
-    if (employeesError) return "Erro ao carregar funcionários";
-    if (!employees || employees.length === 0) return "Nenhum funcionário disponível";
+    if (!canViewEmployees) return "Sem permissão para visualizar colaboradores";
+    if (loadingColaboradores) return "Carregando colaboradores...";
+    if (!colaboradoresAtivos || colaboradoresAtivos.length === 0) return "Nenhum colaborador disponível";
     return placeholder;
   };
 
@@ -155,32 +146,30 @@ export const EmployeeSelector: React.FC<EmployeeSelectorProps> = ({
           {filteredEmployees.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <User className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">Nenhum funcionário encontrado</p>
+              <p className="text-sm">Nenhum colaborador encontrado</p>
             </div>
           ) : (
             <div className="py-2">
-              {filteredEmployees.map((employee) => (
+              {filteredEmployees.map((colaborador) => (
                 <div
-                  key={employee.id}
+                  key={colaborador.id}
                   className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
-                  onClick={() => handleEmployeeSelect(employee)}
+                  onClick={() => handleEmployeeSelect(colaborador)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 truncate text-sm">
-                        {employee.name}
+                        {colaborador.nome}
                       </h4>
-                      <p className="text-xs text-gray-600 mb-2">{employee.position}</p>
-                      <p className="text-xs text-gray-500 mb-2">{employee.department}</p>
+                      <p className="text-xs text-gray-600 mb-2">{colaborador.cargo}</p>
+                      <p className="text-xs text-gray-500 mb-2">{colaborador.departamento}</p>
                       
-                      {employee.units && employee.units.length > 0 && (
+                      {colaborador.unidade && (
                         <div className="flex flex-wrap gap-1">
-                          {employee.units.map((unit) => (
-                            <Badge key={unit} variant="secondary" className="text-xs px-1 py-0">
-                              <MapPin className="w-2 h-2 mr-1" />
-                              {getUnitDisplayName(unit)}
-                            </Badge>
-                          ))}
+                          <Badge variant="secondary" className="text-xs px-1 py-0">
+                            <MapPin className="w-2 h-2 mr-1" />
+                            {colaborador.unidade}
+                          </Badge>
                         </div>
                       )}
                     </div>

@@ -118,8 +118,8 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   }
 
   const filteredRoles = roles.filter(role =>
-    role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    role.department?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    role.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    role.department?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
 

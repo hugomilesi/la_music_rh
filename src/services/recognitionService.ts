@@ -258,25 +258,6 @@ export class RecognitionService {
     return data || []
   }
 
-  static async getMonthlyProgress(employeeId: string, period: string): Promise<MonthlyProgress | null> {
-    try {
-      const { data, error } = await supabase
-        .from('monthly_progress')
-        .select('*')
-        .eq('employee_id', employeeId)
-        .eq('period', period)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
   // Ranking de Funcionários
   static async getEmployeeRanking(
     programFilter: string = 'all',
@@ -468,79 +449,9 @@ export class RecognitionService {
       if (criteriaError) throw criteriaError;
 
       // 4. Atualizar o progresso mensal
-      await this.updateMonthlyProgress(evaluation.employee_id, data.evaluationPeriod);
+      await this.updateMonthlyProgress(evaluation.employee_id, data.evaluationPeriod, {});
 
       return evaluation;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateMonthlyProgress(employeeId: string, period: string): Promise<void> {
-    try {
-      // Buscar todas as avaliações do funcionário no período
-      const { data: evaluations, error: evalError } = await supabase
-        .from('employee_evaluations')
-        .select(`
-          *,
-          criteria_evaluations:employee_criteria_evaluations(*)
-        `)
-        .eq('employee_id', employeeId)
-        .eq('evaluation_period', period);
-
-      if (evalError) {
-        throw evalError;
-      }
-
-      // Calcular estatísticas
-      const totalEvaluations = evaluations?.length || 0;
-      let totalScore = 0;
-      let totalCriteriaEvaluations = 0;
-
-      evaluations?.forEach(evaluation => {
-        evaluation.criteria_evaluations?.forEach((criteria: any) => {
-          totalScore += criteria.score;
-          totalCriteriaEvaluations++;
-        });
-      });
-
-      const averageScore = totalCriteriaEvaluations > 0 ? totalScore / totalCriteriaEvaluations : 0;
-
-      // Verificar se já existe progresso para este período
-      const existingProgress = await this.getMonthlyProgress(employeeId, period);
-
-      const progressData = {
-        employee_id: employeeId,
-        period,
-        total_evaluations: totalEvaluations,
-        average_score: averageScore,
-        total_score: totalScore,
-        updated_at: new Date().toISOString()
-      };
-
-      if (existingProgress) {
-        // Atualizar progresso existente
-        const { error: updateError } = await supabase
-          .from('monthly_progress')
-          .update(progressData)
-          .eq('id', existingProgress.id);
-
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        // Criar novo progresso
-        const { error: insertError } = await supabase
-          .from('monthly_progress')
-          .insert([{
-            ...progressData,
-            created_at: new Date().toISOString()
-          }]);
-
-        if (insertError) {
-          throw insertError;
-        }
-      }
     } catch (error) {
       throw error;
     }
@@ -581,7 +492,7 @@ export class RecognitionService {
       }
 
       // 4. Atualizar o progresso mensal
-      await this.updateMonthlyProgress(evaluation.employee_id, evaluation.evaluation_period);
+      await this.updateMonthlyProgress(evaluation.employee_id, evaluation.evaluation_period, {});
 
       return true;
     } catch (error) {

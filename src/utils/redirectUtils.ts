@@ -8,6 +8,7 @@ export const ROUTE_MODULES = {
   '/folha-pagamento': 'folha_pagamento',
   '/ferias': 'ferias',
   '/avaliacoes': 'avaliacoes',
+  '/coffee-connection': 'avaliacoes',
   '/documentos': 'documentos',
   '/beneficios': 'beneficios',
   '/agenda': 'agenda',
@@ -16,6 +17,7 @@ export const ROUTE_MODULES = {
   '/nps': 'nps',
   '/notificacoes': 'notificacoes',
   '/whatsapp': 'whatsapp',
+  '/colaboradores': 'colaboradores',
   '/configuracoes': 'configuracoes',
   '/gerenciar-permissoes': null, // Gerenciado por canManagePermissions
   '/perfil': null, // Sempre acessível para usuários autenticados

@@ -118,8 +118,8 @@ const UnitDetailsModal: React.FC<UnitDetailsModalProps> = ({
 
   // Filtrar funcionários
   const filteredEmployees = employees.filter((employee) => {
-    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.position.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = employee.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.position?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClassification = selectedClassification === 'Todos' || employee.classification === selectedClassification;
     return matchesSearch && matchesClassification;
   });

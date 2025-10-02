@@ -12,6 +12,7 @@ import { payrollService } from '@/services/payrollService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { fetchDepartments, type Department } from '@/services/rolesService';
 
 interface NewPayrollEntryDialogProps {
@@ -41,6 +42,7 @@ const CLASSIFICATIONS = [
 
 export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, defaultYear, defaultUnit }: NewPayrollEntryDialogProps) {
   const { user } = useAuth();
+  const { colaboradoresAtivos, loading: loadingColaboradores } = useColaboradores();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<Array<{auth_user_id: string, username: string, cpf: string, units: string, department: string}>>([]);
@@ -133,15 +135,15 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   };
 
   const handleEmployeeSelect = (employeeId: string) => {
-    const selectedEmployee = employees.find(emp => emp.auth_user_id === employeeId);
+    const selectedEmployee = colaboradoresAtivos?.find(colaborador => colaborador.id === employeeId);
     if (selectedEmployee) {
       setFormData(prev => ({
         ...prev,
         colaborador_id: employeeId,
-        nome_funcionario: selectedEmployee.username,
+        nome_funcionario: selectedEmployee.nome,
         cpf_funcionario: selectedEmployee.cpf || '',
-        unidade: selectedEmployee.units || defaultUnit || '',
-        departamento: selectedEmployee.department || ''
+        unidade: selectedEmployee.unidade || defaultUnit || '',
+        departamento: selectedEmployee.departamento || ''
       }));
     }
   };
@@ -458,19 +460,19 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
               {isRegisteredEmployee && (
                 <>
                   <div>
-                    <Label htmlFor="colaborador_id">Funcionário *</Label>
+                    <Label htmlFor="colaborador_id">Colaborador *</Label>
                     <Select
                       value={formData.colaborador_id}
                       onValueChange={handleEmployeeSelect}
-                      disabled={loadingEmployees}
+                      disabled={loadingColaboradores}
                     >
                       <SelectTrigger className={fieldErrors.colaborador_id ? "border-red-500" : ""}>
-                        <SelectValue placeholder={loadingEmployees ? "Carregando funcionários..." : "Selecione um funcionário"} />
+                        <SelectValue placeholder={loadingColaboradores ? "Carregando colaboradores..." : "Selecione um colaborador"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {employees.map((employee) => (
-                          <SelectItem key={employee.auth_user_id} value={employee.auth_user_id}>
-                            {employee.username} {employee.cpf ? `- ${employee.cpf}` : ''}
+                        {colaboradoresAtivos?.map((colaborador) => (
+                          <SelectItem key={colaborador.id} value={colaborador.id}>
+                            {colaborador.nome} {colaborador.cpf ? `- ${colaborador.cpf}` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>

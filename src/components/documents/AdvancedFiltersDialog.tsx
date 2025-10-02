@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DocumentFilter } from '@/types/document';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { useEmployees } from '@/contexts/EmployeeContext';
 
 interface AdvancedFiltersDialogProps {

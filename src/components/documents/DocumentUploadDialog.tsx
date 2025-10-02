@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Upload, X, FileText, AlertCircle } from 'lucide-react';
-import { useDocuments } from '@/contexts/DocumentContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useDocuments } from '@/hooks/useDocuments';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatDateToLocal } from '@/utils/dateUtils';
 
@@ -24,7 +24,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
   preSelectedEmployeeId
 }) => {
   const { uploadDocument, isLoading } = useDocuments();
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
   const [formData, setFormData] = useState({
     employeeId: preSelectedEmployeeId || '',
     documentType: '',
@@ -179,9 +179,9 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                 <SelectValue placeholder="Selecione o colaborador" />
               </SelectTrigger>
               <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.name}
+                {colaboradoresAtivos.map((colaborador) => (
+                  <SelectItem key={colaborador.id} value={colaborador.id}>
+                    {colaborador.nome}
                   </SelectItem>
                 ))}
               </SelectContent>

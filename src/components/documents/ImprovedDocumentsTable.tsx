@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { EditDocumentDialog } from './EditDocumentDialog';
 import { DocumentUploadDialog } from './DocumentUploadDialog';
 
@@ -28,7 +29,8 @@ import {
   FileText,
   Calendar,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 import { documentChecklistService } from '@/services/documentChecklistService';
 import type { EmployeeDocumentSummary, DocumentChecklistItem } from '@/services/documentChecklistService';
@@ -51,8 +53,8 @@ interface EmployeeDocumentGroup {
   pendingDocuments: number;
   checklistItems: DocumentChecklistItem[];
   completionRate: number;
+  remainingDocuments: number;
 }
-
 
 
 export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
@@ -65,6 +67,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
   const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeDocumentSummary[]>([]);
   const [checklistData, setChecklistData] = useState<Map<string, DocumentChecklistItem[]>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Estados para diálogos
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -72,23 +75,39 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedEmployeeForUpload, setSelectedEmployeeForUpload] = useState<string>('');
 
-  // Carregar dados do checklist
+  // Carregar dados do checklist usando apenas colaboradores com documentos enviados
   const loadEmployeeSummaries = async () => {
     try {
       setLoading(true);
-      const summaries = await documentChecklistService.getAllEmployeesDocumentSummary();
-      setEmployeeSummaries(summaries);
+      console.log('ImprovedDocumentsTable: Iniciando carregamento de dados (apenas colaboradores com documentos)...');
       
+      // Usar a nova função que busca apenas colaboradores com documentos enviados
+      const summariesWithDocuments = await documentChecklistService.getEmployeesWithDocumentsSummary();
+      console.log('ImprovedDocumentsTable: Colaboradores com documentos recebidos:', summariesWithDocuments?.length || 0);
+      console.log('ImprovedDocumentsTable: Dados completos dos colaboradores:', summariesWithDocuments);
+      
+      // Criar mapa de checklist a partir dos summaries
       const checklistMap = new Map<string, DocumentChecklistItem[]>();
-      for (const summary of summaries) {
-        const checklist = await documentChecklistService.getEmployeeDocumentChecklist(summary.employee_id);
-        checklistMap.set(summary.employee_id, checklist);
-      }
+      
+      summariesWithDocuments.forEach(summary => {
+        checklistMap.set(summary.employee_id, summary.checklist_items);
+      });
+      
+      setEmployeeSummaries(summariesWithDocuments);
       setChecklistData(checklistMap);
+      
+      console.log('ImprovedDocumentsTable: ChecklistData definido:', checklistMap.size, 'funcionários com documentos');
+      
     } catch (error) {
-      console.error('Erro ao carregar dados do checklist:', error);
+      console.error('ImprovedDocumentsTable: Erro ao carregar dados:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados dos documentos",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+      console.log('ImprovedDocumentsTable: Carregamento finalizado');
     }
   };
 
@@ -96,84 +115,107 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
     loadEmployeeSummaries();
   }, []);
 
-  // Processar dados dos colaboradores
+  // Processar dados dos colaboradores usando dados da view user_required_documents
   const groupedDocuments = useMemo(() => {
     const groups = new Map<string, EmployeeDocumentGroup>();
 
-    // Criar grupos baseados nos documentos existentes
-    filteredDocuments.forEach(doc => {
-      if (!groups.has(doc.employee_id)) {
-        const employeeSummary = employeeSummaries.find(s => s.employee_id === doc.employee_id);
-        const checklistItems = checklistData.get(doc.employee_id) || [];
-        
-        let employeeName = 'Nome não encontrado';
-        if (doc.employee?.username && doc.employee.username.trim() !== '') {
-          employeeName = doc.employee.username;
-        } else if (employeeSummary?.employee_name && employeeSummary.employee_name.trim() !== '') {
-          employeeName = employeeSummary.employee_name;
-        }
-        
-        groups.set(doc.employee_id, {
-          employeeId: doc.employee_id,
-          employeeName: employeeName,
-          documents: [],
-          totalDocuments: 0,
-          validDocuments: 0,
-          expiringDocuments: 0,
-          expiredDocuments: 0,
-          pendingDocuments: checklistItems.filter(item => item.status === 'pendente').length,
-          checklistItems: checklistItems,
-          completionRate: 0
-        });
-      }
+    console.log('ImprovedDocumentsTable: Iniciando processamento de grupos');
+    console.log('ImprovedDocumentsTable: employeeSummaries:', employeeSummaries.length);
+    console.log('ImprovedDocumentsTable: checklistData:', checklistData.size);
 
-      const group = groups.get(doc.employee_id)!;
-      group.documents.push(doc);
-      group.totalDocuments++;
-
-      const status = getDocumentStatus(doc.expires_at);
-      switch (status) {
-        case 'válido':
-          group.validDocuments++;
-          break;
-        case 'vencendo':
-          group.expiringDocuments++;
-          break;
-        case 'vencido':
-          group.expiredDocuments++;
-          break;
-      }
-    });
-
-    // Adicionar funcionários que têm checklist mas não têm documentos
+    // Processar todos os funcionários da view user_required_documents
     employeeSummaries.forEach(summary => {
-      if (!groups.has(summary.employee_id)) {
-        const checklistItems = checklistData.get(summary.employee_id) || [];
-        
-        groups.set(summary.employee_id, {
-          employeeId: summary.employee_id,
-          employeeName: summary.employee_name || 'Nome não encontrado',
-          documents: [],
-          totalDocuments: 0,
-          validDocuments: 0,
-          expiringDocuments: 0,
-          expiredDocuments: 0,
-          pendingDocuments: checklistItems.filter(item => item.status === 'pendente').length,
-          checklistItems: checklistItems,
-          completionRate: 0
+      const checklistItems = checklistData.get(summary.employee_id) || [];
+      
+      console.log('ImprovedDocumentsTable: Processando funcionário:', {
+        employee_id: summary.employee_id,
+        employee_name: summary.employee_name,
+        total_documents: summary.total_documents,
+        validated_documents: summary.validated_documents,
+        pending_documents: summary.pending_documents,
+        checklist_items: checklistItems.length
+      });
+
+      // Extrair documentos enviados dos checklistItems (que já vêm da view)
+      const sentDocuments = checklistItems
+        .filter(item => item.document_id && (item.status === 'completo' || item.status === 'enviado' || item.status === 'aprovado'))
+        .map(item => {
+          // Buscar o documento completo no filteredDocuments usando o document_id
+          const fullDocument = filteredDocuments.find(doc => doc.id === item.document_id);
+          if (fullDocument) {
+            return fullDocument;
+          }
+          // Se não encontrar, criar um documento básico com as informações disponíveis
+          return {
+            id: item.document_id,
+            document_name: item.required_document_name,
+            file_name: item.required_document_name,
+            employee_id: summary.employee_id,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          } as Document;
         });
-      }
+
+      // Calcular contadores corretos baseados nos checklistItems
+      const totalRequired = checklistItems.length;
+      const completedDocuments = checklistItems.filter(item => 
+        item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
+      ).length;
+      const validatedDocuments = checklistItems.filter(item => 
+        item.status === 'aprovado' || item.status === 'completo'
+      ).length;
+      const pendingDocuments = checklistItems.filter(item => 
+        item.status === 'pendente'
+      ).length;
+      const remainingDocuments = totalRequired - completedDocuments;
+
+      console.log('ImprovedDocumentsTable: Documentos enviados encontrados:', {
+        employee_id: summary.employee_id,
+        employee_name: summary.employee_name,
+        total_required: totalRequired,
+        completed_documents: completedDocuments,
+        validated_documents: validatedDocuments,
+        pending_documents: pendingDocuments,
+        remaining_documents: remainingDocuments,
+        sent_documents: sentDocuments.length,
+        document_names: sentDocuments.map(d => d.document_name || d.file_name)
+      });
+
+      // Criar grupo para o funcionário
+      groups.set(summary.employee_id, {
+        employeeId: summary.employee_id,
+        employeeName: summary.employee_name || 'Nome não encontrado',
+        documents: sentDocuments, // Usar documentos enviados extraídos da view
+        totalDocuments: totalRequired,
+        validDocuments: validatedDocuments,
+        expiringDocuments: summary.expiring_documents || 0,
+        expiredDocuments: summary.expired_documents || 0,
+        pendingDocuments: pendingDocuments,
+        checklistItems: checklistItems,
+        completionRate: totalRequired > 0 ? Math.round((completedDocuments / totalRequired) * 100) : 0,
+        remainingDocuments: remainingDocuments
+      });
     });
 
-    // Calcular taxa de conclusão
+    // Calcular taxa de conclusão baseada em documentos enviados/aprovados
     groups.forEach(group => {
       const totalRequired = group.checklistItems.length;
-      const completed = group.validDocuments;
-      group.completionRate = totalRequired > 0 ? Math.round((completed / totalRequired) * 100) : 0;
+      const completedDocuments = group.checklistItems.filter(item => 
+        item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
+      ).length;
+      group.completionRate = totalRequired > 0 ? Math.round((completedDocuments / totalRequired) * 100) : 0;
+      
+      console.log('ImprovedDocumentsTable: Taxa de conclusão calculada:', {
+        employee_name: group.employeeName,
+        total_required: totalRequired,
+        completed_documents: completedDocuments,
+        completion_rate: group.completionRate
+      });
     });
 
     // Ordenação inteligente: priorizar pendentes e vencendo
-    return Array.from(groups.values()).sort((a, b) => {
+    const result = Array.from(groups.values()).sort((a, b) => {
       // Primeiro critério: prioridade (pendentes e vencendo primeiro)
       const aPriority = a.pendingDocuments > 0 || a.expiringDocuments > 0 ? 1 : 
                       a.expiredDocuments > 0 ? 2 : 3;
@@ -187,17 +229,42 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       // Segundo critério: nome do colaborador
       return a.employeeName.localeCompare(b.employeeName);
     });
+    
+    console.log('ImprovedDocumentsTable: Grupos processados:', result.length);
+    return result;
   }, [filteredDocuments, employeeSummaries, checklistData]);
 
-  // Filtrar colaboradores que têm documentos para exibir (incluindo pendentes)
+  // Filtrar colaboradores que têm documentos para exibir (apenas com ao menos um documento enviado)
   const filteredGroupedDocuments = useMemo(() => {
-    return groupedDocuments.filter(group => {
-      const hasUploadedDocuments = group.documents.length > 0;
-      const hasSentDocuments = group.checklistItems.some(item => item.status === 'completo');
-      const hasPendingDocuments = group.checklistItems.some(item => item.status === 'pendente');
-      return hasUploadedDocuments || hasSentDocuments || hasPendingDocuments;
+    let filtered = groupedDocuments.filter(group => {
+      // Verificar se tem ao menos um documento enviado, aprovado ou completo
+      const hasAtLeastOneSentDocument = group.checklistItems.some(item => 
+        item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
+      );
+      
+      console.log('ImprovedDocumentsTable: Filtro por documento enviado:', {
+        employee_name: group.employeeName,
+        has_sent_document: hasAtLeastOneSentDocument,
+        checklist_items: group.checklistItems.map(item => ({
+          name: item.required_document_name,
+          status: item.status
+        }))
+      });
+      
+      return hasAtLeastOneSentDocument;
     });
-  }, [groupedDocuments]);
+
+    // Aplicar filtro de busca por nome
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(group => 
+        group.employeeName.toLowerCase().includes(searchTerm.toLowerCase().trim())
+      );
+    }
+     
+    console.log('ImprovedDocumentsTable: Grupos filtrados final:', filtered.length);
+    console.log('ImprovedDocumentsTable: Termo de busca:', searchTerm);
+    return filtered;
+  }, [groupedDocuments, searchTerm]);
 
   const toggleEmployee = (employeeId: string) => {
     const newExpanded = new Set(expandedEmployees);
@@ -220,7 +287,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
           color: 'text-green-700 bg-green-100 border-green-300',
           priority: 4
         };
-      case 'vencendo':
+      case 'vencendo': {
         const daysUntilExpiry = doc.expires_at ? 
           Math.ceil((new Date(doc.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
         return {
@@ -229,6 +296,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
           color: 'text-yellow-700 bg-yellow-100 border-yellow-300',
           priority: 2
         };
+      }
       case 'vencido':
         return {
           icon: <AlertTriangle className="w-4 h-4" />,
@@ -334,10 +402,33 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
     <TooltipProvider>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Documentos por Colaborador
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Documentos por Colaborador
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar por nome do colaborador..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadEmployeeSummaries}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -372,7 +463,10 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
                             <div>
                               <div className="font-medium">{group.employeeName}</div>
                               <div className="text-sm text-gray-500">
-                                {group.validDocuments}/{group.checklistItems.length} documentos válidos
+                                {group.remainingDocuments > 0 
+                                  ? `${group.remainingDocuments} documentos restantes para completar`
+                                  : `${group.validDocuments}/${group.checklistItems.length} documentos válidos - Completo`
+                                }
                               </div>
                             </div>
                           </div>
@@ -556,30 +650,32 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
                             );
                           })}
                           
-                          {/* Documentos Pendentes */}
+                          {/* Documentos Pendentes (da view user_required_documents) */}
                           {group.checklistItems
-                            .filter(item => item.status === 'pendente')
+                            .filter(item => item.status === 'pendente' && !item.document_id)
                             .map((item, index) => (
-                              <TableRow key={`pending-${group.employeeId}-${item.id}-${index}`} className="bg-blue-50">
+                              <TableRow key={`pending-${group.employeeId}-${item.required_document_id}-${index}`} className="bg-blue-50">
                                 <TableCell></TableCell>
                                 <TableCell className="pl-12">
                                   <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-gray-400" />
+                                    <Clock className="w-4 h-4 text-orange-500" />
                                     <div>
                                       <div className="font-medium text-sm">
                                         {item.required_document_name}
                                       </div>
                                       <div className="text-xs text-gray-500">
-                                        Documento obrigatório
+                                        Documento obrigatório pendente
                                       </div>
                                     </div>
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="text-sm text-gray-600">-</div>
+                                  <div className="text-sm text-gray-600">
+                                    <span className="text-orange-600">Aguardando envio</span>
+                                  </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge className="text-yellow-700 bg-yellow-100 border-yellow-200 border text-xs flex items-center gap-1 w-fit font-medium">
+                                  <Badge className="text-orange-700 bg-orange-100 border-orange-200 border text-xs flex items-center gap-1 w-fit font-medium">
                                     <AlertCircle className="w-3 h-3" />
                                     Pendente de envio
                                   </Badge>
@@ -590,6 +686,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
                                       <Button 
                                         variant="outline" 
                                         size="sm"
+                                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
                                         onClick={(e) => handleUploadDocument(group.employeeId, e)}
                                       >
                                         <Upload className="w-4 h-4 mr-1" />
@@ -597,7 +694,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Enviar documento</p>
+                                      <p>Enviar documento obrigatório</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TableCell>

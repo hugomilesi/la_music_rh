@@ -5,7 +5,7 @@ export interface DocumentChecklistItem {
   employee_id: string;
   required_document_id: string;
   document_id: string | null;
-  status: 'pendente' | 'completo' | 'vencendo' | 'vencido';
+  status: 'pendente' | 'enviado' | 'aprovado' | 'rejeitado';
   employee_name: string;
   required_document_name: string;
   document_type: string;
@@ -23,423 +23,208 @@ export interface EmployeeDocumentSummary {
   validated_documents: number;
   pending_documents: number;
   rejected_documents: number;
-  expiring_documents: number;
-  expired_documents: number;
   checklist_items: DocumentChecklistItem[];
 }
 
 export const documentChecklistService = {
-  // Buscar checklist de documentos por colaborador
+  // Buscar checklist de documentos por colaborador usando a nova lógica simplificada
   async getEmployeeDocumentChecklist(employeeId: string): Promise<DocumentChecklistItem[]> {
-    try {
-      console.log('DocumentChecklistService: Buscando checklist do colaborador:', employeeId);
-      
-      const { data, error } = await supabase
-        .from('employee_document_checklist')
-        .select(`
+    // Buscar colaborador
+    const { data: employee, error: employeeError } = await supabase
+      .from('colaboradores')
+      .select('id, nome')
+      .eq('id', employeeId)
+      .single();
+
+    if (employeeError) {
+      throw employeeError;
+    }
+
+    // Buscar apenas os documentos obrigatórios com LEFT JOIN para documentos enviados
+    const { data, error } = await supabase
+      .from('required_documents')
+      .select(`
+        id,
+        name,
+        document_type,
+        is_mandatory,
+        documents!left(
           id,
-          employee_id,
-          required_document_id,
-          document_id,
+          name,
           status,
-          users!employee_id(username),
-          required_documents!required_document_id(name, document_type, is_mandatory),
-          documents!document_id(name)
-        `)
-        .eq('employee_id', employeeId);
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('is_active', true)
+      .eq('is_mandatory', true)
+      .eq('documents.employee_id', employeeId)
+      .order('name');
 
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao buscar checklist:', error);
-        throw error;
-      }
-
-      const formattedData = data?.map(item => ({
-        id: item.id,
-        employee_id: item.employee_id,
-        required_document_id: item.required_document_id,
-        document_id: item.document_id,
-        status: item.status,
-        employee_name: item.users?.username || 'N/A',
-        required_document_name: item.required_documents?.name || 'N/A',
-        document_type: item.required_documents?.document_type || 'N/A',
-        is_mandatory: item.required_documents?.is_mandatory || false,
-        uploaded_document_name: item.documents?.name || null,
-      })) || [];
-
-      console.log('DocumentChecklistService: Checklist encontrado:', formattedData.length, 'itens');
-      return formattedData;
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em getEmployeeDocumentChecklist:', error);
+    if (error) {
       throw error;
     }
+    
+    // Transform data to match DocumentChecklistItem interface
+    const transformedData = data?.map(item => {
+      const document = Array.isArray(item.documents) ? item.documents[0] : item.documents;
+      return {
+        id: document?.id || item.id, // Use document ID if exists, otherwise required_document ID
+        employee_id: employeeId,
+        required_document_id: item.id,
+        document_id: document?.id || null,
+        status: document?.status || 'pendente',
+        employee_name: employee.nome,
+        required_document_name: item.name,
+        document_type: item.document_type,
+        is_mandatory: item.is_mandatory,
+        uploaded_document_name: document?.name || null,
+        created_at: document?.created_at || null,
+        updated_at: document?.updated_at || null
+      };
+    }) || [];
+    
+    return transformedData;
   },
 
   // Buscar resumo de documentos de todos os colaboradores
   async getAllEmployeesDocumentSummary(): Promise<EmployeeDocumentSummary[]> {
-    try {
-      console.log('DocumentChecklistService: Buscando resumo de todos os colaboradores');
+    // Buscar todos os colaboradores ativos
+    const { data: employees, error: employeesError } = await supabase
+      .from('colaboradores')
+      .select('id, nome, email')
+      .eq('status', 'ativo')
+      .order('nome');
+
+    if (employeesError) {
+      throw employeesError;
+    }
+
+    // Para cada colaborador, buscar seu checklist
+    const summaries: EmployeeDocumentSummary[] = [];
+    
+    for (const employee of employees || []) {
+      const checklistItems = await this.getEmployeeDocumentChecklist(employee.id);
       
-      const { data, error } = await supabase
-        .from('employee_document_checklist')
-        .select(`
-          id,
-          employee_id,
-          required_document_id,
-          document_id,
-          status,
-          users!employee_id(username),
-          required_documents!required_document_id(name, document_type, is_mandatory),
-          documents!document_id(name)
-        `);
+      const summary: EmployeeDocumentSummary = {
+        employee_id: employee.id,
+        employee_name: employee.nome,
+        total_documents: checklistItems.length,
+        sent_documents: checklistItems.filter(item => item.status === 'enviado' || item.status === 'aprovado').length,
+        validated_documents: checklistItems.filter(item => item.status === 'aprovado').length,
+        pending_documents: checklistItems.filter(item => item.status === 'pendente').length,
+        rejected_documents: checklistItems.filter(item => item.status === 'rejeitado').length,
+        checklist_items: checklistItems
+      };
+      
+      summaries.push(summary);
+    }
 
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao buscar resumo:', error);
-        throw error;
-      }
+    return summaries;
+  },
 
-      // Agrupar por colaborador
-      const employeeMap = new Map<string, EmployeeDocumentSummary>();
+  // Buscar resumo apenas de colaboradores com documentos enviados
+  async getEmployeesWithDocumentsSummary(): Promise<EmployeeDocumentSummary[]> {
+    // Buscar todos os colaboradores ativos
+    const { data: employees, error } = await supabase
+      .from('colaboradores')
+      .select('id, nome, email')
+      .eq('status', 'ativo')
+      .order('nome');
 
-      data?.forEach(item => {
-        const employeeId = item.employee_id;
-        const employeeName = item.users?.username || 'N/A';
+    if (error) {
+      throw error;
+    }
 
-        if (!employeeMap.has(employeeId)) {
-          employeeMap.set(employeeId, {
-            employee_id: employeeId,
-            employee_name: employeeName,
-            total_documents: 0,
-            sent_documents: 0,
-            validated_documents: 0,
-            pending_documents: 0,
-            rejected_documents: 0,
-            expiring_documents: 0,
-            expired_documents: 0,
-            checklist_items: []
-          });
-        }
-
-        const employee = employeeMap.get(employeeId)!;
-        
-        const checklistItem: DocumentChecklistItem = {
-          id: item.id,
-          employee_id: item.employee_id,
-          required_document_id: item.required_document_id,
-          document_id: item.document_id,
-          status: item.status,
-          employee_name: employeeName,
-          required_document_name: item.required_documents?.name || 'N/A',
-          document_type: item.required_documents?.document_type || 'N/A',
-          is_mandatory: item.required_documents?.is_mandatory || false,
-          uploaded_document_name: item.documents?.name || null,
+    // Para cada colaborador, buscar seu resumo completo
+    const summaries: EmployeeDocumentSummary[] = [];
+    
+    for (const employee of employees || []) {
+      const checklistItems = await this.getEmployeeDocumentChecklist(employee.id);
+      
+      // Só incluir colaboradores que têm documentos enviados/aprovados OU documentos pendentes obrigatórios
+      const hasSentDocuments = checklistItems.some(item => item.status === 'enviado' || item.status === 'aprovado');
+      const hasPendingMandatory = checklistItems.some(item => item.status === 'pendente' && item.is_mandatory);
+      
+      if (hasSentDocuments || hasPendingMandatory) {
+        const summary: EmployeeDocumentSummary = {
+          employee_id: employee.id,
+          employee_name: employee.nome,
+          total_documents: checklistItems.length,
+          sent_documents: checklistItems.filter(item => item.status === 'enviado' || item.status === 'aprovado').length,
+          validated_documents: checklistItems.filter(item => item.status === 'aprovado').length,
+          pending_documents: checklistItems.filter(item => item.status === 'pendente').length,
+          rejected_documents: checklistItems.filter(item => item.status === 'rejeitado').length,
+          checklist_items: checklistItems
         };
+        
+        summaries.push(summary);
+      }
+    }
 
-        employee.checklist_items.push(checklistItem);
-        employee.total_documents++;
+    return summaries;
+  },
 
-        // Contar status
-        switch (item.status) {
-          case 'completo':
-            employee.validated_documents++;
-            break;
-          case 'pendente':
-            employee.pending_documents++;
-            break;
-          case 'vencendo':
-            employee.expiring_documents++;
-            break;
-          case 'vencido':
-            employee.expired_documents++;
-            break;
-        }
+  // Atualizar status de um documento
+  async updateDocumentStatus(documentId: string, status: 'pendente' | 'enviado' | 'aprovado' | 'rejeitado'): Promise<void> {
+    const { error } = await supabase
+      .from('documents')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
 
-        if (item.document_id) {
-          employee.sent_documents++;
-        }
-      });
-
-      const result = Array.from(employeeMap.values());
-      console.log('DocumentChecklistService: Resumo encontrado para', result.length, 'colaboradores');
-      return result;
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em getAllEmployeesDocumentSummary:', error);
+    if (error) {
       throw error;
     }
   },
 
-  // Atualizar status de um item do checklist
-  async updateChecklistItemStatus(itemId: string, status: 'pendente' | 'completo' | 'vencendo' | 'vencido'): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Atualizando status do item:', itemId, 'para:', status);
-      
-      const { error } = await supabase
-        .from('employee_document_checklist')
-        .update({ 
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', itemId);
+  // Buscar documentos pendentes para um colaborador (apenas documentos obrigatórios não enviados)
+  async getPendingDocuments(employeeId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('required_documents')
+      .select(`
+        id,
+        name,
+        document_type,
+        description,
+        is_mandatory
+      `)
+      .eq('is_active', true)
+      .eq('is_mandatory', true)
+      .not('id', 'in', 
+        `(SELECT required_document_id FROM documents WHERE employee_id = '${employeeId}' AND required_document_id IS NOT NULL)`
+      );
 
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao atualizar status:', error);
-        throw error;
-      }
-
-      console.log('DocumentChecklistService: Status atualizado com sucesso');
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em updateChecklistItemStatus:', error);
+    if (error) {
       throw error;
     }
+
+    return data || [];
   },
 
-  // Associar documento a um item do checklist
-  async associateDocumentToChecklistItem(itemId: string, documentId: string): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Associando documento:', documentId, 'ao item:', itemId);
-      
-      const { error } = await supabase
-        .from('employee_document_checklist')
-        .update({ 
-          document_id: documentId,
-          status: 'completo',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', itemId);
+  // Buscar documentos enviados para um colaborador
+  async getSentDocuments(employeeId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('documents')
+      .select(`
+        *,
+        required_document:required_documents(
+          id,
+          name,
+          document_type,
+          description
+        )
+      `)
+      .eq('employee_id', employeeId)
+      .not('required_document_id', 'is', null)
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao associar documento:', error);
-        throw error;
-      }
-
-      console.log('DocumentChecklistService: Documento associado com sucesso');
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em associateDocumentToChecklistItem:', error);
+    if (error) {
       throw error;
     }
-  },
 
-  // Remover associação de documento de um item do checklist
-  async removeDocumentFromChecklistItem(itemId: string): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Removendo documento do item:', itemId);
-      
-      const { error } = await supabase
-        .from('employee_document_checklist')
-        .update({ 
-          document_id: null,
-          status: 'pendente',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', itemId);
-
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao remover documento:', error);
-        throw error;
-      }
-
-      console.log('DocumentChecklistService: Documento removido com sucesso');
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em removeDocumentFromChecklistItem:', error);
-      throw error;
-    }
-  },
-
-  // Criar checklist para um novo colaborador
-  async createEmployeeChecklist(employeeId: string): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Criando checklist para colaborador:', employeeId);
-      
-      // Buscar todos os documentos obrigatórios ativos
-      const { data: requiredDocs, error: requiredDocsError } = await supabase
-        .from('required_documents')
-        .select('id')
-        .eq('is_mandatory', true)
-        .eq('is_active', true);
-
-      if (requiredDocsError) {
-        console.error('DocumentChecklistService: Erro ao buscar documentos obrigatórios:', requiredDocsError);
-        throw requiredDocsError;
-      }
-
-      if (!requiredDocs || requiredDocs.length === 0) {
-        console.log('DocumentChecklistService: Nenhum documento obrigatório encontrado');
-        return;
-      }
-
-      // Verificar quais checklists já existem para este colaborador
-      const { data: existingChecklists, error: existingError } = await supabase
-        .from('employee_document_checklist')
-        .select('required_document_id')
-        .eq('employee_id', employeeId);
-
-      if (existingError) {
-        console.error('DocumentChecklistService: Erro ao verificar checklists existentes:', existingError);
-        throw existingError;
-      }
-
-      const existingDocIds = new Set(existingChecklists?.map(item => item.required_document_id) || []);
-
-      // Criar checklists apenas para documentos que ainda não existem
-      const checklistsToCreate = requiredDocs
-        .filter(doc => !existingDocIds.has(doc.id))
-        .map(doc => ({
-          employee_id: employeeId,
-          required_document_id: doc.id,
-          status: 'pendente' as const,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-
-      if (checklistsToCreate.length === 0) {
-        console.log('DocumentChecklistService: Todos os checklists já existem para este colaborador');
-        return;
-      }
-
-      const { error: insertError } = await supabase
-        .from('employee_document_checklist')
-        .insert(checklistsToCreate);
-
-      if (insertError) {
-        console.error('DocumentChecklistService: Erro ao criar checklists:', insertError);
-        throw insertError;
-      }
-
-      console.log(`DocumentChecklistService: Criados ${checklistsToCreate.length} itens de checklist para o colaborador`);
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em createEmployeeChecklist:', error);
-      throw error;
-    }
-  },
-
-  // Sincronizar checklist de um colaborador com documentos obrigatórios
-  async syncEmployeeChecklist(employeeId: string): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Sincronizando checklist do colaborador:', employeeId);
-      
-      // Buscar documentos obrigatórios ativos
-      const { data: requiredDocs, error: requiredDocsError } = await supabase
-        .from('required_documents')
-        .select('id')
-        .eq('is_mandatory', true)
-        .eq('is_active', true);
-
-      if (requiredDocsError) {
-        console.error('DocumentChecklistService: Erro ao buscar documentos obrigatórios:', requiredDocsError);
-        throw requiredDocsError;
-      }
-
-      const requiredDocIds = new Set(requiredDocs?.map(doc => doc.id) || []);
-
-      // Buscar checklist atual do colaborador
-      const { data: currentChecklist, error: checklistError } = await supabase
-        .from('employee_document_checklist')
-        .select('id, required_document_id')
-        .eq('employee_id', employeeId);
-
-      if (checklistError) {
-        console.error('DocumentChecklistService: Erro ao buscar checklist atual:', checklistError);
-        throw checklistError;
-      }
-
-      // Identificar itens a serem adicionados
-      const currentDocIds = new Set(currentChecklist?.map(item => item.required_document_id) || []);
-      const itemsToAdd = Array.from(requiredDocIds).filter(docId => !currentDocIds.has(docId));
-
-      // Identificar itens a serem removidos (documentos que não são mais obrigatórios)
-      const itemsToRemove = currentChecklist?.filter(item => !requiredDocIds.has(item.required_document_id)) || [];
-
-      // Adicionar novos itens
-      if (itemsToAdd.length > 0) {
-        const checklistsToCreate = itemsToAdd.map(docId => ({
-          employee_id: employeeId,
-          required_document_id: docId,
-          status: 'pendente' as const,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-
-        const { error: insertError } = await supabase
-          .from('employee_document_checklist')
-          .insert(checklistsToCreate);
-
-        if (insertError) {
-          console.error('DocumentChecklistService: Erro ao adicionar novos itens:', insertError);
-          throw insertError;
-        }
-
-        console.log(`DocumentChecklistService: Adicionados ${itemsToAdd.length} novos documentos ao checklist`);
-      }
-
-      // Remover itens obsoletos
-      if (itemsToRemove.length > 0) {
-        const idsToRemove = itemsToRemove.map(item => item.id);
-
-        const { error: deleteError } = await supabase
-          .from('employee_document_checklist')
-          .delete()
-          .in('id', idsToRemove);
-
-        if (deleteError) {
-          console.error('DocumentChecklistService: Erro ao remover itens obsoletos:', deleteError);
-          throw deleteError;
-        }
-
-        console.log(`DocumentChecklistService: Removidos ${itemsToRemove.length} documentos obsoletos do checklist`);
-      }
-
-      console.log('DocumentChecklistService: Checklist do colaborador sincronizado com sucesso');
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em syncEmployeeChecklist:', error);
-      throw error;
-    }
-  },
-
-  // Buscar status de documentos usando a nova view
-  async getUserRequiredDocuments(userId?: string): Promise<any[]> {
-    try {
-      console.log('DocumentChecklistService: Buscando documentos obrigatórios via view:', userId);
-      
-      let query = supabase
-        .from('user_required_documents')
-        .select('*')
-        .order('username', { ascending: true })
-        .order('document_name', { ascending: true });
-
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('DocumentChecklistService: Erro ao buscar via view:', error);
-        throw error;
-      }
-
-      console.log('DocumentChecklistService: Dados da view encontrados:', data?.length || 0);
-      return data || [];
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em getUserRequiredDocuments:', error);
-      throw error;
-    }
-  },
-
-  // Sincronizar documentos obrigatórios
-  async syncUserRequiredDocuments(): Promise<void> {
-    try {
-      console.log('DocumentChecklistService: Executando sincronização de documentos obrigatórios');
-      
-      const { error } = await supabase.rpc('sync_user_required_documents');
-
-      if (error) {
-        console.error('DocumentChecklistService: Erro na sincronização:', error);
-        throw error;
-      }
-
-      console.log('DocumentChecklistService: Sincronização concluída com sucesso');
-    } catch (error) {
-      console.error('DocumentChecklistService: Erro em syncUserRequiredDocuments:', error);
-      throw error;
-    }
+    return data || [];
   }
 };

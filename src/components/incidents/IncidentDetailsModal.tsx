@@ -31,9 +31,10 @@ export const IncidentDetailsModal: React.FC<IncidentDetailsModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      'ativo': 'bg-red-100 text-red-800',
-  'resolvido': 'bg-green-100 text-green-800',
-  'arquivado': 'bg-gray-100 text-gray-800'
+      'open': 'bg-red-100 text-red-800',
+    'in_progress': 'bg-yellow-100 text-yellow-800',
+    'resolved': 'bg-green-100 text-green-800',
+    'closed': 'bg-gray-100 text-gray-800',
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };

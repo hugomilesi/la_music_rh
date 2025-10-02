@@ -33,4 +33,5 @@ test/
 .trae/
 TODO.md
 errors.md
-stay local/
+stay_local/
+console.md

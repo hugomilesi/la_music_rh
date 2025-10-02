@@ -19,7 +19,7 @@ import { EditChecklistDialog } from '@/components/documents/EditChecklistDialog'
 import { EmployeeDocumentsModal } from '@/components/documents/EmployeeDocumentsModal';
 import { ImprovedDocumentsTable } from '@/components/documents/ImprovedDocumentsTable';
 
-import { useDocuments } from '@/contexts/DocumentContext';
+import { useDocuments } from '@/hooks/useDocuments';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Document } from '@/types/document';
 
@@ -151,6 +151,13 @@ const DocumentsPage: React.FC = () => {
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
+          
+          {(userAccessLevel === 'admin' || userAccessLevel === 'collaborator') && (
+            <Button variant="outline" size="sm" onClick={() => setEditChecklistDialogOpen(true)}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Gerenciar Documentos Obrigatórios
+            </Button>
+          )}
           
           <Button variant="outline" size="sm" onClick={() => setSendToAccountantDialogOpen(true)}>
             <Mail className="w-4 h-4 mr-2" />
@@ -297,44 +304,11 @@ const DocumentsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Improved Documents Table */}
+      {/* Document Checklist */}
       <ImprovedDocumentsTable 
-        key={refreshKey}
         onEmployeeClick={handleEmployeeClick}
         onSendToAccountant={handleSendToAccountant}
       />
-
-
-
-      {/* Document Checklist */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Checklist de Documentos Obrigatórios</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => setEditChecklistDialogOpen(true)}>
-            <Edit3 className="w-4 h-4 mr-2" />
-            Editar Checklist
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              'Contrato de Trabalho',
-              'Carteira de Trabalho',
-              'CPF',
-              'RG',
-              'Comprovante de Residência',
-              'Atestado de Saúde Ocupacional',
-              'PIS/PASEP',
-              'Título de Eleitor'
-            ].map((docType, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-sm">{docType}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Dialogs */}
       <DocumentUploadDialog 

@@ -23,7 +23,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useEvaluations } from '@/contexts/EvaluationContext';
-import { useEmployees } from '@/contexts/EmployeeContext';
+import { useColaboradores } from '@/contexts/ColaboradorContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { NewEvaluationData } from '@/types/evaluation';
 import { Coffee, X, Plus } from 'lucide-react';
@@ -78,7 +79,8 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
   onSuccess,
 }) => {
   const { addEvaluation, isLoading } = useEvaluations();
-  const { employees } = useEmployees();
+  const { colaboradoresAtivos } = useColaboradores();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [selectedTopics, setSelectedTopics] = React.useState<string[]>([]);
   const [customTopic, setCustomTopic] = React.useState('');
@@ -128,20 +130,28 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
     try {
       console.log('🔄 CoffeeConnectionDialog: Dados do formulário:', data);
       
+      // Validar dados obrigatórios
+      if (!data.employeeId) {
+        throw new Error('Colaborador é obrigatório');
+      }
+      if (!profile?.id && !profile?.profile_id) {
+        throw new Error('Usuário não autenticado');
+      }
+      
       const evaluationData: NewEvaluationData = {
         employee_id: data.employeeId,
         evaluation_type: 'Coffee Connection',
         evaluation_date: data.meetingDate,
         period: data.period,
-        evaluatorId: undefined,
-        comments: data.comments,
+        evaluator_id: profile?.id || profile?.profile_id,
+        comments: data.comments || '',
         unit: data.unit,
         meetingDate: data.meetingDate,
         meetingTime: data.meetingTime,
         location: data.location,
         topics: selectedTopics,
-        followUpActions: data.followUpActions,
-        confidential: data.confidential,
+        followUpActions: data.followUpActions || '',
+        confidential: data.confidential || false,
       };
       
       console.log('📤 CoffeeConnectionDialog: Enviando dados para o serviço:', evaluationData);
@@ -197,9 +207,9 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">Selecione um colaborador</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {employee.name} - {employee.position}
+                        {colaboradoresAtivos.map((colaborador) => (
+                          <option key={colaborador.id} value={colaborador.id}>
+                            {colaborador.nome} - {colaborador.cargo}
                           </option>
                         ))}
                       </select>

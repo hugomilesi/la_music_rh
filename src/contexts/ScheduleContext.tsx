@@ -122,37 +122,29 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // Verificar se é uma avaliação e se a remoção está desabilitada
-      if (event.is_evaluation && event.is_removable_disabled) {
-        console.log('🚫 Tentativa de deletar avaliação bloqueada');
-        toast({
-          title: "Ação não permitida",
-          description: "Avaliações não podem ser removidas da agenda",
-          variant: "destructive",
-        });
-        return;
+      // Se for uma avaliação (ID começa com 'eval_' ou tem is_evaluation = true)
+      if (eventId.startsWith('eval_') || event.is_evaluation) {
+        console.log('🗑️ Deletando avaliação da tabela evaluations:', eventId);
+        
+        // Extrair o ID real da avaliação (remover prefixo 'eval_' se existir)
+        const evaluationId = eventId.startsWith('eval_') ? eventId.replace('eval_', '') : eventId;
+        
+        // Deletar da tabela evaluations
+        await evaluationService.deleteEvaluation(evaluationId);
+        
+        console.log('✅ Avaliação deletada com sucesso');
+      } else {
+        // Só permitir exclusão de eventos regulares
+        await scheduleService.deleteScheduleEvent(eventId);
+        console.log('✅ Evento regular deletado com sucesso');
       }
-
-      // Se for uma avaliação (ID começa com 'eval_'), não permitir exclusão
-      if (eventId.startsWith('eval_')) {
-        console.log('🚫 Tentativa de deletar avaliação bloqueada (ID prefixado)');
-        toast({
-          title: "Ação não permitida", 
-          description: "Avaliações não podem ser removidas da agenda",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Só permitir exclusão de eventos regulares
-      await scheduleService.deleteScheduleEvent(eventId);
       
       // Recarregar eventos após exclusão
       await loadEvents();
       
       toast({
         title: "Sucesso",
-        description: "Evento removido com sucesso",
+        description: event.is_evaluation ? "Avaliação removida com sucesso" : "Evento removido com sucesso",
       });
     } catch (error) {
       console.error('❌ Erro ao deletar evento:', error);

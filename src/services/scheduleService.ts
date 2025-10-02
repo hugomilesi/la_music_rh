@@ -44,7 +44,7 @@ export const scheduleService = {
           title: event.title,
           employee_id: event.user_id,
           employeeId: event.user_id,
-          employee: 'Unknown', // Será resolvido pelo frontend se necessário
+          employee: event.employee_name || 'Unknown',
           unit: (event.unit || 'campo-grande') as ScheduleUnit,
           date: dateStr,
           event_date: dateStr,
@@ -128,10 +128,10 @@ export const scheduleService = {
           type: (event.event_type || event.type || 'appointment') as ScheduleEvent['type'],
           description: event.description,
           location: event.location,
-          email_alert: event.email_alert || false,
-          emailAlert: event.email_alert || false,
-          whatsapp_alert: event.whatsapp_alert || false,
-          whatsappAlert: event.whatsapp_alert || false,
+          email_alert: false, // default value since column doesn't exist
+          emailAlert: false, // alias
+          whatsapp_alert: false, // default value since column doesn't exist
+          whatsappAlert: false, // alias
           created_at: event.created_at,
           createdAt: event.created_at,
           updated_at: event.updated_at,
@@ -204,10 +204,10 @@ export const scheduleService = {
         type: (data.event_type || data.type || 'appointment') as ScheduleEvent['type'],
         description: data.description,
         location: data.location,
-        email_alert: data.email_alert || false,
-        emailAlert: data.email_alert || false,
-        whatsapp_alert: data.whatsapp_alert || false,
-        whatsappAlert: data.whatsapp_alert || false,
+        email_alert: false, // default value since column doesn't exist
+        emailAlert: false, // alias
+        whatsapp_alert: false, // default value since column doesn't exist
+        whatsappAlert: false, // alias
         created_at: data.created_at,
         createdAt: data.created_at,
         updated_at: data.updated_at,
@@ -230,13 +230,9 @@ export const scheduleService = {
           unit: updates.unit,
           start_date: updates.date || updates.event_date,
           end_date: updates.endTime ? new Date((updates.date || updates.event_date) + 'T' + (updates.endTime || updates.end_time)).toISOString() : null,
-          start_time: updates.startTime || updates.start_time,
-          end_time: updates.endTime || updates.end_time,
-          type: updates.type,
+          event_type: updates.type,
           description: updates.description,
-          location: updates.location,
-          email_alert: updates.emailAlert ?? updates.email_alert,
-          whatsapp_alert: updates.whatsappAlert ?? updates.whatsapp_alert
+          location: updates.location
         })
         .eq('id', id)
         .select(`
@@ -258,17 +254,17 @@ export const scheduleService = {
         unit: data.unit as Unit,
         date: data.start_date, // alias
         event_date: data.start_date,
-        start_time: data.start_time,
-        startTime: data.start_time, // alias
-        end_time: data.end_time,
-        endTime: data.end_time, // alias
-        type: data.type as ScheduleEvent['type'],
+        start_time: data.start_date ? new Date(data.start_date).toTimeString().slice(0, 5) : '',
+        startTime: data.start_date ? new Date(data.start_date).toTimeString().slice(0, 5) : '', // alias
+        end_time: data.end_date ? new Date(data.end_date).toTimeString().slice(0, 5) : '',
+        endTime: data.end_date ? new Date(data.end_date).toTimeString().slice(0, 5) : '', // alias
+        type: data.event_type as ScheduleEvent['type'],
         description: data.description,
         location: data.location,
-        email_alert: data.email_alert || false,
-        emailAlert: data.email_alert || false, // alias
-        whatsapp_alert: data.whatsapp_alert || false,
-        whatsappAlert: data.whatsapp_alert || false, // alias
+        email_alert: false, // default value since column doesn't exist
+        emailAlert: false, // alias
+        whatsapp_alert: false, // default value since column doesn't exist
+        whatsappAlert: false, // alias
         created_at: data.created_at,
         createdAt: data.created_at, // alias
         updated_at: data.updated_at,
@@ -300,40 +296,53 @@ export const scheduleService = {
         .from('schedule_events')
         .select(`
           *,
-          users!schedule_events_employee_id_fkey(username)
+          users(username)
         `)
         .in('unit', units)
-        .order('event_date', { ascending: false });
+        .order('start_date', { ascending: false });
       
       if (error) {
         throw error;
       }
       
-      return data?.map(event => ({
-        id: event.id,
-        title: event.title,
-        employee_id: event.user_id,
-        employeeId: event.user_id, // alias
-        employee: event.users?.username || 'Unknown',
-        unit: event.unit as Unit,
-        date: event.event_date, // alias
-        event_date: event.event_date,
-        start_time: event.start_time,
-        startTime: event.start_time, // alias
-        end_time: event.end_time,
-        endTime: event.end_time, // alias
-        type: event.type as ScheduleEvent['type'],
-        description: event.description,
-        location: event.location,
-        email_alert: event.email_alert || false,
-        emailAlert: event.email_alert || false, // alias
-        whatsapp_alert: event.whatsapp_alert || false,
-        whatsappAlert: event.whatsapp_alert || false, // alias
-        created_at: event.created_at,
-        createdAt: event.created_at, // alias
-        updated_at: event.updated_at,
-        updatedAt: event.updated_at // alias
-      })) || [];
+      return data?.map(event => {
+        // Converter timestamps para formato esperado pelo frontend
+        const startDate = new Date(event.start_date);
+        const endDate = new Date(event.end_date);
+        
+        // Extrair data no formato YYYY-MM-DD
+        const dateStr = startDate.toISOString().split('T')[0];
+        
+        // Extrair horários no formato HH:MM
+        const startTime = startDate.toTimeString().slice(0, 5);
+        const endTime = endDate.toTimeString().slice(0, 5);
+        
+        return {
+          id: event.id,
+          title: event.title,
+          employee_id: event.user_id,
+          employeeId: event.user_id, // alias
+          employee: event.users?.username || 'Unknown',
+          unit: event.unit as Unit,
+          date: dateStr, // alias
+          event_date: dateStr,
+          start_time: startTime,
+          startTime: startTime, // alias
+          end_time: endTime,
+          endTime: endTime, // alias
+          type: event.event_type as ScheduleEvent['type'],
+          description: event.description,
+          location: event.location,
+          email_alert: false, // default value since column doesn't exist
+          emailAlert: false, // alias
+          whatsapp_alert: false, // default value since column doesn't exist
+          whatsappAlert: false, // alias
+          created_at: event.created_at,
+          createdAt: event.created_at, // alias
+          updated_at: event.updated_at,
+          updatedAt: event.updated_at // alias
+        };
+      }) || [];
     } catch (error) {
       throw error;
     }

@@ -35,9 +35,10 @@ export const IncidentListModal: React.FC<IncidentListModalProps> = ({
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      'ativo': 'bg-red-100 text-red-800',
-  'resolvido': 'bg-green-100 text-green-800',
-  'arquivado': 'bg-gray-100 text-gray-800'
+      'open': 'bg-red-100 text-red-800',
+    'in_progress': 'bg-yellow-100 text-yellow-800',
+    'resolved': 'bg-green-100 text-green-800',
+    'closed': 'bg-gray-100 text-gray-800',
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
   };

@@ -25,15 +25,22 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [stats, setStats] = useState<IncidentStats | null>(null);
   const subscriptionRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
+  const providerIdRef = useRef(`provider_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  
+  console.log('IncidentsProvider: [INIT] Inicializando provider com ID:', providerIdRef.current);
 
   const refreshIncidents = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('IncidentsContext: Carregando incidentes...');
       const data = await incidentService.getAll();
+      console.log('IncidentsContext: Incidentes carregados:', data.length, 'items');
+      console.log('IncidentsContext: Primeiro incidente (debug):', data[0]);
       setIncidents(data);
     } catch (error) {
-      // Log desabilitado: Erro ao carregar incidentes
+      console.error('IncidentsContext: Erro ao carregar incidentes:', error);
       toast.error('Erro ao carregar incidentes');
+      setIncidents([]);
     } finally {
       setLoading(false);
     }
@@ -48,51 +55,103 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, []);
 
+  const handleRealtimeUpdate = useCallback(() => {
+    setTimeout(() => {
+      refreshIncidents();
+      refreshStats();
+    }, 0);
+  }, [refreshIncidents, refreshStats]);
+
+  const handleRealtimeError = useCallback(() => {
+    console.log('IncidentsContext: Erro na conexão em tempo real, iniciando sistema robusto de reconexão...');
+    
+    // Força limpeza completa
+    incidentService.forceCleanup();
+    subscriptionRef.current = null;
+    isSubscribedRef.current = false;
+    
+    // Usa o sistema robusto de reconexão
+    incidentService.setupReconnectionSystem(handleRealtimeUpdate);
+  }, [handleRealtimeUpdate]);
+
   // Carrega incidentes ao montar o componente
   useEffect(() => {
     refreshIncidents();
     refreshStats();
   }, [refreshIncidents, refreshStats]);
 
-  // Inscreve-se para atualizações em tempo real
   useEffect(() => {
-    // Evita múltiplas subscrições usando ref
-    if (isSubscribedRef.current || subscriptionRef.current) {
-      return;
-    }
-
-    const setupSubscription = async () => {
-      try {
-        isSubscribedRef.current = true;
-        
-        subscriptionRef.current = incidentService.subscribeToIncidents(() => {
-          // Usa setTimeout para evitar problemas de re-render durante o callback
-          setTimeout(() => {
-            refreshIncidents();
-            refreshStats();
-          }, 0);
-        });
-      } catch (error) {
-        console.error('Erro ao configurar subscrição:', error);
-        isSubscribedRef.current = false;
-      }
-    };
-
-    setupSubscription();
+    let isMounted = true;
     
-    return () => {
-      if (subscriptionRef.current) {
+    const initializeSubscription = async () => {
+      if (!isSubscribedRef.current && isMounted) {
         try {
-          incidentService.unsubscribeFromIncidents(subscriptionRef.current);
+          console.log(`IncidentsProvider: [${providerIdRef.current}] Iniciando subscrição em tempo real...`);
+          
+          // FORÇA limpeza COMPLETA antes de qualquer coisa
+          console.log(`IncidentsProvider: [${providerIdRef.current}] Forçando limpeza COMPLETA...`);
+          incidentService.forceCleanupChannels();
+          incidentService.forceCleanup();
+          
+          // Aguarda mais tempo para garantir que a limpeza foi concluída
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          if (!isMounted) {
+            console.log(`IncidentsProvider: [${providerIdRef.current}] Componente desmontado durante inicialização`);
+            return;
+          }
+          
+          // Configura monitoramento de conectividade
+          incidentService.setupConnectivityMonitoring();
+          
+          console.log(`IncidentsProvider: [${providerIdRef.current}] Criando subscrição...`);
+          
+          // Aguarda mais um pouco antes de criar subscrição
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Inicia subscrição
+          const channel = incidentService.subscribeToIncidents(handleRealtimeUpdate);
+          
+          if (channel && isMounted) {
+            subscriptionRef.current = channel;
+            isSubscribedRef.current = true;
+            
+            console.log(`IncidentsProvider: [${providerIdRef.current}] Subscrição criada com sucesso`);
+          } else {
+            console.warn(`IncidentsProvider: [${providerIdRef.current}] Falha ao criar canal de subscrição`);
+          }
         } catch (error) {
-          console.error('Erro ao fazer cleanup da subscrição:', error);
-        } finally {
-          subscriptionRef.current = null;
-          isSubscribedRef.current = false;
+          console.error(`IncidentsProvider: [${providerIdRef.current}] Erro ao iniciar subscrição:`, error);
+          if (isMounted) {
+            handleRealtimeError();
+          }
         }
+      } else {
+        console.log(`IncidentsProvider: [${providerIdRef.current}] Subscrição ignorada - já ativa ou componente desmontado`);
       }
     };
-  }, []); // Array vazio para executar apenas uma vez
+    
+    initializeSubscription();
+
+    return () => {
+      isMounted = false;
+      console.log(`IncidentsProvider: [${providerIdRef.current}] Executando cleanup COMPLETO...`);
+      
+      // FORÇA limpeza COMPLETA múltiplas vezes
+      incidentService.forceCleanupChannels();
+      incidentService.forceCleanup();
+      
+      // Aguarda e força novamente
+      setTimeout(() => {
+        incidentService.forceCleanupChannels();
+      }, 50);
+      
+      subscriptionRef.current = null;
+      isSubscribedRef.current = false;
+      
+      console.log(`IncidentsProvider: [${providerIdRef.current}] Cleanup COMPLETO finalizado`);
+    };
+  }, [handleRealtimeUpdate, handleRealtimeError]);
 
   const addIncident = async (incident: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -143,26 +202,6 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       toast.error('Erro ao filtrar incidentes');
       return [];
     }
-  };
-
-  const handleRealtimeError = (error: Error) => {
-    console.error('Erro no realtime de incidentes:', error);
-    // Tenta reconectar após um delay
-    setTimeout(() => {
-      if (!isSubscribedRef.current) {
-        try {
-          subscriptionRef.current = incidentService.subscribeToIncidents(() => {
-            setTimeout(() => {
-              refreshIncidents();
-              refreshStats();
-            }, 0);
-          });
-          isSubscribedRef.current = true;
-        } catch (reconnectError) {
-          console.error('Erro ao reconectar:', reconnectError);
-        }
-      }
-    }, 5000);
   };
 
   return (

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
-import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield, TrendingUp, Clock, CheckCircle2, Archive, MoreVertical, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Plus, Filter, Search, Eye, Edit, AlertTriangle, FileText, Shield, TrendingUp, Clock, CheckCircle2, Archive, MoreVertical, Trash2, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { useIncidents } from '@/contexts/IncidentsContext';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { Incident } from '@/types/incident';
@@ -71,9 +71,10 @@ const IncidentsPage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      'ativo': 'bg-blue-100 text-blue-800 border-blue-300',
-      'resolvido': 'bg-green-100 text-green-800 border-green-300',
-      'arquivado': 'bg-gray-100 text-gray-800 border-gray-300'
+      'open': 'bg-blue-100 text-blue-800 border-blue-300',
+      'in_progress': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'resolved': 'bg-green-100 text-green-800 border-green-300',
+      'closed': 'bg-gray-100 text-gray-800 border-gray-300'
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-300';
   };
@@ -99,7 +100,7 @@ const IncidentsPage: React.FC = () => {
         incident.employeeName || '',
         incident.type,
         incident.severity === 'leve' ? 'Leve' : incident.severity === 'moderado' ? 'Moderado' : 'Grave',
-        incident.status === 'ativo' ? 'Ativo' : incident.status === 'resolvido' ? 'Resolvido' : 'Arquivado',
+        incident.status === 'open' ? 'Ativo' : incident.status === 'in_progress' ? 'Em Progresso' : incident.status === 'resolved' ? 'Resolvido' : 'Arquivado',
         `"${incident.description.replace(/"/g, '""')}"`,
         incident.reporter || ''
       ].join(','))
@@ -119,7 +120,7 @@ const IncidentsPage: React.FC = () => {
     toast.success('Relatório exportado com sucesso.');
   };
 
-  const handleUpdateStatus = async (id: string, status: 'ativo' | 'resolvido' | 'arquivado') => {
+  const handleUpdateStatus = async (id: string, status: 'open' | 'in_progress' | 'resolved' | 'closed') => {
     try {
       await updateIncident(id, { status });
       toast.success('Status atualizado com sucesso!');
@@ -142,8 +143,8 @@ const IncidentsPage: React.FC = () => {
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = 
       incident.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.description.toLowerCase().includes(searchTerm.toLowerCase());
+      incident.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incident.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEmployee = selectedEmployee === '' || incident.employeeId === selectedEmployee;
     const matchesSeverity = selectedSeverity === 'all' || incident.severity === selectedSeverity;
     const matchesStatus = selectedStatus === 'all' || incident.status === selectedStatus;
@@ -151,9 +152,9 @@ const IncidentsPage: React.FC = () => {
     // Apply card filter if selected
     let matchesCardFilter = true;
     if (selectedCardFilter === 'active') {
-      matchesCardFilter = incident.status === 'ativo';
+      matchesCardFilter = incident.status === 'open';
     } else if (selectedCardFilter === 'resolved') {
-      matchesCardFilter = incident.status === 'resolvido';
+      matchesCardFilter = incident.status === 'resolved';
     } else if (selectedCardFilter === 'thisMonth') {
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
@@ -187,6 +188,17 @@ const IncidentsPage: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3 mt-4 md:mt-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  refreshIncidents();
+                  toast.success('Ocorrências atualizadas com sucesso!');
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Atualizar
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setReportsDialogOpen(true)}>
                 <FileText className="w-4 h-4 mr-2" />
                 Relatório
@@ -342,9 +354,10 @@ const IncidentsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="resolvido">Resolvido</SelectItem>
-                <SelectItem value="arquivado">Arquivado</SelectItem>
+                <SelectItem value="open">Ativo</SelectItem>
+                <SelectItem value="in_progress">Em Progresso</SelectItem>
+                <SelectItem value="resolved">Resolvido</SelectItem>
+                <SelectItem value="closed">Arquivado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -395,7 +408,23 @@ const IncidentsPage: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {format(new Date(incident.incidentDate), 'dd/MM/yyyy', { locale: ptBR })}
+                        {(() => {
+                          try {
+                            if (!incident.incidentDate) {
+                              console.error('IncidentsPage: incidentDate is undefined for incident:', incident);
+                              return 'Data não disponível';
+                            }
+                            const date = new Date(incident.incidentDate);
+                            if (isNaN(date.getTime())) {
+                              console.error('IncidentsPage: Invalid date value:', incident.incidentDate, 'for incident:', incident);
+                              return 'Data inválida';
+                            }
+                            return format(date, 'dd/MM/yyyy', { locale: ptBR });
+                          } catch (error) {
+                            console.error('IncidentsPage: Error formatting date:', error, 'incident:', incident);
+                            return 'Erro na data';
+                          }
+                        })()}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {incident.description}
@@ -416,14 +445,14 @@ const IncidentsPage: React.FC = () => {
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            {incident.status === 'ativo' && (
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'resolvido')}>
+                            {incident.status === 'open' && (
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'resolved')}>
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
                                 Marcar como Resolvido
                               </DropdownMenuItem>
                             )}
-                            {incident.status !== 'arquivado' && (
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'arquivado')}>
+                            {incident.status !== 'closed' && (
+                              <DropdownMenuItem onClick={() => handleUpdateStatus(incident.id, 'closed')}>
                                 <Archive className="w-4 h-4 mr-2" />
                                 Arquivar
                               </DropdownMenuItem>

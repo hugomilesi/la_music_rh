@@ -11,8 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Evaluation } from '@/types/evaluation';
 import { Coffee, Calendar, Edit, Clock } from 'lucide-react';
-import { useSchedule } from '@/contexts/ScheduleContext';
-
 interface CoffeeConnectionStatsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,7 +22,6 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
   onOpenChange,
   evaluations
 }) => {
-  const { addEvent } = useSchedule();
   const [viewMode, setViewMode] = useState<'scheduled' | 'completed'>('scheduled');
 
   const scheduledSessions = evaluations.filter(e => e.status === 'Em Andamento');
@@ -36,30 +33,6 @@ export const CoffeeConnectionStatsModal: React.FC<CoffeeConnectionStatsModalProp
       'Em Andamento': 'bg-blue-100 text-blue-800'
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
-  };
-
-  const handleAddToSchedule = (evaluation: Evaluation) => {
-    if (evaluation.meetingDate && evaluation.meetingTime && evaluation.location) {
-      addEvent({
-        title: `Coffee Connection - ${evaluation.employee}`,
-        employeeId: evaluation.employeeId,
-        // unit property removed since it doesn't exist in database
-        date: evaluation.meetingDate,
-        startTime: evaluation.meetingTime,
-        endTime: addOneHour(evaluation.meetingTime),
-        type: 'avaliacao',
-        description: `Coffee Connection com ${evaluation.employee}${evaluation.topics ? `. Tópicos: ${evaluation.topics.join(', ')}` : ''}`,
-        location: evaluation.location,
-        emailAlert: true,
-        whatsappAlert: false,
-      });
-    }
-  };
-
-  const addOneHour = (time: string): string => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const newHours = (hours + 1) % 24;
-    return `${newHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
   const currentView = viewMode === 'scheduled' ? scheduledSessions : completedSessions;

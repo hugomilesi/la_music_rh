@@ -45,7 +45,7 @@ export const useUsers = () => {
 
     // Inscrever-se para atualizações em tempo real
     const subscription = supabase
-      .channel('users-changes')
+      .channel(`users-changes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

@@ -96,7 +96,6 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
   };
 
   const handleSearchChange = (value: string) => {
-    console.log('🔍 Busca iniciada:', value);
     setSearchTerm(value);
     
     if (!value.trim()) {
@@ -104,8 +103,6 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
       setIsOpen(false);
       return;
     }
-
-    console.log('👥 Total de colaboradores:', employees.length);
 
     const filtered = employees.filter(employee => {
       const searchLower = searchTerm.toLowerCase();
@@ -124,14 +121,9 @@ export const CollaboratorSearchDropdown: React.FC<CollaboratorSearchDropdownProp
         employee.units?.some(unit => unit?.toLowerCase().includes(searchLower))
       );
       
-      if (matches) {
-        console.log('✅ Colaborador encontrado:', employee.name);
-      }
-      
       return matches;
     });
 
-    console.log('📊 Resultados filtrados:', filtered.length);
     setFilteredEmployees(filtered);
     setIsOpen(filtered.length > 0);
   };

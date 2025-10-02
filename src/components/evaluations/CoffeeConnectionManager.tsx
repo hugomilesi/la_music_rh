@@ -3,36 +3,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Coffee, Calendar, MapPin, Clock, Check, Eye, Edit, Plus, Star } from 'lucide-react';
-import { useEvaluations } from '@/contexts/EvaluationContext';
-import { useSchedule } from '@/contexts/ScheduleContext';
-import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Coffee, Calendar, MapPin, Clock, CheckCircle, Edit, Star, Eye, Plus, Check } from 'lucide-react';
 import { Evaluation } from '@/types/evaluation';
+import { useEvaluations } from '@/contexts/EvaluationContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface CoffeeConnectionManagerProps {
+  evaluations: Evaluation[];
+  onScheduleNew: () => void;
   onViewEvaluation: (evaluation: Evaluation) => void;
   onEditEvaluation: (evaluation: Evaluation) => void;
-  onScheduleNew: () => void;
+  refreshEvents: () => Promise<void>;
 }
 
 export const CoffeeConnectionManager: React.FC<CoffeeConnectionManagerProps> = ({
+  evaluations,
+  onScheduleNew,
   onViewEvaluation,
   onEditEvaluation,
-  onScheduleNew
+  refreshEvents
 }) => {
-  const { evaluations, updateEvaluation } = useEvaluations();
-  const { addEvent, refreshEvents } = useSchedule();
+  const { updateEvaluation } = useEvaluations();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('pending');
-  const [showScoreDialog, setShowScoreDialog] = useState(false);
+  const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
   const [selectedEvaluation, setSelectedEvaluation] = useState<Evaluation | null>(null);
-  const [score, setScore] = useState<string>('');
+  const [score, setScore] = useState('');
+  const [showScoreDialog, setShowScoreDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('scheduled');
 
   // Filter Coffee Connection evaluations by status
-  const coffeeConnections = evaluations.filter(evaluation => evaluation.type === 'Coffee Connection');
+  const coffeeConnections = evaluations?.filter(evaluation => evaluation.type === 'Coffee Connection') || [];
   const scheduledSessions = coffeeConnections.filter(evaluation => evaluation.status === 'Em Andamento');
   const completedSessions = coffeeConnections.filter(evaluation => evaluation.status === 'Concluída');
 
@@ -54,30 +57,15 @@ export const CoffeeConnectionManager: React.FC<CoffeeConnectionManagerProps> = (
         status: 'Em Andamento'
       });
 
-      // Add to calendar if meeting details are available
-      if (evaluation.meetingDate && evaluation.meetingTime) {
-        const startDateTime = new Date(`${evaluation.meetingDate}T${evaluation.meetingTime}`);
-        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-
-        addEvent({
-          id: `coffee-${evaluation.id}`,
-          title: `Coffee Connection - ${evaluation.employee}`,
-          start: startDateTime,
-          end: endDateTime,
-          type: 'coffee-connection',
-          description: `Coffee Connection com ${evaluation.employee}${evaluation.location ? ` em ${evaluation.location}` : ''}`,
-          location: evaluation.location
-        });
-      }
-
-      // Atualizar eventos na agenda
+      // Atualizar eventos na agenda (a view schedule_events_with_evaluations já coleta os dados das avaliações)
       await refreshEvents();
 
       toast({
         title: 'Sucesso!',
-        description: 'Coffee Connection aprovada e adicionada ao calendário.',
+        description: 'Coffee Connection aprovada e será exibida no calendário.',
       });
     } catch (error) {
+      console.error('Erro ao aprovar Coffee Connection:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao aprovar Coffee Connection.',

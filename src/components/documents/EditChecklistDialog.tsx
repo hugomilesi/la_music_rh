@@ -51,12 +51,13 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
   const loadRequiredDocuments = async () => {
     try {
       setLoading(true);
+      
       const documents = await requiredDocumentsService.getRequiredDocuments();
       const checklistItems = requiredDocumentsService.convertToChecklistItems(documents);
+      
       setChecklist(checklistItems);
       setInitialLoad(true);
     } catch (error) {
-      console.error('Erro ao carregar documentos obrigatórios:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar os documentos obrigatórios.",
@@ -94,7 +95,6 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
           description: "Documento adicionado com sucesso.",
         });
       } catch (error) {
-        console.error('Erro ao adicionar documento:', error);
         toast({
           title: "Erro",
           description: "Não foi possível adicionar o documento.",
@@ -117,7 +117,6 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
         description: "Documento removido com sucesso.",
       });
     } catch (error) {
-      console.error('Erro ao remover documento:', error);
       toast({
         title: "Erro",
         description: "Não foi possível remover o documento.",
@@ -135,7 +134,6 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
         item.id === id ? { ...item, name } : item
       ));
     } catch (error) {
-      console.error('Erro ao atualizar nome do documento:', error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o nome do documento.",
@@ -161,7 +159,6 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
         description: `Documento marcado como ${newRequiredStatus ? 'obrigatório' : 'opcional'}.`,
       });
     } catch (error) {
-      console.error('Erro ao atualizar status obrigatório:', error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o status do documento.",
@@ -172,18 +169,14 @@ export const EditChecklistDialog: React.FC<EditChecklistDialogProps> = ({
 
   const handleSave = async () => {
     try {
-      // Sincronizar todas as checklists de funcionários com as novas configurações
-      await documentChecklistService.syncAllEmployeeChecklists();
-      
       toast({
         title: "Sucesso",
-        description: "Todas as alterações foram salvas e as checklists foram sincronizadas com sucesso.",
+        description: "Todas as alterações foram salvas com sucesso.",
       });
     } catch (error) {
-      console.error('Erro ao sincronizar checklists:', error);
       toast({
-        title: "Aviso",
-        description: "Alterações salvas, mas houve um problema na sincronização das checklists.",
+        title: "Erro",
+        description: "Houve um problema ao salvar as alterações.",
         variant: "destructive",
       });
     }

@@ -17,7 +17,8 @@ import {
   Target,
   RefreshCw,
   Clock,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
@@ -32,6 +33,7 @@ import { RenewalSettingsModal } from '@/components/benefits/RenewalSettingsModal
 import { Benefit } from '@/types/benefits';
 import { RenewalManagementModal } from '@/components/benefits/RenewalManagementModal';
 import { EmployeeBenefitsModal } from '@/components/benefits/EmployeeBenefitsModal';
+import { DocumentsModal } from '@/components/benefits/DocumentsModal';
 
 const BenefitsPage: React.FC = () => {
   const { canViewModule, canManageModule, canManagePermissions, user, loading: permissionsLoading } = usePermissionsV2();
@@ -62,6 +64,7 @@ const BenefitsPage: React.FC = () => {
   const [showRenewalSettingsModal, setShowRenewalSettingsModal] = useState(false);
   const [showRenewalManagementModal, setShowRenewalManagementModal] = useState(false);
   const [showEmployeeBenefitsModal, setShowEmployeeBenefitsModal] = useState(false);
+  const [showDocumentsModal, setShowDocumentsModal] = useState(false);
 
   // Aguardar carregamento das permissões antes de verificar acesso
   if (permissionsLoading) {
@@ -112,6 +115,11 @@ const BenefitsPage: React.FC = () => {
     if (confirm('Tem certeza que deseja excluir este benefício?')) {
       deleteBenefit(benefitId);
     }
+  };
+
+  const handleManageDocuments = (benefit: Benefit) => {
+    setSelectedBenefit(benefit);
+    setShowDocumentsModal(true);
   };
 
   const getTypeBadgeColor = (color: string) => {
@@ -371,6 +379,16 @@ const BenefitsPage: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleManageDocuments(benefit)}
+                          title="Gerenciar Documentos"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManageModule('beneficios') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleEnrollEmployee(benefit)}
                         >
                           <UserPlus className="w-4 h-4" />
@@ -459,6 +477,15 @@ const BenefitsPage: React.FC = () => {
         open={showEmployeeBenefitsModal}
         onOpenChange={setShowEmployeeBenefitsModal}
       />
+
+      {selectedBenefit && (
+        <DocumentsModal
+          open={showDocumentsModal}
+          onOpenChange={setShowDocumentsModal}
+          benefitId={selectedBenefit.id}
+          benefitName={selectedBenefit.name}
+        />
+      )}
     </div>
   );
 };
