@@ -29,6 +29,7 @@ export interface Colaborador {
   id: string;
   nome: string;
   email: string;
+  telefone?: string;
   cpf: string;
   cargo: string;
   departamento: string;
@@ -47,11 +48,13 @@ export interface Colaborador {
 export interface NovoColaborador {
   nome: string;
   email: string;
+  telefone: string;
   cpf: string;
   cargo: string;
   departamento: string;
+  dataAdmissao: string;
   unidade: UnidadeColaborador;
-  tipo_contratacao: TipoContratacao;
+  tipo_contratacao?: TipoContratacao;
   banco?: string;
   agencia?: string;
   conta?: string;
@@ -62,6 +65,7 @@ export interface NovoColaborador {
 export interface AtualizarColaborador {
   nome?: string;
   email?: string;
+  telefone?: string;
   cpf?: string;
   cargo?: string;
   departamento?: string;

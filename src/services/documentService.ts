@@ -73,7 +73,6 @@ export const documentService = {
   // Get all documents for an employee
   async getDocumentsByEmployeeId(employeeId: string): Promise<Document[]> {
     try {
-      console.log('DocumentService: Buscando documentos do funcionário:', employeeId);
       
       const { data, error } = await supabase
         .from('documents')
@@ -94,14 +93,11 @@ export const documentService = {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('DocumentService: Erro ao buscar documentos:', error);
         throw error;
       }
       
-      console.log('DocumentService: Documentos encontrados:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('DocumentService: Erro em getDocumentsByEmployeeId:', error);
       throw error;
     }
   },
@@ -109,7 +105,6 @@ export const documentService = {
   // Get all documents
   async getAllDocuments(): Promise<Document[]> {
     try {
-      console.log('DocumentService: Buscando todos os documentos...');
       
       const { data, error } = await supabase
         .from('documents')
@@ -129,14 +124,11 @@ export const documentService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('DocumentService: Erro ao buscar todos os documentos:', error);
         throw error;
       }
 
-      console.log('DocumentService: Documentos encontrados:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('DocumentService: Erro em getAllDocuments:', error);
       throw error;
     }
   },
@@ -144,7 +136,6 @@ export const documentService = {
   // Get employee document summary (for checklist view)
   async getEmployeeDocumentSummary(): Promise<EmployeeDocumentSummary[]> {
     try {
-      console.log('DocumentService: Buscando resumo de documentos dos funcionários...');
       
       // Get all employees (colaboradores)
       const { data: employees, error: employeesError } = await supabase
@@ -154,7 +145,6 @@ export const documentService = {
         .order('nome');
 
       if (employeesError) {
-        console.error('DocumentService: Erro ao buscar funcionários:', employeesError);
         throw employeesError;
       }
 
@@ -166,7 +156,6 @@ export const documentService = {
         .order('name');
 
       if (requiredDocsError) {
-        console.error('DocumentService: Erro ao buscar documentos obrigatórios:', requiredDocsError);
         throw requiredDocsError;
       }
 
@@ -183,7 +172,6 @@ export const documentService = {
         `);
 
       if (documentsError) {
-        console.error('DocumentService: Erro ao buscar documentos:', documentsError);
         throw documentsError;
       }
 
@@ -214,10 +202,8 @@ export const documentService = {
         };
       }) || [];
 
-      console.log('DocumentService: Resumo gerado para', summary.length, 'funcionários');
       return summary;
     } catch (error) {
-      console.error('DocumentService: Erro em getEmployeeDocumentSummary:', error);
       throw error;
     }
   },
@@ -225,7 +211,6 @@ export const documentService = {
   // Get required documents
   async getRequiredDocuments(): Promise<RequiredDocument[]> {
     try {
-      console.log('DocumentService: Buscando documentos obrigatórios...');
       
       const { data, error } = await supabase
         .from('required_documents')
@@ -234,14 +219,11 @@ export const documentService = {
         .order('name');
 
       if (error) {
-        console.error('DocumentService: Erro ao buscar documentos obrigatórios:', error);
         throw error;
       }
 
-      console.log('DocumentService: Documentos obrigatórios encontrados:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('DocumentService: Erro em getRequiredDocuments:', error);
       throw error;
     }
   },
@@ -249,7 +231,6 @@ export const documentService = {
   // Upload a new document
   async uploadDocument(uploadData: DocumentUpload): Promise<Document> {
     try {
-      console.log('DocumentService: Iniciando upload do documento:', uploadData.name);
       
       // Generate unique file path
       const timestamp = Date.now();
@@ -278,11 +259,9 @@ export const documentService = {
         });
       
       if (uploadError) {
-        console.error('DocumentService: Erro no upload do arquivo:', uploadError);
         throw uploadError;
       }
       
-      console.log('DocumentService: Arquivo enviado com sucesso para:', uploadResult.path);
       
       // Create document record in database
       const { data: document, error: dbError } = await supabase
@@ -319,16 +298,13 @@ export const documentService = {
         .single();
       
       if (dbError) {
-        console.error('DocumentService: Erro ao inserir no banco:', dbError);
         // Clean up uploaded file
         await supabase.storage.from('documents').remove([uploadResult.path]);
         throw dbError;
       }
       
-      console.log('DocumentService: Documento criado com sucesso:', document.id);
       return document;
     } catch (error) {
-      console.error('DocumentService: Erro em uploadDocument:', error);
       throw error;
     }
   },
@@ -336,7 +312,6 @@ export const documentService = {
   // Download a document
   async downloadDocument(documentId: string, fileName?: string): Promise<void> {
     try {
-      console.log('DocumentService: Iniciando download do documento:', documentId);
       
       // Get document info
       const { data: document, error: docError } = await supabase
@@ -346,7 +321,6 @@ export const documentService = {
         .single();
       
       if (docError) {
-        console.error('DocumentService: Erro ao buscar documento:', docError);
         throw docError;
       }
       
@@ -356,7 +330,6 @@ export const documentService = {
         .createSignedUrl(document.file_path, 3600);
       
       if (urlError) {
-        console.error('DocumentService: Erro ao criar URL de download:', urlError);
         throw urlError;
       }
       
@@ -368,9 +341,7 @@ export const documentService = {
       link.click();
       document.body.removeChild(link);
       
-      console.log('DocumentService: Download iniciado com sucesso');
     } catch (error) {
-      console.error('DocumentService: Erro em downloadDocument:', error);
       throw error;
     }
   },
@@ -378,7 +349,6 @@ export const documentService = {
   // View a document (open in new tab)
   async viewDocument(documentId: string): Promise<void> {
     try {
-      console.log('DocumentService: Visualizando documento:', documentId);
       
       // Get document info
       const { data: document, error: docError } = await supabase
@@ -388,7 +358,6 @@ export const documentService = {
         .single();
       
       if (docError) {
-        console.error('DocumentService: Erro ao buscar documento:', docError);
         throw docError;
       }
       
@@ -398,16 +367,13 @@ export const documentService = {
         .createSignedUrl(document.file_path, 3600);
       
       if (urlError) {
-        console.error('DocumentService: Erro ao criar URL de visualização:', urlError);
         throw urlError;
       }
       
       // Open document in new tab
       window.open(urlData.signedUrl, '_blank');
       
-      console.log('DocumentService: Documento aberto para visualização');
     } catch (error) {
-      console.error('DocumentService: Erro em viewDocument:', error);
       throw error;
     }
   },
@@ -415,7 +381,6 @@ export const documentService = {
   // Update document
   async updateDocument(documentId: string, updates: Partial<Document>): Promise<Document> {
     try {
-      console.log('DocumentService: Atualizando documento:', documentId);
       
       const { data: document, error } = await supabase
         .from('documents')
@@ -446,14 +411,11 @@ export const documentService = {
         .single();
       
       if (error) {
-        console.error('DocumentService: Erro ao atualizar documento:', error);
         throw error;
       }
       
-      console.log('DocumentService: Documento atualizado com sucesso');
       return document;
     } catch (error) {
-      console.error('DocumentService: Erro em updateDocument:', error);
       throw error;
     }
   },
@@ -461,7 +423,6 @@ export const documentService = {
   // Delete a document
   async deleteDocument(documentId: string): Promise<void> {
     try {
-      console.log('DocumentService: Deletando documento:', documentId);
       
       // Get document info first
       const { data: document, error: docError } = await supabase
@@ -471,7 +432,6 @@ export const documentService = {
         .single();
       
       if (docError) {
-        console.error('DocumentService: Erro ao buscar documento para deletar:', docError);
         throw docError;
       }
       
@@ -482,7 +442,6 @@ export const documentService = {
           .remove([document.file_path]);
         
         if (storageError) {
-          console.error('DocumentService: Erro ao deletar do storage:', storageError);
           // Continue with database deletion even if storage fails
         }
       }
@@ -494,17 +453,14 @@ export const documentService = {
         .eq('id', documentId);
       
       if (deleteError) {
-        console.error('DocumentService: Erro ao deletar registro do documento:', deleteError);
         throw deleteError;
       }
       
-      console.log('DocumentService: Documento deletado com sucesso');
       
       // Note: With the new simplified system, when a required document is deleted,
       // it automatically shows as "pendente" in the checklist view because
       // there's no document record linking to that required_document_id
     } catch (error) {
-      console.error('DocumentService: Erro em deleteDocument:', error);
       throw error;
     }
   },
@@ -512,7 +468,6 @@ export const documentService = {
   // Test connection
   async testConnection(): Promise<boolean> {
     try {
-      console.log('DocumentService: Testando conexão...');
       
       const { data, error } = await supabase
         .from('documents')
@@ -520,14 +475,11 @@ export const documentService = {
         .limit(1);
       
       if (error) {
-        console.error('DocumentService: Falha no teste de conexão:', error);
         return false;
       }
       
-      console.log('DocumentService: Teste de conexão bem-sucedido');
       return true;
     } catch (error) {
-      console.error('DocumentService: Erro no teste de conexão:', error);
       return false;
     }
   }

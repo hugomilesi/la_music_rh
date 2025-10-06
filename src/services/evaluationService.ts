@@ -52,7 +52,6 @@ export const evaluationService = {
 
   async createEvaluation(data: NewEvaluationData): Promise<Evaluation> {
     try {
-      console.log('🔄 evaluationService.createEvaluation: Dados recebidos:', data);
       
       // Determinar o período de avaliação baseado na data
       const evaluationDate = new Date(data.evaluation_date);
@@ -73,7 +72,7 @@ export const evaluationService = {
       const evaluationPeriodStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}-01`;
       const evaluationPeriodEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}-${new Date(year, quarterEndMonth, 0).getDate()}`;
       
-      console.log('📅 Período calculado:', {
+      console.log('Evaluation period calculated:', {
         year,
         month,
         quarter,
@@ -117,7 +116,6 @@ export const evaluationService = {
         });
       }
 
-      console.log('💾 Dados para inserção no banco:', JSON.stringify(dbData, null, 2));
 
       // Inserir no banco de dados
       const { data: insertedData, error } = await supabase
@@ -131,11 +129,9 @@ export const evaluationService = {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao inserir avaliação:', error);
         throw error;
       }
 
-      console.log('✅ Avaliação inserida com sucesso:', insertedData);
 
       // Mapear dados de volta para o formato do frontend
       const mappedEvaluation: Evaluation = {
@@ -161,18 +157,15 @@ export const evaluationService = {
         confidential: insertedData.confidential
       };
 
-      console.log('🎯 Avaliação mapeada para frontend:', mappedEvaluation);
       return mappedEvaluation;
 
     } catch (error) {
-      console.error('❌ Erro em createEvaluation:', error);
       throw error;
     }
   },
 
   async getEvaluations(): Promise<Evaluation[]> {
     try {
-      console.log('🔄 evaluationService.getEvaluations: Buscando avaliações...');
       
       const { data, error } = await supabase
         .from('evaluations')
@@ -184,14 +177,11 @@ export const evaluationService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Erro ao buscar avaliações:', error);
         throw error;
       }
 
-      console.log('📊 Dados brutos do banco:', data);
 
       if (!data || data.length === 0) {
-        console.log('📭 Nenhuma avaliação encontrada');
         return [];
       }
 
@@ -219,18 +209,15 @@ export const evaluationService = {
         confidential: item.confidential
       }));
 
-      console.log('✅ Avaliações mapeadas:', mappedEvaluations);
       return mappedEvaluations;
 
     } catch (error) {
-      console.error('❌ Erro em getEvaluations:', error);
       throw error;
     }
   },
 
   async updateEvaluation(id: string, updates: Partial<Evaluation>): Promise<Evaluation> {
     try {
-      console.log('🔄 evaluationService.updateEvaluation:', { id, updates });
 
       // Mapear campos do frontend para o banco
       const dbUpdates: any = {};
@@ -260,7 +247,6 @@ export const evaluationService = {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao atualizar avaliação:', error);
         throw error;
       }
 
@@ -288,18 +274,15 @@ export const evaluationService = {
         confidential: data.confidential
       };
 
-      console.log('✅ Avaliação atualizada:', mappedEvaluation);
       return mappedEvaluation;
 
     } catch (error) {
-      console.error('❌ Erro em updateEvaluation:', error);
       throw error;
     }
   },
 
   async deleteEvaluation(id: string): Promise<void> {
     try {
-      console.log('🔄 evaluationService.deleteEvaluation:', id);
 
       const { error } = await supabase
         .from('evaluations')
@@ -307,14 +290,11 @@ export const evaluationService = {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ Erro ao deletar avaliação:', error);
         throw error;
       }
 
-      console.log('✅ Avaliação deletada com sucesso');
 
     } catch (error) {
-      console.error('❌ Erro em deleteEvaluation:', error);
       throw error;
     }
   },

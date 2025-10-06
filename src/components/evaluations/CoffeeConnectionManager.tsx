@@ -65,7 +65,6 @@ export const CoffeeConnectionManager: React.FC<CoffeeConnectionManagerProps> = (
         description: 'Coffee Connection aprovada e será exibida no calendário.',
       });
     } catch (error) {
-      console.error('Erro ao aprovar Coffee Connection:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao aprovar Coffee Connection.',

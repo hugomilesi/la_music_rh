@@ -139,28 +139,22 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         throw new Error(result.error || 'Erro ao enviar resposta');
       }
     } catch (error) {
-      console.error('Erro ao adicionar resposta:', error);
       throw error;
     }
   };
 
   const createSurvey = async (surveyData: Omit<NPSSurvey, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      console.log('🔄 NPSContext: Recebendo dados para criar pesquisa:', surveyData);
       
       const newSurvey = await NPSService.createSurvey(surveyData);
       
-      console.log('✅ NPSContext: Pesquisa criada pelo serviço:', newSurvey);
       
       setSurveys(prev => [...prev, newSurvey]);
       
-      console.log('✅ NPSContext: Estado atualizado com nova pesquisa');
       
       return newSurvey;
     } catch (error) {
-      console.error('❌ NPSContext: Erro ao criar pesquisa:', error);
-      console.error('❌ NPSContext: Tipo do erro:', typeof error);
-      console.error('❌ NPSContext: Detalhes:', error instanceof Error ? {
+      console.error('Error creating survey:', error instanceof Error ? {
         message: error.message,
         stack: error.stack,
         name: error.name

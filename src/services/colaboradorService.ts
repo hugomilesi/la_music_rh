@@ -12,7 +12,6 @@ export const colaboradorService = {
    * Buscar todos os colaboradores
    */
   async getColaboradores(): Promise<Colaborador[]> {
-    console.log('🔍 Buscando colaboradores...');
     
     const { data, error } = await supabase
       .from('colaboradores')
@@ -20,11 +19,9 @@ export const colaboradorService = {
       .order('nome', { ascending: true });
     
     if (error) {
-      console.error('❌ Erro ao buscar colaboradores:', error);
       throw error;
     }
     
-    console.log('✅ Colaboradores encontrados:', data?.length || 0);
     return data || [];
   },
 
@@ -32,7 +29,6 @@ export const colaboradorService = {
    * Buscar colaborador por ID
    */
   async getColaboradorById(id: string): Promise<Colaborador | null> {
-    console.log('🔍 Buscando colaborador por ID:', id);
     
     const { data, error } = await supabase
       .from('colaboradores')
@@ -42,14 +38,11 @@ export const colaboradorService = {
     
     if (error) {
       if (error.code === 'PGRST116') {
-        console.log('ℹ️ Colaborador não encontrado:', id);
         return null;
       }
-      console.error('❌ Erro ao buscar colaborador:', error);
       throw error;
     }
     
-    console.log('✅ Colaborador encontrado:', data.nome);
     return data;
   },
 
@@ -57,7 +50,6 @@ export const colaboradorService = {
    * Criar novo colaborador
    */
   async criarColaborador(colaboradorData: NovoColaborador): Promise<Colaborador> {
-    console.log('➕ Criando novo colaborador:', colaboradorData.nome);
     
     const insertData = {
       nome: colaboradorData.nome,
@@ -81,11 +73,9 @@ export const colaboradorService = {
       .single();
     
     if (error) {
-      console.error('❌ Erro ao criar colaborador:', error);
       throw error;
     }
     
-    console.log('✅ Colaborador criado com sucesso:', data.nome);
     return data;
   },
 
@@ -93,7 +83,6 @@ export const colaboradorService = {
    * Atualizar colaborador
    */
   async atualizarColaborador(id: string, colaboradorData: AtualizarColaborador): Promise<Colaborador> {
-    console.log('✏️ Atualizando colaborador:', id);
     
     const updateData: any = {};
     
@@ -119,11 +108,9 @@ export const colaboradorService = {
       .single();
     
     if (error) {
-      console.error('❌ Erro ao atualizar colaborador:', error);
       throw error;
     }
     
-    console.log('✅ Colaborador atualizado com sucesso:', data.nome);
     return data;
   },
 
@@ -131,7 +118,6 @@ export const colaboradorService = {
    * Deletar colaborador
    */
   async deletarColaborador(id: string): Promise<void> {
-    console.log('🗑️ Deletando colaborador:', id);
     
     const { error } = await supabase
       .from('colaboradores')
@@ -139,18 +125,15 @@ export const colaboradorService = {
       .eq('id', id);
     
     if (error) {
-      console.error('❌ Erro ao deletar colaborador:', error);
       throw error;
     }
     
-    console.log('✅ Colaborador deletado com sucesso');
   },
 
   /**
    * Buscar colaboradores com filtros
    */
   async getColaboradoresFiltrados(filtros: FiltrosColaborador): Promise<Colaborador[]> {
-    console.log('🔍 Buscando colaboradores com filtros:', filtros);
     
     let query = supabase
       .from('colaboradores')
@@ -184,11 +167,9 @@ export const colaboradorService = {
     const { data, error } = await query;
     
     if (error) {
-      console.error('❌ Erro ao buscar colaboradores filtrados:', error);
       throw error;
     }
     
-    console.log('✅ Colaboradores filtrados encontrados:', data?.length || 0);
     return data || [];
   },
 
@@ -196,7 +177,6 @@ export const colaboradorService = {
    * Buscar colaboradores por unidade
    */
   async getColaboradoresPorUnidade(unidade: string): Promise<Colaborador[]> {
-    console.log('🔍 Buscando colaboradores por unidade:', unidade);
     
     const { data, error } = await supabase
       .from('colaboradores')
@@ -206,11 +186,9 @@ export const colaboradorService = {
       .order('nome', { ascending: true });
     
     if (error) {
-      console.error('❌ Erro ao buscar colaboradores por unidade:', error);
       throw error;
     }
     
-    console.log('✅ Colaboradores da unidade encontrados:', data?.length || 0);
     return data || [];
   },
 
@@ -230,7 +208,6 @@ export const colaboradorService = {
     const { data, error } = await query;
     
     if (error) {
-      console.error('❌ Erro ao verificar email:', error);
       throw error;
     }
     
@@ -253,7 +230,6 @@ export const colaboradorService = {
     const { data, error } = await query;
     
     if (error) {
-      console.error('❌ Erro ao verificar CPF:', error);
       throw error;
     }
     

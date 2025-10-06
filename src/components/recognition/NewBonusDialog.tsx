@@ -48,7 +48,7 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
     const bonus = {
       id: Date.now().toString(),
       employeeId: selectedEmployee,
-      employeeName: employees.find(e => e.id === selectedEmployee)?.name || '',
+      employeeName: colaboradoresAtivos.find(e => e.id === selectedEmployee)?.name || '',
       type: bonusType,
       amount: parseFloat(amount),
       description,
@@ -216,18 +216,18 @@ export const NewBonusDialog: React.FC<NewBonusDialogProps> = ({
                       <SelectValue placeholder="Selecione o mês" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="janeiro">Janeiro 2024</SelectItem>
-                      <SelectItem value="fevereiro">Fevereiro 2024</SelectItem>
-                      <SelectItem value="marco">Março 2024</SelectItem>
-                      <SelectItem value="abril">Abril 2024</SelectItem>
-                      <SelectItem value="maio">Maio 2024</SelectItem>
-                      <SelectItem value="junho">Junho 2024</SelectItem>
-                      <SelectItem value="julho">Julho 2024</SelectItem>
-                      <SelectItem value="agosto">Agosto 2024</SelectItem>
-                      <SelectItem value="setembro">Setembro 2024</SelectItem>
-                      <SelectItem value="outubro">Outubro 2024</SelectItem>
-                      <SelectItem value="novembro">Novembro 2024</SelectItem>
-                      <SelectItem value="dezembro">Dezembro 2024</SelectItem>
+                      <SelectItem value="janeiro">Janeiro</SelectItem>
+                      <SelectItem value="fevereiro">Fevereiro</SelectItem>
+                      <SelectItem value="marco">Março</SelectItem>
+                      <SelectItem value="abril">Abril</SelectItem>
+                      <SelectItem value="maio">Maio</SelectItem>
+                      <SelectItem value="junho">Junho</SelectItem>
+                      <SelectItem value="julho">Julho</SelectItem>
+                      <SelectItem value="agosto">Agosto</SelectItem>
+                      <SelectItem value="setembro">Setembro</SelectItem>
+                      <SelectItem value="outubro">Outubro</SelectItem>
+                      <SelectItem value="novembro">Novembro</SelectItem>
+                      <SelectItem value="dezembro">Dezembro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

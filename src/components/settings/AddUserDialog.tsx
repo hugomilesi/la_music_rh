@@ -76,7 +76,6 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
         setDepartments(departmentsData);
         setRoles(rolesData);
       } catch (error) {
-        console.error('Error loading departments and roles:', error);
         toast({
           title: "Erro",
           description: "Erro ao carregar departamentos e cargos.",

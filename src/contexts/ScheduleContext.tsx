@@ -26,15 +26,12 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      console.log('🔄 Carregando eventos da VIEW...');
       
       // Usar a nova VIEW que combina eventos e avaliações
       const events = await scheduleService.getScheduleEventsWithEvaluations();
       
-      console.log('📊 Eventos carregados da VIEW:', events);
       setEvents(events);
     } catch (error) {
-      console.error('❌ Erro ao carregar eventos:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar os eventos",
@@ -107,13 +104,11 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteEvent = async (eventId: string, source?: string) => {
     try {
-      console.log('🗑️ Tentando deletar evento:', { eventId, source });
       
       // Encontrar o evento para verificar se é uma avaliação
       const event = events.find(e => e.id === eventId);
       
       if (!event) {
-        console.log('❌ Evento não encontrado');
         toast({
           title: "Erro",
           description: "Evento não encontrado",
@@ -124,7 +119,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // Se for uma avaliação (ID começa com 'eval_' ou tem is_evaluation = true)
       if (eventId.startsWith('eval_') || event.is_evaluation) {
-        console.log('🗑️ Deletando avaliação da tabela evaluations:', eventId);
         
         // Extrair o ID real da avaliação (remover prefixo 'eval_' se existir)
         const evaluationId = eventId.startsWith('eval_') ? eventId.replace('eval_', '') : eventId;
@@ -132,11 +126,9 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Deletar da tabela evaluations
         await evaluationService.deleteEvaluation(evaluationId);
         
-        console.log('✅ Avaliação deletada com sucesso');
       } else {
         // Só permitir exclusão de eventos regulares
         await scheduleService.deleteScheduleEvent(eventId);
-        console.log('✅ Evento regular deletado com sucesso');
       }
       
       // Recarregar eventos após exclusão
@@ -147,7 +139,6 @@ export const ScheduleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         description: event.is_evaluation ? "Avaliação removida com sucesso" : "Evento removido com sucesso",
       });
     } catch (error) {
-      console.error('❌ Erro ao deletar evento:', error);
       toast({
         title: "Erro",
         description: "Não foi possível remover o evento",

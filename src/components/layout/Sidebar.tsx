@@ -226,21 +226,18 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
       return [];
     }
     
-    console.log('🔍 Sidebar: Recalculating visible menu items', { profileVersion, isLoading });
     
     const filtered = menuItems.filter(item => {
       // Para itens com subitens, verificar se pelo menos um subitem é visível
       if (item.hasSubItems && item.subItems) {
         const visibleSubItems = item.subItems.filter(subItem => {
           const canView = canViewModule(subItem.module);
-          console.log(`📋 Sidebar: SubModule ${subItem.module} - canView: ${canView}`);
           return canView;
         });
         return visibleSubItems.length > 0;
       }
       
       const canView = canViewModule(item.module);
-      console.log(`📋 Sidebar: Module ${item.module} - canView: ${canView}`);
       return canView;
     }).map(item => {
       // Filtrar subitens baseado nas permissões
@@ -253,19 +250,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ collapsed, onToggle
       return item;
     });
     
-    console.log('✅ Sidebar: Visible menu items:', filtered.map(item => item.title));
     return filtered;
   }, [canViewModule, isLoading, profileVersion]);
 
   // Listen for profile-loaded event to force sidebar re-render
   useEffect(() => {
     const handleProfileLoaded = () => {
-      console.log('🔄 Sidebar: Profile loaded event received, forcing re-render');
       setProfileVersion(prev => prev + 1);
     };
 
     const handlePermissionsChanged = () => {
-      console.log('🔄 Sidebar: Permissions changed event received, forcing re-render');
       setProfileVersion(prev => prev + 1);
     };
 

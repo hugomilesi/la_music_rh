@@ -53,11 +53,9 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const addEvaluation = async (evaluationData: NewEvaluationData) => {
     try {
-      console.log('🔄 EvaluationContext: Adicionando avaliação:', evaluationData);
       
       const newEvaluation = await evaluationService.createEvaluation(evaluationData);
       
-      console.log('✅ EvaluationContext: Avaliação criada com sucesso:', newEvaluation);
       
       setEvaluations(prev => [...prev, newEvaluation]);
       
@@ -66,7 +64,6 @@ export const EvaluationProvider: React.FC<{ children: ReactNode }> = ({ children
         description: 'Avaliação criada com sucesso!',
       });
     } catch (error) {
-      console.error('❌ EvaluationContext: Erro ao adicionar avaliação:', error);
       
       toast({
         title: 'Erro',

@@ -32,16 +32,13 @@ export class WhatsAppService {
   // Enviar mensagem via Evolution API
   static async sendMessage(phoneNumber: string, message: string): Promise<boolean> {
     try {
-      console.log('WhatsAppService: Enviando mensagem para:', phoneNumber);
       
       // Validar número de telefone
       const cleanPhone = this.cleanPhoneNumber(phoneNumber);
       if (!cleanPhone) {
-        console.error('WhatsAppService: Número de telefone inválido:', phoneNumber);
         return false;
       }
       
-      console.log('WhatsAppService: Número limpo:', cleanPhone);
 
       // Preparar dados da mensagem
       const messageData = {
@@ -49,7 +46,6 @@ export class WhatsAppService {
         text: message
       };
       
-      console.log('WhatsAppService: Dados da mensagem preparados');
 
       // Validar configuração antes de enviar
       if (!validateEvolutionApiConfig(this.config)) {

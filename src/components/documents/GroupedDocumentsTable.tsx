@@ -59,7 +59,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
       setEmployeeSummaries(summaries);
       setChecklistData(newChecklistData);
     } catch (error) {
-      console.error('Erro ao carregar resumo dos colaboradores:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +89,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
       // Recarregar dados
       await loadEmployeeSummaries();
     } catch (error) {
-      console.error('Erro ao aprovar documento:', error);
       toast({
         title: "Erro",
         description: "Erro ao aprovar documento.",
@@ -119,7 +117,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
       // Recarregar dados
       await loadEmployeeSummaries();
     } catch (error) {
-      console.error('Erro ao rejeitar documento:', error);
       toast({
         title: "Erro",
         description: "Erro ao rejeitar documento.",
@@ -129,10 +126,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
   };
 
   const groupedDocuments = useMemo(() => {
-    console.log('🔍 [GroupedDocuments] Iniciando agrupamento de documentos');
-    console.log('📊 [GroupedDocuments] filteredDocuments:', filteredDocuments.length);
-    console.log('👥 [GroupedDocuments] employeeSummaries:', employeeSummaries.length);
-    console.log('📋 [GroupedDocuments] checklistData size:', checklistData.size);
     
     const groups = new Map<string, EmployeeDocumentGroup>();
 
@@ -142,9 +135,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
         const employeeSummary = employeeSummaries.find(s => s.employee_id === doc.employee_id);
         const checklistItems = checklistData.get(doc.employee_id) || [];
         
-        console.log(`📝 [GroupedDocuments] Processando colaborador ${doc.employee_id}:`);
-        console.log(`  - checklistItems:`, checklistItems.length);
-        console.log(`  - checklistItems detalhes:`, checklistItems.map(item => ({
           id: item.id,
           document_type: item.document_type,
           status: item.status,
@@ -203,9 +193,6 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
       if (!groups.has(summary.employee_id)) {
         const checklistItems = checklistData.get(summary.employee_id) || [];
         
-        console.log(`📝 [GroupedDocuments] Processando colaborador sem docs ${summary.employee_id}:`);
-        console.log(`  - checklistItems:`, checklistItems.length);
-        console.log(`  - checklistItems detalhes:`, checklistItems.map(item => ({
           id: item.id,
           document_type: item.document_type,
           status: item.status,
@@ -240,9 +227,7 @@ export const GroupedDocumentsTable: React.FC<GroupedDocumentsTableProps> = ({
     });
 
     const result = Array.from(groups.values()).sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-    console.log('✅ [GroupedDocuments] Grupos finais:', result.length);
     result.forEach(group => {
-      console.log(`  - ${group.employeeName}: ${group.documents.length} docs, ${group.checklistItems.length} checklist items`);
     });
     
     return result;

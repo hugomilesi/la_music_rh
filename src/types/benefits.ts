@@ -65,11 +65,23 @@ export interface Dependent {
 
 export interface BenefitDocument {
   id: string;
+  benefit_id: string;
   name: string;
-  type: string;
-  url: string;
-  uploadDate: string;
-  status: 'pending' | 'approved' | 'rejected';
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  uploaded_by: string;
+  colaborador_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BenefitDocumentUpload {
+  benefit_id: string;
+  document_name: string;
+  document_type: string;
+  file: File;
+  colaborador_id?: string;
 }
 
 export interface BenefitStats {

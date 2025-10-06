@@ -10,13 +10,14 @@ interface BenefitsContextType {
   stats: BenefitStats;
   usage: BenefitUsage[];
   loading: boolean;
-  addBenefit: (benefit: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addBenefit: (benefit: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Benefit>;
   updateBenefit: (id: string, benefit: Partial<Benefit>) => Promise<void>;
   deleteBenefit: (id: string) => Promise<void>;
   enrollEmployee: (employeeId: string, benefitId: string, dependents?: any[]) => Promise<void>;
   updateEnrollment: (id: string, data: Partial<EmployeeBenefit>) => Promise<void>;
   cancelEnrollment: (id: string) => Promise<void>;
   refreshStats: () => void;
+  refreshBenefits: () => Promise<void>;
   // Universal functions - now available for all benefits
   updatePerformanceGoals: (benefitId: string, goals: PerformanceGoal[]) => Promise<void>;
   updateRenewalSettings: (benefitId: string, settings: RenewalSettings) => Promise<void>;
@@ -29,7 +30,7 @@ interface BenefitsContextType {
   loadInitialData: () => Promise<void>;
   // Document Management
   uploadBenefitDocument: (benefitId: string, employeeBenefitId: string | null, file: File, documentType: string) => Promise<void>;
-  getBenefitDocuments: (benefitId: string, employeeBenefitId?: string) => Promise<any[]>;
+  getBenefitDocuments: (benefitId: string) => Promise<any[]>;
   deleteBenefitDocument: (documentId: string) => Promise<void>;
   getDocumentUrl: (filePath: string) => Promise<string | null>;
 }
@@ -162,11 +163,32 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const refreshBenefits = async () => {
+    try {
+      setLoading(true);
+      
+      const [benefitsData, employeeBenefitsData] = await Promise.all([
+        benefitsService.getBenefits(),
+        benefitsService.getEmployeeBenefits()
+      ]);
+      
+      setBenefits(benefitsData);
+      setEmployeeBenefits(employeeBenefitsData);
+      toast.success('Dados atualizados com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao atualizar dados');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const addBenefit = async (benefitData: Omit<Benefit, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const newBenefit = await benefitsService.createBenefit(benefitData);
       setBenefits(prev => [...prev, newBenefit]);
       toast.success('Benefício criado com sucesso!');
+      return newBenefit;
     } catch (error) {
       // Log desabilitado: Error creating benefit
       toast.error('Erro ao criar benefício');
@@ -295,7 +317,6 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await loadInitialData();
       toast.success('Metas atualizadas com sucesso!');
     } catch (error) {
-      console.error('Error updating performance goals:', error);
       toast.error('Erro ao atualizar metas');
       throw error;
     }
@@ -324,20 +345,28 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Document Management
   const uploadBenefitDocument = async (benefitId: string, employeeBenefitId: string | null, file: File, documentType: string) => {
     try {
+      console.log('Uploading benefit document:', {
+        benefitId,
+        employeeBenefitId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        documentType
+      });
+
       await benefitsService.uploadBenefitDocument(benefitId, employeeBenefitId, file, documentType);
+      
       toast.success('Documento enviado com sucesso!');
     } catch (error) {
-      console.error('Error uploading document:', error);
       toast.error('Erro ao enviar documento');
       throw error;
     }
   };
 
-  const getBenefitDocuments = async (benefitId: string, employeeBenefitId?: string) => {
+  const getBenefitDocuments = async (benefitId: string) => {
     try {
-      return await benefitsService.getBenefitDocuments(benefitId, employeeBenefitId);
+      return await benefitsService.getBenefitDocuments(benefitId);
     } catch (error) {
-      console.error('Error getting documents:', error);
       toast.error('Erro ao carregar documentos');
       throw error;
     }
@@ -348,7 +377,6 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await benefitsService.deleteBenefitDocument(documentId);
       toast.success('Documento excluído com sucesso!');
     } catch (error) {
-      console.error('Error deleting document:', error);
       toast.error('Erro ao excluir documento');
       throw error;
     }
@@ -358,7 +386,6 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       return await benefitsService.getDocumentUrl(filePath);
     } catch (error) {
-      console.error('Error getting document URL:', error);
       return null;
     }
   };
@@ -454,6 +481,7 @@ export const BenefitsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateEnrollment,
       cancelEnrollment,
       refreshStats,
+      refreshBenefits,
       updatePerformanceGoals,
       updateRenewalSettings,
       updatePerformanceData,

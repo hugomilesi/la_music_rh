@@ -62,22 +62,17 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   }, [open, benefit.id]);
 
   const loadDocuments = async () => {
+    setLoadingDocuments(true);
     try {
-      setLoadingDocuments(true);
-
+      const allDocuments: BenefitDocument[] = [];
       
-      // Get all employee benefits for this benefit to find documents
+      // Buscar inscrições do benefício usando getEmployeeBenefits
       const employeeBenefits = await benefitsService.getEmployeeBenefits();
       const benefitEnrollments = employeeBenefits.filter(eb => eb.benefitId === benefit.id);
       
-      
-      
-      // Collect all documents from all enrollments for this benefit
-      const allDocuments: BenefitDocument[] = [];
-      
       for (const enrollment of benefitEnrollments) {
         try {
-          const docs = await benefitDocumentService.getDocumentsByBenefitId(enrollment.id);
+          const docs = await benefitDocumentService.getDocumentsByBenefit(enrollment.id);
           // Add employee info to each document for better identification
           const docsWithEmployee = docs.map(doc => ({
             ...doc,
@@ -89,10 +84,14 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
           }));
           allDocuments.push(...docsWithEmployee);
         } catch (docError) {
-          console.error('Erro ao carregar documentos do colaborador:', docError);
         }
       }
-      
+
+      // Se não há inscrições, buscar documentos gerais do benefício
+      if (benefitEnrollments.length === 0) {
+        const docs = await benefitDocumentService.getDocumentsByBenefit(benefit.id);
+        allDocuments.push(...docs);
+      }
 
       setDocuments(allDocuments);
     } catch (error) {

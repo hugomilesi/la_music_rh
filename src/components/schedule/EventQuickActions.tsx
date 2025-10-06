@@ -32,7 +32,7 @@ export const EventQuickActions: React.FC<EventQuickActionsProps> = ({
   // Verificar se é um evento de avaliação
   const isEvaluationEvent = event.id.startsWith('eval_');
   
-  console.log('🔍 EventQuickActions - Evento:', {
+  console.log('Event details:', {
     id: event.id,
     title: event.title,
     isEvaluationEvent,

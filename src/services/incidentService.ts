@@ -4,7 +4,6 @@ import type { Incident, IncidentStats } from '../types/incident';
 // Força limpeza global ao carregar o módulo
 const globalCleanup = () => {
   try {
-    console.log('IncidentService: Executando limpeza global ao inicializar módulo...');
     const allChannels = supabase.getChannels();
     allChannels.forEach(channel => {
       try {
@@ -16,9 +15,7 @@ const globalCleanup = () => {
         // Ignora erros de limpeza inicial
       }
     });
-    console.log('IncidentService: Limpeza global concluída');
   } catch (error) {
-    console.warn('IncidentService: Erro na limpeza global:', error);
   }
 };
 
@@ -31,11 +28,12 @@ export const incidentService = {
    */
   async getAll(): Promise<Incident[]> {
     try {
+      
       const { data, error } = await supabase
         .from('incidents')
         .select(`
           *,
-          employee:colaboradores(
+          employee:colaboradores!employee_id(
             id,
             nome,
             email,
@@ -45,30 +43,48 @@ export const incidentService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar incidentes:', error);
-        throw error;
+        console.log({
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error(`Erro ao buscar incidentes: ${error.message}`);
       }
 
+
       // Mapear campos do banco para a interface frontend
-      const mappedData = (data || []).map(incident => ({
-        id: incident.id,
-        title: incident.title,
-        employeeId: incident.employee_id,
-        employeeName: incident.employee?.nome || '',
-        type: incident.incident_type,
-        severity: incident.severity,
-        description: incident.description,
-        incidentDate: incident.date_occurred,
-        reporterId: incident.reported_by,
-        reporterName: '', // Pode ser preenchido com dados do reporter se necessário
-        status: this.mapStatusFromDatabase(incident.status),
-        createdAt: incident.created_at,
-        updatedAt: incident.updated_at
-      }));
+      const mappedData = (data || []).map((incident, index) => {
+        try {
+          return {
+            id: incident.id,
+            title: incident.title,
+            employeeId: incident.employee_id,
+            employeeName: incident.employee?.nome || 'N/A',
+            type: incident.incident_type,
+            severity: incident.severity,
+            description: incident.description,
+            incidentDate: incident.date_occurred,
+            reporterId: incident.reported_by,
+            reporterName: '', // Pode ser preenchido com dados do reporter se necessário
+            status: this.mapStatusFromDatabase(incident.status),
+            createdAt: incident.created_at,
+            updatedAt: incident.updated_at
+          };
+        } catch (mappingError) {
+          throw mappingError;
+        }
+      });
 
       return mappedData;
     } catch (error) {
-      console.error('Erro ao buscar incidentes:', error);
+      
+      // Verificar se é um erro específico que pode causar "2 logs"
+      if (error instanceof Error) {
+        if (error.message.includes('logs') || error.message.includes('2')) {
+        }
+      }
+      
       throw error;
     }
   },
@@ -89,7 +105,7 @@ export const incidentService = {
         .from('incidents')
         .select(`
           *,
-          employee:colaboradores(
+          employee:colaboradores!employee_id(
             id,
             nome,
             email,
@@ -124,7 +140,6 @@ export const incidentService = {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar incidentes filtrados:', error);
         throw error;
       }
 
@@ -133,7 +148,7 @@ export const incidentService = {
         id: incident.id,
         title: incident.title,
         employeeId: incident.employee_id,
-        employeeName: incident.employee?.nome || '',
+        employeeName: incident.employee?.nome || 'N/A',
         type: incident.incident_type,
         severity: incident.severity,
         description: incident.description,
@@ -147,7 +162,6 @@ export const incidentService = {
 
       return mappedData;
     } catch (error) {
-      console.error('Erro ao buscar incidentes filtrados:', error);
       throw error;
     }
   },
@@ -213,7 +227,7 @@ export const incidentService = {
         .insert([incidentData])
         .select(`
           *,
-          employee:colaboradores(
+          employee:colaboradores!employee_id(
             id,
             nome,
             email,
@@ -223,7 +237,6 @@ export const incidentService = {
         .single();
 
       if (error) {
-        console.error('Erro ao adicionar incidente:', error);
         throw error;
       }
 
@@ -232,7 +245,7 @@ export const incidentService = {
           id: data.id,
           title: data.title,
           employeeId: data.employee_id,
-          employeeName: data.employee?.nome || '',
+          employeeName: data.employee?.nome || 'N/A',
           type: data.incident_type,
           severity: data.severity,
           description: data.description,
@@ -246,7 +259,6 @@ export const incidentService = {
 
       return mappedData;
     } catch (error) {
-      console.error('Erro ao adicionar incidente:', error);
       throw error;
     }
   },
@@ -294,7 +306,6 @@ export const incidentService = {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar incidente:', error);
         throw error;
       }
 
@@ -317,7 +328,6 @@ export const incidentService = {
 
       return mappedData;
     } catch (error) {
-      console.error('Erro ao atualizar incidente:', error);
       throw error;
     }
   },
@@ -333,11 +343,9 @@ export const incidentService = {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao remover incidente:', error);
         throw error;
       }
     } catch (error) {
-      console.error('Erro ao remover incidente:', error);
       throw error;
     }
   },
@@ -352,7 +360,6 @@ export const incidentService = {
         .select('status, severity, incident_type, created_at');
 
       if (error) {
-        console.error('Erro ao buscar estatísticas:', error);
         throw error;
       }
 
@@ -416,7 +423,6 @@ export const incidentService = {
 
       return stats;
     } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
       throw error;
     }
   },
@@ -432,7 +438,6 @@ export const incidentService = {
    */
   subscribeToIncidents(callback: (payload: any) => void) {
     try {
-      console.log('IncidentService: Tentativa de subscrição recebida');
       
       // FORÇA limpeza completa antes de qualquer nova subscrição
       this.forceCleanupChannels();
@@ -441,17 +446,14 @@ export const incidentService = {
       setTimeout(() => {
         // Adiciona o callback à lista
         this._subscriptionCallbacks.add(callback);
-        console.log('IncidentService: Callback adicionado. Total callbacks:', this._subscriptionCallbacks.size);
         
         // Verifica se já existe canal ativo APÓS limpeza
         if (this._activeChannel && this._subscriptionId && !this._isSubscribing) {
-          console.log('IncidentService: Reutilizando canal existente:', this._subscriptionId);
           return this._activeChannel;
         }
         
         // Se já está tentando se inscrever, apenas aguarda
         if (this._isSubscribing) {
-          console.log('IncidentService: Subscrição em andamento, aguardando...');
           return null;
         }
         
@@ -461,7 +463,6 @@ export const incidentService = {
       
       return null;
     } catch (error) {
-      console.error('IncidentService: Erro na subscrição:', error);
       this._subscriptionCallbacks.delete(callback);
       return null;
     }
@@ -472,13 +473,11 @@ export const incidentService = {
    */
   _createSubscription() {
     if (this._isSubscribing) {
-      console.log('IncidentService: Subscrição já em andamento');
       return null;
     }
 
     this._isSubscribing = true;
     const subscriptionId = `incidents-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log('IncidentService: Criando nova subscrição:', subscriptionId);
 
     // Limpa canais existentes primeiro
     this._cleanupExistingChannels();
@@ -495,26 +494,21 @@ export const incidentService = {
             table: 'incidents'
           },
           (payload) => {
-            console.log('IncidentService: Mudança recebida:', payload);
             // Notifica todos os callbacks registrados
             this._subscriptionCallbacks.forEach(callback => {
               try {
                 callback(payload);
               } catch (error) {
-                console.error('IncidentService: Erro no callback:', error);
               }
             });
           }
         )
         .subscribe((status) => {
-          console.log('IncidentService: Status da subscrição:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('IncidentService: Subscrição ativa:', subscriptionId);
             this._activeChannel = channel;
             this._subscriptionId = subscriptionId;
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.log('IncidentService: Canal fechado ou erro, limpando estado');
             this._cleanup();
           }
           
@@ -523,7 +517,6 @@ export const incidentService = {
 
       return channel;
     } catch (error) {
-      console.error('IncidentService: Erro ao criar subscrição:', error);
       this._isSubscribing = false;
       return null;
     }
@@ -534,11 +527,9 @@ export const incidentService = {
    */
   _cleanupExistingChannels() {
     if (this._activeChannel) {
-      console.log('IncidentService: Limpando canal ativo');
       try {
         supabase.removeChannel(this._activeChannel);
       } catch (error) {
-        console.error('IncidentService: Erro ao remover canal:', error);
       }
       this._activeChannel = null;
     }
@@ -561,12 +552,10 @@ export const incidentService = {
    */
   unsubscribeFromIncidents(callback?: (payload: any) => void) {
     try {
-      console.log('IncidentService: Iniciando cleanup...');
       
       // Remove callback específico se fornecido
       if (callback) {
         this._subscriptionCallbacks.delete(callback);
-        console.log('IncidentService: Callback removido. Restantes:', this._subscriptionCallbacks.size);
         
         // Se ainda há callbacks, não remove o canal
         if (this._subscriptionCallbacks.size > 0) {
@@ -576,16 +565,13 @@ export const incidentService = {
       
       // Remove canal ativo
       if (this._activeChannel) {
-        console.log('IncidentService: Removendo canal ativo');
         supabase.removeChannel(this._activeChannel);
       }
       
       // Limpa estado
       this._cleanup();
       
-      console.log('IncidentService: Cleanup concluído');
     } catch (error) {
-      console.error('IncidentService: Erro durante cleanup:', error);
       this._cleanup();
     }
   },
@@ -594,7 +580,6 @@ export const incidentService = {
    * Força a limpeza completa de todas as subscrições
    */
   forceCleanup() {
-    console.log('IncidentService: Forçando limpeza completa...');
     this.clearReconnectTimeout();
     this.forceCleanupChannels();
     this.unsubscribeFromIncidents();
@@ -604,7 +589,6 @@ export const incidentService = {
       this.forceCleanupChannels();
     }, 50);
     
-    console.log('IncidentService: Limpeza completa finalizada');
   },
 
   // Variáveis para reconexão
@@ -619,30 +603,24 @@ export const incidentService = {
    */
   forceCleanupChannels() {
     try {
-      console.log('IncidentService: Forçando limpeza COMPLETA de canais...');
       
       // Remove TODOS os canais do Supabase
       const allChannels = supabase.getChannels();
-      console.log(`IncidentService: Encontrados ${allChannels.length} canais ativos`);
       
       allChannels.forEach((channel, index) => {
-        console.log(`IncidentService: Removendo canal ${index + 1}/${allChannels.length}:`, channel.topic);
         try {
           if (typeof channel.unsubscribe === 'function') {
             channel.unsubscribe();
           }
           supabase.removeChannel(channel);
         } catch (error) {
-          console.warn('IncidentService: Erro ao remover canal:', error);
         }
       });
       
       // Limpa estado interno
       this._cleanup();
       
-      console.log('IncidentService: Limpeza COMPLETA de canais concluída');
     } catch (error) {
-      console.error('IncidentService: Erro durante limpeza de canais:', error);
     }
   },
 
@@ -650,7 +628,6 @@ export const incidentService = {
    * Configura sistema de reconexão
    */
   setupReconnectionSystem(callback: (payload: any) => void) {
-    console.log('IncidentService: Configurando sistema de reconexão...');
     this.setupConnectivityMonitoring();
     
     // Inicia tentativas de reconexão
@@ -658,14 +635,11 @@ export const incidentService = {
   },
 
   setupConnectivityMonitoring() {
-    console.log('IncidentService: Configurando monitoramento de conectividade...');
     window.addEventListener('online', () => {
-      console.log('IncidentService: Conexão restaurada');
       this._isOnline = true;
     });
     
     window.addEventListener('offline', () => {
-      console.log('IncidentService: Conexão perdida');
       this._isOnline = false;
     });
     
@@ -673,16 +647,13 @@ export const incidentService = {
   },
 
   attemptReconnection(callback: (payload: any) => void) {
-    console.log('IncidentService: Tentando reconexão...');
     if (!this._isOnline || this._reconnectAttempts >= this._maxReconnectAttempts) {
-      console.log('IncidentService: Reconexão cancelada - offline ou limite atingido');
       return;
     }
     
     this._reconnectAttempts++;
     const delay = this.calculateBackoffDelay(this._reconnectAttempts);
     
-    console.log(`IncidentService: Tentativa de reconexão ${this._reconnectAttempts}/${this._maxReconnectAttempts} em ${delay}ms`);
     
     this._reconnectTimeout = setTimeout(() => {
       this.performReconnection(callback);
@@ -702,7 +673,6 @@ export const incidentService = {
 
   async performReconnection(callback: (payload: any) => void) {
     try {
-      console.log('IncidentService: Executando reconexão...');
       
       // Limpa conexões existentes
       this.unsubscribeFromIncidents();
@@ -714,14 +684,12 @@ export const incidentService = {
       const channel = this.subscribeToIncidents(callback);
       
       if (channel) {
-        console.log('IncidentService: Reconexão bem-sucedida');
         this._reconnectAttempts = 0; // Reset tentativas em caso de sucesso
         this._lastConnectionTime = new Date();
       } else {
         throw new Error('Falha ao criar canal de reconexão');
       }
     } catch (error) {
-      console.error('IncidentService: Erro durante reconexão:', error);
       
       // Tenta novamente se não atingiu o limite
       if (this._reconnectAttempts < this._maxReconnectAttempts) {
@@ -762,28 +730,23 @@ export const incidentService = {
    */
   cleanupOrphanedSubscriptions() {
     try {
-      console.log('IncidentService: Verificando subscrições órfãs...');
 
       const allChannels = supabase.getChannels();
       const incidentChannels = allChannels.filter(ch => 
         ch.topic.startsWith('incidents-') || ch.topic === 'incidents'
       );
 
-      console.log(`IncidentService: Encontrados ${incidentChannels.length} canais de incidents`);
       
       // Se há múltiplos canais ou canais sem referência ativa
       if (incidentChannels.length > 1 || (incidentChannels.length > 0 && !this._activeChannel)) {
-        console.log('IncidentService: Detectadas subscrições órfãs, limpando...');
 
         incidentChannels.forEach((channel, index) => {
-          console.log(`IncidentService: Removendo canal órfão ${index + 1}:`, channel.topic);
           try {
             if (typeof channel.unsubscribe === 'function') {
               channel.unsubscribe();
             }
             supabase.removeChannel(channel);
           } catch (error) {
-            console.warn('IncidentService: Erro ao remover canal órfão:', error);
           }
         });
 
@@ -794,9 +757,7 @@ export const incidentService = {
         }
       }
       
-      console.log('IncidentService: Limpeza de órfãos concluída');
     } catch (error) {
-      console.error('IncidentService: Erro durante limpeza de órfãos:', error);
     }
   },
 
@@ -804,7 +765,6 @@ export const incidentService = {
    * Força reconexão manual
    */
   forceReconnect(callback: (payload: any) => void) {
-    console.log('IncidentService: Forçando reconexão manual...');
     this._reconnectAttempts = 0; // Reset tentativas
     this.clearReconnectTimeout();
     this.performReconnection(callback);
@@ -850,8 +810,6 @@ export const incidentService = {
       }
     };
     
-    console.group('🔍 IncidentService Debug State');
-    console.log('📊 Estado completo das subscrições:', debugInfo);
     
     // Análise de problemas
     const issues = [];
@@ -869,13 +827,10 @@ export const incidentService = {
     }
     
     if (issues.length > 0) {
-      console.warn('🚨 Problemas detectados:');
       issues.forEach(issue => console.warn(issue));
     } else {
-      console.log('✅ Nenhum problema detectado');
     }
     
-    console.groupEnd();
     
     return debugInfo;
   }
@@ -884,7 +839,6 @@ export const incidentService = {
 // Disponibiliza debug no desenvolvimento
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as any).debugIncidentService = () => incidentService.debugSubscriptionState();
-  console.log('🔧 Debug disponível: window.debugIncidentService()');
 }
 
 // Cleanup ao descarregar a página

@@ -15,7 +15,6 @@ interface UpdateUserData {
  */
 export const updateUserAsAdmin = async (userId: string, updates: UpdateUserData): Promise<void> => {
   try {
-    console.log('AdminService: Atualizando usuário como admin:', userId);
     
     // Prepare the update data
     const updateData = {
@@ -30,13 +29,10 @@ export const updateUserAsAdmin = async (userId: string, updates: UpdateUserData)
       .eq('auth_user_id', userId);
 
     if (error) {
-      console.error('AdminService: Erro ao atualizar usuário:', error);
       throw new Error(`Failed to update user: ${error.message}`);
     }
     
-    console.log('AdminService: Usuário atualizado com sucesso');
   } catch (error) {
-    console.error('AdminService: Erro em updateUserAsAdmin:', error);
     throw error;
   }
 };
@@ -46,12 +42,10 @@ export const updateUserAsAdmin = async (userId: string, updates: UpdateUserData)
  */
 export const checkAdminPrivileges = async (): Promise<boolean> => {
   try {
-    console.log('AdminService: Verificando privilégios de admin');
     
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.log('AdminService: Usuário não autenticado');
       return false;
     }
 

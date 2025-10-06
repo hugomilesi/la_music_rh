@@ -128,7 +128,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('🔄 CoffeeConnectionDialog: Dados do formulário:', data);
       
       // Validar dados obrigatórios
       if (!data.employeeId) {
@@ -154,7 +153,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         confidential: data.confidential || false,
       };
       
-      console.log('📤 CoffeeConnectionDialog: Enviando dados para o serviço:', evaluationData);
       
       await addEvaluation(evaluationData);
       toast({
@@ -170,7 +168,6 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         onSuccess();
       }
     } catch (error) {
-      console.error('❌ CoffeeConnectionDialog: Erro ao agendar sessão:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao agendar a sessão.',

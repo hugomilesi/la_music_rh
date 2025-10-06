@@ -14,6 +14,8 @@ import { Trash2, Edit, Plus, Star, Trophy, Lock } from 'lucide-react';
 import { useEmployees } from '@/contexts/EmployeeContext';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { EmployeeSelector } from '@/components/incidents/EmployeeSelector';
+import { RecognitionService } from '@/services/recognitionService';
+import { toast } from 'sonner';
 
 interface RankingEntry {
   id: string;
@@ -48,6 +50,7 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<RankingEntry | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -64,58 +67,80 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
   }, [open, programId, evaluationPeriod]);
 
   const loadRankings = async () => {
-    // Simulated data - replace with actual API call
-    const mockData: RankingEntry[] = [
-      {
-        id: '1',
-        employee_id: 'emp1',
-        program_id: programId || 'prog1',
-        evaluation_period: evaluationPeriod || 'Março 2024',
-        total_stars: 85,
-        evaluator_id: 'eval1',
-        evaluation_date: '2024-03-15',
-        notes: 'Excelente desempenho nas metas de retenção',
-        created_at: '2024-03-15T10:00:00Z',
-        updated_at: '2024-03-15T10:00:00Z'
-      },
-      {
-        id: '2',
-        employee_id: 'emp2',
-        program_id: programId || 'prog1',
-        evaluation_period: evaluationPeriod || 'Março 2024',
-        total_stars: 92,
-        evaluator_id: 'eval1',
-        evaluation_date: '2024-03-15',
-        notes: 'Superou todas as expectativas',
-        created_at: '2024-03-15T10:00:00Z',
-        updated_at: '2024-03-15T10:00:00Z'
+    try {
+      setLoading(true);
+      
+      if (!programId) {
+        setRankings([]);
+        return;
       }
-    ];
-    
-    setRankings(mockData);
+
+      // Buscar todas as avaliações para o programa e período específicos
+      const allEvaluations = await RecognitionService.getProgramEvaluations(
+        programId,
+        evaluationPeriod || 'Março 2024'
+      );
+      
+      // Converter para o formato esperado pelo modal
+      const rankingEntries: RankingEntry[] = allEvaluations.map(evaluation => ({
+        id: evaluation.id,
+        employee_id: evaluation.employee_id,
+        program_id: evaluation.program_id,
+        evaluation_period: evaluation.evaluation_period,
+        total_stars: evaluation.total_stars,
+        evaluator_id: evaluation.evaluated_by,
+        evaluation_date: evaluation.evaluation_date,
+        notes: evaluation.comments || '',
+        created_at: evaluation.created_at,
+        updated_at: evaluation.updated_at
+      }));
+      
+      setRankings(rankingEntries);
+    } catch (error) {
+      toast.error('Erro ao carregar rankings');
+      setRankings([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSave = () => {
-    const entry: RankingEntry = {
-      id: editingEntry?.id || Date.now().toString(),
-      employee_id: formData.employee_id,
-      program_id: programId || 'default',
-      evaluation_period: evaluationPeriod || 'Março 2024',
-      total_stars: formData.total_stars,
-      evaluator_id: formData.evaluator_id,
-      evaluation_date: new Date().toISOString().split('T')[0],
-      notes: formData.notes,
-      created_at: editingEntry?.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+  const handleSave = async () => {
+    try {
+      if (!formData.employee_id || !formData.evaluator_id) {
+        toast.error('Funcionário e avaliador são obrigatórios');
+        return;
+      }
 
-    if (editingEntry) {
-      setRankings(prev => prev.map(r => r.id === editingEntry.id ? entry : r));
-    } else {
-      setRankings(prev => [...prev, entry]);
+      const evaluationData = {
+        employeeId: formData.employee_id,
+        programId: programId || 'default',
+        evaluationPeriod: evaluationPeriod || 'Março 2024',
+        evaluatorId: formData.evaluator_id,
+        criteriaEvaluations: [], // Vazio por enquanto, pode ser expandido depois
+        notes: formData.notes
+      };
+
+      if (editingEntry) {
+        // Atualizar avaliação existente
+        await RecognitionService.updateEmployeeEvaluation(editingEntry.id, {
+          programId: evaluationData.programId,
+          evaluationPeriod: evaluationData.evaluationPeriod,
+          notes: evaluationData.notes,
+          criteriaEvaluations: [] // Vazio por enquanto
+        });
+        toast.success('Avaliação atualizada com sucesso');
+      } else {
+        // Criar nova avaliação
+        await RecognitionService.submitCompleteEvaluation(evaluationData);
+        toast.success('Avaliação criada com sucesso');
+      }
+
+      // Recarregar dados
+      await loadRankings();
+      resetForm();
+    } catch (error) {
+      toast.error('Erro ao salvar avaliação');
     }
-
-    resetForm();
   };
 
   const handleEdit = (entry: RankingEntry) => {
@@ -129,8 +154,15 @@ export const RankingCRUDModal: React.FC<RankingCRUDModalProps> = ({
     setIsCreating(true);
   };
 
-  const handleDelete = (id: string) => {
-    setRankings(prev => prev.filter(r => r.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      // Implementar exclusão no banco de dados
+      // await RecognitionService.deleteEvaluation(id);
+      setRankings(prev => prev.filter(r => r.id !== id));
+      toast.success('Avaliação removida com sucesso');
+    } catch (error) {
+      toast.error('Erro ao deletar avaliação');
+    }
   };
 
   const resetForm = () => {

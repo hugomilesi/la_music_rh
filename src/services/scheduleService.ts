@@ -27,7 +27,7 @@ export const scheduleService = {
         const startTime = startDate.toTimeString().slice(0, 5);
         const endTime = endDate.toTimeString().slice(0, 5);
         
-        console.log('📅 Mapeando evento da VIEW:', {
+        console.log({
           id: event.id,
           title: event.title,
           is_evaluation: event.is_evaluation,
@@ -71,7 +71,6 @@ export const scheduleService = {
         };
       }) || [];
     } catch (error) {
-      console.error('❌ Erro ao carregar eventos da VIEW:', error);
       throw error;
     }
   },
@@ -102,7 +101,7 @@ export const scheduleService = {
         const startTime = startDate.toTimeString().slice(0, 5);
         const endTime = endDate.toTimeString().slice(0, 5);
         
-        console.log('📅 Mapeando evento:', {
+        console.log({
           id: event.id,
           title: event.title,
           start_date: event.start_date,
@@ -140,23 +139,16 @@ export const scheduleService = {
         };
       }) || [];
     } catch (error) {
-      console.error('❌ Erro ao carregar eventos:', error);
       throw error;
     }
   },
 
   async createScheduleEvent(eventData: NewScheduleEventData): Promise<ScheduleEvent> {
     try {
-      console.log('📝 Criando evento com dados:', eventData);
       
       // Converter data e horários para timestamp
       const startDateTime = new Date(`${eventData.date}T${eventData.startTime}:00`);
       const endDateTime = new Date(`${eventData.date}T${eventData.endTime}:00`);
-      
-      console.log('🕐 Timestamps convertidos:', {
-        startDateTime: startDateTime.toISOString(),
-        endDateTime: endDateTime.toISOString()
-      });
       
       const { data, error } = await supabase
         .from('schedule_events')
@@ -178,11 +170,9 @@ export const scheduleService = {
         .single();
       
       if (error) {
-        console.error('❌ Erro ao criar evento:', error);
         throw error;
       }
       
-      console.log('✅ Evento criado com sucesso:', data);
       
       // Mapear resposta para formato do frontend
       const startDate = new Date(data.start_date);
@@ -215,7 +205,6 @@ export const scheduleService = {
         status: data.status
       };
     } catch (error) {
-      console.error('❌ Erro ao criar evento:', error);
       throw error;
     }
   },

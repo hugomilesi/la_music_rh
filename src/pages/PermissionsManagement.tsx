@@ -128,7 +128,6 @@ const PermissionsManagement: React.FC = () => {
       setRolePermissions(perms);
       setSelectedPermissions(new Set(data?.map(rp => rp.module_name) || []));
     } catch (err) {
-      console.error('Error fetching role permissions:', err);
       setError('Erro ao carregar permissões do role');
     }
   };
@@ -183,7 +182,6 @@ const PermissionsManagement: React.FC = () => {
       // Recarregar permissões do role
       await fetchRolePermissions(selectedRole);
     } catch (err: any) {
-      console.error('Error saving permissions:', err);
       toast({
         title: 'Erro',
         description: err.message || 'Erro ao salvar permissões',

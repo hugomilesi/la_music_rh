@@ -62,6 +62,7 @@ import LocalNPSSurveyPage from './pages/LocalNPSSurveyPage';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import './index.css';
+import '@/utils/testBenefitDocumentUpload';
 
 // Wrapper component for NPSResponsePage to handle URL parameters
 const NPSResponsePageWrapper: React.FC = () => {
@@ -161,7 +162,6 @@ function App() {
   // Inicializa o sistema global de tratamento de erros
   useEffect(() => {
     initializeErrorHandling();
-    console.log('Sistema de tratamento de erros inicializado');
   }, []);
 
   return (

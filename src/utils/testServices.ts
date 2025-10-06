@@ -31,7 +31,7 @@ export const testServices = {
 
     try {
       // Test getting documents for a non-existent benefit (should return empty array)
-      const docs = await benefitDocumentService.getDocumentsByBenefitId('00000000-0000-0000-0000-000000000000');
+      const docs = await benefitDocumentService.getDocumentsByBenefit('00000000-0000-0000-0000-000000000000');
 
       
       return { success: true, documentsCount: docs.length };
@@ -130,7 +130,6 @@ export const testServices = {
     // Log any failures
     Object.entries(results).forEach(([service, result]) => {
       if (!result.success) {
-        console.error(`Service ${service} failed:`, result.error);
       }
     });
     

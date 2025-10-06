@@ -12,7 +12,6 @@ export const CompactStatsCards: React.FC = () => {
   const { evaluations } = useEvaluations();
   const [openModal, setOpenModal] = useState<string | null>(null);
 
-  console.log('📊 CompactStatsCards: Avaliações recebidas:', evaluations);
 
   const totalEvaluations = evaluations.length;
   
@@ -35,7 +34,6 @@ export const CompactStatsCards: React.FC = () => {
     return (e.status === 'Concluída' || e.status === 'finalized') && e.score && e.score > 0;
   });
 
-  console.log('📈 CompactStatsCards: Avaliações com score válido:', evaluationsWithValidScore);
   
   // Calcular média apenas das avaliações que têm score numérico
   const evaluationsWithNumericScore = evaluationsWithValidScore.filter(e => e.score && e.score > 0);
@@ -47,7 +45,7 @@ export const CompactStatsCards: React.FC = () => {
     ? Math.round((completedEvaluations / totalEvaluations) * 100) 
     : 0;
 
-  console.log('📊 CompactStatsCards: Estatísticas calculadas:', {
+  console.log('Stats data:', {
     totalEvaluations,
     completedEvaluations,
     inProgressEvaluations,

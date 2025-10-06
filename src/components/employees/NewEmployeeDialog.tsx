@@ -66,10 +66,11 @@ export const NewEmployeeDialog: React.FC<NewEmployeeDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      const colaboradorData: NewColaboradorData = {
+      const colaboradorData: NovoColaborador = {
         nome: data.name,
         email: data.email,
         telefone: data.phone,
+        cpf: '', // CPF será adicionado posteriormente
         cargo: data.position,
         departamento: data.department,
         dataAdmissao: data.start_date,

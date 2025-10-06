@@ -50,7 +50,6 @@ export const useDocumentContext = () => {
 };
 
 export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('DocumentContext: Inicializando DocumentProvider');
   const [documents, setDocuments] = useState<Document[]>([]);
   const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
   const [filter, setFilterState] = useState<DocumentFilter>({
@@ -64,17 +63,13 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { toast } = useToast();
   const { profile } = useAuth();
   
-  console.log('DocumentContext: Profile atual:', profile?.id);
 
   // Load required documents
   const loadRequiredDocuments = async () => {
     try {
-      console.log('DocumentContext: Carregando documentos obrigatórios...');
       const reqDocs = await documentService.getRequiredDocuments();
-      console.log('DocumentContext: Documentos obrigatórios carregados:', reqDocs?.length || 0);
       setRequiredDocuments(reqDocs);
     } catch (error) {
-      console.error('Erro ao carregar documentos obrigatórios:', error);
     }
   };
 
@@ -91,7 +86,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const documentsChannelId = `documents-changes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const userRequiredDocsChannelId = `user-required-documents-changes-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log('DocumentContext: Criando canais únicos:', { documentsChannelId, userRequiredDocsChannelId });
 
     // Setup real-time subscription for documents table
     const documentsSubscription = supabase
@@ -101,7 +95,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         schema: 'public',
         table: 'documents'
       }, (payload) => {
-        console.log('DocumentContext: Mudança detectada na tabela documents:', payload);
         // Reload documents when any change occurs
         loadDocuments();
       })
@@ -115,7 +108,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         schema: 'public',
         table: 'user_required_documents'
       }, (payload) => {
-        console.log('DocumentContext: Mudança detectada na view user_required_documents:', payload);
         // Reload documents when any change occurs in the view
         loadDocuments();
       })
@@ -123,24 +115,20 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Cleanup subscriptions on unmount
     return () => {
-      console.log('DocumentContext: Limpando subscriptions:', { documentsChannelId, userRequiredDocsChannelId });
       try {
         supabase.removeChannel(documentsSubscription);
         supabase.removeChannel(userRequiredDocsSubscription);
       } catch (error) {
-        console.warn('DocumentContext: Erro ao limpar subscriptions:', error);
       }
     };
   }, []);
 
   const loadDocuments = async () => {
     try {
-      console.log('DocumentContext: Iniciando loadDocuments...');
       setLoading(true);
       setError(null);
       
       const docs = await documentService.getAllDocuments();
-      console.log('DocumentContext: Documentos carregados:', docs?.length || 0);
       setDocuments(docs);
       
       toast({
@@ -149,7 +137,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         variant: 'default'
       });
     } catch (error) {
-      console.error('DocumentContext: Erro ao carregar documentos:', error);
       setError('Erro ao carregar documentos');
       toast({
         title: 'Erro',
@@ -163,7 +150,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const uploadDocument = async (uploadData: DocumentUpload): Promise<Document> => {
     try {
-      console.log('DocumentContext: Fazendo upload do documento:', uploadData);
       setLoading(true);
       
       // Buscar o required_document_id baseado no documentType
@@ -210,14 +196,14 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         if (requiredDoc) {
           required_document_id = requiredDoc.id;
-          console.log('DocumentContext: Documento obrigatório encontrado:', {
+          console.log('Required document found:', {
             documentType: uploadData.documentType,
             mappedType,
             foundType: requiredDoc.document_type,
             requiredDocId: required_document_id
           });
         } else {
-          console.log('DocumentContext: Documento obrigatório não encontrado para:', {
+          console.log('Required document not found:', {
             documentType: uploadData.documentType,
             mappedType,
             availableTypes: requiredDocuments.map(d => ({ type: d.document_type, name: d.name }))
@@ -240,12 +226,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         required_document_id: required_document_id
       };
       
-      console.log('DocumentContext: Dados convertidos para o serviço:', serviceUploadData);
-      console.log('DocumentContext: User ID:', profile?.id);
-      console.log('DocumentContext: Employee ID:', uploadData.employeeId);
       
       const newDocument = await documentService.uploadDocument(serviceUploadData);
-      console.log('DocumentContext: Documento enviado com sucesso:', newDocument);
       
       // Reload documents to get updated list
       await loadDocuments();
@@ -258,7 +240,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return newDocument;
     } catch (error) {
-      console.error('DocumentContext: Erro ao fazer upload:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao enviar documento',
@@ -272,11 +253,9 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteDocument = async (id: string): Promise<void> => {
     try {
-      console.log('DocumentContext: Deletando documento:', id);
       setLoading(true);
       
       await documentService.deleteDocument(id);
-      console.log('DocumentContext: Documento deletado com sucesso');
       
       // Reload documents to get updated list
       await loadDocuments();
@@ -287,7 +266,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         variant: 'default'
       });
     } catch (error) {
-      console.error('DocumentContext: Erro ao deletar documento:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao deletar documento',
@@ -301,7 +279,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const downloadDocument = async (document: Document): Promise<void> => {
     try {
-      console.log('DocumentContext: Fazendo download do documento:', document.id);
       await documentService.downloadDocument(document.id, document.name);
       
       toast({
@@ -310,7 +287,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         variant: 'default'
       });
     } catch (error) {
-      console.error('DocumentContext: Erro ao fazer download:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao fazer download do documento',
@@ -321,10 +297,8 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const viewDocument = (document: Document): void => {
     try {
-      console.log('DocumentContext: Visualizando documento:', document.id);
       documentService.viewDocument(document.id);
     } catch (error) {
-      console.error('DocumentContext: Erro ao visualizar documento:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao visualizar documento',
@@ -335,7 +309,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const exportDocuments = (): void => {
     try {
-      console.log('DocumentContext: Exportando documentos');
       documentService.exportDocuments(filteredDocuments);
       
       toast({
@@ -344,7 +317,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         variant: 'default'
       });
     } catch (error) {
-      console.error('DocumentContext: Erro ao exportar documentos:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao exportar documentos',
@@ -355,7 +327,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const exportDocumentsByEmployee = (employeeId: string): void => {
     try {
-      console.log('DocumentContext: Exportando documentos do funcionário:', employeeId);
       const employeeDocuments = documents.filter(doc => doc.employee_id === employeeId);
       documentService.exportDocuments(employeeDocuments);
       
@@ -365,7 +336,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         variant: 'default'
       });
     } catch (error) {
-      console.error('DocumentContext: Erro ao exportar documentos do funcionário:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao exportar documentos',
@@ -376,22 +346,18 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getEmployeeDocumentSummary = async (employeeId: string): Promise<EmployeeDocumentSummary[]> => {
     try {
-      console.log('DocumentContext: Obtendo resumo de documentos do funcionário:', employeeId);
       return await documentService.getEmployeeDocumentSummary(employeeId);
     } catch (error) {
-      console.error('DocumentContext: Erro ao obter resumo de documentos:', error);
       throw error;
     }
   };
 
   const setFilter = (newFilter: Partial<DocumentFilter>) => {
-    console.log('DocumentContext: Atualizando filtro:', newFilter);
     setFilterState(prev => ({ ...prev, ...newFilter }));
   };
 
   // Filtered documents based on current filter
   const filteredDocuments = useMemo(() => {
-    console.log('DocumentContext: Aplicando filtros aos documentos');
     let filtered = [...documents];
 
     if (filter.searchTerm) {
@@ -414,7 +380,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       filtered = filtered.filter(doc => doc.employee_id === filter.employee);
     }
 
-    console.log('DocumentContext: Documentos filtrados:', filtered.length);
     return filtered;
   }, [documents, filter]);
 
@@ -434,7 +399,6 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       rejected
     };
 
-    console.log('DocumentContext: Estatísticas calculadas:', statsResult);
     return statsResult;
   }, [filteredDocuments]);
 

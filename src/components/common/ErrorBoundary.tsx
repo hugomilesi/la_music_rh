@@ -25,15 +25,12 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary capturou um erro:', error, errorInfo);
     
     // Identifica tipos específicos de erro
     const errorType = this.identifyErrorType(error);
-    console.log('Tipo de erro identificado:', errorType);
     
     // Tratamento específico para erros de WebSocket/Realtime
     if (errorType === 'websocket' || errorType === 'realtime') {
-      console.log('Erro de conexão detectado, tentando recuperação automática...');
       // Força limpeza de conexões
       this.handleConnectionError();
     }
@@ -75,12 +72,10 @@ class ErrorBoundary extends Component<Props, State> {
       // Agenda uma tentativa de reconexão
       setTimeout(() => {
         if (!this.state.hasError) {
-          console.log('ErrorBoundary: Tentando reconexão automática...');
           window.location.reload();
         }
       }, 5000);
     } catch (cleanupError) {
-      console.error('Erro durante cleanup automático:', cleanupError);
     }
   };
 

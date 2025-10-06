@@ -92,7 +92,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('🔄 NewEvaluationDialog: Dados do formulário:', data);
       
       const evaluationData: NewEvaluationData = {
         employee_id: data.employee_id,
@@ -104,7 +103,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
         unit: data.unit,
       };
       
-      console.log('📤 NewEvaluationDialog: Enviando dados para o serviço:', evaluationData);
       
       await addEvaluation(evaluationData);
       toast({
@@ -114,7 +112,6 @@ export const NewEvaluationDialog: React.FC<NewEvaluationDialogProps> = ({
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('❌ NewEvaluationDialog: Erro ao criar avaliação:', error);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao criar a avaliação.',

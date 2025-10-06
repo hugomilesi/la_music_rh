@@ -68,7 +68,6 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
       setRoles(rolesData.filter(role => role.is_active !== false));
       setDepartments(departmentsData.filter(dept => dept.is_active !== false));
     } catch (error) {
-      console.error('Erro ao carregar cargos e departamentos:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar os dados de cargos e departamentos.',
@@ -182,7 +181,6 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
       
       return true;
     } catch (error) {
-      console.error('Erro ao verificar duplicatas:', error);
       toast({
         title: "Erro",
         description: "Erro ao validar dados. Tente novamente.",
@@ -222,7 +220,6 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
       onColaboradorAtualizado();
       
     } catch (error) {
-      console.error('Erro ao atualizar colaborador:', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar colaborador. Tente novamente.",

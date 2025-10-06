@@ -127,7 +127,6 @@ export const AnonymousSurvey: React.FC<AnonymousSurveyProps> = ({
         throw new Error(result.error || 'Erro ao enviar resposta');
       }
     } catch (error) {
-      console.error('Erro ao enviar resposta:', error);
     } finally {
       setSubmitting(false);
     }

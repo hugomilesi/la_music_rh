@@ -122,14 +122,12 @@ const SettingsPage: React.FC = () => {
           setSystemUsers(usersData);
           setSystemStats(statsData);
         } catch (fallbackError) {
-          console.error('Fallback method also failed:', fallbackError);
           setError('Erro ao carregar usuários do sistema.');
         }
       }
       
       setRolesData(rolesDataResult || []);
     } catch (err: any) {
-      console.error('Error loading settings data:', err);
       setError(err.message || 'Erro ao carregar dados. Tente novamente.');
     } finally {
       setIsLoading(false);

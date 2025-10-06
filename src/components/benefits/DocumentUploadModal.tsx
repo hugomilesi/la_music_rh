@@ -57,12 +57,20 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         'image/jpeg',
         'image/png',
         'image/jpg',
+        'image/gif',
+        'image/webp',
         'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv',
+        'text/plain',
+        'application/zip',
+        'application/x-zip-compressed'
       ];
 
       if (!allowedTypes.includes(file.type)) {
-        toast.error('Tipo de arquivo não suportado. Use PDF, DOC, DOCX ou imagens.');
+        toast.error('Tipo de arquivo não suportado. Use PDF, DOC, DOCX, Excel, CSV, TXT, ZIP ou imagens.');
         return;
       }
 
@@ -82,7 +90,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       toast.success('Documento enviado com sucesso!');
       handleClose();
     } catch (error) {
-      console.error('Error uploading document:', error);
       toast.error('Erro ao enviar documento');
     } finally {
       setIsUploading(false);
@@ -131,7 +138,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 type="file"
                 className="hidden"
                 onChange={handleFileSelect}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.jpg,.jpeg,.png,.gif,.webp"
               />
               
               {selectedFile ? (

@@ -79,12 +79,9 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
   const loadEmployeeSummaries = async () => {
     try {
       setLoading(true);
-      console.log('ImprovedDocumentsTable: Iniciando carregamento de dados (apenas colaboradores com documentos)...');
       
       // Usar a nova função que busca apenas colaboradores com documentos enviados
       const summariesWithDocuments = await documentChecklistService.getEmployeesWithDocumentsSummary();
-      console.log('ImprovedDocumentsTable: Colaboradores com documentos recebidos:', summariesWithDocuments?.length || 0);
-      console.log('ImprovedDocumentsTable: Dados completos dos colaboradores:', summariesWithDocuments);
       
       // Criar mapa de checklist a partir dos summaries
       const checklistMap = new Map<string, DocumentChecklistItem[]>();
@@ -96,10 +93,8 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       setEmployeeSummaries(summariesWithDocuments);
       setChecklistData(checklistMap);
       
-      console.log('ImprovedDocumentsTable: ChecklistData definido:', checklistMap.size, 'funcionários com documentos');
       
     } catch (error) {
-      console.error('ImprovedDocumentsTable: Erro ao carregar dados:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados dos documentos",
@@ -107,7 +102,6 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       });
     } finally {
       setLoading(false);
-      console.log('ImprovedDocumentsTable: Carregamento finalizado');
     }
   };
 
@@ -119,15 +113,12 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
   const groupedDocuments = useMemo(() => {
     const groups = new Map<string, EmployeeDocumentGroup>();
 
-    console.log('ImprovedDocumentsTable: Iniciando processamento de grupos');
-    console.log('ImprovedDocumentsTable: employeeSummaries:', employeeSummaries.length);
-    console.log('ImprovedDocumentsTable: checklistData:', checklistData.size);
 
     // Processar todos os funcionários da view user_required_documents
     employeeSummaries.forEach(summary => {
       const checklistItems = checklistData.get(summary.employee_id) || [];
       
-      console.log('ImprovedDocumentsTable: Processando funcionário:', {
+      console.log({
         employee_id: summary.employee_id,
         employee_name: summary.employee_name,
         total_documents: summary.total_documents,
@@ -170,7 +161,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       ).length;
       const remainingDocuments = totalRequired - completedDocuments;
 
-      console.log('ImprovedDocumentsTable: Documentos enviados encontrados:', {
+      console.log({
         employee_id: summary.employee_id,
         employee_name: summary.employee_name,
         total_required: totalRequired,
@@ -205,13 +196,6 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
         item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
       ).length;
       group.completionRate = totalRequired > 0 ? Math.round((completedDocuments / totalRequired) * 100) : 0;
-      
-      console.log('ImprovedDocumentsTable: Taxa de conclusão calculada:', {
-        employee_name: group.employeeName,
-        total_required: totalRequired,
-        completed_documents: completedDocuments,
-        completion_rate: group.completionRate
-      });
     });
 
     // Ordenação inteligente: priorizar pendentes e vencendo
@@ -230,7 +214,6 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       return a.employeeName.localeCompare(b.employeeName);
     });
     
-    console.log('ImprovedDocumentsTable: Grupos processados:', result.length);
     return result;
   }, [filteredDocuments, employeeSummaries, checklistData]);
 
@@ -242,15 +225,6 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
         item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
       );
       
-      console.log('ImprovedDocumentsTable: Filtro por documento enviado:', {
-        employee_name: group.employeeName,
-        has_sent_document: hasAtLeastOneSentDocument,
-        checklist_items: group.checklistItems.map(item => ({
-          name: item.required_document_name,
-          status: item.status
-        }))
-      });
-      
       return hasAtLeastOneSentDocument;
     });
 
@@ -261,8 +235,6 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
       );
     }
      
-    console.log('ImprovedDocumentsTable: Grupos filtrados final:', filtered.length);
-    console.log('ImprovedDocumentsTable: Termo de busca:', searchTerm);
     return filtered;
   }, [groupedDocuments, searchTerm]);
 

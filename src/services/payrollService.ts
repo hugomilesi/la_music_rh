@@ -110,7 +110,6 @@ export const payrollService = {
   // Payroll Entries
   async getAllPayrollEntries(filters?: PayrollFilters): Promise<PayrollEntry[]> {
     try {
-      console.log('🔄 PayrollService: Buscando entradas da folha de pagamento', filters);
       
       // Get ALL payroll entries from folha_pagamento table without month/year filter
       let payrollQuery = supabase
@@ -135,16 +134,13 @@ export const payrollService = {
       const { data: payrollData, error: payrollError } = await payrollQuery;
       
       if (payrollError) {
-        console.error('❌ PayrollService: Erro ao buscar entradas:', payrollError);
         throw payrollError;
       }
 
       if (!payrollData || payrollData.length === 0) {
-        console.log('⚠️ PayrollService: Nenhuma entrada encontrada');
         return [];
       }
 
-      console.log(`✅ PayrollService: ${payrollData.length} entradas encontradas`);
 
       // Map data directly from folha_pagamento table
       const mappedData = payrollData.map(entry => ({
@@ -293,7 +289,6 @@ export const payrollService = {
     
     return mappedData;
     } catch (error) {
-      console.error('❌ PayrollService: Erro ao buscar entradas da folha de pagamento:', error);
       throw error;
     }
   },

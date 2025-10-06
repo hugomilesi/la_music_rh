@@ -88,20 +88,27 @@ export interface DetailedRankingEmployee {
 export const ROLE_PROGRAM_MAPPING: { [key: string]: string[] } = {
   // Administrativo/Recepção - Fideliza+
   'Coordenadora Pedagógica': ['fideliza'],
+  'Coordenador Pedagógico': ['fideliza', 'professor'], // Híbrido
   'Recepcionista': ['fideliza'],
   'Coordenador Administrativo': ['fideliza'],
+  'Analista de RH': ['fideliza'],
+  'Assistente Administrativo': ['fideliza'],
   
   // Vendas - Matriculador+ LA
   'Consultor de Vendas': ['matriculador'],
   'Consultora de Vendas': ['matriculador'],
   'Coordenadora de Vendas': ['matriculador'],
   'Coordenador de Vendas': ['matriculador'],
+  'Gerente de Vendas': ['matriculador'], // Adicionado cargo real do banco
   
   // Professores - Professor+ LA
   'Professor': ['professor'],
   'Professor Senior': ['professor'],
   'Professora': ['professor'],
-  'Coordenador Pedagógico': ['professor'],
+  
+  // Desenvolvedores - podem participar de Fideliza+ (administrativo)
+  'Desenvolvedor Junior': ['fideliza'],
+  'Desenvolvedor Senior': ['fideliza'],
   
   // Cargos híbridos (podem participar de múltiplos programas)
   'Gerente Geral': ['fideliza', 'matriculador', 'professor'],

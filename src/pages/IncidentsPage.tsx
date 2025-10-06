@@ -411,17 +411,14 @@ const IncidentsPage: React.FC = () => {
                         {(() => {
                           try {
                             if (!incident.incidentDate) {
-                              console.error('IncidentsPage: incidentDate is undefined for incident:', incident);
                               return 'Data não disponível';
                             }
                             const date = new Date(incident.incidentDate);
                             if (isNaN(date.getTime())) {
-                              console.error('IncidentsPage: Invalid date value:', incident.incidentDate, 'for incident:', incident);
                               return 'Data inválida';
                             }
                             return format(date, 'dd/MM/yyyy', { locale: ptBR });
                           } catch (error) {
-                            console.error('IncidentsPage: Error formatting date:', error, 'incident:', incident);
                             return 'Erro na data';
                           }
                         })()}

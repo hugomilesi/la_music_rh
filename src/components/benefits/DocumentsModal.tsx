@@ -30,14 +30,14 @@ interface DocumentsModalProps {
 interface BenefitDocument {
   id: string;
   benefit_id: string;
-  employee_benefit_id: string | null;
-  file_name: string;
+  name: string;
   file_path: string;
   file_size: number;
   file_type: string;
-  document_type: string;
-  uploaded_by: string;
+  status: string;
   created_at: string;
+  updated_at: string;
+  colaborador_id?: string;
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
@@ -73,20 +73,23 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
 
   useEffect(() => {
     const filtered = documents.filter(doc =>
-      doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      DOCUMENT_TYPE_LABELS[doc.document_type]?.toLowerCase().includes(searchTerm.toLowerCase())
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.file_type?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredDocuments(filtered);
   }, [documents, searchTerm]);
 
   const loadDocuments = async () => {
-    setIsLoading(true);
     try {
-      const docs = await getBenefitDocuments(benefitId, employeeBenefitId);
+      setIsLoading(true);
+      const docs = await getBenefitDocuments(benefitId);
       setDocuments(docs);
     } catch (error) {
-      console.error('Error loading documents:', error);
-      toast.error('Erro ao carregar documentos');
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar documentos",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -96,17 +99,16 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
     try {
       const url = await getDocumentUrl(document.file_path);
       if (url) {
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = url;
-        link.download = document.file_name;
-        document.body.appendChild(link);
+        link.download = document.name;
+        window.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
       } else {
         toast.error('Erro ao gerar link de download');
       }
     } catch (error) {
-      console.error('Error downloading document:', error);
       toast.error('Erro ao baixar documento');
     }
   };
@@ -121,7 +123,6 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
       toast.success('Documento excluído com sucesso');
       loadDocuments();
     } catch (error) {
-      console.error('Error deleting document:', error);
       toast.error('Erro ao excluir documento');
     }
   };
@@ -174,7 +175,9 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                   className="pl-10"
                 />
               </div>
-              <Button onClick={() => setShowUploadModal(true)}>
+              <Button onClick={() => {
+                setShowUploadModal(true);
+              }}>
                 <Upload className="h-4 w-4 mr-2" />
                 Enviar Documento
               </Button>
@@ -205,11 +208,11 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">
-                              {document.file_name}
+                              {document.name}
                             </p>
                             <div className="flex items-center space-x-4 mt-1">
                               <Badge variant="secondary" className="text-xs">
-                                {DOCUMENT_TYPE_LABELS[document.document_type] || document.document_type}
+                                {document.file_type}
                               </Badge>
                               <span className="text-xs text-gray-500">
                                 {formatFileSize(document.file_size)}
@@ -220,7 +223,7 @@ export const DocumentsModal: React.FC<DocumentsModalProps> = ({
                               </div>
                               <div className="flex items-center text-xs text-gray-500">
                                 <User className="h-3 w-3 mr-1" />
-                                {document.uploaded_by}
+                                {document.status}
                               </div>
                             </div>
                           </div>

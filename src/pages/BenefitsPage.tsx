@@ -48,7 +48,8 @@ const BenefitsPage: React.FC = () => {
     checkRenewals,
     approveRenewal,
     denyRenewal,
-    extendRenewal
+    extendRenewal,
+    refreshBenefits
   } = useBenefits();
   
 
@@ -152,6 +153,14 @@ const BenefitsPage: React.FC = () => {
           <p className="text-gray-600">Gerencie planos e benefícios dos colaboradores</p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={refreshBenefits}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
 
           {canViewModule('beneficios') && (
             <Button 
@@ -379,7 +388,9 @@ const BenefitsPage: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleManageDocuments(benefit)}
+                          onClick={() => {
+                            handleManageDocuments(benefit);
+                          }}
                           title="Gerenciar Documentos"
                         >
                           <FileText className="w-4 h-4" />
@@ -491,3 +502,14 @@ const BenefitsPage: React.FC = () => {
 };
 
 export default BenefitsPage;
+
+
+const handleOpenDocumentsModal = (benefit: Benefit) => {
+  setSelectedBenefit(benefit);
+  setShowDocumentsModal(true);
+};
+
+const handleOpenEditModal = (benefit: Benefit) => {
+  setSelectedBenefit(benefit);
+  setShowEditDialog(true);
+};

@@ -67,8 +67,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   const onSubmit = async (data: UpdateUserFormData) => {
     if (!user || !canCreateUsers) return;
 
-    console.log('🚀 EditUserDialog onSubmit called with data:', data);
-    console.log('👤 Current user:', user);
 
     setIsLoading(true);
     try {
@@ -88,14 +86,11 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
         permissions: []
       };
       
-      console.log('📦 Prepared userData for update:', userData);
-      console.log('🔑 Using user ID:', user.auth_user_id || String(user.id));
       
       onUserUpdate(user.auth_user_id || String(user.id), userData);
       
       // Invalidate cache and notify permission changes if role changed
       if (data.role !== user.role) {
-        console.log('🔄 Role changed, notifying permission changes');
         notifyPermissionChange();
         forceRefreshPermissions();
       }
@@ -107,7 +102,6 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('💥 Error in EditUserDialog onSubmit:', error);
       toast({
         title: "Erro ao atualizar usuário",
         description: "Tente novamente em alguns instantes",

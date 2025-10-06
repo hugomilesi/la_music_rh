@@ -96,11 +96,42 @@ export class RecognitionService {
       let query = supabase
         .from('employee_evaluations')
         .select('*')
-        .eq('employee_id', employeeId)
+
+      // Se employeeId não for vazio, filtrar por ele
+      if (employeeId) {
+        query = query.eq('employee_id', employeeId)
+      }
 
       if (programId) {
         query = query.eq('program_id', programId)
       }
+
+      if (evaluationPeriod) {
+        query = query.eq('evaluation_period', evaluationPeriod)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
+
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Método específico para buscar todas as avaliações de um programa
+  static async getProgramEvaluations(
+    programId: string,
+    evaluationPeriod?: string
+  ): Promise<EmployeeEvaluation[]> {
+    try {
+      let query = supabase
+        .from('employee_evaluations')
+        .select('*')
+        .eq('program_id', programId)
 
       if (evaluationPeriod) {
         query = query.eq('evaluation_period', evaluationPeriod)

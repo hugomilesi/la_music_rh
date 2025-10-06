@@ -125,7 +125,7 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 
   // Redirect to home if not authenticated or session expired
   if (!user || !session || !isSessionValid) {
-    console.log('❌ ProtectedPageRoute - Redirecionando para home:', {
+    console.log('Authentication or session validation failed:', {
       hasUser: !!user,
       hasSession: !!session,
       isSessionValid,
@@ -151,7 +151,7 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
     return <Navigate to={firstAccessibleRoute} replace />;
   }
 
-  console.log('✅ ProtectedPageRoute - Acesso autorizado:', {
+  console.log('Permission check passed:', {
     requiredPermission,
     hasRequiredPermission,
     userRole: profile?.role,

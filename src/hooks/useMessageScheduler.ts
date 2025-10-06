@@ -133,7 +133,6 @@ export const useMessageScheduler = (): UseMessageSchedulerReturn => {
     if (!user?.id) return;
 
     try {
-      console.log('🔍 Validando permissões para usuário:', user.id);
       
       // Buscar dados do usuário
       const { data: userData, error: userError } = await supabase
@@ -144,7 +143,6 @@ export const useMessageScheduler = (): UseMessageSchedulerReturn => {
 
       if (userError) throw userError;
       
-      console.log('👤 Role do usuário:', userData?.role);
       
       // Criar permissões baseadas no role
       const userPermissions: UserPermissions = {
@@ -162,21 +160,16 @@ export const useMessageScheduler = (): UseMessageSchedulerReturn => {
           : ['notification']
       };
       
-      console.log('✅ Permissões criadas:', userPermissions);
       setPermissions(userPermissions);
     } catch (err) {
-      console.error('❌ Erro ao validar permissões:', err);
       setError('Erro ao validar permissões do usuário');
     }
   }, [user?.id]);
 
   // Função para verificar se pode gerenciar um tipo
   const canManageType = useCallback((type: string): boolean => {
-    console.log('🔍 Verificando permissão para gerenciar tipo:', type);
-    console.log('📋 Permissões atuais:', permissions);
     
     if (!permissions) {
-      console.log('❌ Nenhuma permissão carregada');
       return false;
     }
     
@@ -198,7 +191,6 @@ export const useMessageScheduler = (): UseMessageSchedulerReturn => {
         canManage = false;
     }
     
-    console.log(`✅ Pode gerenciar ${type}:`, canManage);
     return canManage;
   }, [permissions]);
 

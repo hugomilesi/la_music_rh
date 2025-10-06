@@ -1,125 +1,71 @@
 # Database Schema Map - LA Music RH
 
-## Project Information
-- **Project Name**: LA Music RH
-- **Project ID**: jrphwjkgepmgdgiqebyr
-- **Last Updated**: 2025-01-26
+## Última Atualização
+Data: 06/01/2025
+Alteração: Criação das tabelas de reconhecimento/gamificação
+- Added `recognition_programs` table for gamification modalities
+- Added `recognition_criteria` table for program criteria
+- Added `criterion_evaluations` table for storing employee evaluations
+- Created `get_employee_ranking` function for calculating employee rankings
+- Configured RLS policies and indexes for all recognition tables
+- Inserted initial data for "Fideliza+", "Matriculador+ LA", and "Professor+ LA" programs
+- Fixed 404 error in recognition data loading
 
-## Benefits System Tables
+## Tabelas Principais
 
-### benefits
-Main benefits table containing all benefit information.
-- `id` (uuid) - Primary key
-- `name` (varchar) - Benefit name
-- `description` (text) - Benefit description
-- `benefit_type_id` (uuid) - Foreign key to benefit_types
-- `cost` (decimal) - Total cost
-- `employer_contribution` (decimal) - Employer contribution amount
-- `employee_contribution` (decimal) - Employee contribution amount
-- `coverage_details` (text) - Coverage details
-- `provider` (varchar) - Benefit provider
-- `is_active` (boolean) - Active status
-- `effective_date` (date) - Effective date
-- `expiration_date` (date) - Expiration date
-- `eligibility_rules` (text) - Eligibility rules
-- `created_at` (timestamp) - Creation timestamp
-- `updated_at` (timestamp) - Update timestamp
+### 1. users
+- **Descrição**: Usuários do sistema com roles hierárquicos
+- **Campos principais**: id, username, email, role, department_id, position_id, unit
+- **Roles**: super_admin, admin, gestor_rh, gerente
+- **Unidades**: campo-grande, barra, recreio
 
-### benefit_types
-Types/categories of benefits.
-- Contains benefit type definitions with colors and names
+### 2. departments
+- **Descrição**: Departamentos da empresa
+- **Campos principais**: id, name, description, manager_id
 
-### employee_benefits
-Employee enrollments in benefits.
-- Links employees to benefits with enrollment details
-- Includes dependent information
-- Tracks enrollment status and dates
+### 3. role_permissions
+- **Descrição**: Permissões por role (gestor_rh e gerente)
+- **Módulos**: dashboard, employees, payroll, benefits, vacation, evaluation, reports, settings, users, support, nps
 
-### benefit_performance_goals
-Performance goals associated with benefits.
-- `id` (uuid) - Primary key
-- `benefit_id` (uuid) - Foreign key to benefits
-- `title` (varchar) - Goal title
-- `description` (text) - Goal description
-- `target_value` (decimal) - Target value
-- `current_value` (decimal) - Current progress
-- `unit` (varchar) - Unit of measurement
-- `status` (varchar) - Goal status
-- `weight` (decimal) - Goal weight/importance
-- `deadline` (date) - Goal deadline
-- `created_at` (timestamp) - Creation timestamp
-- `updated_at` (timestamp) - Update timestamp
+### 4. benefits & benefit_types
+- **Descrição**: Sistema de benefícios da empresa
+- **Relacionamento**: benefits -> benefit_type_id -> benefit_types
 
-### benefit_documents
-Document management for benefits.
-- `id` (uuid) - Primary key
-- `benefit_id` (uuid) - Foreign key to benefits
-- `employee_benefit_id` (uuid) - Foreign key to employee_benefits (nullable)
-- `name` (varchar) - Document name
-- `file_path` (text) - File storage path
-- `file_type` (varchar) - File type/extension
-- `file_size` (integer) - File size in bytes
-- `status` (varchar) - Document status
-- `uploaded_by` (uuid) - User who uploaded
-- `created_at` (timestamp) - Upload timestamp
-- `updated_at` (timestamp) - Update timestamp
+### 5. payroll_entries
+- **Descrição**: Folha de pagamento (pode incluir colaboradores não cadastrados)
+- **Unidades especiais**: Barra, CG EMLA, CG LAMK, Professores Multi-Unidade, Recreio, Staff Rateado
 
-### benefit_renewal_settings
-Renewal configuration for benefits.
-- Stores renewal periods and settings for automatic renewals
+### 6. incidents
+- **Descrição**: Sistema de gestão de incidentes
+- **Status**: open, in_progress, resolved, closed
+- **Severidade**: low, medium, high, critical
 
-## Document System Tables
+## Tabelas de Reconhecimento/Gamificação (NOVO)
 
-### documents
-General document storage table.
+### 7. recognition_programs
+- **Descrição**: Programas de gamificação e reconhecimento
+- **Campos**: id, name, description, color, icon, total_stars, target_roles, is_active
+- **Programas atuais**:
+  - Fideliza+ (Farmers) - Verde #10B981
+  - Matriculador+ LA (Hunters) - Azul #3B82F6  
+  - Professor+ LA (Professores) - Roxo #8B5CF6
 
-### required_documents
-Required documents configuration.
+### 8. recognition_criteria
+- **Descrição**: Critérios de avaliação para cada programa
+- **Campos**: id, program_id, title, description, type, weight, is_required
+- **Tipos**: checkbox, stars, observation
+- **Relacionamento**: program_id -> recognition_programs.id
 
-### user_required_documents
-User-specific required documents tracking.
+## Políticas de Segurança (RLS)
+- Todas as tabelas têm RLS habilitado
+- Políticas para authenticated users e service_role
+- Políticas específicas para super_admin/admin em algumas tabelas
 
-## Features Implemented
+## Índices Importantes
+- idx_recognition_criteria_program_id (performance para consultas de critérios)
 
-### ✅ Completed Features
-1. **Benefits Management**
-   - CRUD operations for benefits
-   - Benefit types and categories
-   - Employee enrollment system
-   - Dependent management
-
-2. **Performance Goals System**
-   - Goal creation and management
-   - Progress tracking
-   - Status management
-   - Weight-based importance
-
-3. **Document Management System**
-   - File upload to Supabase Storage
-   - Document metadata storage
-   - Document type categorization
-   - File size and type validation
-   - Document download and deletion
-
-4. **Renewal Management**
-   - Automatic renewal detection
-   - Renewal approval workflow
-   - Extension capabilities
-
-### 🔄 Integration Status
-- Frontend components fully integrated
-- Backend services implemented
-- Database schema complete
-- File storage configured
-
-## Storage Configuration
-- **Storage Bucket**: benefit-documents
-- **File Types Supported**: PDF, DOC, DOCX, JPG, PNG
-- **Max File Size**: 10MB
-- **Access**: Authenticated users only
-
-## Security
-- Row Level Security (RLS) policies implemented
-- File access through signed URLs
-- User-based access control
-- Audit trail through timestamps and user tracking
+## Observações
+- Sistema de permissões dinâmico para gestor_rh e gerente
+- Super_admin e admin têm acesso total
+- Folha de pagamento permite colaboradores não cadastrados
+- Sistema de gamificação integrado com roles de usuário

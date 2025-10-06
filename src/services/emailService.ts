@@ -40,8 +40,6 @@ export class EmailService {
    */
   async sendEmail(emailData: EmailData): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      console.log('EmailService: Enviando email para:', Array.isArray(emailData.to) ? emailData.to.length + ' destinatários' : emailData.to);
-      console.log('EmailService: Assunto:', emailData.subject);
 
       const { data, error } = await resend.emails.send({
         from: emailData.from || this.defaultFrom,
@@ -54,14 +52,11 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('EmailService: Erro ao enviar email:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('EmailService: Email enviado com sucesso, ID:', data?.id);
       return { success: true, messageId: data?.id };
     } catch (error) {
-      console.error('EmailService: Erro inesperado ao enviar email:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   }

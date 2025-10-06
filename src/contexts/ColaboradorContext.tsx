@@ -45,14 +45,11 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
     try {
       setIsLoading(true);
       setError(null);
-      console.log('📋 ColaboradorContext: Carregando colaboradores...');
       
       const data = await colaboradorService.getColaboradores();
       setColaboradores(data);
       
-      console.log('✅ ColaboradorContext: Colaboradores carregados:', data.length);
     } catch (error) {
-      console.error('❌ ColaboradorContext: Erro ao carregar colaboradores:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setError(errorMessage);
       toast({
@@ -95,7 +92,6 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Criar colaborador
   const criarColaborador = async (colaboradorData: NovoColaborador): Promise<Colaborador> => {
     try {
-      console.log('➕ ColaboradorContext: Criando colaborador:', colaboradorData.nome);
       
       const novoColaborador = await colaboradorService.criarColaborador(colaboradorData);
       
@@ -107,11 +103,9 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
         description: `Colaborador ${novoColaborador.nome} criado com sucesso.`,
       });
       
-      console.log('✅ ColaboradorContext: Colaborador criado:', novoColaborador.nome);
       return novoColaborador;
       
     } catch (error) {
-      console.error('❌ ColaboradorContext: Erro ao criar colaborador:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -125,7 +119,6 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Atualizar colaborador
   const atualizarColaborador = async (id: string, updates: AtualizarColaborador): Promise<Colaborador> => {
     try {
-      console.log('✏️ ColaboradorContext: Atualizando colaborador:', id);
       
       const colaboradorAtualizado = await colaboradorService.atualizarColaborador(id, updates);
       
@@ -137,11 +130,9 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
         description: `Colaborador ${colaboradorAtualizado.nome} atualizado com sucesso.`,
       });
       
-      console.log('✅ ColaboradorContext: Colaborador atualizado:', colaboradorAtualizado.nome);
       return colaboradorAtualizado;
       
     } catch (error) {
-      console.error('❌ ColaboradorContext: Erro ao atualizar colaborador:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",
@@ -156,7 +147,6 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
   const deletarColaborador = async (id: string): Promise<void> => {
     try {
       const colaborador = colaboradores.find(c => c.id === id);
-      console.log('🗑️ ColaboradorContext: Deletando colaborador:', colaborador?.nome || id);
       
       await colaboradorService.deletarColaborador(id);
       
@@ -168,10 +158,8 @@ export const ColaboradorProvider: React.FC<{ children: ReactNode }> = ({ childre
         description: `Colaborador ${colaborador?.nome || 'selecionado'} removido com sucesso.`,
       });
       
-      console.log('✅ ColaboradorContext: Colaborador deletado');
       
     } catch (error) {
-      console.error('❌ ColaboradorContext: Erro ao deletar colaborador:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro",

@@ -23,7 +23,6 @@ export const requiredDocumentsService = {
   // Buscar todos os documentos (obrigatórios e opcionais) ativos
   async getRequiredDocuments(): Promise<RequiredDocument[]> {
     try {
-      console.log('🔍 [requiredDocumentsService] Buscando TODOS os documentos ativos...');
       
       const { data, error } = await supabase
         .from('required_documents')
@@ -32,12 +31,9 @@ export const requiredDocumentsService = {
         .order('name');
 
       if (error) {
-        console.error('❌ [requiredDocumentsService] Erro na consulta:', error);
         throw error;
       }
 
-      console.log('📋 [requiredDocumentsService] Documentos encontrados:', data?.length || 0);
-      console.log('📊 [requiredDocumentsService] Dados:', data);
 
       const documents: RequiredDocument[] = data?.map(item => ({
         id: item.id,
@@ -51,10 +47,8 @@ export const requiredDocumentsService = {
         updated_at: item.updated_at
       })) || [];
 
-      console.log('✅ [requiredDocumentsService] Documentos processados:', documents.length);
       return documents;
     } catch (error) {
-      console.error('❌ [requiredDocumentsService] Erro no serviço de documentos:', error);
       throw error;
     }
   },
@@ -71,11 +65,9 @@ export const requiredDocumentsService = {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao atualizar documento obrigatório:', error);
         throw error;
       }
     } catch (error) {
-      console.error('Erro no serviço de atualização de documento:', error);
       throw error;
     }
   },
@@ -94,13 +86,11 @@ export const requiredDocumentsService = {
         .single();
 
       if (error) {
-        console.error('Erro ao criar documento obrigatório:', error);
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Erro no serviço de criação de documento:', error);
       throw error;
     }
   },
@@ -117,11 +107,9 @@ export const requiredDocumentsService = {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao remover documento obrigatório:', error);
         throw error;
       }
     } catch (error) {
-      console.error('Erro no serviço de remoção de documento:', error);
       throw error;
     }
   },
@@ -138,11 +126,9 @@ export const requiredDocumentsService = {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao atualizar nome do documento:', error);
         throw error;
       }
     } catch (error) {
-      console.error('Erro no serviço de atualização de nome:', error);
       throw error;
     }
   },
@@ -180,12 +166,10 @@ export const requiredDocumentsService = {
       
       for (const result of results) {
         if (result.error) {
-          console.error('Erro ao atualizar documento:', result.error);
           throw result.error;
         }
       }
     } catch (error) {
-      console.error('Erro no serviço de atualização múltipla:', error);
       throw error;
     }
   }

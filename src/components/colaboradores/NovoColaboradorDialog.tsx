@@ -64,9 +64,11 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
   const [formData, setFormData] = useState<NovoColaborador>({
     nome: '',
     email: '',
+    telefone: '',
     cpf: '',
     cargo: '',
     departamento: '',
+    dataAdmissao: '',
     unidade: UnidadeColaborador.CAMPO_GRANDE,
     tipo_contratacao: TipoContratacao.CLT,
     banco: '',
@@ -135,7 +137,6 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
       
       return true;
     } catch (error) {
-      console.error('Erro ao verificar duplicatas:', error);
       toast({
         title: "Erro",
         description: "Erro ao validar dados. Tente novamente.",
@@ -192,7 +193,6 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
       onColaboradorCriado();
       
     } catch (error) {
-      console.error('Erro ao criar colaborador:', error);
       toast({
         title: "Erro",
         description: "Erro ao criar colaborador. Tente novamente.",
@@ -242,7 +242,6 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
         .order('name');
 
       if (cargosError) {
-        console.error('Erro ao carregar cargos:', cargosError);
       } else {
         setCargos(cargosData || []);
       }
@@ -254,12 +253,10 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
         .order('name');
 
       if (departamentosError) {
-        console.error('Erro ao carregar departamentos:', departamentosError);
       } else {
         setDepartamentos(departamentosData || []);
       }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar cargos e departamentos.",
@@ -328,6 +325,16 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
                 {errors.cpf && (
                   <p className="text-sm text-red-500 mt-1">{errors.cpf}</p>
                 )}
+              </div>
+              
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone || ''}
+                  onChange={(e) => updateField('telefone', e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
               </div>
             </div>
           </div>

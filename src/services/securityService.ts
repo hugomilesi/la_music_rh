@@ -12,7 +12,6 @@ export const securityService = {
    */
   async applySecurityFixes(): Promise<SecurityFixResult> {
     try {
-      console.log('🔄 SecurityService: Aplicando correções de segurança');
       
       // Fase 1: Correção das funções críticas com SECURITY DEFINER
       const functionsToFix = [
@@ -50,23 +49,18 @@ export const securityService = {
             });
             
             if (error) {
-              console.error(`❌ SecurityService: Erro ao corrigir função ${funcName}:`, error);
               results.push({ function: funcName, status: 'error', error: error.message });
             } else {
-              console.log(`✅ SecurityService: Função ${funcName} corrigida com sucesso`);
               results.push({ function: funcName, status: 'success' });
             }
           } else {
-            console.log(`⚠️ SecurityService: Função ${funcName} não encontrada`);
             results.push({ function: funcName, status: 'not_found' });
           }
         } catch (error) {
-          console.error(`❌ SecurityService: Erro ao processar função ${funcName}:`, error);
           results.push({ function: funcName, status: 'error', error: error });
         }
       }
       
-      console.log('✅ SecurityService: Correções de segurança aplicadas');
       return {
         success: true,
         message: 'Correções de segurança aplicadas',
@@ -74,7 +68,6 @@ export const securityService = {
       };
       
     } catch (error) {
-      console.error('❌ SecurityService: Erro ao aplicar correções de segurança:', error);
       return {
         success: false,
         message: 'Erro ao aplicar correções de segurança',
@@ -88,13 +81,11 @@ export const securityService = {
    */
   async optimizeRLSPolicies(): Promise<SecurityFixResult> {
     try {
-      console.log('🔄 SecurityService: Otimizando políticas RLS');
       
       // Executar otimizações de RLS usando função SQL
       const { error } = await supabase.rpc('optimize_rls_policies');
       
       if (error) {
-        console.error('❌ SecurityService: Erro ao otimizar políticas RLS:', error);
         return {
           success: false,
           message: 'Erro ao otimizar políticas RLS',

@@ -79,7 +79,6 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log('🔄 NewSurveyModal: Iniciando criação de pesquisa');
       
       const newSurvey = {
         title: formData.title,
@@ -96,11 +95,9 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
         isAnonymous: formData.isAnonymous
       };
 
-      console.log('📤 Enviando pesquisa para criação:', newSurvey);
       
       await createSurvey(newSurvey);
       
-      console.log('✅ Pesquisa criada com sucesso!');
       
       // Mostrar alert de sucesso
       setShowSuccessAlert(true);
@@ -127,9 +124,6 @@ export const NewSurveyModal: React.FC<NewSurveyModalProps> = ({
       }, 2000);
       
     } catch (error) {
-      console.error('❌ Erro detalhado ao criar pesquisa:', error);
-      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'Sem stack trace');
-      console.error('❌ Mensagem:', error instanceof Error ? error.message : 'Erro desconhecido');
       alert('Erro ao criar pesquisa. Tente novamente.');
     } finally {
       setIsSubmitting(false);

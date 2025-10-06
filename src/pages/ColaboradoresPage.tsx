@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Select, 
   SelectContent, 
@@ -87,6 +88,10 @@ const ColaboradoresPage: React.FC = () => {
   const [detalhesColaboradorOpen, setDetalhesColaboradorOpen] = useState(false);
   const [colaboradorSelecionado, setColaboradorSelecionado] = useState<Colaborador | null>(null);
   
+  // Estados para seleção múltipla
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Verificar permissões
   const canView = canViewModule('colaboradores');
   const canManage = canManageModule('colaboradores');
@@ -95,14 +100,10 @@ const ColaboradoresPage: React.FC = () => {
   const carregarColaboradores = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📋 Carregando colaboradores...');
       
       const data = await colaboradorService.getColaboradores();
       setColaboradores(data);
-      
-      console.log('✅ Colaboradores carregados:', data.length);
     } catch (error) {
-      console.error('❌ Erro ao carregar colaboradores:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar colaboradores. Tente novamente.",
@@ -113,7 +114,7 @@ const ColaboradoresPage: React.FC = () => {
     }
   }, [toast]);
   
-  // Carregar colaboradores na inicialização
+  // Carregar dados na inicialização
   useEffect(() => {
     if (!permissionsLoading && canView) {
       carregarColaboradores();
@@ -124,23 +125,24 @@ const ColaboradoresPage: React.FC = () => {
   const colaboradoresFiltrados = useMemo(() => {
     return colaboradores.filter(colaborador => {
       const matchesSearch = !filtros.searchTerm || 
-        colaborador.nome?.toLowerCase().includes(filtros.searchTerm.toLowerCase()) ||
-        colaborador.email?.toLowerCase().includes(filtros.searchTerm.toLowerCase()) ||
-        colaborador.cpf?.includes(filtros.searchTerm);
+        colaborador.nome.toLowerCase().includes(filtros.searchTerm.toLowerCase()) ||
+        colaborador.email.toLowerCase().includes(filtros.searchTerm.toLowerCase()) ||
+        colaborador.cpf.includes(filtros.searchTerm) ||
+        colaborador.cargo.toLowerCase().includes(filtros.searchTerm.toLowerCase());
       
       const matchesUnidade = !filtros.unidade || colaborador.unidade === filtros.unidade;
       const matchesDepartamento = !filtros.departamento || colaborador.departamento === filtros.departamento;
-      const matchesTipoContratacao = !filtros.tipo_contratacao || colaborador.tipo_contratacao === filtros.tipo_contratacao;
+      const matchesTipo = !filtros.tipo_contratacao || colaborador.tipo_contratacao === filtros.tipo_contratacao;
       const matchesStatus = !filtros.status || colaborador.status === filtros.status;
       
-      return matchesSearch && matchesUnidade && matchesDepartamento && matchesTipoContratacao && matchesStatus;
+      return matchesSearch && matchesUnidade && matchesDepartamento && matchesTipo && matchesStatus;
     });
   }, [colaboradores, filtros]);
   
-  // Obter departamentos únicos
+  // Obter departamentos únicos para o filtro
   const departamentosUnicos = useMemo(() => {
-    const departamentos = [...new Set(colaboradores.map(c => c.departamento))];
-    return departamentos.sort();
+    const departamentos = colaboradores.map(c => c.departamento).filter(Boolean);
+    return [...new Set(departamentos)].sort();
   }, [colaboradores]);
   
   // Handlers
@@ -160,7 +162,6 @@ const ColaboradoresPage: React.FC = () => {
   
   const handleDeletarColaborador = async (colaborador: Colaborador) => {
     try {
-      console.log('🗑️ Deletando colaborador:', colaborador.nome);
       
       await colaboradorService.deletarColaborador(colaborador.id);
       
@@ -173,7 +174,6 @@ const ColaboradoresPage: React.FC = () => {
       await carregarColaboradores();
       
     } catch (error) {
-      console.error('❌ Erro ao deletar colaborador:', error);
       toast({
         title: "Erro",
         description: "Erro ao remover colaborador. Tente novamente.",
@@ -181,7 +181,71 @@ const ColaboradoresPage: React.FC = () => {
       });
     }
   };
-  
+
+  // Handlers para seleção múltipla
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedEmployees(colaboradoresFiltrados.map(c => c.id));
+    } else {
+      setSelectedEmployees([]);
+    }
+  };
+
+  const handleSelectEmployee = (employeeId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedEmployees(prev => [...prev, employeeId]);
+    } else {
+      setSelectedEmployees(prev => prev.filter(id => id !== employeeId));
+    }
+  };
+
+  const handleDeleteMultiple = async () => {
+    if (selectedEmployees.length === 0) return;
+    
+    setIsDeleting(true);
+    let successCount = 0;
+    let errorCount = 0;
+    
+    try {
+      for (const employeeId of selectedEmployees) {
+        try {
+          await colaboradorService.deletarColaborador(employeeId);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        toast({
+          title: "Sucesso",
+          description: `${successCount} colaborador(es) removido(s) com sucesso.`,
+        });
+      }
+      
+      if (errorCount > 0) {
+        toast({
+          title: "Atenção",
+          description: `${errorCount} colaborador(es) não puderam ser removidos.`,
+          variant: "destructive",
+        });
+      }
+      
+      // Limpar seleção e recarregar lista
+      setSelectedEmployees([]);
+      await carregarColaboradores();
+      
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao remover colaboradores. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleColaboradorCriado = () => {
     setNovoColaboradorOpen(false);
     carregarColaboradores();
@@ -203,7 +267,7 @@ const ColaboradoresPage: React.FC = () => {
     });
   };
   
-  // Verificar se tem permissão para ver a página
+  // Verificar se o usuário tem permissão para visualizar
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -211,40 +275,63 @@ const ColaboradoresPage: React.FC = () => {
       </div>
     );
   }
-  
+
   if (!canView) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-600 mb-2">Acesso Negado</h2>
-          <p className="text-gray-500">Você não tem permissão para acessar esta página.</p>
+          <h2 className="text-xl font-semibold text-gray-600 mb-2">
+            Acesso Negado
+          </h2>
+          <p className="text-gray-500">
+            Você não tem permissão para visualizar esta página.
+          </p>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Colaboradores</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold tracking-tight">Colaboradores</h1>
+          <p className="text-muted-foreground">
             Gerencie os colaboradores da empresa
           </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={carregarColaboradores}
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          
+        <div className="flex items-center gap-2">
+          {selectedEmployees.length > 0 && canManage && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={isDeleting}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Remover Selecionados ({selectedEmployees.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar Exclusão Múltipla</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja remover {selectedEmployees.length} colaborador(es) selecionado(s)? 
+                    Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteMultiple}
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Removendo...' : 'Remover Todos'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {canManage && (
             <Button onClick={handleNovoColaborador}>
               <Plus className="w-4 h-4 mr-2" />
@@ -263,18 +350,16 @@ const ColaboradoresPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Busca */}
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nome, email ou CPF..."
-                  value={filtros.searchTerm || ''}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, searchTerm: e.target.value }))}
-                  className="pl-10"
-                />
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome, email, CPF ou cargo..."
+                value={filtros.searchTerm}
+                onChange={(e) => setFiltros(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="pl-10"
+              />
             </div>
             
             {/* Unidade */}
@@ -397,6 +482,14 @@ const ColaboradoresPage: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canManage && (
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedEmployees.length === colaboradoresFiltrados.length && colaboradoresFiltrados.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>CPF</TableHead>
@@ -410,6 +503,14 @@ const ColaboradoresPage: React.FC = () => {
                 <TableBody>
                   {colaboradoresFiltrados.map((colaborador) => (
                     <TableRow key={colaborador.id}>
+                      {canManage && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedEmployees.includes(colaborador.id)}
+                            onCheckedChange={(checked) => handleSelectEmployee(colaborador.id, checked as boolean)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-medium">
                         {colaborador.nome}
                       </TableCell>

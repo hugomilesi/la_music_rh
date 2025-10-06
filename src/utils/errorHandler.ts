@@ -19,13 +19,11 @@ class GlobalErrorHandler {
 
   init() {
     if (this.isInitialized) {
-      console.warn('GlobalErrorHandler já foi inicializado');
       return;
     }
 
     this.setupGlobalErrorHandlers();
     this.isInitialized = true;
-    console.log('GlobalErrorHandler inicializado');
   }
 
   private setupGlobalErrorHandlers() {
@@ -108,7 +106,6 @@ class GlobalErrorHandler {
       this.errorQueue.shift();
     }
 
-    console.log('GlobalErrorHandler capturou erro:', errorReport);
 
     // Tratamento específico para erros de WebSocket
     if (errorReport.type === 'websocket') {
@@ -117,11 +114,9 @@ class GlobalErrorHandler {
   }
 
   private handleWebSocketError(errorReport: ErrorReport) {
-    console.log('Tratando erro de WebSocket:', errorReport.message);
     
     // Verifica se é o erro específico de múltiplas subscrições
     if (errorReport.message.includes('subscribe multiple times')) {
-      console.log('Detectado erro de múltiplas subscrições, forçando cleanup...');
       this.forceWebSocketCleanup();
     }
   }
@@ -138,7 +133,6 @@ class GlobalErrorHandler {
         supabaseInstances.forEach(key => {
           const instance = (window as any)[key];
           if (instance && typeof instance.removeAllChannels === 'function') {
-            console.log('Removendo todos os canais da instância:', key);
             instance.removeAllChannels();
           }
         });
@@ -146,11 +140,9 @@ class GlobalErrorHandler {
       
       // Agenda uma limpeza adicional
       setTimeout(() => {
-        console.log('Executando limpeza adicional de WebSocket...');
         this.deepCleanWebSockets();
       }, 1000);
     } catch (error) {
-      console.error('Erro durante cleanup forçado:', error);
     }
   }
 
@@ -163,17 +155,14 @@ class GlobalErrorHandler {
         window.addEventListener(event, this.cleanupOnUnload);
       });
     } catch (error) {
-      console.error('Erro durante limpeza profunda:', error);
     }
   }
 
   private cleanupOnUnload = () => {
-    console.log('Executando cleanup no unload da página...');
     try {
       // Força cleanup de todas as conexões
       this.forceWebSocketCleanup();
     } catch (error) {
-      console.error('Erro durante cleanup no unload:', error);
     }
   };
 

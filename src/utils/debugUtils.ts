@@ -53,7 +53,6 @@ export const logMemoryUsage = () => {
 
 // Clear console with timestamp
 export const clearConsoleWithTimestamp = () => {
-  console.clear();
   // Console clear logging disabled
 };
 

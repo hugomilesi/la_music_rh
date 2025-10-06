@@ -112,7 +112,6 @@ export const fetchSystemStats = async () => {
       .is('deleted_at', null);
 
     if (userError) {
-      console.error('Error fetching user count:', userError);
     }
 
     // Get department count
@@ -121,7 +120,6 @@ export const fetchSystemStats = async () => {
       .select('*', { count: 'exact', head: true });
 
     if (departmentError) {
-      console.error('Error fetching department count:', departmentError);
     }
 
     // Get role count
@@ -130,7 +128,6 @@ export const fetchSystemStats = async () => {
       .select('*', { count: 'exact', head: true });
 
     if (roleError) {
-      console.error('Error fetching role count:', roleError);
     }
 
     // Get departments data for additional stats (optional)
@@ -139,7 +136,6 @@ export const fetchSystemStats = async () => {
       .select('id, name, description');
 
     if (departmentsError) {
-      console.error('Error fetching departments data:', departmentsError);
     }
 
     const stats = {
@@ -154,7 +150,6 @@ export const fetchSystemStats = async () => {
 
     return stats;
   } catch (error) {
-    console.error('Error in fetchSystemStats:', error);
     // Return default stats instead of throwing
     return {
       totalEmployees: 0,
@@ -286,7 +281,6 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
  */
 export const updateSystemUser = async (userId: string, updates: any): Promise<void> => {
   try {
-    console.log('🔄 updateSystemUser called with:', { userId, updates });
     
     // Prepare update data
     const updateData: any = {};
@@ -303,7 +297,6 @@ export const updateSystemUser = async (userId: string, updates: any): Promise<vo
         'inactive': 'inativo'
       };
       updateData.status = statusMap[updates.status] || updates.status;
-      console.log('✅ Status mapeado:', updates.status, '->', updateData.status);
     }
     // Position é enviado como nome do cargo, mas precisamos converter para position_id
     if (updates.position) {
@@ -315,13 +308,11 @@ export const updateSystemUser = async (userId: string, updates: any): Promise<vo
         .single();
       
       if (roleError) {
-        console.error('❌ Erro ao buscar cargo:', roleError);
         throw new Error(`Cargo "${updates.position}" não encontrado`);
       }
       
       if (roleData) {
         updateData.position_id = roleData.id;
-        console.log('✅ Cargo convertido:', updates.position, '->', roleData.id);
       }
     }
     if (updates.department) updateData.department = updates.department;
@@ -331,10 +322,8 @@ export const updateSystemUser = async (userId: string, updates: any): Promise<vo
     
     updateData.updated_at = new Date().toISOString();
 
-    console.log('📝 Prepared update data:', updateData);
 
     // Try to update by auth_user_id first (more reliable)
-    console.log('🔍 Attempting update by auth_user_id:', userId);
     const { data: authUpdateData, error: authError } = await supabase
       .from('users')
       .update(updateData)
@@ -342,10 +331,8 @@ export const updateSystemUser = async (userId: string, updates: any): Promise<vo
       .select();
 
     if (authError) {
-      console.log('❌ Auth ID update failed, trying by ID:', authError);
       
       // If that fails, try by id
-      console.log('🔍 Attempting update by id:', userId);
       const { data: idUpdateData, error: idError } = await supabase
         .from('users')
         .update(updateData)
@@ -353,16 +340,12 @@ export const updateSystemUser = async (userId: string, updates: any): Promise<vo
         .select();
       
       if (idError) {
-        console.error('💥 Both update attempts failed:', { authError, idError });
         throw idError;
       }
       
-      console.log('✅ Update by ID successful:', idUpdateData);
     } else {
-      console.log('✅ Update by auth_user_id successful:', authUpdateData);
     }
   } catch (error) {
-    console.error('Error in updateSystemUser:', error);
     throw error;
   }
 };

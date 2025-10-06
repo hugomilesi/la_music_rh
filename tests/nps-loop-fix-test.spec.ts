@@ -12,21 +12,18 @@ test.describe('NPS Loop Fix Test', () => {
     // Interceptar requisições GET para message_schedules
     page.route('**/rest/v1/message_schedules*', async (route) => {
       requests.messageSchedules++;
-      console.log(`GET message_schedules - Count: ${requests.messageSchedules}`);
       await route.continue();
     });
 
     // Interceptar requisições POST para get_schedule_statistics
     page.route('**/rest/v1/rpc/get_schedule_statistics', async (route) => {
       requests.statistics++;
-      console.log(`POST get_schedule_statistics - Count: ${requests.statistics}`);
       await route.continue();
     });
 
     // Interceptar requisições POST para validate_user_permissions_for_schedule
   page.route('**/rest/v1/rpc/validate_user_permissions_for_schedule', async (route) => {
     requests.permissions++;
-    console.log(`POST validate_user_permissions_for_schedule - Count: ${requests.permissions}`);
       await route.continue();
     });
 
@@ -47,7 +44,6 @@ test.describe('NPS Loop Fix Test', () => {
     await page.waitForTimeout(5000);
 
     // Verificar se não há loop (máximo 3 requisições de cada tipo é aceitável)
-    console.log('Final counts:', requests);
     
     expect(requests.messageSchedules).toBeLessThanOrEqual(3);
     expect(requests.statistics).toBeLessThanOrEqual(3);

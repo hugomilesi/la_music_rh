@@ -12,7 +12,6 @@ export const employeeService = {
         .order('nome', { ascending: true });
       
       if (error) {
-        console.error('❌ Erro ao buscar colaboradores:', error);
         throw error;
       }
       
@@ -37,7 +36,6 @@ export const employeeService = {
       return mappedData;
       
     } catch (error) {
-      console.error('💥 Erro crítico no employeeService.getEmployees:', error);
       throw error;
     }
   },

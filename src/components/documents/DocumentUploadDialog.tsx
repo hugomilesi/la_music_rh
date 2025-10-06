@@ -47,8 +47,16 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     'image/jpeg',
     'image/png', 
     'image/jpg',
+    'image/gif',
+    'image/webp',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+    'text/plain',
+    'application/zip',
+    'application/x-zip-compressed'
   ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +72,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
 
       // Validate file type
       if (!allowedTypes.includes(file.type)) {
-        setUploadError('Tipo de arquivo não suportado. Use PDF, DOC, DOCX, JPG ou PNG.');
+        setUploadError('Tipo de arquivo não suportado. Use PDF, DOC, DOCX, Excel, CSV, TXT, ZIP, JPG ou PNG.');
         return;
       }
 
@@ -90,13 +98,24 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     }
 
     try {
-      await uploadDocument({
+      console.log({
+        employeeId: formData.employeeId,
+        documentType: formData.documentType,
+        expiryDate: formData.expiryDate || undefined,
+        notes: formData.notes || undefined,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type
+      });
+
+      const result = await uploadDocument({
         file: selectedFile,
         employeeId: formData.employeeId,
         documentType: formData.documentType,
         expiryDate: formData.expiryDate || undefined,
         notes: formData.notes || undefined
       });
+
 
       // Reset form on success
       setFormData({
@@ -109,7 +128,6 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
       setUploadError(null);
       onOpenChange(false);
     } catch (error) {
-      // Log desabilitado: Error uploading document
       setUploadError('Erro ao enviar documento. Tente novamente.');
     }
   };
@@ -213,7 +231,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
               <input
                 type="file"
                 id="file"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.jpg,.jpeg,.png,.gif,.webp"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -235,7 +253,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                   <div className="text-center">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">Clique para enviar arquivo</p>
-                    <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG até 10MB</p>
+                    <p className="text-xs text-gray-400">PDF, DOC, Excel, CSV, TXT, ZIP, Imagens até 10MB</p>
                   </div>
                 )}
               </label>

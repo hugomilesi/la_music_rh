@@ -61,7 +61,6 @@ export const EditDocumentDialog: React.FC<EditDocumentDialogProps> = ({
         
         setRequiredDocuments(mappedData);
       } catch (error) {
-        console.error('Erro ao carregar tipos de documento:', error);
         toast.error('Erro ao carregar tipos de documento');
       }
     };

@@ -32,7 +32,6 @@ export const useSupabaseSubscription = ({
         isInitializedRef.current = false;
         retryCountRef.current = 0;
       } catch (error) {
-        console.warn(`Error cleaning up subscription ${channelName}:`, error);
       }
     }
   }, [channelName]);
@@ -64,7 +63,6 @@ export const useSupabaseSubscription = ({
             isInitializedRef.current = true;
             retryCountRef.current = 0;
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn(`Subscription ${channelName} failed with status: ${status}`, err);
             
             // Retry logic
             if (retryCountRef.current < maxRetries) {
@@ -74,14 +72,12 @@ export const useSupabaseSubscription = ({
                 subscribe();
               }, Math.min(retryCountRef.current * 2000, 10000)); // Exponential backoff
             } else {
-              console.error(`Max retries reached for subscription ${channelName}`);
             }
           } else if (status === 'CLOSED') {
             cleanup();
           }
         });
     } catch (error) {
-      console.error(`Error setting up subscription ${channelName}:`, error);
     }
   }, [channelName, table, onDataChange, enabled, cleanup]);
 

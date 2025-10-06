@@ -53,7 +53,6 @@ const LocalNPSSurveyPage: React.FC = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao validar token:', error);
         setError('Erro interno do servidor');
         return;
       }
@@ -69,7 +68,6 @@ const LocalNPSSurveyPage: React.FC = () => {
         setSubmitted(true);
       }
     } catch (err) {
-      console.error('Erro na validação:', err);
       setError('Erro ao validar token');
     } finally {
       setLoading(false);
@@ -94,14 +92,12 @@ const LocalNPSSurveyPage: React.FC = () => {
         });
 
       if (error) {
-        console.error('Erro ao enviar resposta:', error);
         setError('Erro ao enviar resposta');
         return;
       }
 
       setSubmitted(true);
     } catch (err) {
-      console.error('Erro no envio:', err);
       setError('Erro ao enviar resposta');
     } finally {
       setSubmitting(false);

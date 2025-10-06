@@ -20,7 +20,7 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
   open,
   onOpenChange
 }) => {
-  const { benefitTypes, addBenefit } = useBenefits();
+  const { benefitTypes, addBenefit, uploadBenefitDocument } = useBenefits();
   const [formData, setFormData] = useState({
     name: '',
     typeId: '',
@@ -37,7 +37,7 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
   const [eligibilityRules, setEligibilityRules] = useState<EligibilityRule[]>([]);
   const [documents, setDocuments] = useState<File[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.typeId || !formData.description || !formData.value || !formData.startDate) {
@@ -51,36 +51,58 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
       return;
     }
 
-    addBenefit({
-      name: formData.name,
-      type: selectedType,
-      description: formData.description,
-      value: formData.value ? parseFloat(formData.value) : 0,
-      coverage,
-      eligibilityRules,
-      provider: formData.supplier,
-      isActive: formData.isActive,
-      startDate: formData.startDate || null,
-      endDate: formData.endDate || null,
-      documents: documents.map(file => file.name) // Convert to string array
-    });
+    try {
+      // 1) Criar o benefício sem documentos
+      const createdBenefit = await addBenefit({
+        name: formData.name,
+        type: selectedType,
+        description: formData.description,
+        value: formData.value ? parseFloat(formData.value) : 0,
+        coverage,
+        eligibilityRules,
+        provider: formData.supplier,
+        isActive: formData.isActive,
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+        documents: []
+      });
 
-    // Reset form
-    setFormData({
-      name: '',
-      typeId: '',
-      description: '',
-      value: '',
-      startDate: '',
-      endDate: '',
-      provider: '',
-      supplier: '',
-      isActive: true
-    });
-    setCoverage([]);
-    setEligibilityRules([]);
-    setDocuments([]);
-    onOpenChange(false);
+
+      // 2) Upload dos arquivos usando o ID do benefício
+      if (documents.length > 0) {
+        let successCount = 0;
+        let errorCount = 0;
+        for (let i = 0; i < documents.length; i++) {
+          const file = documents[i];
+          try {
+            await uploadBenefitDocument(createdBenefit.id, null, file, 'other');
+            successCount++;
+          } catch (uploadErr) {
+            errorCount++;
+          }
+        }
+      } else {
+      }
+
+      // Reset form
+      setFormData({
+        name: '',
+        typeId: '',
+        description: '',
+        value: '',
+        startDate: '',
+        endDate: '',
+        provider: '',
+        supplier: '',
+        isActive: true
+      });
+      setCoverage([]);
+      setEligibilityRules([]);
+      setDocuments([]);
+      onOpenChange(false);
+    } catch (err) {
+      alert('Erro ao criar benefício. Tente novamente.');
+    }
   };
 
   const addCoverage = () => {
@@ -96,7 +118,36 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setDocuments(prev => [...prev, ...files]);
+    
+    // Validar tipos de arquivo
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
+
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        return false;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        return false;
+      }
+      return true;
+    });
+
+    setDocuments(prev => [...prev, ...validFiles]);
   };
 
   const removeDocument = (index: number) => {
@@ -234,7 +285,7 @@ export const NewBenefitDialog: React.FC<NewBenefitDialogProps> = ({
                 <input
                   type="file"
                   multiple
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.jpg,.jpeg,.png,.gif,.webp"
                   onChange={handleFileUpload}
                   className="hidden"
                   id="document-upload"

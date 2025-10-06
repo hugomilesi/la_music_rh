@@ -27,18 +27,13 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
   const isSubscribedRef = useRef(false);
   const providerIdRef = useRef(`provider_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   
-  console.log('IncidentsProvider: [INIT] Inicializando provider com ID:', providerIdRef.current);
 
   const refreshIncidents = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('IncidentsContext: Carregando incidentes...');
       const data = await incidentService.getAll();
-      console.log('IncidentsContext: Incidentes carregados:', data.length, 'items');
-      console.log('IncidentsContext: Primeiro incidente (debug):', data[0]);
       setIncidents(data);
     } catch (error) {
-      console.error('IncidentsContext: Erro ao carregar incidentes:', error);
       toast.error('Erro ao carregar incidentes');
       setIncidents([]);
     } finally {
@@ -63,7 +58,6 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [refreshIncidents, refreshStats]);
 
   const handleRealtimeError = useCallback(() => {
-    console.log('IncidentsContext: Erro na conexão em tempo real, iniciando sistema robusto de reconexão...');
     
     // Força limpeza completa
     incidentService.forceCleanup();
@@ -86,10 +80,8 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
     const initializeSubscription = async () => {
       if (!isSubscribedRef.current && isMounted) {
         try {
-          console.log(`IncidentsProvider: [${providerIdRef.current}] Iniciando subscrição em tempo real...`);
           
           // FORÇA limpeza COMPLETA antes de qualquer coisa
-          console.log(`IncidentsProvider: [${providerIdRef.current}] Forçando limpeza COMPLETA...`);
           incidentService.forceCleanupChannels();
           incidentService.forceCleanup();
           
@@ -97,14 +89,12 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
           await new Promise(resolve => setTimeout(resolve, 200));
           
           if (!isMounted) {
-            console.log(`IncidentsProvider: [${providerIdRef.current}] Componente desmontado durante inicialização`);
             return;
           }
           
           // Configura monitoramento de conectividade
           incidentService.setupConnectivityMonitoring();
           
-          console.log(`IncidentsProvider: [${providerIdRef.current}] Criando subscrição...`);
           
           // Aguarda mais um pouco antes de criar subscrição
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -116,18 +106,14 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
             subscriptionRef.current = channel;
             isSubscribedRef.current = true;
             
-            console.log(`IncidentsProvider: [${providerIdRef.current}] Subscrição criada com sucesso`);
           } else {
-            console.warn(`IncidentsProvider: [${providerIdRef.current}] Falha ao criar canal de subscrição`);
           }
         } catch (error) {
-          console.error(`IncidentsProvider: [${providerIdRef.current}] Erro ao iniciar subscrição:`, error);
           if (isMounted) {
             handleRealtimeError();
           }
         }
       } else {
-        console.log(`IncidentsProvider: [${providerIdRef.current}] Subscrição ignorada - já ativa ou componente desmontado`);
       }
     };
     
@@ -135,7 +121,6 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     return () => {
       isMounted = false;
-      console.log(`IncidentsProvider: [${providerIdRef.current}] Executando cleanup COMPLETO...`);
       
       // FORÇA limpeza COMPLETA múltiplas vezes
       incidentService.forceCleanupChannels();
@@ -149,7 +134,6 @@ export const IncidentsProvider: React.FC<{ children: ReactNode }> = ({ children 
       subscriptionRef.current = null;
       isSubscribedRef.current = false;
       
-      console.log(`IncidentsProvider: [${providerIdRef.current}] Cleanup COMPLETO finalizado`);
     };
   }, [handleRealtimeUpdate, handleRealtimeError]);
 
