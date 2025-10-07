@@ -176,74 +176,8 @@ export default defineConfig(({ mode }) => ({
         main: path.resolve(__dirname, 'index.html')
       },
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('@supabase/supabase-js')) {
-              return 'supabase-vendor';
-            }
-            if (id.includes('recharts')) {
-              return 'chart-vendor';
-            }
-            if (id.includes('date-fns')) {
-              return 'date-vendor';
-            }
-            if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-              return 'form-vendor';
-            }
-            return 'vendor';
-          }
-          
-          // Feature chunks based on file paths
-          if (id.includes('src/contexts/AuthContext') || id.includes('src/pages/AuthPage') || id.includes('src/pages/Login')) {
-            return 'auth';
-          }
-          if (id.includes('src/pages/DashboardPage') || id.includes('src/components/dashboard')) {
-            return 'dashboard';
-          }
-          if (id.includes('src/pages/BenefitsPage') || id.includes('src/components/benefits') || id.includes('src/services/benefitsService')) {
-            return 'benefits';
-          }
-          if (id.includes('src/pages/PayrollPage') || id.includes('src/components/payroll') || id.includes('src/services/payrollService')) {
-            return 'payroll';
-          }
-          if (id.includes('src/pages/ColaboradoresPage') || id.includes('src/components/colaboradores') || id.includes('src/services/employeeService')) {
-            return 'employees';
-          }
-          if (id.includes('src/pages/EvaluationsPage') || id.includes('src/components/evaluations')) {
-            return 'evaluations';
-          }
-          if (id.includes('src/pages/SchedulePage') || id.includes('src/components/schedule') || id.includes('src/services/scheduleService')) {
-            return 'schedule';
-          }
-          if (id.includes('src/pages/DocumentsPage') || id.includes('src/components/documents') || id.includes('src/services/documentService')) {
-            return 'documents';
-          }
-          if (id.includes('src/pages/NotificationsPage') || id.includes('src/components/notifications')) {
-            return 'notifications';
-          }
-          if (id.includes('src/pages/SettingsPage') || id.includes('src/components/settings')) {
-            return 'settings';
-          }
-          if (id.includes('src/pages/IncidentsPage') || id.includes('src/components/incidents') || id.includes('src/services/incidentService')) {
-            return 'incidents';
-          }
-          if (id.includes('src/pages/NPSPage') || id.includes('src/components/nps') || id.includes('src/services/npsService')) {
-            return 'nps';
-          }
-          if (id.includes('src/pages/VacationPage') || id.includes('src/components/vacation') || id.includes('src/services/vacationService')) {
-            return 'vacation';
-          }
-          if (id.includes('src/pages/WhatsAppPage') || id.includes('src/components/whatsapp') || id.includes('src/services/whatsappService')) {
-            return 'whatsapp';
-          }
-        },
+        // Removed manualChunks to avoid circular dependency issues
+        // Let Vite handle chunking automatically
       },
     },
     chunkSizeWarningLimit: 1000,
