@@ -829,46 +829,7 @@ export const benefitsService = {
   },
 
   async getBenefitDocuments(benefitId: string) {
-    const { data, error } = await supabase
-      .from('benefit_documents')
-      .select('*')
-      .eq('benefit_id', benefitId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-    return data || [];
-  },
-
-  async deleteBenefitDocument(documentId: string) {
-    try {
-      // First get the document to get the file path
-      const { data: document, error: fetchError } = await supabase
-        .from('benefit_documents')
-        .select('file_path')
-        .eq('id', documentId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([document.file_path]);
-
-      if (storageError) throw storageError;
-
-      // Delete from database
-      const { error } = await supabase
-        .from('benefit_documents')
-        .delete()
-        .eq('id', documentId);
-
-      if (error) throw error;
-    } catch (error) {
-      throw error;
-    }
+    return await benefitDocumentService.getDocumentsByBenefit(benefitId);
   },
 
   async getDocumentUrl(filePath: string) {

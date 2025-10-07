@@ -176,9 +176,11 @@ export default defineConfig(({ mode }) => ({
         main: path.resolve(__dirname, 'index.html')
       },
       output: {
-        manualChunks: undefined,
+        // Removed manualChunks to avoid circular dependency issues
+        // Let Vite handle chunking automatically
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
 }));
 
