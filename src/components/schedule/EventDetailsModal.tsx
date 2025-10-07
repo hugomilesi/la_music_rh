@@ -28,7 +28,8 @@ import {
   Bell,
   Edit,
   Trash2,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { ScheduleEvent } from '@/types/schedule';
 import { getScheduleUnitInfo } from '@/types/unit';

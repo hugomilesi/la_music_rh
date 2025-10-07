@@ -81,7 +81,7 @@ export const scheduleService = {
         .from('schedule_events')
         .select(`
           *,
-          colaboradores(nome)
+          colaboradores!user_id(nome)
         `)
         .order('start_date', { ascending: false });
       
@@ -176,7 +176,7 @@ export const scheduleService = {
         .insert(insertData)
         .select(`
           *,
-          colaboradores(nome)
+          colaboradores!user_id(nome)
         `)
         .single();
       
@@ -239,7 +239,7 @@ export const scheduleService = {
         .eq('id', id)
         .select(`
           *,
-          colaboradores(nome)
+          colaboradores!user_id(nome)
         `)
         .single();
       
@@ -298,7 +298,7 @@ export const scheduleService = {
         .from('schedule_events')
         .select(`
           *,
-          colaboradores(nome)
+          colaboradores!user_id(nome)
         `)
         .in('unit', units)
         .order('start_date', { ascending: false });
