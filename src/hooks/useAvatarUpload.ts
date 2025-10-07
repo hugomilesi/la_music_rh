@@ -40,7 +40,7 @@ export const useAvatarUpload = () => {
         fileName,
         fileType: file.type,
         fileSize: file.size,
-        fileName: file.name
+        originalFileName: file.name
       });
 
       // Converter arquivo para ArrayBuffer para garantir upload binário puro

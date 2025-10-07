@@ -176,9 +176,33 @@ export default defineConfig(({ mode }) => ({
         main: path.resolve(__dirname, 'index.html')
       },
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-toast'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'chart-vendor': ['recharts'],
+          'date-vendor': ['date-fns'],
+          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          // Feature chunks
+          'auth': ['src/contexts/AuthContext.tsx', 'src/pages/AuthPage.tsx', 'src/pages/Login.tsx'],
+          'dashboard': ['src/pages/DashboardPage.tsx', 'src/components/dashboard'],
+          'benefits': ['src/pages/BenefitsPage.tsx', 'src/components/benefits', 'src/services/benefitsService.ts'],
+          'payroll': ['src/pages/PayrollPage.tsx', 'src/components/payroll', 'src/services/payrollService.ts'],
+          'employees': ['src/pages/ColaboradoresPage.tsx', 'src/components/colaboradores', 'src/services/employeeService.ts'],
+          'evaluations': ['src/pages/EvaluationsPage.tsx', 'src/components/evaluations'],
+          'schedule': ['src/pages/SchedulePage.tsx', 'src/components/schedule', 'src/services/scheduleService.ts'],
+          'documents': ['src/pages/DocumentsPage.tsx', 'src/components/documents', 'src/services/documentService.ts'],
+          'notifications': ['src/pages/NotificationsPage.tsx', 'src/components/notifications'],
+          'settings': ['src/pages/SettingsPage.tsx', 'src/components/settings'],
+          'incidents': ['src/pages/IncidentsPage.tsx', 'src/components/incidents', 'src/services/incidentService.ts'],
+          'nps': ['src/pages/NPSPage.tsx', 'src/components/nps', 'src/services/npsService.ts'],
+          'vacation': ['src/pages/VacationPage.tsx', 'src/components/vacation', 'src/services/vacationService.ts'],
+          'whatsapp': ['src/pages/WhatsAppPage.tsx', 'src/components/whatsapp', 'src/services/whatsappService.ts']
+        },
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
 }));
 
