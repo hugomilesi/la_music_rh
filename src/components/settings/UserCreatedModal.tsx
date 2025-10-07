@@ -21,6 +21,7 @@ interface UserCreatedModalProps {
     password: string;
     position: string;
     department?: string;
+    role?: string;
   };
 }
 
@@ -55,7 +56,8 @@ export const UserCreatedModal: React.FC<UserCreatedModalProps> = ({
   };
 
   const copyAllCredentials = async () => {
-    const credentials = `Nome: ${userData.name}\nEmail: ${userData.email}\nSenha Temporária: ${userData.password}\nCargo: ${userData.position}${userData.department ? `\nDepartamento: ${userData.department}` : ''}`;
+    const roleDisplay = userData.role || userData.position;
+    const credentials = `Nome: ${userData.name}\nEmail: ${userData.email}\nSenha Temporária: ${userData.password}\nPerfil: ${roleDisplay}${userData.department ? `\nDepartamento: ${userData.department}` : ''}`;
     
     try {
       await navigator.clipboard.writeText(credentials);
@@ -164,24 +166,24 @@ export const UserCreatedModal: React.FC<UserCreatedModalProps> = ({
             </div>
           </div>
 
-          {/* Cargo */}
+          {/* Perfil */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
-              Cargo
+              Perfil
             </Label>
             <div className="flex gap-2">
               <Input
-                value={userData.position}
+                value={userData.role || userData.position}
                 readOnly
                 className="bg-muted"
               />
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => copyToClipboard(userData.position, 'Cargo')}
+                onClick={() => copyToClipboard(userData.role || userData.position, 'Perfil')}
               >
-                {copied.Cargo ? (
+                {copied.Perfil ? (
                   <Check className="h-4 w-4 text-green-600" />
                 ) : (
                   <Copy className="h-4 w-4" />

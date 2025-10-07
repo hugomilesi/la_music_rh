@@ -52,9 +52,22 @@ export const evaluationService = {
 
   async createEvaluation(data: NewEvaluationData): Promise<Evaluation> {
     try {
+      console.log('Received data in createEvaluation:', data);
       
-      // Determinar o período de avaliação baseado na data
-      const evaluationDate = new Date(data.evaluation_date);
+      // Para Coffee Connection, usar meeting_date se disponível, senão evaluation_date
+      const dateForPeriod = data.evaluation_type === 'Coffee Connection' && data.meetingDate 
+        ? data.meetingDate 
+        : data.evaluation_date;
+      
+      console.log('Date calculation debug:', {
+        evaluationType: data.evaluation_type,
+        meetingDate: data.meetingDate,
+        evaluationDate: data.evaluation_date,
+        dateForPeriod
+      });
+      
+      // Calcular período baseado na data apropriada
+      const evaluationDate = new Date(dateForPeriod);
       const year = evaluationDate.getFullYear();
       const month = evaluationDate.getMonth() + 1; // getMonth() retorna 0-11
       
@@ -73,6 +86,7 @@ export const evaluationService = {
       const evaluationPeriodEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}-${new Date(year, quarterEndMonth, 0).getDate()}`;
       
       console.log('Evaluation period calculated:', {
+        dateUsed: dateForPeriod,
         year,
         month,
         quarter,
@@ -84,8 +98,8 @@ export const evaluationService = {
       if (!data.employee_id) {
         throw new Error('employee_id é obrigatório');
       }
-      // evaluator_id é obrigatório apenas para avaliações que não sejam Auto Avaliação
-      if (!data.evaluator_id && data.evaluation_type !== 'Auto Avaliação') {
+      // evaluator_id é obrigatório apenas para avaliações que não sejam Auto Avaliação ou Coffee Connection
+      if (!data.evaluator_id && data.evaluation_type !== 'Auto Avaliação' && data.evaluation_type !== 'Coffee Connection') {
         throw new Error('evaluator_id é obrigatório para este tipo de avaliação');
       }
       if (!data.evaluation_date) {
@@ -99,7 +113,7 @@ export const evaluationService = {
         evaluation_period_start: evaluationPeriodStart,
         evaluation_period_end: evaluationPeriodEnd,
         feedback: data.comments || '',
-        status: 'submitted', // Status válido conforme constraint
+        status: data.evaluation_type === 'Coffee Connection' ? 'scheduled' : 'submitted', // Status apropriado
         date: data.evaluation_date,
         evaluation_type: data.evaluation_type,
         unit: data.unit
@@ -108,9 +122,10 @@ export const evaluationService = {
       // Adicionar campos específicos do Coffee Connection se aplicável
       if (data.evaluation_type === 'Coffee Connection') {
         Object.assign(dbData, {
+          meeting_date: data.meetingDate || data.evaluation_date, // Usar meetingDate se disponível, senão evaluation_date
           meeting_time: data.meetingTime,
           location: data.location,
-          topics: data.topics,
+          topics: data.topics || [],
           follow_up_actions: data.followUpActions,
           confidential: data.confidential || false
         });

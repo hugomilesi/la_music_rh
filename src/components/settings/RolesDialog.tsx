@@ -23,7 +23,12 @@ import {
   fetchDepartments,
   createDepartment,
   updateDepartment,
+  deleteDepartment,
+  createRole,
+  updateRole,
+  deleteRole,
   countEmployeesByRole,
+  countColaboradoresByDepartment,
   type RoleWithDepartment,
   type Department
 } from '@/services/rolesService';
@@ -42,6 +47,11 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleWithDepartment | null>(null);
+  
+  // Estados para confirmação de exclusão
+  const [deletingDepartment, setDeletingDepartment] = useState<Department | null>(null);
+  const [deletingRole, setDeletingRole] = useState<RoleWithDepartment | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [newDepartment, setNewDepartment] = useState({
     name: '',
@@ -130,10 +140,6 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
     setIsAddingDepartment(true);
   };
 
-
-
-
-
   const handleEditDepartment = async (department: Department) => {
     setEditingDepartment(department);
     setNewDepartment({
@@ -141,6 +147,100 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
       description: department.description || ''
     });
     setIsAddingDepartment(true);
+  };
+
+  const handleDeleteDepartment = async (department: Department) => {
+    try {
+      // Check if there are any roles associated with this department
+      const associatedRoles = roles.filter(role => role.department_id === department.id);
+      
+      if (associatedRoles.length > 0) {
+        toast({
+          title: "Erro",
+          description: 'Não é possível excluir este departamento pois existem cargos associados a ele.',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if there are any colaboradores associated with this department
+      const colaboradorCount = await countColaboradoresByDepartment(department.id);
+      
+      if (colaboradorCount > 0) {
+        toast({
+          title: "Erro",
+          description: `Não é possível excluir este departamento pois existem ${colaboradorCount} colaborador(es) associado(s) a ele.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setDeletingDepartment(department);
+      setShowDeleteConfirm(true);
+    } catch (error) {
+      console.error('Erro ao verificar dependências do departamento:', error);
+      toast({
+        title: "Erro",
+        description: 'Erro ao verificar dependências do departamento',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRole = async (role: RoleWithDepartment) => {
+    // Verificar se há funcionários no cargo
+    const employeeCount = employeeCounts[role.id] || 0;
+    if (employeeCount > 0) {
+      toast({
+        title: "Erro",
+        description: `Não é possível excluir o cargo "${role.name}" pois existem ${employeeCount} funcionário(s) vinculado(s) a ele.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeletingRole(role);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (deletingDepartment) {
+        await deleteDepartment(deletingDepartment.id);
+        toast({
+          title: "Sucesso",
+          description: `Departamento "${deletingDepartment.name}" excluído com sucesso`,
+        });
+      } else if (deletingRole) {
+        await deleteRole(deletingRole.id);
+        toast({
+          title: "Sucesso",
+          description: `Cargo "${deletingRole.name}" excluído com sucesso`,
+        });
+      }
+      
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao excluir",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+      setDeletingDepartment(null);
+      setDeletingRole(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeletingDepartment(null);
+    setDeletingRole(null);
   };
 
 
@@ -363,14 +463,25 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
                       <Building className="w-4 h-4" />
                       <h3 className="font-medium">{dept.name}</h3>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleEditDepartment(dept)}
-                      disabled={isLoading}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEditDepartment(dept)}
+                        disabled={isLoading}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDeleteDepartment(dept)}
+                        disabled={isLoading}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-sm text-gray-600">{deptRoles.length} cargos</p>
                   <p className="text-sm text-gray-600">{totalEmployees} colaboradores</p>
@@ -523,14 +634,25 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleEditRole(role)}
-                          disabled={isLoading}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditRole(role)}
+                            disabled={isLoading}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteRole(role)}
+                            disabled={isLoading}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -544,6 +666,47 @@ export const RolesDialog: React.FC<RolesDialogProps> = ({ children }) => {
           <Button variant="outline">Fechar</Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              Confirmar Exclusão
+            </DialogTitle>
+            <DialogDescription>
+              {deletingDepartment && (
+                <>
+                  Tem certeza que deseja excluir o departamento <strong>"{deletingDepartment.name}"</strong>?
+                  <br />
+                  Esta ação não pode ser desfeita.
+                </>
+              )}
+              {deletingRole && (
+                <>
+                  Tem certeza que deseja excluir o cargo <strong>"{deletingRole.name}"</strong>?
+                  <br />
+                  Esta ação não pode ser desfeita.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelDelete} disabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete} 
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

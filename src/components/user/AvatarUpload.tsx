@@ -55,9 +55,34 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-3">
+      {/* Debug do profile */}
+      {console.log('🔍 AvatarUpload Debug:', {
+        profile,
+        avatar_url: profile?.avatar_url,
+        username: profile?.username,
+        timestamp: new Date().toISOString()
+      })}
+      
       <div className="relative">
         <Avatar className={sizeClasses[size]}>
-          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username || ''} />
+          <AvatarImage 
+            src={profile?.avatar_url ? `${profile.avatar_url}?t=${Date.now()}` : undefined} 
+            alt={profile?.username || ''} 
+            onLoad={() => {
+              console.log('✅ AvatarImage: Avatar loaded successfully!', {
+                src: profile?.avatar_url,
+                timestamp: new Date().toISOString()
+              });
+            }}
+            onError={(e) => {
+              console.error('❌ AvatarImage: Failed to load avatar:', {
+                src: profile?.avatar_url,
+                error: e,
+                timestamp: new Date().toISOString()
+              });
+              // Não esconder a imagem, deixar o fallback funcionar
+            }}
+          />
           <AvatarFallback className="bg-blue-100 text-blue-600 font-medium">
             {getInitials(profile?.username)}
           </AvatarFallback>

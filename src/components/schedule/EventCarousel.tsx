@@ -51,32 +51,15 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Filtrar apenas eventos futuros e das unidades selecionadas
-  const upcomingEvents = React.useMemo(() => {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-
+  // Filtrar todos os eventos das unidades selecionadas
+  const allEvents = React.useMemo(() => {
     return events
       .filter(event => {
         // Filtrar por unidades selecionadas
         if (selectedUnits.length > 0 && !selectedUnits.includes(event.unit)) {
           return false;
         }
-
-        // Filtrar apenas eventos futuros
-        const eventDate = event.date || event.event_date;
-        const eventTime = event.startTime || event.start_time;
-        
-        if (eventDate > today) {
-          return true;
-        }
-        
-        if (eventDate === today && eventTime > currentTime) {
-          return true;
-        }
-        
-        return false;
+        return true;
       })
       .sort((a, b) => {
         const dateA = a.date || a.event_date;
@@ -84,17 +67,18 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
         const timeA = a.startTime || a.start_time;
         const timeB = b.startTime || b.start_time;
         
+        // Ordenar por data (mais recentes primeiro) e depois por horário
         if (dateA !== dateB) {
-          return dateA.localeCompare(dateB);
+          return dateB.localeCompare(dateA);
         }
-        return timeA.localeCompare(timeB);
+        return timeB.localeCompare(timeA);
       })
-      .slice(0, 20); // Limitar a 20 eventos para performance
+      .slice(0, 50); // Limitar a 50 eventos para performance
   }, [events, selectedUnits]);
 
   // Auto-scroll functionality with smart pause/resume
   useEffect(() => {
-    if (!api || !isAutoScrolling || upcomingEvents.length <= 3 || userInteracted) {
+    if (!api || !isAutoScrolling || allEvents.length <= 3 || userInteracted) {
       return;
     }
 
@@ -103,7 +87,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
     }, 4000); // Scroll a cada 4 segundos
 
     return () => clearInterval(interval);
-  }, [api, isAutoScrolling, upcomingEvents.length, userInteracted]);
+  }, [api, isAutoScrolling, allEvents.length, userInteracted]);
 
   // Resume auto-scroll after user inactivity
   useEffect(() => {
@@ -173,8 +157,12 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
   }, [deleteEvent, toast, onEventDelete]);
 
   const handleCardClick = useCallback((event: ScheduleEvent, e: React.MouseEvent) => {
-    // Prevent click if clicking on dropdown menu
-    if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
+    // Prevent click if clicking on dropdown menu or any dropdown content
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-dropdown-trigger]') || 
+        target.closest('[data-radix-popper-content-wrapper]') ||
+        target.closest('[role="menu"]') ||
+        target.closest('.dropdown-menu')) {
       return;
     }
     onEventClick?.(event);
@@ -244,7 +232,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
     });
   };
 
-  if (upcomingEvents.length === 0) {
+  if (allEvents.length === 0) {
     return (
       <Card className="mb-6">
         <CardContent className="p-6">
@@ -263,9 +251,9 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Próximos Eventos</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Todos os Eventos</h3>
             <p className="text-sm text-gray-600">
-              {upcomingEvents.length} evento{upcomingEvents.length !== 1 ? 's' : ''} agendado{upcomingEvents.length !== 1 ? 's' : ''}
+              {allEvents.length} evento{allEvents.length !== 1 ? 's' : ''} agendado{allEvents.length !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -289,7 +277,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
           onMouseLeave={handleMouseLeave}
         >
           <CarouselContent className="-ml-2 md:-ml-4">
-            {upcomingEvents.map((event) => {
+            {allEvents.map((event) => {
               const unitInfo = getScheduleUnitInfo(event.unit);
               const eventDate = event.date || event.event_date;
               const startTime = event.startTime || event.start_time;
@@ -348,17 +336,30 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onClick={() => handleEventDetails(event)}>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventDetails(event);
+                                      }}
+                                    >
                                       <Eye className="w-4 h-4 mr-2" />
                                       Ver detalhes
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEventEdit(event)}>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventEdit(event);
+                                      }}
+                                    >
                                       <Edit className="w-4 h-4 mr-2" />
                                       Editar evento
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem 
-                                      onClick={() => handleEventDelete(event.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventDelete(event.id);
+                                      }}
                                       className="text-red-600 focus:text-red-600"
                                     >
                                       <Trash2 className="w-4 h-4 mr-2" />

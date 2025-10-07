@@ -14,7 +14,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storage: window.localStorage,
+    storageKey: 'supabase.auth.token',
+    debug: false
   },
   global: {
     headers: {

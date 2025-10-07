@@ -81,21 +81,6 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
               placeholder="(11) 99999-9999"
             />
           </div>
-
-          <div>
-            <Label htmlFor="department">Setor</Label>
-            <select
-              id="department"
-              {...register('department')}
-              className="w-full h-10 px-3 rounded-md border border-input bg-background"
-              disabled={loadingRoles}
-            >
-              <option value="">Selecione um setor</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.name}>{dept.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
 
@@ -135,36 +120,14 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ form }) => {
           </div>
 
           <div>
-            <Label htmlFor="position">Cargo *</Label>
-            <select
-              id="position"
-              {...register('position')}
-              className={`w-full h-10 px-3 rounded-md border border-input bg-background ${
-                errors.position ? 'border-red-500' : ''
-              }`}
-              disabled={loadingRoles}
-            >
-              <option value="">Selecione um cargo</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.name}>
-                  {role.name} - {role.department?.name}
-                </option>
-              ))}
-            </select>
-            {errors.position && (
-              <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
-            )}
-          </div>
-
-          <div>
             <Label htmlFor="status">Status do Usuário *</Label>
             <select
               id="status"
               {...register('status')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
             >
-              <option value="active">Ativo</option>
-              <option value="inactive">Inativo</option>
+              <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
             </select>
           </div>
         </div>

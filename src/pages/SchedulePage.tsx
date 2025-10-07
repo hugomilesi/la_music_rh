@@ -115,8 +115,17 @@ const SchedulePage: React.FC = () => {
     setShowEventDetails(true);
   };
 
-  const handleEditEvent = (eventId: string) => {
-    const eventToEdit = filteredEvents.find(event => event.id === eventId);
+  const handleEditEvent = (eventOrId: string | ScheduleEvent) => {
+    let eventToEdit: ScheduleEvent | undefined;
+    
+    if (typeof eventOrId === 'string') {
+      // Se recebeu um ID, busca o evento
+      eventToEdit = filteredEvents.find(event => event.id === eventOrId);
+    } else {
+      // Se recebeu o evento completo, usa diretamente
+      eventToEdit = eventOrId;
+    }
+    
     if (eventToEdit) {
       setSelectedEvent(eventToEdit);
       setShowEventDetails(false);
@@ -288,7 +297,7 @@ const SchedulePage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Tipo:</span>
                   <div className="flex gap-2">
-                    {['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'].map(type => (
+                    {['meeting', 'appointment', 'reminder', 'task', 'vacation', 'training'].map(type => (
                       <Badge key={type} variant="outline" className="cursor-pointer hover:bg-gray-100">
                         {getEventTypeLabel(type)}
                       </Badge>

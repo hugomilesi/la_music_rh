@@ -310,6 +310,16 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
                   <p className="text-sm text-red-500 mt-1">{errors.cpf}</p>
                 )}
               </div>
+              
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone || ''}
+                  onChange={(e) => updateField('telefone', e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
             </div>
           </div>
           

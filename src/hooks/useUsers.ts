@@ -6,8 +6,6 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  department?: string;
-  role?: string;
 }
 
 export const useUsers = () => {
@@ -20,7 +18,7 @@ export const useUsers = () => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, email, phone, department, role, status')
+        .select('id, username, email, phone, status')
       .order('username');
 
       if (error) throw error;
@@ -29,9 +27,7 @@ export const useUsers = () => {
         id: user.id,
         name: user.username,
         email: user.email,
-        phone: user.phone,
-        department: user.department,
-        role: user.role
+        phone: user.phone
       })) || []);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Erro desconhecido ao buscar usuários'));
@@ -61,15 +57,7 @@ export const useUsers = () => {
   }, [fetchUsers]);
 
   const getActiveUsers = () => {
-    return users.filter(user => user.role !== 'inativo');
-  };
-
-  const getUsersByDepartment = (department: string) => {
-    return users.filter(user => user.department === department);
-  };
-
-  const getUsersByRole = (role: string) => {
-    return users.filter(user => user.role === role);
+    return users.filter(user => user.status !== 'inativo');
   };
 
   return {
@@ -77,8 +65,6 @@ export const useUsers = () => {
     loading,
     error,
     fetchUsers,
-    getActiveUsers,
-    getUsersByDepartment,
-    getUsersByRole
+    getActiveUsers
   };
 };

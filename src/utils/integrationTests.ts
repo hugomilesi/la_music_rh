@@ -96,7 +96,7 @@ export const integrationTests = {
         }
 
         // Test event type validation
-        const validTypes = ['plantao', 'avaliacao', 'reuniao', 'folga', 'outro'];
+        const validTypes = ['meeting', 'appointment', 'reminder', 'task', 'vacation', 'training'];
         if (validTypes.includes(firstEvent.type)) {
           // Schedule event type validation logging disabled
         } else {

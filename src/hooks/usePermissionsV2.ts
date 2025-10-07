@@ -297,6 +297,7 @@ export const usePermissionsV2 = () => {
       'folha_pagamento': 'folha_pagamento',
       'configuracoes': 'configuracoes',
       'usuarios': 'usuarios',
+      'colaboradores': 'colaboradores', // Adicionado mapeamento para colaboradores
       'permissoes': 'permissoes.manage'
     };
     

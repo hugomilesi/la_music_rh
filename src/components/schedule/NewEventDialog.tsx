@@ -70,7 +70,7 @@ export const NewEventDialog: React.FC<NewEventDialogProps> = ({
       date: preselectedDate ? formatDateToLocal(preselectedDate) : '',
       startTime: '',
       endTime: '',
-      type: 'plantao',
+      type: 'meeting',
       description: '',
       location: '',
       emailAlert: false,

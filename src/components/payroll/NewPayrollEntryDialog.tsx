@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,12 +24,12 @@ interface NewPayrollEntryDialogProps {
 }
 
 const UNITS = [
-  'recreio',
-  'cg-emla',
-  'cg-lamk',
-  'barra',
-  'staff-rateado',
-  'professores-multi-unidade'
+  'Barra',
+  'CG EMLA',
+  'CG LAMK',
+  'Professores Multi-Unidade',
+  'Recreio',
+  'Staff Rateado'
 ];
 
 const CLASSIFICATIONS = [
@@ -45,12 +45,33 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   const { colaboradoresAtivos, loading: loadingColaboradores } = useColaboradores();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{auth_user_id: string, username: string, cpf: string, units: string, department: string}>>([]);
+  const [employees, setEmployees] = useState<Array<{
+    id: string,
+    nome: string,
+    cpf: string,
+    cargo: string,
+    departamento: string,
+    unidade: string,
+    tipo_contratacao: string,
+    banco?: string,
+    agencia?: string,
+    conta?: string,
+    tipo_conta?: string,
+    telefone?: string,
+    email?: string,
+    data_admissao?: string,
+    status?: string,
+    created_at?: string,
+    updated_at?: string
+  }>>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [isRegisteredEmployee, setIsRegisteredEmployee] = useState(true);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  console.log('NewPayrollEntryDialog - defaultUnit recebido:', defaultUnit);
+  
   const [formData, setFormData] = useState({
     // Dados pessoais
     colaborador_id: '',
@@ -106,15 +127,40 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   const loadEmployees = async () => {
     setLoadingEmployees(true);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('auth_user_id, username, cpf, units, department')
-        .order('username');
+      // Buscar dados diretamente da tabela colaboradores - incluindo todas as colunas disponíveis
+      const { data: colaboradoresData, error: colaboradoresError } = await supabase
+        .from('colaboradores')
+        .select('id, nome, cpf, cargo, departamento, unidade, tipo_contratacao, banco, agencia, conta, tipo_conta, telefone, email, data_admissao, status, created_at, updated_at')
+        .eq('status', 'ativo')
+        .order('nome');
       
-      if (error) throw error;
-      setEmployees(data || []);
-    } catch (error) {
+      if (colaboradoresError) throw colaboradoresError;
 
+      // Usar diretamente os dados dos colaboradores
+      const employeesData = (colaboradoresData || []).map(colaborador => ({
+        id: colaborador.id,
+        nome: colaborador.nome,
+        cpf: colaborador.cpf,
+        cargo: colaborador.cargo,
+        departamento: colaborador.departamento,
+        unidade: colaborador.unidade,
+        tipo_contratacao: colaborador.tipo_contratacao,
+        banco: colaborador.banco,
+        agencia: colaborador.agencia,
+        conta: colaborador.conta,
+        tipo_conta: colaborador.tipo_conta,
+        telefone: colaborador.telefone,
+        email: colaborador.email,
+        data_admissao: colaborador.data_admissao,
+        status: colaborador.status,
+        created_at: colaborador.created_at,
+        updated_at: colaborador.updated_at
+      }));
+
+      console.log('Colaboradores carregados com todas as colunas:', employeesData);
+      setEmployees(employeesData);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
       toast.error('Erro ao carregar lista de funcionários');
     } finally {
       setLoadingEmployees(false);
@@ -135,16 +181,46 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
   };
 
   const handleEmployeeSelect = (employeeId: string) => {
-    const selectedEmployee = colaboradoresAtivos?.find(colaborador => colaborador.id === employeeId);
+    const selectedEmployee = employees.find(emp => emp.id === employeeId);
     if (selectedEmployee) {
       setFormData(prev => ({
         ...prev,
         colaborador_id: employeeId,
         nome_funcionario: selectedEmployee.nome,
         cpf_funcionario: selectedEmployee.cpf || '',
-        unidade: selectedEmployee.unidade || defaultUnit || '',
-        departamento: selectedEmployee.departamento || ''
+        unidade: defaultUnit || '',
+        departamento: selectedEmployee.departamento || '',
+        
+        // Preencher automaticamente com dados do colaborador
+        classificacao: selectedEmployee.tipo_contratacao || '',
+        funcao: selectedEmployee.cargo || '',
+        
+        // Dados bancários
+        banco: selectedEmployee.banco || '',
+        agencia: selectedEmployee.agencia || '',
+        conta: selectedEmployee.conta || '',
+        
+        // Limpar campos que devem ser preenchidos manualmente
+        salario_base: 0,
+        bonus: 0,
+        comissao: 0,
+        passagem: 0,
+        reembolso: 0,
+        inss: 0,
+        lojinha: 0,
+        bistro: 0,
+        adiantamento: 0,
+        outros_descontos: 0,
+        transport_voucher: 0,
+        salary_advance: 0,
+        observacoes: ''
       }));
+      
+      // Mostrar toast informativo
+      toast.success(`Dados de ${selectedEmployee.nome} carregados automaticamente`);
+    } else {
+      // Funcionário não encontrado
+      toast.error('Colaborador não encontrado');
     }
   };
 
@@ -254,10 +330,15 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
     setLoading(true);
     
     try {
+      console.log('NewPayrollEntryDialog - formData.unidade antes de enviar:', formData.unidade);
+      console.log('NewPayrollEntryDialog - defaultUnit no momento do envio:', defaultUnit);
 
       const payrollData = {
         // Para colaborador cadastrado
-        ...(isRegisteredEmployee && { colaborador_id: formData.colaborador_id }),
+        ...(isRegisteredEmployee && { 
+          colaborador_id: formData.colaborador_id,
+          unidade: formData.unidade
+        }),
         
         // Para colaborador não cadastrado
         ...(!isRegisteredEmployee && {
@@ -289,7 +370,7 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
         observacoes: formData.observacoes
       };
       
-
+      console.log('NewPayrollEntryDialog - payrollData completo:', payrollData);
       
       await payrollService.createPayrollEntry(payrollData);
       
@@ -399,6 +480,9 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
             <Plus className="h-5 w-5" />
             Nova Folha de Pagamento
           </DialogTitle>
+          <DialogDescription>
+            Preencha os dados para criar uma nova folha de pagamento
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -464,15 +548,20 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                     <Select
                       value={formData.colaborador_id}
                       onValueChange={handleEmployeeSelect}
-                      disabled={loadingColaboradores}
+                      disabled={loadingEmployees}
                     >
                       <SelectTrigger className={fieldErrors.colaborador_id ? "border-red-500" : ""}>
-                        <SelectValue placeholder={loadingColaboradores ? "Carregando colaboradores..." : "Selecione um colaborador"} />
+                        <SelectValue placeholder={loadingEmployees ? "Carregando funcionários..." : "Selecione um funcionário"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {colaboradoresAtivos?.map((colaborador) => (
-                          <SelectItem key={colaborador.id} value={colaborador.id}>
-                            {colaborador.nome} {colaborador.cpf ? `- ${colaborador.cpf}` : ''}
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            <div className="flex flex-col">
+                              <span>{employee.nome}</span>
+                              <span className="text-xs text-gray-500">
+                                {employee.cargo} - {employee.unidade}
+                              </span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -668,8 +757,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="salario_base"
                   type="number"
                   step="0.01"
-                  value={formData.salario_base}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salario_base: parseFloat(e.target.value) || 0 }))}
+                  value={formData.salario_base === 0 ? '' : formData.salario_base}
+                  onChange={(e) => setFormData(prev => ({ ...prev, salario_base: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                   className={fieldErrors.salario_base ? "border-red-500" : ""}
                 />
@@ -684,8 +773,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="bonus"
                   type="number"
                   step="0.01"
-                  value={formData.bonus}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bonus: parseFloat(e.target.value) || 0 }))}
+                  value={formData.bonus === 0 ? '' : formData.bonus}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bonus: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -696,8 +785,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="comissao"
                   type="number"
                   step="0.01"
-                  value={formData.comissao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, comissao: parseFloat(e.target.value) || 0 }))}
+                  value={formData.comissao === 0 ? '' : formData.comissao}
+                  onChange={(e) => setFormData(prev => ({ ...prev, comissao: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -708,8 +797,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="passagem"
                   type="number"
                   step="0.01"
-                  value={formData.passagem}
-                  onChange={(e) => setFormData(prev => ({ ...prev, passagem: parseFloat(e.target.value) || 0 }))}
+                  value={formData.passagem === 0 ? '' : formData.passagem}
+                  onChange={(e) => setFormData(prev => ({ ...prev, passagem: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -720,8 +809,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="reembolso"
                   type="number"
                   step="0.01"
-                  value={formData.reembolso}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reembolso: parseFloat(e.target.value) || 0 }))}
+                  value={formData.reembolso === 0 ? '' : formData.reembolso}
+                  onChange={(e) => setFormData(prev => ({ ...prev, reembolso: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -732,8 +821,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="transport_voucher"
                   type="number"
                   step="0.01"
-                  value={formData.transport_voucher}
-                  onChange={(e) => setFormData(prev => ({ ...prev, transport_voucher: parseFloat(e.target.value) || 0 }))}
+                  value={formData.transport_voucher === 0 ? '' : formData.transport_voucher}
+                  onChange={(e) => setFormData(prev => ({ ...prev, transport_voucher: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -752,8 +841,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="inss"
                   type="number"
                   step="0.01"
-                  value={formData.inss}
-                  onChange={(e) => setFormData(prev => ({ ...prev, inss: parseFloat(e.target.value) || 0 }))}
+                  value={formData.inss === 0 ? '' : formData.inss}
+                  onChange={(e) => setFormData(prev => ({ ...prev, inss: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -764,8 +853,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="lojinha"
                   type="number"
                   step="0.01"
-                  value={formData.lojinha}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lojinha: parseFloat(e.target.value) || 0 }))}
+                  value={formData.lojinha === 0 ? '' : formData.lojinha}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lojinha: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -776,8 +865,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="bistro"
                   type="number"
                   step="0.01"
-                  value={formData.bistro}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bistro: parseFloat(e.target.value) || 0 }))}
+                  value={formData.bistro === 0 ? '' : formData.bistro}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bistro: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -788,8 +877,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="adiantamento"
                   type="number"
                   step="0.01"
-                  value={formData.adiantamento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, adiantamento: parseFloat(e.target.value) || 0 }))}
+                  value={formData.adiantamento === 0 ? '' : formData.adiantamento}
+                  onChange={(e) => setFormData(prev => ({ ...prev, adiantamento: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -800,8 +889,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="salary_advance"
                   type="number"
                   step="0.01"
-                  value={formData.salary_advance}
-                  onChange={(e) => setFormData(prev => ({ ...prev, salary_advance: parseFloat(e.target.value) || 0 }))}
+                  value={formData.salary_advance === 0 ? '' : formData.salary_advance}
+                  onChange={(e) => setFormData(prev => ({ ...prev, salary_advance: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>
@@ -812,8 +901,8 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
                   id="outros_descontos"
                   type="number"
                   step="0.01"
-                  value={formData.outros_descontos}
-                  onChange={(e) => setFormData(prev => ({ ...prev, outros_descontos: parseFloat(e.target.value) || 0 }))}
+                  value={formData.outros_descontos === 0 ? '' : formData.outros_descontos}
+                  onChange={(e) => setFormData(prev => ({ ...prev, outros_descontos: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                   placeholder="0,00"
                 />
               </div>

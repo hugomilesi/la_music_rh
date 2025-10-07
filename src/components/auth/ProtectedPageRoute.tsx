@@ -25,6 +25,7 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
   const { user, session, profile, loading, forceLogout } = useAuth();
   const { hasPermission, canViewModule, canManagePermissions, loading: permissionsLoading, userPermissions, isSuperAdmin, isAdmin } = usePermissionsV2();
   const previousUserIdRef = useRef<string | null>(null);
+  const hasRedirectedRef = useRef(false);
 
   // Limpar cache quando o usuário muda
   useEffect(() => {
@@ -33,6 +34,7 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
         clearPermissionCheckCache();
       }
       previousUserIdRef.current = user?.id || null;
+      hasRedirectedRef.current = false; // Reset redirect flag when user changes
     }
   }, [user?.id]);
   
@@ -125,13 +127,14 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 
   // Redirect to home if not authenticated or session expired
   if (!user || !session || !isSessionValid) {
-    console.log('Authentication or session validation failed:', {
-      hasUser: !!user,
-      hasSession: !!session,
-      isSessionValid,
-      requiredPermission,
-      currentPath: window.location.pathname
-    });
+    // Desabilitado para evitar logs excessivos
+    // console.log('Authentication or session validation failed:', {
+    //   hasUser: !!user,
+    //   hasSession: !!session,
+    //   isSessionValid,
+    //   requiredPermission,
+    //   currentPath: window.location.pathname
+    // });
     return <Navigate to="/" replace />;
   }
 
@@ -146,17 +149,20 @@ export const ProtectedPageRoute: React.FC<ProtectedPageRouteProps> = React.memo(
 
   // Verificar permissão se especificada e redirecionar para página acessível
   // Só redireciona se hasRequiredPermission for explicitamente false (não null)
-  if (requiredPermission && hasRequiredPermission === false) {
+  // E se ainda não redirecionou para evitar loops
+  if (requiredPermission && hasRequiredPermission === false && !hasRedirectedRef.current) {
+    hasRedirectedRef.current = true;
     const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions());
     return <Navigate to={firstAccessibleRoute} replace />;
   }
 
-  console.log('Permission check passed:', {
-    requiredPermission,
-    hasRequiredPermission,
-    userRole: profile?.role,
-    currentPath: window.location.pathname
-  });
+  // Desabilitado para evitar logs excessivos
+  // console.log('Permission check passed:', {
+  //   requiredPermission,
+  //   hasRequiredPermission,
+  //   userRole: profile?.role,
+  //   currentPath: window.location.pathname
+  // });
   return <>{children}</>;
 });
 

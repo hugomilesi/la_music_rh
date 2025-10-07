@@ -14,17 +14,19 @@ interface UpdateUserRequest {
   };
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production'
-    ? '*'
-    : 'http://localhost:8081',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Credentials': 'true',
-};
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "*";
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true"
+  };
+}
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

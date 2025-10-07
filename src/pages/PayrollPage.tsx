@@ -467,11 +467,15 @@ export default function PayrollPage() {
       try {
         // Buscar TODOS os dados da folha de pagamento
         const entries = await payrollService.getAllPayrollEntries();
+        console.log('Dados de folha carregados:', entries);
+        console.log('Quantidade de entradas:', entries.length);
+        console.log('Primeiro item detalhado:', entries[0]);
         
         // Definir as entradas da folha de pagamento
         setPayrollEntries(entries);
         
       } catch (error) {
+        console.error('Erro ao carregar dados de folha:', error);
         setPayrollError('Erro ao carregar dados: ' + error.message);
       } finally {
         setPayrollLoading(false);
@@ -483,6 +487,7 @@ export default function PayrollPage() {
 
   // Mapear dados do Supabase para o formato esperado pela interface
   const mapPayrollEntryToEmployee = (entry: any): Employee => {
+    console.log('Mapeando entrada:', entry);
     
     // Garantir que units seja sempre um array de strings
     const units = Array.isArray(entry.users?.units) ? entry.users.units.filter(u => typeof u === 'string') : 
@@ -500,6 +505,8 @@ export default function PayrollPage() {
       unit = entry.users.unit;
     }
     
+    console.log('Unidade mapeada:', unit);
+    console.log('Units array:', units);
 
     
     // Mapear corretamente os campos da base de dados
@@ -541,8 +548,11 @@ export default function PayrollPage() {
 
   // Organizar dados por unidade e classificação
   const organizeDataByUnit = (entries: any[]) => {
+    console.log('Organizando dados por unidade. Entradas recebidas:', entries.length);
+    
     // Verificação de segurança para evitar erro de map em undefined
     if (!entries || !Array.isArray(entries)) {
+      console.log('Nenhuma entrada para organizar');
       return {
         recreio: [],
         'cg-emla': [],
@@ -554,6 +564,7 @@ export default function PayrollPage() {
     }
     
     const mappedEmployees = entries.map(entry => mapPayrollEntryToEmployee(entry));
+    console.log('Funcionários mapeados:', mappedEmployees);
     
     return {
       recreio: mappedEmployees.filter(emp => {
@@ -568,7 +579,7 @@ export default function PayrollPage() {
         const unit = typeof emp.unit === 'string' ? emp.unit.toLowerCase() : '';
         const role = typeof emp.role === 'string' ? emp.role.toLowerCase() : '';
         
-        return unit.includes('cg emla') || unit.includes('emla');
+        return unit.includes('cg emla') || unit.includes('emla') || unit.includes('campo grande');
       }),
       'cg-lamk': mappedEmployees.filter(emp => {
         const units = emp.units || [];
@@ -605,12 +616,17 @@ export default function PayrollPage() {
 
   // Organizar dados por unidade usando dados reais do Supabase
   const allEmployees = organizeDataByUnit(payrollEntries);
-
+  
+  console.log('Dados organizados por unidade:', allEmployees);
+  console.log('Aba ativa:', activeTab);
   
   // Log desabilitado - Dados organizados por unidade
 
   // Funcionários da aba ativa
   const currentEmployees = allEmployees[activeTab as keyof typeof allEmployees] || [];
+  
+  console.log('Funcionários da aba ativa:', currentEmployees);
+  console.log('Quantidade de funcionários na aba:', currentEmployees.length);
 
   // Todos os funcionários para cálculos gerais
   const allEmployeesList = Object.values(allEmployees).flat();
@@ -1308,7 +1324,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="recreio"
+                    defaultUnit="Recreio"
                   />
                 )}
               </div>
@@ -1364,7 +1380,7 @@ export default function PayrollPage() {
                      onSuccess={handlePayrollEntrySuccess}
                      defaultMonth={selectedMonth.split('-')[1]}
                      defaultYear={selectedMonth.split('-')[0]}
-                     defaultUnit="cg-emla"
+                     defaultUnit="CG EMLA"
                    />
                  )}
                </div>
@@ -1419,7 +1435,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="cg-lamk"
+                    defaultUnit="CG LAMK"
                   />
                 )}
               </div>
@@ -1474,7 +1490,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="barra"
+                    defaultUnit="Barra"
                   />
                 )}
               </div>
@@ -1529,7 +1545,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="staff-rateado"
+                    defaultUnit="Staff Rateado"
                   />
                 )}
               </div>
@@ -1585,7 +1601,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="professores-multi-unidade"
+                    defaultUnit="Professores Multi-Unidade"
                   />
                 )}
               </div>
@@ -1641,7 +1657,7 @@ export default function PayrollPage() {
                     onSuccess={handlePayrollEntrySuccess}
                     defaultMonth={selectedMonth.split('-')[1]}
                     defaultYear={selectedMonth.split('-')[0]}
-                    defaultUnit="multi-unidade"
+                    defaultUnit="Professores Multi-Unidade"
                   />
                 )}
               </div>

@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Upload, FileText } from 'lucide-react';
+import { X, Plus, Upload, FileText, Eye, Loader2 } from 'lucide-react';
 import { useBenefits } from '@/contexts/BenefitsContext';
 import { Benefit } from '@/types/benefits';
+import { benefitDocumentService } from '@/services/benefitDocumentService';
 
 interface EditBenefitDialogProps {
   open: boolean;
@@ -36,8 +37,10 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
   });
   const [coverage, setCoverage] = useState<string[]>(Array.isArray(benefit?.coverage) ? benefit.coverage : []);
   const [newCoverage, setNewCoverage] = useState('');
-  const [documents, setDocuments] = useState<string[]>(Array.isArray(benefit?.documents) ? benefit.documents : []);
+  const [documents, setDocuments] = useState<{id: string, name: string}[]>([]);
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
 
   useEffect(() => {
     if (benefit) {
@@ -52,7 +55,19 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
         isActive: benefit.isActive ?? true
       });
       setCoverage(Array.isArray(benefit.coverage) ? benefit.coverage : []);
-      setDocuments(Array.isArray(benefit.documents) ? benefit.documents : []);
+      
+      // Carregar documentos do benefício
+      const loadDocuments = async () => {
+        try {
+          const benefitDocuments = await benefitDocumentService.getDocumentsByBenefit(benefit.id);
+          setDocuments(benefitDocuments.map(doc => ({ id: doc.id, name: doc.name })));
+        } catch (error) {
+          console.error('Erro ao carregar documentos:', error);
+          setDocuments([]);
+        }
+      };
+      
+      loadDocuments();
     }
   }, [benefit]);
 
@@ -91,21 +106,55 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      const fileNames = newFiles.map(file => file.name);
-      setDocuments(prev => [...prev, ...fileNames]);
-      setDocumentFiles(prev => [...prev, ...newFiles]);
+    const files = Array.from(e.target.files || []);
+    setDocumentFiles(prev => [...prev, ...files]);
+    
+    // Adicionar nomes dos arquivos à lista de documentos (para novos arquivos)
+    const newDocuments = files.map(file => ({ id: `new_${Date.now()}_${file.name}`, name: file.name }));
+    setDocuments(prev => [...prev, ...newDocuments]);
+  };
+
+  const removeDocument = async (documentId: string) => {
+    try {
+      setDeletingDoc(documentId);
+      
+      // Se é um documento existente (UUID válido), deletar do bucket
+      if (!documentId.startsWith('new_')) {
+        // Encontrar o documento na lista para obter o file_path
+        const docToDelete = documents.find(doc => doc.id === documentId);
+        await benefitDocumentService.deleteDocument(documentId, docToDelete?.file_path);
+      }
+      
+      // Remover da lista local
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      
+      // Se for um arquivo novo, remover também da lista de arquivos
+      if (documentId.startsWith('new_')) {
+        const docName = documents.find(doc => doc.id === documentId)?.name;
+        if (docName) {
+          setDocumentFiles(prev => prev.filter(file => file.name !== docName));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao remover documento:', error);
+    } finally {
+      setDeletingDoc(null);
     }
   };
 
-  const removeDocument = (docName: string) => {
-    const docIndex = documents.indexOf(docName);
-    setDocuments(documents.filter(doc => doc !== docName));
-    // Also remove the corresponding file if it exists
-    if (docIndex >= 0 && docIndex < documentFiles.length) {
-      setDocumentFiles(documentFiles.filter((_, index) => index !== docIndex));
+  const handleViewDocument = async (documentId: string) => {
+    try {
+      setViewingDoc(documentId);
+      
+      // Só pode visualizar documentos existentes (não novos arquivos)
+      if (!documentId.startsWith('new_')) {
+        const url = await benefitDocumentService.getDocumentUrl(document.file_path);
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro ao visualizar documento:', error);
+    } finally {
+      setViewingDoc(null);
     }
   };
 
@@ -259,19 +308,43 @@ export const EditBenefitDialog: React.FC<EditBenefitDialogProps> = ({
               <div className="space-y-2">
                 <Label>Documentos anexados:</Label>
                 {documents.map((doc, index) => (
-                  <div key={`doc-${index}`} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div key={`doc-${doc.id}`} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm">{doc}</span>
+                      <span className="text-sm">{doc.name}</span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeDocument(doc)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Botão de visualizar - apenas para documentos existentes */}
+                      {!doc.id.startsWith('new_') && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDocument(doc.id)}
+                          disabled={viewingDoc === doc.id}
+                        >
+                          {viewingDoc === doc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </Button>
+                      )}
+                      {/* Botão de remover */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDocument(doc.id)}
+                        disabled={deletingDoc === doc.id}
+                      >
+                        {deletingDoc === doc.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

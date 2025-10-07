@@ -81,7 +81,7 @@ export const scheduleService = {
         .from('schedule_events')
         .select(`
           *,
-          users(username)
+          colaboradores(nome)
         `)
         .order('start_date', { ascending: false });
       
@@ -116,7 +116,7 @@ export const scheduleService = {
           title: event.title,
           employee_id: event.user_id,
           employeeId: event.user_id,
-          employee: event.users?.username || 'Unknown',
+          employee: event.colaboradores?.nome || 'Unknown',
           unit: (event.unit || 'campo-grande') as ScheduleUnit,
           date: dateStr,
           event_date: dateStr,
@@ -145,31 +145,44 @@ export const scheduleService = {
 
   async createScheduleEvent(eventData: NewScheduleEventData): Promise<ScheduleEvent> {
     try {
+      console.log('=== DEBUG: Dados recebidos no createScheduleEvent ===');
+      console.log('eventData:', JSON.stringify(eventData, null, 2));
       
       // Converter data e horários para timestamp
       const startDateTime = new Date(`${eventData.date}T${eventData.startTime}:00`);
       const endDateTime = new Date(`${eventData.date}T${eventData.endTime}:00`);
       
+      console.log('=== DEBUG: Timestamps calculados ===');
+      console.log('startDateTime:', startDateTime.toISOString());
+      console.log('endDateTime:', endDateTime.toISOString());
+      
+      const insertData = {
+        title: eventData.title,
+        user_id: eventData.employeeId,
+        unit: eventData.unit,
+        start_date: startDateTime.toISOString(),
+        end_date: endDateTime.toISOString(),
+        event_type: eventData.type,
+        description: eventData.description,
+        location: eventData.location,
+        status: 'scheduled'
+      };
+      
+      console.log('=== DEBUG: Dados que serão inseridos ===');
+      console.log('insertData:', JSON.stringify(insertData, null, 2));
+      
       const { data, error } = await supabase
         .from('schedule_events')
-        .insert({
-          title: eventData.title,
-          user_id: eventData.employeeId,
-          unit: eventData.unit,
-          start_date: startDateTime.toISOString(),
-          end_date: endDateTime.toISOString(),
-          event_type: eventData.type,
-          description: eventData.description,
-          location: eventData.location,
-          status: 'scheduled'
-        })
+        .insert(insertData)
         .select(`
           *,
-          users(username)
+          colaboradores(nome)
         `)
         .single();
       
       if (error) {
+        console.error('=== DEBUG: Erro do Supabase ===');
+        console.error('error:', JSON.stringify(error, null, 2));
         throw error;
       }
       
@@ -183,7 +196,7 @@ export const scheduleService = {
         title: data.title,
         employee_id: data.user_id,
         employeeId: data.user_id,
-        employee: data.users?.username || 'Unknown',
+        employee: data.colaboradores?.nome || 'Unknown',
         unit: (data.unit || 'campo-grande') as ScheduleUnit,
         date: startDate.toISOString().split('T')[0],
         event_date: startDate.toISOString().split('T')[0],
@@ -226,7 +239,7 @@ export const scheduleService = {
         .eq('id', id)
         .select(`
           *,
-          users(username)
+          colaboradores(nome)
         `)
         .single();
       
@@ -239,7 +252,7 @@ export const scheduleService = {
         title: data.title,
         employee_id: data.user_id,
         employeeId: data.user_id, // alias
-        employee: data.users?.username || 'Unknown',
+        employee: data.colaboradores?.nome || 'Unknown',
         unit: data.unit as Unit,
         date: data.start_date, // alias
         event_date: data.start_date,
@@ -285,7 +298,7 @@ export const scheduleService = {
         .from('schedule_events')
         .select(`
           *,
-          users(username)
+          colaboradores(nome)
         `)
         .in('unit', units)
         .order('start_date', { ascending: false });
@@ -311,7 +324,7 @@ export const scheduleService = {
           title: event.title,
           employee_id: event.user_id,
           employeeId: event.user_id, // alias
-          employee: event.users?.username || 'Unknown',
+          employee: event.colaboradores?.nome || 'Unknown',
           unit: event.unit as Unit,
           date: dateStr, // alias
           event_date: dateStr,

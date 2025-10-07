@@ -14,7 +14,7 @@ import { RateEvaluationDialog } from '@/components/evaluations/RateEvaluationDia
 import { CoffeeConnectionDialog } from '@/components/evaluations/CoffeeConnectionDialog';
 
 export function CoffeeConnectionPage() {
-  const { evaluations, isLoading: loading, refreshEvaluations } = useEvaluations();
+  const { evaluations, isLoading: loading, refreshEvaluations, deleteEvaluation } = useEvaluations();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedEmployee, setSelectedEmployee] = React.useState('');
   const [selectedUnit, setSelectedUnit] = React.useState('');
@@ -39,13 +39,13 @@ export function CoffeeConnectionPage() {
     }
     
     try {
-      const { deleteEvaluation } = useEvaluations();
       await deleteEvaluation(id);
       toast({
         title: "Coffee Connection removido",
         description: "O Coffee Connection foi removido com sucesso.",
       });
     } catch (error) {
+      console.error('Erro ao remover Coffee Connection:', error);
       toast({
         title: "Erro ao remover Coffee Connection",
         description: "Ocorreu um erro ao tentar remover o Coffee Connection. Tente novamente.",

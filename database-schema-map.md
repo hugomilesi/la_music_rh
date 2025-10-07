@@ -1,71 +1,57 @@
-# Database Schema Map - LA Music RH
+# Database Schema Map - Sistema de Gestão RH
 
-## Última Atualização
-Data: 06/01/2025
-Alteração: Criação das tabelas de reconhecimento/gamificação
-- Added `recognition_programs` table for gamification modalities
-- Added `recognition_criteria` table for program criteria
-- Added `criterion_evaluations` table for storing employee evaluations
-- Created `get_employee_ranking` function for calculating employee rankings
-- Configured RLS policies and indexes for all recognition tables
-- Inserted initial data for "Fideliza+", "Matriculador+ LA", and "Professor+ LA" programs
-- Fixed 404 error in recognition data loading
+## Última atualização: 31/12/2024
 
-## Tabelas Principais
+### Estrutura Atual do Banco de Dados
 
-### 1. users
-- **Descrição**: Usuários do sistema com roles hierárquicos
-- **Campos principais**: id, username, email, role, department_id, position_id, unit
-- **Roles**: super_admin, admin, gestor_rh, gerente
-- **Unidades**: campo-grande, barra, recreio
+#### Tabelas Principais
 
-### 2. departments
-- **Descrição**: Departamentos da empresa
-- **Campos principais**: id, name, description, manager_id
+1. **users** - Usuários do sistema
+   - Campos: id, email, role, is_active, created_at, updated_at
+   - Roles: super_admin, admin, gestor_rh, gerente
 
-### 3. role_permissions
-- **Descrição**: Permissões por role (gestor_rh e gerente)
-- **Módulos**: dashboard, employees, payroll, benefits, vacation, evaluation, reports, settings, users, support, nps
+2. **role_permissions** - Permissões por role
+   - Campos: role, module, view, create, edit, delete
+   - Módulos: benefits, beneficios, benefit_documents, evaluation
 
-### 4. benefits & benefit_types
-- **Descrição**: Sistema de benefícios da empresa
-- **Relacionamento**: benefits -> benefit_type_id -> benefit_types
+3. **benefits** - Benefícios disponíveis
+   - Campos: id, name, description, type, value, is_active, created_at, updated_at
 
-### 5. payroll_entries
-- **Descrição**: Folha de pagamento (pode incluir colaboradores não cadastrados)
-- **Unidades especiais**: Barra, CG EMLA, CG LAMK, Professores Multi-Unidade, Recreio, Staff Rateado
+4. **evaluations** - Avaliações e Coffee Connections
+   - Campos: id, employee_id, type, status, created_at, updated_at
+   - Tipos: evaluation, coffee_connection
 
-### 6. incidents
-- **Descrição**: Sistema de gestão de incidentes
-- **Status**: open, in_progress, resolved, closed
-- **Severidade**: low, medium, high, critical
+5. **schedule_events** - Eventos agendados
+   - Campos: id, employee_id, event_name, event_date, location, description
 
-## Tabelas de Reconhecimento/Gamificação (NOVO)
+#### Storage Buckets
 
-### 7. recognition_programs
-- **Descrição**: Programas de gamificação e reconhecimento
-- **Campos**: id, name, description, color, icon, total_stars, target_roles, is_active
-- **Programas atuais**:
-  - Fideliza+ (Farmers) - Verde #10B981
-  - Matriculador+ LA (Hunters) - Azul #3B82F6  
-  - Professor+ LA (Professores) - Roxo #8B5CF6
+1. **documents** - Armazenamento de documentos
+   - Estrutura: benefits/{benefitId}/{timestamp}_{originalName}
+   - Metadados incorporados no nome do arquivo
+   - Formato: {timestamp}_{originalName}_{fileSize}_{fileType}_{uploadedBy}_{status}
 
-### 8. recognition_criteria
-- **Descrição**: Critérios de avaliação para cada programa
-- **Campos**: id, program_id, title, description, type, weight, is_required
-- **Tipos**: checkbox, stars, observation
-- **Relacionamento**: program_id -> recognition_programs.id
+#### Mudanças Recentes
 
-## Políticas de Segurança (RLS)
-- Todas as tabelas têm RLS habilitado
-- Políticas para authenticated users e service_role
-- Políticas específicas para super_admin/admin em algumas tabelas
+- **REMOVIDA**: Tabela `benefit_documents` (31/12/2024)
+  - Motivo: Redundância com o bucket storage
+  - Solução: Metadados incorporados no nome do arquivo no bucket
 
-## Índices Importantes
-- idx_recognition_criteria_program_id (performance para consultas de critérios)
+#### Sistema de Permissões
 
-## Observações
-- Sistema de permissões dinâmico para gestor_rh e gerente
-- Super_admin e admin têm acesso total
-- Folha de pagamento permite colaboradores não cadastrados
-- Sistema de gamificação integrado com roles de usuário
+- **super_admin**: Acesso total
+- **admin**: Pode promover para gestor_rh e gerente
+- **gestor_rh**: Permissões dinâmicas configuráveis
+- **gerente**: Permissões dinâmicas configuráveis
+
+#### Unidades Permitidas
+
+- **Sistema geral**: Campo Grande, Barra, Recreio
+- **Folha de pagamento**: Barra, CG EMLA, CG LAMK, Professores Multi-Unidade, Recreio, Staff Rateado
+
+#### Observações Importantes
+
+1. O sistema de documentos de benefícios agora usa apenas o Supabase Storage
+2. Metadados são extraídos do nome do arquivo para manter compatibilidade
+3. Políticas RLS removidas da tabela benefit_documents (não existe mais)
+4. Sistema híbrido eliminado para reduzir complexidade

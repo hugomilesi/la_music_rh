@@ -142,7 +142,7 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         evaluation_type: 'Coffee Connection',
         evaluation_date: data.meetingDate,
         period: data.period,
-        evaluator_id: profile?.id || profile?.profile_id,
+        evaluator_id: null, // Coffee Connection não requer evaluator_id específico
         comments: data.comments || '',
         unit: data.unit,
         meetingDate: data.meetingDate,
@@ -155,6 +155,8 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
       
       
       await addEvaluation(evaluationData);
+      
+      // Se chegou até aqui, a criação foi bem-sucedida
       toast({
         title: 'Coffee Connection agendado',
         description: 'A sessão foi agendada e notificações serão enviadas.',
@@ -168,9 +170,11 @@ export const CoffeeConnectionDialog: React.FC<CoffeeConnectionDialogProps> = ({
         onSuccess();
       }
     } catch (error) {
+      console.error('Erro ao agendar Coffee Connection:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro ao agendar a sessão.';
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao agendar a sessão.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

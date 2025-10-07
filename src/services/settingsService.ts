@@ -7,8 +7,7 @@ import { updateSystemUserAsAdmin } from './adminService';
  */
 export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
   try {
-    // Get user profiles with position name from roles table
-    const { data: userProfiles, error: usersError } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select(`
         id,
@@ -20,47 +19,41 @@ export const fetchSystemUsers = async (): Promise<SystemUser[]> => {
         created_at,
         updated_at,
         last_login,
-        position_id,
-        department,
         phone,
-        roles!position_id(name)
+        unit,
+        is_active,
+        preferences
       `)
-      .is('deleted_at', null);
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
 
-    if (usersError) {
-      throw usersError;
+    if (error) {
+      console.error('Error fetching system users:', error);
+      throw error;
     }
 
-    if (!userProfiles || userProfiles.length === 0) {
+    if (!data) {
       return [];
     }
 
-    // Transform to SystemUser format
-    const systemUsers: SystemUser[] = userProfiles.map(profile => ({
-      id: profile.id,
-      auth_user_id: profile.auth_user_id,
-      username: profile.username,
-      email: profile.email,
-      role: profile.role,
-      status: profile.status,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
-      profile_image_url: null, // Not available without auth data
-      last_sign_in_at: profile.last_login,
-      email_confirmed_at: null, // Not available without auth data
-      name: profile.username,
-      position: profile.roles?.name || 'Não informado',
-      department: profile.department || 'Não informado',
-      phone: profile.phone || 'Não informado'
+    return data.map(user => ({
+      id: user.id,
+      auth_user_id: user.auth_user_id,
+      name: user.username || 'Nome não informado',
+      username: user.username || '',
+      email: user.email || '',
+      role: user.role || 'gerente',
+      status: user.status,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      lastLogin: user.last_login,
+      phone: user.phone || '',
+      unit: user.unit || '',
+      isActive: user.is_active ?? true,
+      preferences: user.preferences || {}
     }));
-
-    // Filter out legacy users (users without proper role structure)
-    const validUsers = systemUsers.filter(user => {
-      return user.role && ['super_admin', 'admin', 'gestor_rh', 'gerente'].includes(user.role);
-    });
-
-    return validUsers;
   } catch (error) {
+    console.error('Error in fetchSystemUsers:', error);
     throw error;
   }
 };
@@ -186,16 +179,13 @@ export const listAllSystemUsers = async () => {
           email: user.email,
           username: user.username,
           role: user.role,
-          position: user.position,
-          department: user.department,
           phone: user.phone,
-          status: user.status === 'ativo' ? 'ativo' : 'inativo'
+          status: user.status
         },
         sync_status: {
           has_user_record: true,
           user_deleted: false,
-          status: user.status === 'ativo' ? 'ativo' : 'inativo',
-          role: user.role
+          status: user.status
         }
       })),
       statistics: {
@@ -207,9 +197,9 @@ export const listAllSystemUsers = async () => {
         deleted_users: 0,
         orphaned_auth_users: 0,
         admin_users: users.filter(u => u.role === 'admin').length,
-        regular_users: users.filter(u => u.role === 'usuario').length,
-        professor_users: users.filter(u => u.role === 'professor').length,
-        manager_users: users.filter(u => u.role === 'manager').length,
+        regular_users: users.filter(u => u.role === 'gerente').length,
+        gestor_rh_users: users.filter(u => u.role === 'gestor_rh').length,
+        super_admin_users: users.filter(u => u.role === 'super_admin').length,
         sync_issues: 0
       }
     };
@@ -238,7 +228,6 @@ export const listAllSystemUsers = async () => {
         auth_user_id: user.auth_user_id,
         username: user.username,
         email: user.email,
-        role: user.role,
         status: user.status,
         created_at: user.created_at,
         updated_at: user.updated_at,
@@ -277,75 +266,46 @@ export const deleteSystemUser = async (userId: string): Promise<void> => {
 };
 
 /**
- * Update a system user
+ * Updates a system user profile directly via Supabase client
  */
 export const updateSystemUser = async (userId: string, updates: any): Promise<void> => {
   try {
-    
-    // Prepare update data
+    console.log('Updating user directly via Supabase client:', { userId, updates });
+
+    // Map frontend fields to database columns
     const updateData: any = {};
     
-    // Map UpdateSystemUserData fields to database fields
     if (updates.name) updateData.username = updates.name;
-    if (updates.username) updateData.username = updates.username;
     if (updates.email) updateData.email = updates.email;
     if (updates.role) updateData.role = updates.role;
-    if (updates.status) {
-      // Mapear status do frontend para o formato do banco
-      const statusMap: Record<string, string> = {
-        'active': 'ativo',
-        'inactive': 'inativo'
-      };
-      updateData.status = statusMap[updates.status] || updates.status;
-    }
-    // Position é enviado como nome do cargo, mas precisamos converter para position_id
-    if (updates.position) {
-      // Buscar o role_id baseado no nome do cargo
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('name', updates.position)
-        .single();
-      
-      if (roleError) {
-        throw new Error(`Cargo "${updates.position}" não encontrado`);
-      }
-      
-      if (roleData) {
-        updateData.position_id = roleData.id;
-      }
-    }
-    if (updates.department) updateData.department = updates.department;
     if (updates.phone) updateData.phone = updates.phone;
     if (updates.unit) updateData.unit = updates.unit;
-    if (updates.profile_image_url !== undefined) updateData.profile_image_url = updates.profile_image_url;
-    
+    if (updates.status) updateData.status = updates.status;
+
+    // Add updated timestamp
     updateData.updated_at = new Date().toISOString();
 
+    console.log('Mapped update data:', updateData);
 
-    // Try to update by auth_user_id first (more reliable)
-    const { data: authUpdateData, error: authError } = await supabase
+    // Update user directly using Supabase client
+    const { data, error } = await supabase
       .from('users')
       .update(updateData)
       .eq('auth_user_id', userId)
       .select();
 
-    if (authError) {
-      
-      // If that fails, try by id
-      const { data: idUpdateData, error: idError } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', userId)
-        .select();
-      
-      if (idError) {
-        throw idError;
-      }
-      
-    } else {
+    if (error) {
+      console.error('Database update error:', error);
+      throw new Error(`Failed to update user: ${error.message}`);
     }
+
+    if (!data || data.length === 0) {
+      throw new Error('User not found or no changes made');
+    }
+
+    console.log('User updated successfully:', data[0]);
   } catch (error) {
+    console.error('Failed to update system user:', error);
     throw error;
   }
 };

@@ -217,11 +217,11 @@ export const countEmployeesByRole = async (roleId: string): Promise<number> => {
       return 0;
     }
 
-    // Count users with this role using the role name (not role_id)
+    // Count colaboradores with this role using the role name
     const { count, error } = await supabase
-      .from('users')
+      .from('colaboradores')
       .select('*', { count: 'exact', head: true })
-      .eq('role', role.name);
+      .eq('cargo', role.name);
 
     if (error) {
       throw error;
@@ -231,4 +231,40 @@ export const countEmployeesByRole = async (roleId: string): Promise<number> => {
   } catch (error) {
     throw error;
   }
+};
+
+// Count colaboradores by department
+export const countColaboradoresByDepartment = async (departmentId: string): Promise<number> => {
+  try {
+    // First, get the department name
+    const { data: department, error: deptError } = await supabase
+      .from('departments')
+      .select('id, name')
+      .eq('id', departmentId)
+      .single();
+
+    if (deptError || !department) {
+      return 0;
+    }
+
+    // Count colaboradores with this department using the department name
+    const { count, error } = await supabase
+      .from('colaboradores')
+      .select('*', { count: 'exact', head: true })
+      .eq('departamento', department.name);
+
+    if (error) {
+      throw error;
+    }
+
+    return count || 0;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Keep the old function for backward compatibility but mark as deprecated
+/** @deprecated Use countColaboradoresByDepartment instead */
+export const countUsersByDepartment = async (departmentId: string): Promise<number> => {
+  return countColaboradoresByDepartment(departmentId);
 };

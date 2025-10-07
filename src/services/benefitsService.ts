@@ -51,16 +51,13 @@ export const benefitsService = {
       // Map benefits and load documents for each
       const benefitsWithDocuments = await Promise.all(
         data.map(async (benefit) => {
-          // For now, we'll load documents based on benefit ID
-          // Note: This assumes documents are linked to benefits directly
-          // In the future, this might need to be adjusted based on the actual relationship
+          // Load documents for this benefit
           let documents: string[] = [];
           try {
-            // Try to get documents for this benefit
-            // Using benefit_id to get documents
-            documents = [];
+            const benefitDocuments = await benefitDocumentService.getDocumentsByBenefit(benefit.id);
+            documents = benefitDocuments.map(doc => doc.name);
           } catch (error) {
-            // Document loading warning disabled
+            console.warn(`Failed to load documents for benefit ${benefit.id}:`, error);
             documents = [];
           }
 

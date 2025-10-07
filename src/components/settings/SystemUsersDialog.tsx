@@ -18,6 +18,7 @@ import { SystemUser, CreateSystemUserData, UpdateSystemUserData, SystemUserFilte
 import { AddUserDialog } from './AddUserDialog';
 import { EditUserDialog } from './EditUserDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
+import { UserCreatedModal } from './UserCreatedModal';
 import { fetchSystemUsers, deleteSystemUser, updateSystemUser } from '@/services/settingsService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,6 +45,8 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [createdUserData, setCreatedUserData] = useState<any>(null);
 
   // Load users data on component mount
   useEffect(() => {
@@ -69,14 +72,20 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(filters.searchQuery.toLowerCase());
-    const matchesRole = !filters.role || user.role === filters.role;
-    const matchesDepartment = !filters.department || user.department === filters.department;
     const matchesStatus = !filters.status || user.status === filters.status;
 
-    return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
-  const handleAddUser = async (userData: CreateSystemUserData) => {
+  const handleAddUser = async (userData: any) => {
+    console.log('handleAddUser called with:', userData);
+    
+    // Configurar dados para o modal de credenciais
+    setCreatedUserData(userData);
+    setShowCredentialsModal(true);
+    
+    console.log('Setting credentials modal to true with data:', userData);
+    
     // Reload users after adding
     await loadUsers();
   };
@@ -146,8 +155,11 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
   };
 
   const handleEditClick = (user: SystemUser) => {
+    console.log('SystemUsersDialog - Edit button clicked for user:', user);
+    console.log('SystemUsersDialog - Current editDialogOpen:', editDialogOpen);
     setEditingUser(user);
     setEditDialogOpen(true);
+    console.log('SystemUsersDialog - Setting editDialogOpen to true and editingUser to:', user);
   };
 
   const handleDeleteClick = (user: SystemUser) => {
@@ -166,7 +178,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
   };
 
   const getStatusBadge = (status: string) => {
-    return status === 'active' 
+    return status === 'ativo' 
       ? 'bg-green-100 text-green-800'
       : 'bg-gray-100 text-gray-800';
   };
@@ -243,8 +255,8 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                   className="h-10 px-3 rounded-md border border-input bg-background"
                 >
                   <option value="">Todos os status</option>
-                  <option value="active">Ativo</option>
-                  <option value="inactive">Inativo</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
                 </select>
               </div>
 
@@ -253,7 +265,11 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 onOpenChange={setIsAddDialogOpen}
                 onUserAdd={handleAddUser}
               />
-              <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Button onClick={() => {
+                console.log('SystemUsersDialog - Novo Usuário button clicked, current isAddDialogOpen:', isAddDialogOpen);
+                setIsAddDialogOpen(true);
+                console.log('SystemUsersDialog - Setting isAddDialogOpen to true');
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Usuário
               </Button>
@@ -265,8 +281,6 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Perfil</TableHead>
-                    <TableHead>Setor</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Último Acesso</TableHead>
                     <TableHead>Ações</TableHead>
@@ -275,7 +289,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
+                      <TableCell colSpan={4} className="text-center py-8">
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span>Carregando usuários...</span>
@@ -284,7 +298,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         Nenhum usuário encontrado
                       </TableCell>
                     </TableRow>
@@ -293,18 +307,8 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>
-                          <Badge className={getRoleBadge(user.role)}>
-                            {user.role === 'super_admin' ? 'Super Administrador' :
-                             user.role === 'admin' ? 'Administrador' :
-                             user.role === 'gestor_rh' ? 'Gestor de RH' :
-                             user.role === 'gerente' ? 'Gerente' :
-                             user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{user.department || '-'}</TableCell>
-                        <TableCell>
                           <Badge className={getStatusBadge(user.status)}>
-                            {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                            {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </TableCell>
                         <TableCell>{user.lastAccess}</TableCell>
@@ -343,7 +347,7 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {users.filter(u => u.status === 'active').length}
+                  {users.filter(u => u.status === 'ativo').length}
                 </div>
                 <div className="text-sm text-gray-600">Usuários Ativos</div>
               </div>
@@ -378,6 +382,20 @@ export const SystemUsersDialog: React.FC<SystemUsersDialogProps> = ({ children }
         onOpenChange={setDeleteDialogOpen}
         onUserDelete={handleDeleteUser}
       />
+
+      {/* Modal de credenciais do usuário criado */}
+      {createdUserData && (
+        <UserCreatedModal
+          open={showCredentialsModal}
+          onOpenChange={(open) => {
+            setShowCredentialsModal(open);
+            if (!open) {
+              setCreatedUserData(null);
+            }
+          }}
+          userData={createdUserData}
+        />
+      )}
     </>
   );
 };

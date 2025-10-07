@@ -6,7 +6,6 @@ export interface SystemUser {
   email: string;
   role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   position?: string;
-  department?: string;
   phone?: string;
   unit?: string;
   status: 'active' | 'inactive';
@@ -20,7 +19,6 @@ export interface CreateSystemUserData {
   name: string;
   email: string;
   role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
-  department?: string;
   phone?: string;
   password: string;
   confirmPassword: string;
@@ -33,7 +31,6 @@ export interface UpdateSystemUserData {
   email: string;
   role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
   position?: string;
-  department?: string;
   phone?: string;
   unit?: string;
   permissions: string[];
@@ -43,6 +40,5 @@ export interface UpdateSystemUserData {
 export interface SystemUserFilters {
   searchQuery: string;
   role: string;
-  department: string;
   status: string;
 }

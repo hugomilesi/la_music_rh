@@ -20,10 +20,13 @@ export const LoginForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirmationHelp, setShowConfirmationHelp] = useState(false);
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
-  const { signIn, signInWithGoogle, resendConfirmation } = useAuth();
+  // Usar apenas AuthContext para dados de autenticação
+  const { signIn, signInWithGoogle, resendConfirmation, session, user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { hasPermission, user, profile, canViewModule, isAdmin, isSuperAdmin } = usePermissionsV2();
+  
+  // Usar usePermissionsV2 apenas para funções de permissão
+  const { canViewModule, isAdmin, isSuperAdmin } = usePermissionsV2();
   
   // Função para verificar se pode gerenciar permissões
   const canManagePermissions = isAdmin || isSuperAdmin;
@@ -80,35 +83,60 @@ export const LoginForm: React.FC = () => {
         description: 'Bem-vindo ao LA Music RH.',
       });
       
-      // Aguardar que user e profile estejam carregados antes de verificar permissões
+      // Aguardar que a autenticação seja processada pelo AuthContext
       const waitForAuthAndRedirect = async () => {
         let attempts = 0;
-        const maxAttempts = 15; // 6 segundos total
+        const maxAttempts = 15; // Aumentado para 6 segundos total
         
         const checkAuthAndPermissions = async () => {
           attempts++;
           
-          if (user && profile && typeof canViewModule === 'function' && typeof canManagePermissions === 'function') {
+          // Obter o estado atual do supabase diretamente
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          
+          console.log(`🔄 Tentativa ${attempts}: 
+            contextSession=${!!session}, 
+            contextUser=${!!user}, 
+            contextProfile=${!!profile},
+            currentSession=${!!currentSession}`);
+          
+          // Verificar se temos uma sessão válida (do contexto ou diretamente do supabase)
+          const activeSession = session || currentSession;
+          
+          if (activeSession && activeSession.user) {
+            console.log('✅ Sessão ativa detectada, redirecionando...');
             
-            try {
-              const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions);
-              
-              navigate(firstAccessibleRoute, { replace: true });
-              return;
-            } catch (error) {
-              navigate('/dashboard', { replace: true });
-              return;
+            // Se temos profile e permissões carregadas, usar rota específica
+            if (profile && typeof canViewModule === 'function' && typeof canManagePermissions === 'function') {
+              try {
+                const firstAccessibleRoute = getFirstAccessibleRoute(canViewModule, canManagePermissions);
+                console.log('🎯 Redirecionando para rota específica:', firstAccessibleRoute);
+                // Usar window.location para forçar navegação e evitar conflitos
+                window.location.href = firstAccessibleRoute;
+                return;
+              } catch (error) {
+                console.log('⚠️ Erro ao obter rota específica, usando dashboard');
+              }
             }
+            
+            // Fallback para dashboard se temos sessão mas profile ainda não carregou
+            console.log('🏠 Redirecionando para dashboard (fallback)');
+            // Usar window.location para forçar navegação e evitar conflitos com Index.tsx
+            window.location.href = '/dashboard';
+            return;
           }
           
           if (attempts >= maxAttempts) {
-            navigate('/dashboard', { replace: true });
+            console.log('⏰ Máximo de tentativas atingido, redirecionando para dashboard');
+            // Usar window.location para forçar navegação e evitar conflitos
+            window.location.href = '/dashboard';
           } else {
             setTimeout(checkAuthAndPermissions, 400);
           }
         };
         
-        setTimeout(checkAuthAndPermissions, 800);
+        // Começar verificação após um pequeno delay para permitir que o AuthContext processe
+        setTimeout(checkAuthAndPermissions, 200);
       };
       
       waitForAuthAndRedirect();

@@ -12,7 +12,6 @@ import { EnhancedStatsModal } from '@/components/notifications/EnhancedStatsModa
 import { PerformanceAnalytics } from '@/components/notifications/PerformanceAnalytics';
 import { QuickActions } from '@/components/notifications/QuickActions';
 import { NotificationDetailsModal } from '@/components/notifications/NotificationDetailsModal';
-import UnifiedScheduler from '@/components/UnifiedScheduler';
 import TestController from '@/components/TestController';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Notification } from '@/types/notification';
@@ -86,15 +85,6 @@ const NotificationsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setActiveTab('scheduling')}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Programar Envio
-          </Button>
-          
           <NewNotificationDialog>
             <Button size="sm">
               <Plus className="w-4 h-4 mr-2" />
@@ -105,9 +95,8 @@ const NotificationsPage: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full max-w-4xl">
+        <TabsList className="grid grid-cols-4 w-full max-w-4xl">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="scheduler">Agendamento</TabsTrigger>
           <TabsTrigger value="test">Testes</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
@@ -187,21 +176,6 @@ const NotificationsPage: React.FC = () => {
 
           {/* Quick Actions */}
           <QuickActions />
-        </TabsContent>
-
-        <TabsContent value="scheduler" className="space-y-6">
-          {/* Unified Scheduler for Notifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Agendamento Unificado de Notificações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <UnifiedScheduler defaultType="notification" />
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="test" className="space-y-6">

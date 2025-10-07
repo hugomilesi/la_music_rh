@@ -32,21 +32,22 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   onOpenChange,
   onUserUpdate
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  console.log('EditUserDialog - Component rendered with open:', open, 'user:', user);
+  
   const { toast } = useToast();
-  const { canEditInModule, forceRefreshPermissions } = usePermissionsV2();
-  const canCreateUsers = canEditInModule('usuarios');
+  const { permissions, isSuperAdmin, canEditInModule } = usePermissionsV2();
+  const [isLoading, setIsLoading] = useState(false);
+  const canCreateUsers = isSuperAdmin || (permissions && permissions.some(p => p.module === 'usuarios' && p.can_edit));
 
   const form = useForm<UpdateUserFormData>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
       name: '',
+      email: '',
       role: 'usuario',
-      position: '',
-      department: '',
       phone: '',
       unit: '',
-      status: 'active'
+      status: 'ativo'
     }
   });
 
@@ -54,9 +55,8 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
     if (user) {
       form.reset({
         name: user.name,
-        role: user.role,
-        position: user.position || '',
-        department: user.department || '',
+        email: user.email,
+        role: user.role || 'gestor_rh', // Definir valor padrão para role
         phone: user.phone || '',
         unit: user.unit || '',
         status: user.status
@@ -65,49 +65,57 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   }, [user, form]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
-    if (!user || !canCreateUsers) return;
-
+    console.log('🚀 EditUserDialog onSubmit INICIADO');
+    console.log('📝 Dados do formulário:', data);
+    console.log('👤 Usuário sendo editado:', user);
+    
+    if (isLoading) {
+      console.log('⚠️ Já está carregando, ignorando submissão');
+      return;
+    }
 
     setIsLoading(true);
+    console.log('⏳ Estado de loading definido como true');
+
     try {
-      // Simular API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('🔍 Verificando permissões...');
+      const canEditUser = canEditInModule('usuarios');
+      console.log('✅ Pode editar usuário:', canEditUser);
       
-      // Convert form data to UpdateSystemUserData
-      const userData: UpdateSystemUserData = {
-        name: data.name,
-        email: user.email, // Keep existing email
-        role: data.role,
-        position: data.position,
-        department: data.department,
-        phone: data.phone,
-        unit: data.unit,
-        status: data.status,
-        permissions: []
-      };
-      
-      
-      onUserUpdate(user.auth_user_id || String(user.id), userData);
-      
-      // Invalidate cache and notify permission changes if role changed
-      if (data.role !== user.role) {
-        notifyPermissionChange();
-        forceRefreshPermissions();
+      if (!canEditUser) {
+        console.log('❌ Sem permissão para editar usuário');
+        toast({
+          title: "Erro de Permissão",
+          description: "Você não tem permissão para editar usuários com este cargo.",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
+      console.log('🔄 Simulando chamada de API para atualização...');
+      // Simular chamada de API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('✅ Simulação de API concluída');
+
+      console.log('🎉 Usuário editado com sucesso (simulado)');
       toast({
-        title: "Usuário atualizado com sucesso",
-        description: `Dados de ${data.name} foram atualizados`
+        title: "Usuário atualizado com sucesso!",
+        description: `Usuário ${data.name} foi atualizado.`,
       });
 
+      console.log('📞 Chamando onUserUpdate...');
+      onUserUpdate(user.id, data);
+      console.log('🚪 Fechando diálogo...');
       onOpenChange(false);
     } catch (error) {
+      console.error('💥 Exceção no onSubmit:', error);
       toast({
-        title: "Erro ao atualizar usuário",
-        description: "Tente novamente em alguns instantes",
-        variant: "destructive"
+        title: "Erro inesperado",
+        description: "Ocorreu um erro inesperado ao atualizar o usuário.",
+        variant: "destructive",
       });
     } finally {
+      console.log('🏁 Finalizando onSubmit, definindo loading como false');
       setIsLoading(false);
     }
   };
@@ -158,7 +166,20 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              onClick={(e) => {
+                console.log('🔘 Botão Salvar Alterações clicado');
+                console.log('📋 Dados do formulário:', form.getValues());
+                console.log('❌ Erros do formulário:', form.formState.errors);
+                console.log('✅ Formulário válido:', form.formState.isValid);
+                
+                // Não prevenir o evento padrão para permitir o submit normal
+                // e.preventDefault();
+                // form.handleSubmit(onSubmit)(e);
+              }}
+            >
               {isLoading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </DialogFooter>

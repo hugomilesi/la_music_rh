@@ -13,7 +13,8 @@ import {
   CheckCircle,
   Clock,
   Download,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react';
 import { Benefit, BenefitDocument } from '@/types/benefits';
 import { benefitsService } from '@/services/benefitsService';
@@ -33,6 +34,7 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   const [documents, setDocuments] = useState<BenefitDocument[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null);
   const getTypeBadgeColor = (color: string) => {
     // Convert Tailwind background color to badge color
     const colorMap: { [key: string]: string } = {
@@ -64,48 +66,55 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
   const loadDocuments = async () => {
     setLoadingDocuments(true);
     try {
-      const allDocuments: BenefitDocument[] = [];
+      console.log('Loading documents for benefit:', benefit.id);
       
-      // Buscar inscrições do benefício usando getEmployeeBenefits
-      const employeeBenefits = await benefitsService.getEmployeeBenefits();
-      const benefitEnrollments = employeeBenefits.filter(eb => eb.benefitId === benefit.id);
+      // Buscar documentos diretamente pelo benefit_id
+      const docs = await benefitDocumentService.getDocumentsByBenefit(benefit.id);
+      console.log('Found documents:', docs);
       
-      for (const enrollment of benefitEnrollments) {
-        try {
-          const docs = await benefitDocumentService.getDocumentsByBenefit(enrollment.id);
-          // Add employee info to each document for better identification
-          const docsWithEmployee = docs.map(doc => ({
-            ...doc,
-            name: `${doc.document_name || doc.name} (${enrollment.employeeName})`,
-            type: doc.mime_type || doc.type,
-            url: doc.file_path || doc.url,
-            uploadDate: doc.created_at || doc.uploadDate,
-            status: (doc.status as 'pending' | 'approved' | 'rejected') || 'approved'
-          }));
-          allDocuments.push(...docsWithEmployee);
-        } catch (docError) {
-        }
-      }
+      // Mapear documentos para o formato esperado pelo componente
+      const mappedDocuments: BenefitDocument[] = docs.map(doc => ({
+        id: doc.id,
+        benefit_id: doc.benefit_id,
+        name: doc.name,
+        file_path: doc.file_path,
+        file_size: doc.file_size,
+        file_type: doc.file_type,
+        status: doc.status,
+        uploaded_by: doc.uploaded_by,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        // Campos adicionais para compatibilidade com o componente
+        type: doc.file_type,
+        url: doc.file_path,
+        uploadDate: doc.created_at
+      }));
 
-      // Se não há inscrições, buscar documentos gerais do benefício
-      if (benefitEnrollments.length === 0) {
-        const docs = await benefitDocumentService.getDocumentsByBenefit(benefit.id);
-        allDocuments.push(...docs);
-      }
-
-      setDocuments(allDocuments);
+      setDocuments(mappedDocuments);
     } catch (error) {
+      console.error('Error loading documents:', error);
+      
       // Fallback to showing benefit.documents if available
       if (benefit.documents && benefit.documents.length > 0) {
         const fallbackDocs: BenefitDocument[] = benefit.documents.map((docName, index) => ({
           id: `${benefit.id}_doc_${index}`,
+          benefit_id: benefit.id,
           name: docName,
+          file_path: '',
+          file_size: 0,
+          file_type: 'application/pdf',
+          status: 'approved' as const,
+          uploaded_by: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          // Campos adicionais para compatibilidade
           type: 'application/pdf',
           url: '',
-          uploadDate: new Date().toISOString(),
-          status: 'approved' as const
+          uploadDate: new Date().toISOString()
         }));
         setDocuments(fallbackDocs);
+      } else {
+        setDocuments([]);
       }
     } finally {
       setLoadingDocuments(false);
@@ -117,11 +126,18 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
       setDownloadingDoc(doc.id);
       
       
-      // Use the real download service
-      const downloadUrl = await benefitDocumentService.downloadDocument(doc.id);
+      // Use the real download service with file_path
+      const downloadUrl = await benefitDocumentService.downloadDocument(doc.file_path);
       
-      // Open the download URL in a new tab
-      window.open(downloadUrl, '_blank');
+      // Create a blob URL and trigger download
+      const url = URL.createObjectURL(downloadUrl);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
       
       
@@ -129,6 +145,23 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
       alert('Erro ao baixar documento. Verifique se o arquivo ainda existe no storage.');
     } finally {
       setDownloadingDoc(null);
+    }
+  };
+
+  const handleViewDocument = async (doc: BenefitDocument) => {
+    try {
+      setViewingDoc(doc.id);
+      
+      // Get the public URL for viewing using file_path
+      const viewUrl = await benefitDocumentService.getDocumentUrl(doc.file_path);
+      
+      // Open the document in a new tab for viewing
+      window.open(viewUrl, '_blank');
+      
+    } catch (error) {
+      alert('Erro ao visualizar documento. Verifique se o arquivo ainda existe no storage.');
+    } finally {
+      setViewingDoc(null);
     }
   };
 
@@ -301,19 +334,36 @@ export const BenefitDetailsModal: React.FC<BenefitDetailsModalProps> = ({
                       >
                         {doc.status === 'approved' ? 'Aprovado' : doc.status === 'pending' ? 'Pendente' : 'Rejeitado'}
                       </Badge>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        disabled={downloadingDoc === doc.id}
-                        onClick={() => handleDownloadDocument(doc)}
-                      >
-                        {downloadingDoc === doc.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        {downloadingDoc === doc.id ? 'Baixando...' : 'Baixar'}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={viewingDoc === doc.id}
+                          onClick={() => handleViewDocument(doc)}
+                          title="Visualizar documento"
+                        >
+                          {viewingDoc === doc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                          {viewingDoc === doc.id ? 'Abrindo...' : 'Visualizar'}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          disabled={downloadingDoc === doc.id}
+                          onClick={() => handleDownloadDocument(doc)}
+                          title="Baixar documento"
+                        >
+                          {downloadingDoc === doc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
+                          {downloadingDoc === doc.id ? 'Baixando...' : 'Baixar'}
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

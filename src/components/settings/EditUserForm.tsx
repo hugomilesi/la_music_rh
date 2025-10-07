@@ -69,27 +69,21 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
           </div>
 
           <div>
-            <Label htmlFor="position">Cargo *</Label>
-            <select
-              id="position"
-              {...register('position')}
-              className={`w-full h-10 px-3 rounded-md border border-input bg-background ${
-                errors.position ? 'border-red-500' : ''
-              }`}
-              disabled={loadingRoles}
-            >
-              <option value="">Selecione um cargo</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.name}>
-                  {role.name} - {role.department?.name}
-                </option>
-              ))}
-            </select>
-            {errors.position && (
-              <p className="text-sm text-red-500 mt-1">{errors.position.message}</p>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              {...register('email')}
+              placeholder="Digite o email"
+              className={errors.email ? 'border-red-500' : ''}
+            />
+            {errors.email && (
+              <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
             )}
           </div>
+        </div>
 
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="phone">Telefone</Label>
             <Input
@@ -99,20 +93,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="department">Setor</Label>
-            <select
-              id="department"
-              {...register('department')}
-              className="w-full h-10 px-3 rounded-md border border-input bg-background"
-              disabled={loadingRoles}
-            >
-              <option value="">Selecione um setor</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.name}>{dept.name}</option>
-              ))}
-            </select>
-          </div>
+          <div></div>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -144,15 +125,11 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
               {...register('role')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
             >
-              {isSuperAdmin && (
-                <option value="admin">Administrador</option>
-              )}
-              {isAdmin && (
-                <>
-                  <option value="gerente">Gerente</option>
-                  <option value="gestor_rh">Gestor RH</option>
-                </>
-              )}
+              <option value="">Selecione um perfil</option>
+              <option value="super_admin">Super Administrador</option>
+              <option value="admin">Administrador</option>
+              <option value="gestor_rh">Gestor RH</option>
+              <option value="gerente">Gerente</option>
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role.message}</p>
@@ -166,8 +143,8 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({ form }) => {
               {...register('status')}
               className="w-full h-10 px-3 rounded-md border border-input bg-background"
             >
-              <option value="active">Ativo</option>
-              <option value="inactive">Inativo</option>
+              <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
             </select>
           </div>
         </div>

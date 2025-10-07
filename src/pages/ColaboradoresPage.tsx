@@ -39,6 +39,11 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { 
   Users, 
   Plus, 
   Search, 
@@ -47,7 +52,9 @@ import {
   Trash2, 
   Eye,
   Download,
-  RefreshCw
+  RefreshCw,
+  Settings,
+  Columns
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
@@ -67,7 +74,25 @@ import { NovoColaboradorDialog } from '@/components/colaboradores/NovoColaborado
 import { EditarColaboradorDialog } from '@/components/colaboradores/EditarColaboradorDialog';
 import { DetalhesColaboradorDialog } from '@/components/colaboradores/DetalhesColaboradorDialog';
 
-const ColaboradoresPage: React.FC = () => {
+// Definir as colunas disponíveis
+const AVAILABLE_COLUMNS = [
+  { key: 'nome', label: 'Nome', required: true },
+  { key: 'email', label: 'Email', required: false },
+  { key: 'cpf', label: 'CPF', required: false },
+  { key: 'telefone', label: 'Telefone', required: false },
+  { key: 'cargo', label: 'Cargo', required: false },
+  { key: 'departamento', label: 'Departamento', required: false },
+  { key: 'unidade', label: 'Unidade', required: false },
+  { key: 'tipo_contratacao', label: 'Tipo', required: false },
+  { key: 'status', label: 'Status', required: false },
+  { key: 'data_admissao', label: 'Data Admissão', required: false },
+  { key: 'banco', label: 'Banco', required: false },
+  { key: 'agencia', label: 'Agência', required: false },
+  { key: 'conta', label: 'Conta', required: false },
+  { key: 'tipo_conta', label: 'Tipo Conta', required: false },
+];
+
+export const ColaboradoresPage: React.FC = () => {
   const { toast } = useToast();
   const { canViewModule, canManageModule, loading: permissionsLoading } = usePermissionsV2();
   
@@ -92,6 +117,12 @@ const ColaboradoresPage: React.FC = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  // Estado para colunas visíveis
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('colaboradores-visible-columns');
+    return saved ? JSON.parse(saved) : ['nome', 'email', 'cpf', 'cargo', 'unidade', 'tipo_contratacao', 'status'];
+  });
+  
   // Verificar permissões
   const canView = canViewModule('colaboradores');
   const canManage = canManageModule('colaboradores');
@@ -100,10 +131,12 @@ const ColaboradoresPage: React.FC = () => {
   const carregarColaboradores = useCallback(async () => {
     try {
       setLoading(true);
-      
       const data = await colaboradorService.getColaboradores();
+      console.log('Dados dos colaboradores carregados:', data);
+      console.log('Status dos colaboradores:', data.map(c => ({ nome: c.nome, status: c.status })));
       setColaboradores(data);
     } catch (error) {
+      console.error('Erro ao carregar colaboradores:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar colaboradores. Tente novamente.",
@@ -120,6 +153,11 @@ const ColaboradoresPage: React.FC = () => {
       carregarColaboradores();
     }
   }, [permissionsLoading, canView, carregarColaboradores]);
+  
+  // Salvar colunas visíveis no localStorage
+  useEffect(() => {
+    localStorage.setItem('colaboradores-visible-columns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
   
   // Filtrar colaboradores
   const colaboradoresFiltrados = useMemo(() => {
@@ -265,6 +303,23 @@ const ColaboradoresPage: React.FC = () => {
       tipo_contratacao: '',
       status: ''
     });
+  };
+  
+  // Função para alternar visibilidade da coluna
+  const toggleColumn = (columnKey: string) => {
+    const column = AVAILABLE_COLUMNS.find(col => col.key === columnKey);
+    if (column?.required) return; // Não permitir ocultar colunas obrigatórias
+    
+    setVisibleColumns(prev => 
+      prev.includes(columnKey) 
+        ? prev.filter(key => key !== columnKey)
+        : [...prev, columnKey]
+    );
+  };
+
+  // Função para resetar colunas para o padrão
+  const resetColumns = () => {
+    setVisibleColumns(['nome', 'email', 'cpf', 'cargo', 'unidade', 'tipo_contratacao', 'status']);
   };
   
   // Verificar se o usuário tem permissão para visualizar
@@ -452,6 +507,51 @@ const ColaboradoresPage: React.FC = () => {
               <Users className="w-5 h-5" />
               Colaboradores ({colaboradoresFiltrados.length})
             </div>
+            
+            {/* Seletor de Colunas */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Columns className="w-4 h-4 mr-2" />
+                  Colunas
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 sm:w-80" align="end">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">Selecionar Colunas</h4>
+                    <Button variant="ghost" size="sm" onClick={resetColumns} className="h-7 px-2 text-xs">
+                      Resetar
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {AVAILABLE_COLUMNS.map((column) => (
+                      <div key={column.key} className="flex items-center space-x-2 py-1">
+                        <Checkbox
+                          id={column.key}
+                          checked={visibleColumns.includes(column.key)}
+                          onCheckedChange={() => toggleColumn(column.key)}
+                          disabled={column.required}
+                          className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                        <label 
+                          htmlFor={column.key} 
+                          className={`text-xs leading-tight flex-1 ${column.required ? 'text-gray-500' : 'cursor-pointer hover:text-gray-900'} transition-colors`}
+                        >
+                          {column.label}
+                          {column.required && <span className="text-gray-400 ml-1">(obrigatório)</span>}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 pt-2 border-t">
+                    {visibleColumns.length} de {AVAILABLE_COLUMNS.length} colunas selecionadas
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -490,13 +590,20 @@ const ColaboradoresPage: React.FC = () => {
                         />
                       </TableHead>
                     )}
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Cargo</TableHead>
-                    <TableHead>Unidade</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
+                    {visibleColumns.includes('nome') && <TableHead>Nome</TableHead>}
+                    {visibleColumns.includes('email') && <TableHead>Email</TableHead>}
+                    {visibleColumns.includes('cpf') && <TableHead>CPF</TableHead>}
+                    {visibleColumns.includes('telefone') && <TableHead>Telefone</TableHead>}
+                    {visibleColumns.includes('cargo') && <TableHead>Cargo</TableHead>}
+                    {visibleColumns.includes('departamento') && <TableHead>Departamento</TableHead>}
+                    {visibleColumns.includes('unidade') && <TableHead>Unidade</TableHead>}
+                    {visibleColumns.includes('tipo_contratacao') && <TableHead>Tipo</TableHead>}
+                    {visibleColumns.includes('status') && <TableHead>Status</TableHead>}
+                    {visibleColumns.includes('data_admissao') && <TableHead>Data Admissão</TableHead>}
+                    {visibleColumns.includes('banco') && <TableHead>Banco</TableHead>}
+                    {visibleColumns.includes('agencia') && <TableHead>Agência</TableHead>}
+                    {visibleColumns.includes('conta') && <TableHead>Conta</TableHead>}
+                    {visibleColumns.includes('tipo_conta') && <TableHead>Tipo Conta</TableHead>}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -511,25 +618,62 @@ const ColaboradoresPage: React.FC = () => {
                           />
                         </TableCell>
                       )}
-                      <TableCell className="font-medium">
-                        {colaborador.nome}
-                      </TableCell>
-                      <TableCell>{colaborador.email}</TableCell>
-                      <TableCell>{formatCPF(colaborador.cpf)}</TableCell>
-                      <TableCell>{colaborador.cargo}</TableCell>
-                      <TableCell>{colaborador.unidade}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {colaborador.tipo_contratacao}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={colaborador.status === StatusColaborador.ATIVO ? "default" : "secondary"}
-                        >
-                          {colaborador.status}
-                        </Badge>
-                      </TableCell>
+                      {visibleColumns.includes('nome') && (
+                        <TableCell className="font-medium">
+                          {colaborador.nome}
+                        </TableCell>
+                      )}
+                      {visibleColumns.includes('email') && (
+                        <TableCell>{colaborador.email}</TableCell>
+                      )}
+                      {visibleColumns.includes('cpf') && (
+                        <TableCell>{formatCPF(colaborador.cpf)}</TableCell>
+                      )}
+                      {visibleColumns.includes('telefone') && (
+                        <TableCell>{colaborador.telefone || '-'}</TableCell>
+                      )}
+                      {visibleColumns.includes('cargo') && (
+                        <TableCell>{colaborador.cargo}</TableCell>
+                      )}
+                      {visibleColumns.includes('departamento') && (
+                        <TableCell>{colaborador.departamento}</TableCell>
+                      )}
+                      {visibleColumns.includes('unidade') && (
+                        <TableCell>{colaborador.unidade}</TableCell>
+                      )}
+                      {visibleColumns.includes('tipo_contratacao') && (
+                        <TableCell>
+                          <Badge variant="outline">
+                            {colaborador.tipo_contratacao}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {visibleColumns.includes('status') && (
+                        <TableCell>
+                          <Badge 
+                            variant={colaborador.status === StatusColaborador.ATIVO ? "default" : "secondary"}
+                          >
+                            {colaborador.status}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {visibleColumns.includes('data_admissao') && (
+                        <TableCell>
+                          {new Date(colaborador.data_admissao).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                      )}
+                      {visibleColumns.includes('banco') && (
+                        <TableCell>{colaborador.banco || '-'}</TableCell>
+                      )}
+                      {visibleColumns.includes('agencia') && (
+                        <TableCell>{colaborador.agencia || '-'}</TableCell>
+                      )}
+                      {visibleColumns.includes('conta') && (
+                        <TableCell>{colaborador.conta || '-'}</TableCell>
+                      )}
+                      {visibleColumns.includes('tipo_conta') && (
+                        <TableCell>{colaborador.tipo_conta || '-'}</TableCell>
+                      )}
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -552,7 +696,11 @@ const ColaboradoresPage: React.FC = () => {
                               
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -560,7 +708,7 @@ const ColaboradoresPage: React.FC = () => {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Tem certeza que deseja remover o colaborador <strong>{colaborador.nome}</strong>? 
+                                      Tem certeza que deseja remover o colaborador {colaborador.nome}? 
                                       Esta ação não pode ser desfeita.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>

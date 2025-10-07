@@ -17,7 +17,6 @@ import { SatisfactionModal } from '@/components/nps/SatisfactionModal';
 import { NewSurveyModal } from '@/components/nps/NewSurveyModal';
 import { PeriodFilterModal } from '@/components/nps/PeriodFilterModal';
 
-import { NPSWhatsAppTestModal } from '@/components/nps/NPSWhatsAppTestModal';
 import NPSScheduler from '@/components/nps/NPSScheduler';
 import TestController from '@/components/TestController';
 import ButtonTest from '@/components/debug/ButtonTest';
@@ -34,7 +33,6 @@ const NPSPage: React.FC = () => {
   const [newSurveyModalOpen, setNewSurveyModalOpen] = useState(false);
   const [periodFilterModalOpen, setPeriodFilterModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [whatsappTestModalOpen, setWhatsappTestModalOpen] = useState(false);
 
   const recentComments = responses.slice(0, 3);
 
@@ -68,15 +66,6 @@ const NPSPage: React.FC = () => {
           >
             <Settings className="w-4 h-4 mr-2" />
             Gerenciar
-          </Button>
-          <Button 
-            variant="outline"
-            size="sm"
-            onClick={() => setWhatsappTestModalOpen(true)}
-            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            WhatsApp NPS
           </Button>
           <Button 
             size="sm"
@@ -375,13 +364,6 @@ const NPSPage: React.FC = () => {
         open={periodFilterModalOpen}
         onOpenChange={setPeriodFilterModalOpen}
         onApplyFilter={handlePeriodFilter}
-      />
-
-
-
-      <NPSWhatsAppTestModal
-        open={whatsappTestModalOpen}
-        onOpenChange={setWhatsappTestModalOpen}
       />
     </div>
   );

@@ -29,9 +29,7 @@ import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
 import { createUserWithAutoPassword } from '@/services/userManagementService';
 import { CreateUserFormData, createUserSchema } from '@/types/userFormSchemas';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { UserCreatedModal } from './UserCreatedModal';
 import { notifyPermissionChange } from '@/utils/redirectUtils';
-import { fetchDepartments, fetchRoles, type Department, type Role } from '@/services/rolesService';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -44,11 +42,9 @@ interface UserFormData {
   name: string;
   email: string;
   role: 'super_admin' | 'admin' | 'gestor_rh' | 'gerente';
-  department: string;
   phone: string;
-  position: string;
   unit?: string;
-  status: 'active' | 'inactive';
+  status: 'ativo' | 'inativo';
 }
 
 export const AddUserDialog: React.FC<AddUserDialogProps> = ({
@@ -57,37 +53,11 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   onUserAdd,
   children
 }) => {
+  console.log('AddUserDialog - Component rendered with open:', open);
+  
   const { toast } = useToast();
   const { canCreateInModule, isSuperAdmin, forceRefreshPermissions } = usePermissionsV2();
   const [isLoading, setIsLoading] = useState(false);
-  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
-  const [createdUserData, setCreatedUserData] = useState<any>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  
-  // Fetch departments and roles on component mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [departmentsData, rolesData] = await Promise.all([
-          fetchDepartments(),
-          fetchRoles()
-        ]);
-        setDepartments(departmentsData);
-        setRoles(rolesData);
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar departamentos e cargos.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    if (open) {
-      loadData();
-    }
-  }, [open, toast]);
   
   // Move useForm to top level - before any conditional returns
   const form = useForm<CreateUserFormData>({
@@ -96,10 +66,9 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
       name: '',
       email: '',
       role: 'gerente',
-      department: '',
       phone: '',
-      position: '',
-      status: 'active'
+      unit: undefined,
+      status: 'ativo'
     }
   });
   
@@ -128,129 +97,71 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
   }
 
   const onSubmit = async (data: CreateUserFormData) => {
-    setIsLoading(true);
+    console.log('🚀 AddUserDialog onSubmit INICIADO');
+    console.log('📝 Dados do formulário:', data);
     
+    if (isLoading) {
+      console.log('⚠️ Já está carregando, ignorando submissão');
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('⏳ Estado de loading definido como true');
+
     try {
-      // Validação adicional no frontend
-      if (!data.name?.trim()) {
+      console.log('🔍 Verificando permissões...');
+      const canCreateUser = canCreateInModule('usuarios');
+      console.log('✅ Pode criar usuário:', canCreateUser);
+      
+      if (!canCreateUser) {
+        console.log('❌ Sem permissão para criar usuário');
         toast({
-          title: "Campo obrigatório",
-          description: "Nome completo é obrigatório.",
-          variant: "destructive"
+          title: "Erro de Permissão",
+          description: "Você não tem permissão para criar usuários com este cargo.",
+          variant: "destructive",
         });
-        setIsLoading(false);
         return;
       }
-      
-      if (!data.email?.trim()) {
-        toast({
-          title: "Campo obrigatório",
-          description: "Email é obrigatório.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      if (!data.position?.trim()) {
-        toast({
-          title: "Campo obrigatório",
-          description: "Cargo é obrigatório.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
+
+      console.log('🔄 Chamando createUserWithAutoPassword...');
       const result = await createUserWithAutoPassword(data);
-      
-      if (result.success && result.user) {
-        // Prepare user data for the credentials modal
-        setCreatedUserData({
-          name: result.user.name,
-          email: result.user.email,
-          password: result.user.password,
-          position: data.position,
-          department: data.department
-        });
-        
-        // Call the parent callback to refresh the user list
-        onUserAdd({
-          name: result.user.name,
-          email: result.user.email,
-          role: data.role,
-          department: data.department || '',
-          position: data.position,
-          phone: data.phone || '',
-          status: data.status
-        });
-        
-        // Invalidate cache and notify permission changes when new user is created
-        notifyPermissionChange();
-        forceRefreshPermissions();
-        
-        form.reset();
-        onOpenChange(false);
-        setShowCredentialsModal(true);
-      } else {
-        // Tratamento específico de erros da API
-        let errorTitle = "Erro ao criar usuário";
-        let errorMessage = result.error || "Ocorreu um erro inesperado.";
-        
-        // Verificar tipos específicos de erro
-        if (result.error) {
-          if (result.error.includes('Email já cadastrado no sistema')) {
-            errorTitle = "Email já cadastrado";
-            errorMessage = "Este email já está sendo usado por outro usuário. Por favor, use um email diferente.";
-          } else if (result.error.includes('Por favor, corrija os seguintes campos:')) {
-            errorTitle = "Dados inválidos";
-            errorMessage = result.error;
-          } else if (result.error.includes('Invalid email')) {
-            errorTitle = "Email inválido";
-            errorMessage = "Por favor, insira um endereço de email válido.";
-          } else if (result.error.includes('Password')) {
-            errorTitle = "Erro na senha";
-            errorMessage = "Erro ao gerar senha temporária. Tente novamente.";
-          }
-        }
-        
+      console.log('✅ Resultado da criação:', result);
+
+      if (result.success) {
+        console.log('🎉 Usuário criado com sucesso');
         toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: "destructive"
+          title: "Usuário criado com sucesso!",
+          description: `Usuário ${data.name} foi criado. Senha temporária: ${result.temporaryPassword}`,
+        });
+
+        console.log('📞 Chamando onUserAdd...');
+        onUserAdd(result.user);
+        console.log('🔄 Resetando formulário...');
+        form.reset();
+        console.log('🚪 Fechando diálogo...');
+        onOpenChange(false);
+      } else {
+        console.log('❌ Erro na criação do usuário:', result.error);
+        toast({
+          title: "Erro ao criar usuário",
+          description: result.error || "Erro desconhecido",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      // Log desabilitado: Erro ao criar usuário
-      
-      // Tratamento de erros de rede ou outros erros inesperados
-      let errorMessage = "Ocorreu um erro inesperado. Verifique os dados e tente novamente.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Email já cadastrado no sistema')) {
-          toast({
-            title: "Email já cadastrado",
-            description: "Este email já está sendo usado por outro usuário. Por favor, use um email diferente.",
-            variant: "destructive"
-          });
-          return;
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
-        }
-      }
-      
+      console.error('💥 Exceção no onSubmit:', error);
       toast({
-        title: "Erro ao criar usuário",
-        description: errorMessage,
-        variant: "destructive"
+        title: "Erro inesperado",
+        description: "Ocorreu um erro inesperado ao criar o usuário.",
+        variant: "destructive",
       });
     } finally {
+      console.log('🏁 Finalizando onSubmit, definindo loading como false');
       setIsLoading(false);
     }
   };
 
   return (
-    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -320,70 +231,12 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
               
               <FormField
                 control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Departamento</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Combobox
-                          options={departments.map(dept => ({ value: dept.name, label: dept.name }))}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Selecione um departamento"
-                          searchPlaceholder="Buscar departamento..."
-                          emptyText="Nenhum departamento encontrado."
-                        />
-                        {departments.length > 0 && (
-                          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                            <strong>Departamentos disponíveis:</strong> {departments.map(dept => dept.name).join(', ')}
-                          </div>
-                        )}
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="position"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cargo</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Combobox
-                          options={roles.map(role => ({ value: role.name, label: role.name }))}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Selecione um cargo"
-                          searchPlaceholder="Buscar cargo..."
-                          emptyText="Nenhum cargo encontrado."
-                        />
-                        {roles.length > 0 && (
-                          <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                            <strong>Cargos disponíveis:</strong> {roles.map(role => role.name).join(', ')}
-                          </div>
-                        )}
-                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -444,15 +297,5 @@ export const AddUserDialog: React.FC<AddUserDialogProps> = ({
         </Form>
       </DialogContent>
     </Dialog>
-    
-    {/* Modal de credenciais do usuário criado */}
-    {createdUserData && (
-      <UserCreatedModal
-        open={showCredentialsModal}
-        onOpenChange={setShowCredentialsModal}
-        userData={createdUserData}
-      />
-    )}
-    </>
   );
 };

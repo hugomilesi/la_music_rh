@@ -54,6 +54,7 @@ export const colaboradorService = {
     const insertData = {
       nome: colaboradorData.nome,
       email: colaboradorData.email,
+      telefone: colaboradorData.telefone,
       cpf: colaboradorData.cpf,
       cargo: colaboradorData.cargo,
       departamento: colaboradorData.departamento,
@@ -89,6 +90,7 @@ export const colaboradorService = {
     // Apenas incluir campos que foram fornecidos
     if (colaboradorData.nome !== undefined) updateData.nome = colaboradorData.nome;
     if (colaboradorData.email !== undefined) updateData.email = colaboradorData.email;
+    if (colaboradorData.telefone !== undefined) updateData.telefone = colaboradorData.telefone;
     if (colaboradorData.cpf !== undefined) updateData.cpf = colaboradorData.cpf;
     if (colaboradorData.cargo !== undefined) updateData.cargo = colaboradorData.cargo;
     if (colaboradorData.departamento !== undefined) updateData.departamento = colaboradorData.departamento;

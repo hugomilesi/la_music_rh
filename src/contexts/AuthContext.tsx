@@ -117,45 +117,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  const fetchProfile = async (userId?: string) => {
-    const targetUserId = userId || user?.id;
-    
-    if (!targetUserId) {
-      return;
-    }
-
+  const fetchProfile = async (userId: string) => {
     try {
-      // FORÇAR LIMPEZA DO CACHE - remover sessionStorage antes de buscar
-      sessionStorage.removeItem('userProfile');
+      console.log('🔍 AuthContext: fetchProfile called for userId:', userId);
       
-      // Buscar perfil diretamente da tabela users
-      const { data, error } = await supabase
+      // Force clear any cached data
+      invalidatePermissionsCache(userId);
+      
+      console.log('🔍 AuthContext: Attempting to fetch profile with normal client...');
+      
+      // Primeiro, tentar com o cliente normal
+      let { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', targetUserId)
+        .eq('auth_user_id', userId)
         .single();
 
-      if (error) {
-        return;
+      console.log('🔍 AuthContext: Normal client result - data:', !!data, 'error:', error);
+
+      // Se falhar devido a RLS, log do erro mas não criar nova instância
+      if (error && error.code === 'PGRST116') {
+        console.log('🔍 AuthContext: RLS blocking access, user may not have proper permissions');
+        console.log('🔍 AuthContext: Error details:', error);
+        
+        // Não criar nova instância do cliente, apenas retornar null
+        console.log('🔍 AuthContext: Skipping service role fallback to avoid multiple client instances')
+      } else if (error) {
+        console.error('❌ AuthContext: Error fetching profile:', error);
+        throw error;
       }
 
       if (data) {
+        console.log('✅ AuthContext: Profile fetched successfully:', data);
+        console.log('🔍 AuthContext: Setting profile state...');
         setProfile(data as Profile);
-        // Salvar no sessionStorage APENAS após confirmar os dados do banco
+        
+        console.log('🔍 AuthContext: Storing in sessionStorage...');
+        // Store in sessionStorage for persistence
         sessionStorage.setItem('userProfile', JSON.stringify(data));
         
-        // Disparar evento profile-loaded imediatamente após atualizar o profile
-        if (user) {
-          window.dispatchEvent(new CustomEvent('profile-loaded', {
-            detail: { profile: data as Profile, user }
-          }));
-        }
+        console.log('🔍 AuthContext: Dispatching profile-loaded event...');
+        // Dispatch event to notify components
+        window.dispatchEvent(new CustomEvent('profile-loaded', {
+          detail: { profile: data, user: { id: userId } }
+        }));
+        
+        console.log('✅ AuthContext: fetchProfile completed successfully');
+      } else {
+        console.log('⚠️ AuthContext: No data returned from query');
       }
-      
     } catch (error) {
+      console.error('❌ AuthContext: fetchProfile error:', error);
       setProfile(null);
-      sessionStorage.removeItem('userProfile');
     }
   };
 
@@ -194,17 +209,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Limpar completamente o cache
+      console.log('🔍 AuthContext: forceRefreshProfile called');
+      
+      // Limpar completamente o cache mas manter o profile atual temporariamente
       sessionStorage.removeItem('userProfile');
-      setProfile(null);
       
       // Invalidar cache de permissões
       invalidatePermissionsCache(user.id);
       
-      // Buscar dados frescos do banco
+      // Buscar dados frescos do banco SEM limpar o profile antes
+      console.log('🔍 AuthContext: Fetching fresh profile without clearing current state...');
       await fetchProfile(user.id);
+      
+      console.log('✅ AuthContext: forceRefreshProfile completed');
     } catch (error) {
-      // Error handling
+      console.error('❌ AuthContext: forceRefreshProfile error:', error);
     }
   };
 
@@ -238,6 +257,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('🔍 AuthContext: useEffect triggered - initialized:', initialized, 'session:', !!session, 'user:', !!user, 'profile:', !!profile);
+    
+    // Evitar execução dupla
+    if (initialized) {
+      console.log('🔍 AuthContext: Already initialized, skipping');
+      return;
+    }
+
     // Check if we're on a public route that doesn't need authentication
     const isPublicRoute = () => {
       const path = window.location.pathname;
@@ -248,15 +275,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
              path === '*';
     };
 
-    // Auth listener setup logging disabled
+    console.log('🔍 AuthContext: Setting up auth listener');
     
     // Set up auth state listener (always needed for login/logout events)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Auth state change logging disabled
+        console.log('🔍 AuthContext: Auth state change event:', event, 'session:', !!session);
         
         if (event === 'SIGNED_OUT') {
-          // User logout logging disabled
+          console.log('🔍 AuthContext: Handling SIGNED_OUT event, isSigningOut:', isSigningOut);
           if (isSigningOut) {
             handleSuccessfulLogout();
           } else {
@@ -264,25 +291,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             clearAllAuthStorage();
           }
           setLoading(false);
+          setInitialized(true);
           return;
         }
         
         if (event === 'SIGNED_IN' && session) {
+          console.log('🔍 AuthContext: SIGNED_IN event triggered for user:', session.user.id);
           setSession(session);
           setUser(session.user);
-          setLoading(false); // Importante: definir loading como false
           
           // Aguardar um pouco mais para evitar race conditions
           setTimeout(() => {
+            console.log('🔍 AuthContext: Calling fetchProfile for SIGNED_IN user:', session.user.id);
             fetchProfile(session.user.id);
           }, 100);
         }
         
         if (event === 'TOKEN_REFRESHED' && session) {
+          console.log('🔍 AuthContext: TOKEN_REFRESHED event for user:', session.user.id);
           setSession(session);
           setUser(session.user);
           
           if (session.user && session.user.id !== user?.id) {
+            console.log('🔍 AuthContext: User ID changed, calling fetchProfile for TOKEN_REFRESHED user:', session.user.id);
             setTimeout(() => {
               fetchProfile(session.user.id);
             }, 100);
@@ -290,38 +321,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         setLoading(false);
+        setInitialized(true);
       }
     );
 
     // If on public route, skip session initialization but keep listener active
     if (isPublicRoute()) {
+      console.log('🔍 AuthContext: On public route, skipping session check');
       setLoading(false);
+      setInitialized(true);
     } else {
+      console.log('🔍 AuthContext: On protected route, checking existing session');
       // Check for existing session only on protected routes
       supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('🔍 AuthContext: Existing session check result:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('🔍 AuthContext: Found existing session for user:', session.user.id);
           setTimeout(() => {
+            console.log('🔍 AuthContext: Calling fetchProfile for existing session user:', session.user.id);
             fetchProfile(session.user.id);
           }, 100);
         } else {
+          console.log('🔍 AuthContext: No existing session, trying to load from storage');
           // If no session, try to load profile from sessionStorage (for temporary profiles)
           loadProfileFromStorage();
         }
         
         setLoading(false);
+        setInitialized(true);
       }).catch((error) => {
-        // Log desabilitado: AuthContext: Erro ao obter sessão inicial
+        console.error('❌ AuthContext: Error getting initial session:', error);
         // Even if session fails, try to load profile from storage
         loadProfileFromStorage();
         setLoading(false);
+        setInitialized(true);
       });
     }
 
     return () => subscription.unsubscribe();
-  }, [isSigningOut]);
+  }, [initialized]);
 
   // Listen for storage events to update profile when sessionStorage changes
   useEffect(() => {
@@ -422,15 +463,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    // Update profile function logging disabled
+    console.log('🔍 AuthContext: updateProfile called with:', updates);
     
     if (!user) {
-      // User not logged in logging disabled
+      console.log('❌ AuthContext: User not logged in');
       return { error: 'Usuário não está logado' };
     }
 
     try {
-      // Profile update logging disabled
+      console.log('🔍 AuthContext: Updating profile in database...');
       
       const { data, error } = await supabase
         .from('users')
@@ -440,24 +481,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        // Log desabilitado: updateProfile: Error updating profile
+        console.error('❌ AuthContext: Error updating profile:', error);
         return { error: error.message };
       }
 
-
+      console.log('✅ AuthContext: Profile updated in database:', data);
       
       // Atualizar o estado local imediatamente
       if (data) {
-        // Profile update state logging disabled
+        console.log('🔍 AuthContext: Setting profile state with new data...');
         setProfile(data);
-
-        // Profile new state logging disabled
+        console.log('✅ AuthContext: Profile state updated');
       }
       
       // Buscar o perfil atualizado para garantir sincronização
-      // Profile sync fetch logging disabled
+      console.log('🔍 AuthContext: Fetching fresh profile data...');
       await fetchProfile(user.id);
-
+      console.log('✅ AuthContext: Profile sync completed');
       
       return { data };
     } catch (error) {

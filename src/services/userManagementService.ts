@@ -47,6 +47,7 @@ interface CreateUserResult {
     password: string;
     name: string;
     position: string;
+    role?: string; // Adicionando role à interface
     department?: string;
   }
 }
@@ -204,10 +205,10 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     };
   }
 
-  if (!userData.position || userData.position.trim().length < 2) {
+  if (!userData.role) {
     return {
       success: false,
-      error: 'Cargo deve ter pelo menos 2 caracteres'
+      error: 'Perfil é obrigatório'
     };
   }
 
@@ -216,7 +217,7 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
     ...userData,
     email: sanitizeInput(userData.email.toLowerCase()),
     name: sanitizeInput(userData.name),
-    position: sanitizeInput(userData.position),
+    role: sanitizeInput(userData.role),
     department: userData.department ? sanitizeInput(userData.department) : undefined
   };
 
@@ -285,7 +286,8 @@ export async function createUserWithAutoPassword(userData: CreateUserFormData): 
         email: userData.email,
         password: autoPassword,
         name: userData.name,
-        position: userData.position,
+        position: userData.role, // Usando role como position para compatibilidade
+        role: userData.role, // Adicionando role explicitamente
         department: userData.department
       }
     };

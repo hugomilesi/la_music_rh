@@ -80,12 +80,12 @@ const SettingsPage: React.FC = () => {
         const transformedUsers = (allUsersData.users || []).map((user: any) => {
            const userData = user.user_data;
            // For users without profile, determine status based on sync_status
-           let userStatus = 'inactive';
+           let userStatus = 'active'; // Default to active since all users in DB are active
            if (userData) {
-             userStatus = userData.status === 'ativo' ? 'active' : 'inactive';
-           } else if (user.sync_status && !user.sync_status.user_deleted) {
-             // User exists in auth but no profile - consider as active auth user
-             userStatus = 'active';
+             userStatus = userData.status; // Status já vem convertido do settingsService
+           } else if (user.sync_status && user.sync_status.user_deleted) {
+             // User exists in auth but profile deleted - consider as inactive
+             userStatus = 'inactive';
            }
            
            return {
@@ -93,7 +93,7 @@ const SettingsPage: React.FC = () => {
              auth_user_id: user.id, // Store auth_user_id explicitly
              name: userData?.username || user.email || 'Usuário sem nome',
              email: user.email,
-             role: userData?.role || 'usuario',
+             role: userData?.role || 'Sem perfil',
              position: userData?.position || 'Não informado',
              department: userData?.department || 'Não informado',
              phone: userData?.phone || 'Não informado',
@@ -364,8 +364,6 @@ const SettingsPage: React.FC = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Departamento</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
@@ -374,14 +372,14 @@ const SettingsPage: React.FC = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                     <p className="mt-2 text-gray-500">Carregando usuários...</p>
                   </TableCell>
                 </TableRow>
               ) : systemUsers.filter(user => user.hasProfile).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-gray-500">Nenhum usuário encontrado</p>
                   </TableCell>
                 </TableRow>
@@ -392,16 +390,10 @@ const SettingsPage: React.FC = () => {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.position || 'Não informado'}</TableCell>
-                    <TableCell>{user.department || 'Não informado'}</TableCell>
+                    <TableCell>{user.role || 'Não informado'}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadge(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                        {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                      <Badge className={user.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                        {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </TableCell>
                     <TableCell>
