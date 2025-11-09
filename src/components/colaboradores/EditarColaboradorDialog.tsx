@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { colaboradorService } from '@/services/colaboradorService';
+import { unidadeService } from '@/services/unidadeService';
 import { fetchRoles, fetchDepartments, Role, Department } from '@/services/rolesService';
 import { 
   Colaborador,
@@ -27,6 +28,7 @@ import {
   TipoContratacao,
   TipoConta,
   StatusColaborador,
+  Unidade,
   UNIDADES_OPTIONS,
   TIPOS_CONTRATACAO_OPTIONS,
   TIPOS_CONTA_OPTIONS,
@@ -55,22 +57,25 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<Role[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   
-  // Carregar dados de cargos e departamentos
-  const loadRolesAndDepartments = async () => {
+  // Carregar dados de cargos, departamentos e unidades
+  const loadFormData = async () => {
     try {
       setLoadingData(true);
-      const [rolesData, departmentsData] = await Promise.all([
+      const [rolesData, departmentsData, unidadesData] = await Promise.all([
         fetchRoles(),
-        fetchDepartments()
+        fetchDepartments(),
+        unidadeService.getUnidadesAtivas()
       ]);
       setRoles(rolesData.filter(role => role.is_active !== false));
       setDepartments(departmentsData.filter(dept => dept.is_active !== false));
+      setUnidades(unidadesData);
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os dados de cargos e departamentos.',
+        description: 'Não foi possível carregar os dados do formulário.',
         variant: 'destructive'
       });
     } finally {
@@ -81,7 +86,7 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
   // Carregar dados quando o componente montar
   useEffect(() => {
     if (open) {
-      loadRolesAndDepartments();
+      loadFormData();
     }
   }, [open]);
 
@@ -95,12 +100,9 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
         cpf: colaborador.cpf || '',
         cargo: colaborador.cargo || '',
         departamento: colaborador.departamento || '',
-        unidade: colaborador.unidade || 'campo_grande',
-        tipo_contratacao: colaborador.tipo_contratacao || 'clt',
-        status: colaborador.status || 'ativo',
-        data_admissao: colaborador.data_admissao || '',
-        data_nascimento: colaborador.data_nascimento || '',
-        endereco: colaborador.endereco || '',
+        unidade_ids: colaborador.unidades?.map(cu => cu.unidade_id) || [],
+        tipo_contratacao: colaborador.tipo_contratacao || TipoContratacao.CLT,
+        status: colaborador.status || StatusColaborador.ATIVO,
         banco: colaborador.banco || '',
         agencia: colaborador.agencia || '',
         conta: colaborador.conta || '',
@@ -137,6 +139,10 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
     
     if (!formData.departamento?.trim()) {
       newErrors.departamento = 'Departamento é obrigatório';
+    }
+    
+    if (!formData.unidade_ids || formData.unidade_ids.length === 0) {
+      newErrors.unidade_ids = 'Pelo menos uma unidade deve ser selecionada';
     }
     
     setErrors(newErrors);
@@ -384,23 +390,34 @@ export const EditarColaboradorDialog: React.FC<EditarColaboradorDialogProps> = (
                 )}
               </div>
               
-              <div>
-                <Label htmlFor="unidade">Unidade *</Label>
-                <Select
-                  value={formData.unidade || ''}
-                  onValueChange={(value) => updateField('unidade', value as UnidadeColaborador)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNIDADES_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="md:col-span-2">
+                <Label>Unidades *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                  {unidades.map((unidade) => (
+                    <div key={unidade.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`unidade-${unidade.id}`}
+                        checked={formData.unidade_ids?.includes(unidade.id) || false}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const currentIds = formData.unidade_ids || [];
+                          const newUnidadeIds = isChecked
+                            ? [...currentIds, unidade.id]
+                            : currentIds.filter(id => id !== unidade.id);
+                          updateField('unidade_ids', newUnidadeIds);
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor={`unidade-${unidade.id}`} className="text-sm font-normal">
+                        {unidade.nome}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {errors.unidade_ids && (
+                  <p className="text-sm text-red-500 mt-1">{errors.unidade_ids}</p>
+                )}
               </div>
               
               <div>

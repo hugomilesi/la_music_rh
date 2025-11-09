@@ -1,6 +1,29 @@
 // Tipos e interfaces para o sistema de colaboradores
 // Colaboradores são diferentes de usuários - não têm acesso ao sistema, apenas são registrados para controle administrativo
 
+// ==================================================
+// TIPOS ATUALIZADOS - Múltiplas Unidades
+// ==================================================
+
+// ===== NOVA INTERFACE: Unidade =====
+export interface Unidade {
+  id: string;
+  nome: string;
+  codigo: string;
+  ativa: boolean;
+  created_at: string;
+}
+
+// ===== NOVA INTERFACE: Vínculo Colaborador-Unidade =====
+export interface ColaboradorUnidade {
+  id: string;
+  colaborador_id: string;
+  unidade_id: string;
+  created_at: string;
+  unidade?: Unidade; // Join com dados da unidade
+}
+
+// ===== ENUM: UnidadeColaborador (mantido para compatibilidade) =====
 export enum UnidadeColaborador {
   CAMPO_GRANDE = 'Campo Grande',
   BARRA = 'Barra',
@@ -25,6 +48,7 @@ export enum StatusColaborador {
   INATIVO = 'inativo'
 }
 
+// ===== INTERFACE PRINCIPAL: Colaborador (ATUALIZADA) =====
 export interface Colaborador {
   id: string;
   nome: string;
@@ -34,7 +58,11 @@ export interface Colaborador {
   cargo: string;
   departamento: string;
   data_admissao: string;
-  unidade: UnidadeColaborador;
+
+  // ❌ REMOVIDO: unidade: UnidadeColaborador;
+  // ✅ ADICIONADO: Array de unidades vinculadas
+  unidades?: ColaboradorUnidade[];
+
   tipo_contratacao: TipoContratacao;
   banco?: string;
   agencia?: string;
@@ -45,6 +73,7 @@ export interface Colaborador {
   updated_at: string;
 }
 
+// ===== INTERFACE: Criar Colaborador (ATUALIZADA) =====
 export interface NovoColaborador {
   nome: string;
   email: string;
@@ -53,7 +82,11 @@ export interface NovoColaborador {
   cargo: string;
   departamento: string;
   dataAdmissao: string;
-  unidade: UnidadeColaborador;
+
+  // ❌ REMOVIDO: unidade: UnidadeColaborador;
+  // ✅ ADICIONADO: Array de IDs de unidades
+  unidade_ids: string[];
+
   tipo_contratacao?: TipoContratacao;
   banco?: string;
   agencia?: string;
@@ -62,6 +95,7 @@ export interface NovoColaborador {
   status?: StatusColaborador;
 }
 
+// ===== INTERFACE: Atualizar Colaborador (ATUALIZADA) =====
 export interface AtualizarColaborador {
   nome?: string;
   email?: string;
@@ -69,7 +103,11 @@ export interface AtualizarColaborador {
   cpf?: string;
   cargo?: string;
   departamento?: string;
-  unidade?: UnidadeColaborador;
+
+  // ❌ REMOVIDO: unidade?: UnidadeColaborador;
+  // ✅ ADICIONADO: Array de IDs de unidades (opcional)
+  unidade_ids?: string[];
+
   tipo_contratacao?: TipoContratacao;
   banco?: string;
   agencia?: string;
@@ -78,9 +116,14 @@ export interface AtualizarColaborador {
   status?: StatusColaborador;
 }
 
+// ===== INTERFACE: Filtros (ATUALIZADA) =====
 export interface FiltrosColaborador {
   searchTerm?: string;
-  unidade?: UnidadeColaborador | '';
+
+  // ❌ REMOVIDO: unidade?: UnidadeColaborador | '';
+  // ✅ ADICIONADO: Array de IDs de unidades (filtro múltiplo)
+  unidade_ids?: string[];
+
   departamento?: string;
   tipo_contratacao?: TipoContratacao | '';
   status?: StatusColaborador | '';

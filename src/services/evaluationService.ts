@@ -138,7 +138,7 @@ export const evaluationService = {
         .insert(dbData)
         .select(`
           *,
-          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo),
           evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
         `)
         .single();
@@ -149,27 +149,28 @@ export const evaluationService = {
 
 
       // Mapear dados de volta para o formato do frontend
+      const evaluationData = insertedData as any;
       const mappedEvaluation: Evaluation = {
-        id: insertedData.id,
-        employeeId: insertedData.employee_id,
-        employee: insertedData.employee?.nome || 'N/A',
-        role: insertedData.employee?.cargo || 'N/A',
-        type: insertedData.evaluation_type,
-        period: this.formatPeriodFromDates(insertedData.evaluation_period_start, insertedData.evaluation_period_end),
-        score: insertedData.overall_score || 0,
-        status: this.mapEvaluationStatusFromDb(insertedData.status),
-        date: insertedData.date,
-        evaluatorId: insertedData.evaluator_id,
-        evaluator: insertedData.evaluator?.nome,
-        comments: insertedData.feedback,
-        unit: insertedData.unit,
+        id: evaluationData.id,
+        employeeId: evaluationData.employee_id,
+        employee: evaluationData.employee?.nome || 'N/A',
+        role: evaluationData.employee?.cargo || 'N/A',
+        type: evaluationData.evaluation_type,
+        period: this.formatPeriodFromDates(evaluationData.evaluation_period_start, evaluationData.evaluation_period_end),
+        score: evaluationData.overall_score || 0,
+        status: this.mapEvaluationStatusFromDb(evaluationData.status),
+        date: evaluationData.date,
+        evaluatorId: evaluationData.evaluator_id,
+        evaluator: evaluationData.evaluator?.nome,
+        comments: evaluationData.feedback,
+        unit: 'N/A', // Será preenchido posteriormente
         // Campos específicos do Coffee Connection
-        meetingDate: insertedData.meeting_date,
-        meetingTime: insertedData.meeting_time,
-        location: insertedData.location,
-        topics: insertedData.topics,
-        followUpActions: insertedData.follow_up_actions,
-        confidential: insertedData.confidential
+        meetingDate: evaluationData.meeting_date,
+        meetingTime: evaluationData.meeting_time,
+        location: evaluationData.location,
+        topics: evaluationData.topics,
+        followUpActions: evaluationData.follow_up_actions,
+        confidential: evaluationData.confidential
       };
 
       return mappedEvaluation;
@@ -186,7 +187,7 @@ export const evaluationService = {
         .from('evaluations')
         .select(`
           *,
-          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo),
           evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
         `)
         .order('created_at', { ascending: false });
@@ -256,7 +257,7 @@ export const evaluationService = {
         .eq('id', id)
         .select(`
           *,
-          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo, unidade),
+          employee:colaboradores!evaluations_employee_id_fkey(id, nome, cargo),
           evaluator:colaboradores!evaluations_evaluator_id_fkey(id, nome)
         `)
         .single();

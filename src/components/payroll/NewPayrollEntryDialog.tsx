@@ -130,7 +130,7 @@ export function NewPayrollEntryDialog({ onSuccess, triggerButton, defaultMonth, 
       // Buscar dados diretamente da tabela colaboradores - incluindo todas as colunas disponíveis
       const { data: colaboradoresData, error: colaboradoresError } = await supabase
         .from('colaboradores')
-        .select('id, nome, cpf, cargo, departamento, unidade, tipo_contratacao, banco, agencia, conta, tipo_conta, telefone, email, data_admissao, status, created_at, updated_at')
+        .select('id, nome, cpf, cargo, departamento, tipo_contratacao, banco, agencia, conta, tipo_conta, telefone, email, data_admissao, status, created_at, updated_at')
         .eq('status', 'ativo')
         .order('nome');
       

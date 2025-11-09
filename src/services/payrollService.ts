@@ -344,7 +344,13 @@ export const payrollService = {
         // Fetch employee data from colaboradores table
         const { data: colaborador, error: colaboradorError } = await supabase
           .from('colaboradores')
-          .select('nome, cpf, unidade')
+          .select(`
+            nome, 
+            cpf,
+            colaborador_unidades(
+              unidade:unidades(nome)
+            )
+          `)
           .eq('id', entry.colaborador_id)
           .single();
 
@@ -355,7 +361,8 @@ export const payrollService = {
 
         employeeName = colaborador.nome;
         employeeCpf = colaborador.cpf;
-        employeeUnit = colaborador.unidade;
+        // Usar a primeira unidade ou a unidade especificada no entry
+        employeeUnit = entry.unidade || (colaborador as any).colaborador_unidades?.[0]?.unidade?.nome || 'Unidade não informada';
       }
 
       // Check if entry already exists for this employee in this month/year

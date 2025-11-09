@@ -20,6 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { colaboradorService } from '@/services/colaboradorService';
+import { unidadeService } from '@/services/unidadeService';
 import { supabase } from '@/lib/supabase';
 import { 
   NovoColaborador,
@@ -27,6 +28,7 @@ import {
   TipoContratacao,
   TipoConta,
   StatusColaborador,
+  Unidade,
   UNIDADES_OPTIONS,
   TIPOS_CONTRATACAO_OPTIONS,
   TIPOS_CONTA_OPTIONS,
@@ -60,6 +62,7 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [formData, setFormData] = useState<NovoColaborador>({
     nome: '',
@@ -69,7 +72,7 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
     cargo: '',
     departamento: '',
     dataAdmissao: '',
-    unidade: UnidadeColaborador.CAMPO_GRANDE,
+    unidade_ids: [],
     tipo_contratacao: TipoContratacao.CLT,
     banco: '',
     agencia: '',
@@ -106,6 +109,10 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
     
     if (!formData.departamento.trim()) {
       newErrors.departamento = 'Departamento é obrigatório';
+    }
+    
+    if (!formData.unidade_ids || formData.unidade_ids.length === 0) {
+      newErrors.unidade_ids = 'Pelo menos uma unidade deve ser selecionada';
     }
     
     setErrors(newErrors);
@@ -176,10 +183,12 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
       setFormData({
         nome: '',
         email: '',
+        telefone: '',
         cpf: '',
         cargo: '',
         departamento: '',
-        unidade: UnidadeColaborador.CAMPO_GRANDE,
+        dataAdmissao: '',
+        unidade_ids: [],
         tipo_contratacao: TipoContratacao.CLT,
         banco: '',
         agencia: '',
@@ -224,42 +233,51 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
     updateField('cpf', formattedCPF);
   };
   
-  // Carregar cargos e departamentos do banco
+  // Carregar cargos, departamentos e unidades do banco
   useEffect(() => {
     if (open) {
-      loadCargosEDepartamentos();
+      loadDadosFormulario();
     }
   }, [open]);
 
-  const loadCargosEDepartamentos = async () => {
+  const loadDadosFormulario = async () => {
     setLoadingData(true);
     try {
-      // Carregar cargos
-      const { data: cargosData, error: cargosError } = await supabase
-        .from('roles')
-        .select('name, description')
-        .eq('is_active', true)
-        .order('name');
+      // Carregar dados em paralelo
+      const [cargosData, departamentosData, unidadesData] = await Promise.all([
+        supabase
+          .from('roles')
+          .select('name, description')
+          .eq('is_active', true)
+          .order('name'),
+        supabase
+          .from('departments')
+          .select('id, name')
+          .order('name'),
+        unidadeService.getUnidadesAtivas()
+      ]);
 
-      if (cargosError) {
+      // Processar cargos
+      if (cargosData.error) {
+        console.error('Erro ao carregar cargos:', cargosData.error);
       } else {
-        setCargos(cargosData || []);
+        setCargos(cargosData.data || []);
       }
 
-      // Carregar departamentos
-      const { data: departamentosData, error: departamentosError } = await supabase
-        .from('departments')
-        .select('id, name')
-        .order('name');
-
-      if (departamentosError) {
+      // Processar departamentos
+      if (departamentosData.error) {
+        console.error('Erro ao carregar departamentos:', departamentosData.error);
       } else {
-        setDepartamentos(departamentosData || []);
+        setDepartamentos(departamentosData.data || []);
       }
+
+      // Processar unidades
+      setUnidades(unidadesData);
+
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao carregar cargos e departamentos.",
+        description: "Erro ao carregar dados do formulário.",
         variant: "destructive",
       });
     } finally {
@@ -395,23 +413,33 @@ export const NovoColaboradorDialog: React.FC<NovoColaboradorDialogProps> = ({
                 )}
               </div>
               
-              <div>
-                <Label htmlFor="unidade">Unidade *</Label>
-                <Select
-                  value={formData.unidade}
-                  onValueChange={(value) => updateField('unidade', value as UnidadeColaborador)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNIDADES_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="md:col-span-2">
+                <Label>Unidades *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                  {unidades.map((unidade) => (
+                    <div key={unidade.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`unidade-${unidade.id}`}
+                        checked={formData.unidade_ids.includes(unidade.id)}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const newUnidadeIds = isChecked
+                            ? [...formData.unidade_ids, unidade.id]
+                            : formData.unidade_ids.filter(id => id !== unidade.id);
+                          updateField('unidade_ids', newUnidadeIds);
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor={`unidade-${unidade.id}`} className="text-sm font-normal">
+                        {unidade.nome}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {errors.unidade_ids && (
+                  <p className="text-sm text-red-500 mt-1">{errors.unidade_ids}</p>
+                )}
               </div>
               
               <div>

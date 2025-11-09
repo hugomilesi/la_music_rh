@@ -6,23 +6,28 @@ import { Unit } from '@/types/unit';
 export const employeeService = {
   async getEmployees(): Promise<Employee[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('colaboradores')
-        .select('*')
+        .select(`
+          *,
+          unidades:colaborador_unidades(
+            unidade:unidades(nome)
+          )
+        `)
         .order('nome', { ascending: true });
       
       if (error) {
         throw error;
       }
       
-      const mappedData = data?.map(colaborador => ({
+      const mappedData = data?.map((colaborador: any) => ({
         id: colaborador.id,
         name: colaborador.nome || 'Nome não informado',
         email: colaborador.email || 'Email não informado',
         phone: colaborador.telefone || '',
         position: colaborador.cargo || 'Não informado',
         department: colaborador.departamento || 'Não informado',
-        units: colaborador.unidade ? [colaborador.unidade] : [],
+        units: colaborador.unidades?.map(cu => cu.unidade?.nome).filter(Boolean) || [],
         start_date: colaborador.data_admissao || colaborador.created_at,
         status: colaborador.status === 'ativo' ? 'ativo' : 'inativo',
         avatar: null, // colaboradores não tem avatar_url
@@ -43,7 +48,12 @@ export const employeeService = {
   async getEmployeeById(id: string): Promise<Employee | null> {
     const { data, error } = await supabase
       .from('colaboradores')
-      .select('*')
+      .select(`
+        *,
+        unidades:colaborador_unidades(
+          unidade:unidades(nome)
+        )
+      `)
       .eq('id', id)
       .single();
     

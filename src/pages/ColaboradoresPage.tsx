@@ -54,7 +54,8 @@ import {
   Download,
   RefreshCw,
   Settings,
-  Columns
+  Columns,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePermissionsV2 } from '@/hooks/usePermissionsV2';
@@ -73,6 +74,7 @@ import {
 import { NovoColaboradorDialog } from '@/components/colaboradores/NovoColaboradorDialog';
 import { EditarColaboradorDialog } from '@/components/colaboradores/EditarColaboradorDialog';
 import { DetalhesColaboradorDialog } from '@/components/colaboradores/DetalhesColaboradorDialog';
+import { exportFilteredColaboradores } from '@/utils/excelExport';
 
 // Definir as colunas disponíveis
 const AVAILABLE_COLUMNS = [
@@ -101,7 +103,7 @@ export const ColaboradoresPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState<FiltrosColaborador>({
     searchTerm: '',
-    unidade: '',
+    unidade_ids: [],
     departamento: '',
     tipo_contratacao: '',
     status: ''
@@ -168,7 +170,10 @@ export const ColaboradoresPage: React.FC = () => {
         colaborador.cpf.includes(filtros.searchTerm) ||
         colaborador.cargo.toLowerCase().includes(filtros.searchTerm.toLowerCase());
       
-      const matchesUnidade = !filtros.unidade || colaborador.unidade === filtros.unidade;
+      // Filtro de unidades: colaborador deve ter pelo menos uma das unidades selecionadas
+      const matchesUnidade = !filtros.unidade_ids || filtros.unidade_ids.length === 0 || 
+        colaborador.unidades?.some(cu => filtros.unidade_ids!.includes(cu.unidade_id));
+      
       const matchesDepartamento = !filtros.departamento || colaborador.departamento === filtros.departamento;
       const matchesTipo = !filtros.tipo_contratacao || colaborador.tipo_contratacao === filtros.tipo_contratacao;
       const matchesStatus = !filtros.status || colaborador.status === filtros.status;
@@ -298,7 +303,7 @@ export const ColaboradoresPage: React.FC = () => {
   const limparFiltros = () => {
     setFiltros({
       searchTerm: '',
-      unidade: '',
+      unidade_ids: [],
       departamento: '',
       tipo_contratacao: '',
       status: ''
@@ -321,7 +326,24 @@ export const ColaboradoresPage: React.FC = () => {
   const resetColumns = () => {
     setVisibleColumns(['nome', 'email', 'cpf', 'cargo', 'unidade', 'tipo_contratacao', 'status']);
   };
-  
+
+  // Função para exportar dados para Excel
+  const handleExportToExcel = () => {
+    try {
+      exportFilteredColaboradores(colaboradoresFiltrados, filtros, visibleColumns);
+      toast({
+        title: "Sucesso",
+        description: `${colaboradoresFiltrados.length} colaborador(es) exportado(s) para Excel.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar dados. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Verificar se o usuário tem permissão para visualizar
   if (permissionsLoading) {
     return (
@@ -508,14 +530,26 @@ export const ColaboradoresPage: React.FC = () => {
               Colaboradores ({colaboradoresFiltrados.length})
             </div>
             
-            {/* Seletor de Colunas */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Columns className="w-4 h-4 mr-2" />
-                  Colunas
-                </Button>
-              </PopoverTrigger>
+            <div className="flex items-center gap-2">
+              {/* Botão Exportar Excel */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportToExcel}
+                disabled={colaboradoresFiltrados.length === 0}
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Exportar Excel
+              </Button>
+              
+              {/* Seletor de Colunas */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Columns className="w-4 h-4 mr-2" />
+                    Colunas
+                  </Button>
+                </PopoverTrigger>
               <PopoverContent className="w-72 sm:w-80" align="end">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -552,6 +586,7 @@ export const ColaboradoresPage: React.FC = () => {
                 </div>
               </PopoverContent>
             </Popover>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -639,7 +674,19 @@ export const ColaboradoresPage: React.FC = () => {
                         <TableCell>{colaborador.departamento}</TableCell>
                       )}
                       {visibleColumns.includes('unidade') && (
-                        <TableCell>{colaborador.unidade}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {colaborador.unidades?.map((cu) => (
+                              <Badge key={cu.id} variant="secondary" className="text-xs">
+                                {cu.unidade?.nome}
+                              </Badge>
+                            )) || (
+                              <Badge variant="outline" className="text-xs">
+                                Sem unidade
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                       )}
                       {visibleColumns.includes('tipo_contratacao') && (
                         <TableCell>
