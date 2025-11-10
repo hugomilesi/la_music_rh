@@ -123,7 +123,7 @@ export const documentChecklistService = {
     return summaries;
   },
 
-  // Buscar resumo apenas de colaboradores com documentos enviados
+  // Buscar resumo de TODOS os colaboradores ativos (CORREÇÃO CRÍTICA)
   async getEmployeesWithDocumentsSummary(): Promise<EmployeeDocumentSummary[]> {
     // Buscar todos os colaboradores ativos
     const { data: employees, error } = await supabase
@@ -142,24 +142,19 @@ export const documentChecklistService = {
     for (const employee of employees || []) {
       const checklistItems = await this.getEmployeeDocumentChecklist(employee.id);
       
-      // Só incluir colaboradores que têm documentos enviados/aprovados OU documentos pendentes obrigatórios
-      const hasSentDocuments = checklistItems.some(item => item.status === 'enviado' || item.status === 'aprovado');
-      const hasPendingMandatory = checklistItems.some(item => item.status === 'pendente' && item.is_mandatory);
+      // ✅ SEMPRE incluir colaboradores ativos (removido filtro que escondia colaboradores)
+      const summary: EmployeeDocumentSummary = {
+        employee_id: employee.id,
+        employee_name: employee.nome,
+        total_documents: checklistItems.length,
+        sent_documents: checklistItems.filter(item => item.status === 'enviado' || item.status === 'aprovado').length,
+        validated_documents: checklistItems.filter(item => item.status === 'aprovado').length,
+        pending_documents: checklistItems.filter(item => item.status === 'pendente').length,
+        rejected_documents: checklistItems.filter(item => item.status === 'rejeitado').length,
+        checklist_items: checklistItems
+      };
       
-      if (hasSentDocuments || hasPendingMandatory) {
-        const summary: EmployeeDocumentSummary = {
-          employee_id: employee.id,
-          employee_name: employee.nome,
-          total_documents: checklistItems.length,
-          sent_documents: checklistItems.filter(item => item.status === 'enviado' || item.status === 'aprovado').length,
-          validated_documents: checklistItems.filter(item => item.status === 'aprovado').length,
-          pending_documents: checklistItems.filter(item => item.status === 'pendente').length,
-          rejected_documents: checklistItems.filter(item => item.status === 'rejeitado').length,
-          checklist_items: checklistItems
-        };
-        
-        summaries.push(summary);
-      }
+      summaries.push(summary);
     }
 
     return summaries;

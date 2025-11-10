@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,35 +11,70 @@ import { useDocuments } from '@/hooks/useDocuments';
 import { useColaboradores } from '@/contexts/ColaboradorContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatDateToLocal } from '@/utils/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedEmployeeId?: string;
+  preSelectedDocumentId?: string;
+}
+
+interface RequiredDocument {
+  id: string;
+  name: string;
+  document_type: string;
 }
 
 export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
   open,
   onOpenChange,
-  preSelectedEmployeeId
+  preSelectedEmployeeId,
+  preSelectedDocumentId
 }) => {
-  const { uploadDocument, isLoading } = useDocuments();
+  const { uploadDocument } = useDocuments();
   const { colaboradoresAtivos } = useColaboradores();
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
   const [formData, setFormData] = useState({
     employeeId: preSelectedEmployeeId || '',
-    documentType: '',
+    documentType: preSelectedDocumentId || '',
     expiryDate: '',
     notes: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Atualizar employeeId quando preSelectedEmployeeId mudar
-  React.useEffect(() => {
-    if (preSelectedEmployeeId) {
-      setFormData(prev => ({ ...prev, employeeId: preSelectedEmployeeId }));
+  // Buscar documentos obrigatórios do banco
+  useEffect(() => {
+    const fetchRequiredDocuments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('required_documents' as any)
+          .select('id, name, document_type')
+          .eq('is_active', true)
+          .order('name');
+        
+        if (!error && data) {
+          setRequiredDocuments(data as unknown as RequiredDocument[]);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar documentos obrigatórios:', error);
+      }
+    };
+    
+    fetchRequiredDocuments();
+  }, []);
+
+  // Atualizar employeeId e documentType quando o modal abrir ou as props mudarem
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        employeeId: preSelectedEmployeeId || '',
+        documentType: preSelectedDocumentId || ''
+      }));
     }
-  }, [preSelectedEmployeeId]);
+  }, [open, preSelectedEmployeeId, preSelectedDocumentId]);
 
   const maxFileSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = [
@@ -132,21 +167,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
     }
   };
 
-  const documentTypes = [
-    'Contrato de Trabalho',
-    'Carteira de Trabalho',
-    'CPF',
-    'RG',
-    'Comprovante de Residência',
-    'Atestado de Saúde Ocupacional',
-    'PIS/PASEP',
-    'Título de Eleitor',
-    'Atestado Médico',
-    'Certificado de Curso',
-    'Licença Médica',
-    'Atestado de Comparecimento',
-    'Outros'
-  ];
+  // documentTypes agora vem do banco de dados via requiredDocuments
 
   const resetForm = () => {
     setFormData({
@@ -216,9 +237,9 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {requiredDocuments.map((doc) => (
+                  <SelectItem key={doc.id} value={doc.id}>
+                    {doc.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -304,9 +325,9 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={!selectedFile || !formData.employeeId || !formData.documentType || !formData.expiryDate || isLoading}
+              disabled={!selectedFile || !formData.employeeId || !formData.documentType || !formData.expiryDate}
             >
-              {isLoading ? 'Enviando...' : 'Enviar Documento'}
+              Enviar Documento
             </Button>
           </DialogFooter>
         </form>

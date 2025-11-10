@@ -74,6 +74,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedEmployeeForUpload, setSelectedEmployeeForUpload] = useState<string>('');
+  const [selectedDocumentForUpload, setSelectedDocumentForUpload] = useState<string>('');
 
   // Carregar dados do checklist usando apenas colaboradores com documentos enviados
   const loadEmployeeSummaries = async () => {
@@ -217,18 +218,11 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
     return result;
   }, [filteredDocuments, employeeSummaries, checklistData]);
 
-  // Filtrar colaboradores que têm documentos para exibir (apenas com ao menos um documento enviado)
+  // ✅ CORREÇÃO: Mostrar TODOS os colaboradores (removido filtro que escondia colaboradores sem documentos)
   const filteredGroupedDocuments = useMemo(() => {
-    let filtered = groupedDocuments.filter(group => {
-      // Verificar se tem ao menos um documento enviado, aprovado ou completo
-      const hasAtLeastOneSentDocument = group.checklistItems.some(item => 
-        item.status === 'enviado' || item.status === 'aprovado' || item.status === 'completo'
-      );
-      
-      return hasAtLeastOneSentDocument;
-    });
+    let filtered = groupedDocuments;
 
-    // Aplicar filtro de busca por nome
+    // Aplicar apenas filtro de busca por nome
     if (searchTerm.trim()) {
       filtered = filtered.filter(group => 
         group.employeeName.toLowerCase().includes(searchTerm.toLowerCase().trim())
@@ -350,10 +344,11 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
     onSendToAccountant(documents);
   };
 
-  // Função para abrir o diálogo de upload com colaborador pré-selecionado
-  const handleUploadDocument = (employeeId: string, e: React.MouseEvent) => {
+  // Função para abrir o diálogo de upload com colaborador e documento pré-selecionados
+  const handleUploadDocument = (employeeId: string, requiredDocumentId: string | null, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedEmployeeForUpload(employeeId);
+    setSelectedDocumentForUpload(requiredDocumentId || '');
     setUploadDialogOpen(true);
   };
 
@@ -659,7 +654,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
                                         variant="outline" 
                                         size="sm"
                                         className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                                        onClick={(e) => handleUploadDocument(group.employeeId, e)}
+                                        onClick={(e) => handleUploadDocument(group.employeeId, item.required_document_id, e)}
                                       >
                                         <Upload className="w-4 h-4 mr-1" />
                                         Enviar
@@ -703,6 +698,7 @@ export const ImprovedDocumentsTable: React.FC<ImprovedDocumentsTableProps> = ({
         open={uploadDialogOpen}
         onOpenChange={setUploadDialogOpen}
         preSelectedEmployeeId={selectedEmployeeForUpload}
+        preSelectedDocumentId={selectedDocumentForUpload}
       />
     </TooltipProvider>
   );
